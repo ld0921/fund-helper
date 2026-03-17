@@ -453,6 +453,10 @@ tr:last-child td{border-bottom:none}
       <!-- 同类方案对比 -->
       <div id="comparing-section"></div>
 
+      <!-- 风格暴露 + 压力测试 -->
+      <div id="style-exposure-section" style="display:none;margin-top:14px"></div>
+      <div id="stress-test-section" style="display:none;margin-top:14px"></div>
+
       <!-- 策略说明 -->
       <details style="margin-top:14px">
         <summary style="cursor:pointer;font-size:13px;color:var(--primary);font-weight:500;padding:8px 0">📐 查看策略依据与算法说明</summary>
@@ -659,6 +663,89 @@ const CURATED_FUNDS = [
   {code:'040046',name:'华安标普500指数(QDII)A',type:'QDII',cat:'qdii',label:'QDII海外',manager:'许之彦',mgrYears:10,stars:4,risk:'R4',size:88,r1:26.8,r3:50.5,maxDD:25.1,tags:['美股','标普500','稳健'],reason:'老牌标普500QDII，管理经验丰富，费率合理，适合想稳健配置美股的投资者。'},
   {code:'006479',name:'博时标普500ETF联接(QDII)A',type:'QDII',cat:'qdii',label:'QDII海外',manager:'赵云阳',mgrYears:5,stars:4,risk:'R4',size:82,r1:27.1,r3:51.2,maxDD:24.6,tags:['美股','标普500','联接'],reason:'博时旗下标普500产品，可支付宝直接申购，跟踪误差小，适合小额定投分散市场风险。'},
 ];
+
+// ═══════════════ 基金元数据增强（风格/行业/流动性风险） ═══════════════
+const FUND_META = {
+  '005827':{style:'large_value',industry:'消费',instPct:45,sizeQ:[-2,-5,-3,-1]},
+  '110011':{style:'large_value',industry:'消费',instPct:52,sizeQ:[-3,-5,-4,-2]},
+  '161005':{style:'large_growth',industry:'均衡',instPct:35,sizeQ:[0,-2,-1,1]},
+  '163402':{style:'large_blend',industry:'均衡',instPct:30,sizeQ:[-1,-2,-1,0]},
+  '003095':{style:'mid_growth',industry:'医药',instPct:40,sizeQ:[-8,-12,-5,-3]},
+  '260108':{style:'large_growth',industry:'消费',instPct:48,sizeQ:[-5,-8,-6,-2]},
+  '510300':{style:'large_blend',industry:'宽基',instPct:55,sizeQ:[5,3,8,10]},
+  '515180':{style:'large_value',industry:'红利',instPct:60,sizeQ:[3,5,8,12]},
+  '513050':{style:'large_growth',industry:'科技',instPct:38,sizeQ:[2,-5,0,5]},
+  '159915':{style:'mid_growth',industry:'科技',instPct:42,sizeQ:[-2,-5,-3,0]},
+  '510500':{style:'mid_blend',industry:'宽基',instPct:50,sizeQ:[1,-3,0,2]},
+  '159919':{style:'large_blend',industry:'宽基',instPct:58,sizeQ:[2,1,3,5]},
+  '110017':{style:'bond_credit',industry:'债券',instPct:65,creditGrade:'AA+',duration:2.5,sizeQ:[1,0,2,3]},
+  '000171':{style:'bond_rate',industry:'债券',instPct:72,creditGrade:'AAA',duration:1.8,sizeQ:[-1,0,1,2]},
+  '070009':{style:'bond_short',industry:'债券',instPct:55,creditGrade:'AAA',duration:0.3,sizeQ:[2,3,1,0]},
+  '000198':{style:'money',industry:'货币',instPct:15,sizeQ:[0,0,0,0]},
+  '003003':{style:'money',industry:'货币',instPct:30,sizeQ:[0,1,0,0]},
+  '161125':{style:'large_blend',industry:'美股',instPct:35,sizeQ:[3,5,8,10]},
+  '270042':{style:'large_growth',industry:'科技',instPct:28,sizeQ:[2,3,5,8]},
+  '040046':{style:'large_blend',industry:'美股',instPct:32,sizeQ:[1,2,3,5]},
+  '006479':{style:'large_blend',industry:'美股',instPct:25,sizeQ:[2,3,5,8]},
+};
+const STYLE_LABELS = {large_value:'大盘价值',large_blend:'大盘均衡',large_growth:'大盘成长',mid_value:'中盘价值',mid_blend:'中盘均衡',mid_growth:'中盘成长',bond_credit:'信用债',bond_rate:'利率债',bond_short:'短债',money:'货币'};
+function getMeta(code){ return FUND_META[code]||{}; }
+
+// ═══════════════ 风格暴露分析 + 流动性风险检查 ═══════════════
+function analyzeStyleExposure(allPicks){
+  const exposure = {styles:{},industries:{},risks:[]};
+  allPicks.forEach(f=>{
+    const m = getMeta(f.code);
+    const s = m.style||'unknown';
+    const ind = m.industry||'未知';
+    exposure.styles[s] = (exposure.styles[s]||0) + f.pct;
+    exposure.industries[ind] = (exposure.industries[ind]||0) + f.pct;
+    // 流动性风险检查
+    if(m.instPct > 80) exposure.risks.push({code:f.code,name:f.name,type:'inst',desc:`机构持有占比 ${m.instPct}%，存在巨额赎回风险`});
+    if(m.sizeQ){
+      const allNeg = m.sizeQ.every(q=>q<0);
+      const totalShrink = m.sizeQ.reduce((s,v)=>s+v,0);
+      if(allNeg) exposure.risks.push({code:f.code,name:f.name,type:'shrink',desc:`连续4季度规模缩水(合计${totalShrink}亿)，存在清盘风险`});
+    }
+    if(f.size < 5 && f.cat !== 'money') exposure.risks.push({code:f.code,name:f.name,type:'tiny',desc:`规模仅${f.size}亿，接近清盘红线(通常5000万-2亿)`});
+    // 债基专项
+    if(m.creditGrade && m.creditGrade !== 'AAA' && m.duration > 2){
+      exposure.risks.push({code:f.code,name:f.name,type:'credit',desc:`信用等级${m.creditGrade}，久期${m.duration}年，需关注信用下沉风险`});
+    }
+  });
+  // 风格集中度预警
+  Object.entries(exposure.styles).forEach(([s,pct])=>{
+    if(pct > 50 && s !== 'money' && s !== 'bond_short'){
+      exposure.risks.push({code:'_style',name:STYLE_LABELS[s]||s,type:'style',desc:`${STYLE_LABELS[s]||s}风格占比 ${pct}%，超过50%集中度红线。风格切换时可能全线回撤`});
+    }
+  });
+  Object.entries(exposure.industries).forEach(([ind,pct])=>{
+    if(pct > 40 && !['宽基','货币','债券','美股'].includes(ind)){
+      exposure.risks.push({code:'_ind',name:ind,type:'industry',desc:`${ind}行业占比 ${pct}%，行业集中度过高。建议分散到其他行业`});
+    }
+  });
+  return exposure;
+}
+
+// 压力测试（历史情景回测估算）
+function stressTest(allPicks){
+  // 基于各类资产在不同市场情景下的历史表现估算
+  const scenarios = [
+    {name:'2015股灾', shocks:{active:-45,index:-40,bond:5,money:1.5,qdii:-15}},
+    {name:'2018熊市', shocks:{active:-25,index:-22,bond:6,money:3,qdii:-10}},
+    {name:'2020疫情冲击', shocks:{active:-15,index:-12,bond:3,money:1,qdii:-30}},
+    {name:'2022风格切换', shocks:{active:-20,index:-18,bond:2,money:2,qdii:-25}},
+    {name:'债灾(2016.12)', shocks:{active:-5,index:-8,bond:-8,money:0.5,qdii:2}},
+    {name:'牛市泡沫期', shocks:{active:60,index:50,bond:-2,money:1,qdii:20}},
+  ];
+  return scenarios.map(s=>{
+    const portfolioReturn = allPicks.reduce((sum,f)=>{
+      const shock = s.shocks[f.cat]||0;
+      return sum + shock * (f.pct/100);
+    },0);
+    return {name:s.name, impact:portfolioReturn};
+  });
+}
 
 // ═══════════════ 全局状态 ═══════════════
 let funds    = [];
@@ -1539,6 +1626,12 @@ function _doGenerate(){
   // 10. 风险计量
   renderRiskMeter(blendedDD, riskP);
 
+  // 10.5 风格暴露分析 + 压力测试
+  const styleExposure = analyzeStyleExposure(allPicks);
+  const stressResults = stressTest(allPicks);
+  renderStyleExposure(styleExposure, allPicks);
+  renderStressTest(stressResults);
+
   // 11. 执行步骤
   const steps=buildSteps(weights,selectedPicks,totalAmt,monthly,riskP,horizon);
   document.getElementById('step-list').innerHTML=steps.map((s,i)=>
@@ -1591,7 +1684,23 @@ function _doGenerate(){
       · 1年区间：μ ± 0.67σ（P25-P75）<br>
       · 3年区间：3μ ± 0.67σ√3（累计收益 ± 累计波动率）<br><br>
 
-      <b>六、定投评分 + 健康诊断</b><br>
+      <b>六、风格/行业暴露控制（新增）</b><br>
+      · 每只基金标注风格(大盘/中盘 × 价值/均衡/成长)和主要行业<br>
+      · 组合构建后自动检查：单一风格>50%预警，单一行业>40%预警<br>
+      · 基金选择时已通过标签去重降低风格集中，此处做最终验证<br><br>
+
+      <b>七、信用/流动性/清盘红线（新增）</b><br>
+      · 机构占比>80%：巨额赎回风险预警<br>
+      · 连续4季度规模缩水：清盘风险预警<br>
+      · 规模<5亿（非货币）：接近清盘红线预警<br>
+      · 债基专项：信用等级非AAA且久期>2年，信用下沉预警<br><br>
+
+      <b>八、策略鲁棒性（新增）</b><br>
+      · 再平衡规则：季度检视，阈值触发(偏离>15%相对偏离)<br>
+      · 交易成本：ETF申购0.1-0.15%，混合型0.6-1.5%(1折后)，赎回0-0.5%<br>
+      · 压力测试：模拟2015股灾/2018熊市/2020疫情/2022风格切换/债灾/泡沫6种历史情景<br><br>
+
+      <b>九、定投评分 + 健康诊断</b><br>
       · 定投核心指标：波动收益比(maxDD/|r3|)，无当日择时信号<br>
       · 健康诊断：同类σ动态阈值 + 持仓/类别集中度预警
     `;
@@ -1601,6 +1710,61 @@ function _doGenerate(){
   document.getElementById('analysis-time').textContent=Object.keys(navCache).length>0?`· 已融合${Object.keys(navCache).length}只基金实时净值`:'· 建议先刷新净值获取实时数据';
   document.getElementById('portfolio-result').style.display='block';
   setTimeout(()=>document.getElementById('portfolio-result').scrollIntoView({behavior:'smooth',block:'start'}),100);
+}
+
+function renderStyleExposure(exposure, allPicks){
+  const sec = document.getElementById('style-exposure-section');
+  if(!sec) return;
+  const styleEntries = Object.entries(exposure.styles).sort((a,b)=>b[1]-a[1]);
+  const indEntries = Object.entries(exposure.industries).sort((a,b)=>b[1]-a[1]);
+  const riskHtml = exposure.risks.length > 0
+    ? `<div style="margin-top:10px;padding:10px;background:#fff1f0;border-radius:8px;border-left:3px solid #ff4d4f">
+        <div style="font-size:13px;font-weight:600;color:#cf1322;margin-bottom:6px">⚠️ 风险预警 (${exposure.risks.length}项)</div>
+        ${exposure.risks.map(r=>`<div style="font-size:12px;color:#7c5800;line-height:1.6;margin-bottom:2px">· <b>${r.name}</b>：${r.desc}</div>`).join('')}
+      </div>` : '<div style="margin-top:8px;font-size:12px;color:var(--success)">✅ 未发现风格集中、流动性或信用风险预警</div>';
+  sec.style.display='block';
+  sec.innerHTML=`
+    <div style="font-size:13px;font-weight:600;margin-bottom:8px">📊 风格/行业暴露分析</div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap">
+      <div style="flex:1;min-width:140px">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:6px">风格暴露</div>
+        ${styleEntries.map(([s,pct])=>`<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+          <span style="font-size:12px;width:70px;flex-shrink:0">${STYLE_LABELS[s]||s}</span>
+          <div style="flex:1;height:14px;background:#f0f0f0;border-radius:7px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${pct>50?'#ff4d4f':pct>30?'#faad14':'#1677ff'};border-radius:7px;font-size:10px;color:#fff;text-align:right;padding-right:4px;line-height:14px">${pct}%</div></div>
+        </div>`).join('')}
+      </div>
+      <div style="flex:1;min-width:140px">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:6px">行业暴露</div>
+        ${indEntries.map(([ind,pct])=>`<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+          <span style="font-size:12px;width:50px;flex-shrink:0">${ind}</span>
+          <div style="flex:1;height:14px;background:#f0f0f0;border-radius:7px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${pct>40?'#ff4d4f':pct>25?'#faad14':'#52c41a'};border-radius:7px;font-size:10px;color:#fff;text-align:right;padding-right:4px;line-height:14px">${pct}%</div></div>
+        </div>`).join('')}
+      </div>
+    </div>
+    ${riskHtml}`;
+}
+
+function renderStressTest(results){
+  const sec = document.getElementById('stress-test-section');
+  if(!sec) return;
+  sec.style.display='block';
+  sec.innerHTML=`
+    <div style="font-size:13px;font-weight:600;margin-bottom:8px">🧪 压力测试（历史情景回测）</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:8px">模拟组合在历史极端行情中的预估表现，帮助理解最坏情况</div>
+    <div class="table-wrap"><table style="font-size:12px">
+      <thead><tr><th>历史情景</th><th>组合预估涨跌</th><th>¥30,000投入预估盈亏</th><th>风险等级</th></tr></thead>
+      <tbody>${results.map(r=>{
+        const cls = r.impact >= 0 ? 'up' : 'down';
+        const risk = r.impact < -20 ? '🔴 极端' : r.impact < -10 ? '🟡 较高' : r.impact < 0 ? '🟢 可控' : '✅ 正收益';
+        const amt = Math.round(30000 * r.impact / 100);
+        return `<tr><td>${r.name}</td><td class="${cls}">${r.impact>=0?'+':''}${r.impact.toFixed(1)}%</td><td class="${cls}">${amt>=0?'+':''}¥${Math.abs(amt).toLocaleString()}</td><td>${risk}</td></tr>`;
+      }).join('')}</tbody>
+    </table></div>
+    <div style="margin-top:8px;padding:8px 12px;background:#f8f9fc;border-radius:6px;font-size:11px;color:var(--muted);line-height:1.6">
+      📐 <b>再平衡规则：</b>建议每季度检视，当任一类别偏离目标权重>15%(相对偏离)时触发再平衡。<br>
+      💰 <b>交易成本估算：</b>申购费率约0.1-0.15%(ETF)或0.6-1.5%(混合型，第三方平台多1折)；赎回费持有>7天约0.5%，>1年多为0%。每次再平衡成本约0.3-0.8%。<br>
+      ⏰ <b>再平衡频率：</b>季度为宜。过频(月度)增加成本，过疏(年度)偏离积累。阈值触发优于固定日历。
+    </div>`;
 }
 
 function renderMarketAnalysis(catRanks, macroClock, mgrWarnings){
