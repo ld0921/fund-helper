@@ -266,6 +266,14 @@ tr:last-child td{border-bottom:none}
   <span>在 Safari 中点击 <b>分享按钮</b> → <b>添加到主屏幕</b>，即可像 App 一样使用</span>
   <button onclick="document.getElementById('ios-install-banner').style.display='none';localStorage.setItem('_iosInstallDismissed','1')" style="margin-left:8px;background:none;border:none;color:#0958d9;cursor:pointer;font-size:16px;line-height:1">&times;</button>
 </div>
+<!-- 智能信号通知横幅 -->
+<div id="signal-banner" style="display:none;background:linear-gradient(135deg,#fff1f0,#fff7e6);border-bottom:1px solid #ffa39e;padding:0;max-height:300px;overflow-y:auto;-webkit-overflow-scrolling:touch">
+  <div style="padding:10px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #ffe0de">
+    <span style="font-size:14px;font-weight:600;color:#cf1322" id="signal-banner-title">📡 智能监控信号</span>
+    <button onclick="document.getElementById('signal-banner').style.display='none'" style="background:none;border:none;color:#cf1322;cursor:pointer;font-size:18px;line-height:1">&times;</button>
+  </div>
+  <div id="signal-banner-list" style="padding:0"></div>
+</div>
 
 <div class="tabs">
   <div class="tab active" onclick="switchTab(0)">🔍 基金精选推荐</div>
@@ -823,6 +831,8 @@ function refreshAllNav(autoGenerate){
       renderDcaRanking();
       // 刷新持仓健康诊断
       runHealthMonitor();
+      // 运行智能买卖信号引擎
+      runSignalEngine();
 
       // 自动生成投资方案
       if(autoGenerate){
@@ -1999,6 +2009,228 @@ function importFromDcaPlans(){
   else alert('定投计划中的基金已全部在已有持仓中');
 }
 
+// ═══════════════ 智能买卖信号引擎（均衡型灵敏度） ═══════════════
+let _lastSignalHash = ''; // 避免重复通知
+
+function runSignalEngine(){
+  // 合并所有持仓来源
+  const allHeld = [];
+  holdings.forEach(h=>{ if(!allHeld.some(x=>x.code===h.code)) allHeld.push({code:h.code,name:h.name,value:h.shares*h.cur,cost:h.shares*h.cost}); });
+  existingHoldings.forEach(h=>{ if(!allHeld.some(x=>x.code===h.code)) allHeld.push({code:h.code,name:h.name,value:h.value,cost:h.cost||0}); });
+  dcaPlans.forEach(d=>{ if(!allHeld.some(x=>x.code===d.code)&&d.curval>0){
+    const months=d.start?Math.max(0,Math.floor((new Date()-new Date(d.start))/30/86400000)):0;
+    allHeld.push({code:d.code,name:d.name,value:d.curval,cost:d.monthly*months});
+  }});
+
+  if(!allHeld.length && !CURATED_FUNDS.length) return;
+
+  const signals = [];
+  const catRanks = Object.keys(navCache).length > 0 ? analyzeCategoryPerf() : null;
+
+  // === 持仓信号（基于已持基金） ===
+  allHeld.forEach(h=>{
+    const fd = CURATED_FUNDS.find(f=>f.code===h.code);
+    const nav = navCache[h.code];
+    if(!nav) return;
+    const chg = parseFloat(nav.gszzl)||0;
+    const pnlPct = h.cost > 0 ? (h.value-h.cost)/h.cost*100 : null;
+
+    // 信号1：持仓基金大跌（≤-2%），可能是加仓机会或风险预警
+    if(chg <= -3){
+      signals.push({type:'warning', priority:1, code:h.code, name:h.name,
+        title:`⚠️ ${h.name} 今日大跌 ${chg.toFixed(2)}%`,
+        desc: fd && fd.r1>5 && fd.r3>0
+          ? `长期趋势良好(1年${fd.r1}%/3年${fd.r3}%)，大跌可能是加仓机会，建议逢低分批补仓。`
+          : `建议观察是否有重大利空，必要时考虑减仓止损。`,
+        action: fd && fd.r1>5 && fd.r3>0 ? '📈 可考虑加仓' : '🛑 观察或减仓'
+      });
+    } else if(chg <= -2){
+      signals.push({type:'info', priority:2, code:h.code, name:h.name,
+        title:`📉 ${h.name} 今日下跌 ${chg.toFixed(2)}%`,
+        desc:'显著下跌，建议关注原因。若为短期市场波动，可持有观察。',
+        action:'👀 持续关注'
+      });
+    }
+
+    // 信号2：持仓基金大涨（≥3%），考虑部分止盈
+    if(chg >= 3){
+      signals.push({type:'success', priority:2, code:h.code, name:h.name,
+        title:`🚀 ${h.name} 今日大涨 ${chg.toFixed(2)}%`,
+        desc: pnlPct!==null && pnlPct > 20
+          ? `持仓已盈利 ${pnlPct.toFixed(1)}%，可考虑部分止盈锁定利润。`
+          : '涨幅可观，持续关注后续走势。',
+        action: pnlPct!==null && pnlPct>20 ? '💰 可部分止盈' : '✅ 继续持有'
+      });
+    }
+
+    // 信号3：持仓亏损超过历史最大回撤的80%
+    if(fd && pnlPct !== null && pnlPct < 0 && fd.maxDD > 0){
+      const ddRatio = -pnlPct / fd.maxDD;
+      if(ddRatio > 0.8){
+        signals.push({type:'danger', priority:0, code:h.code, name:h.name,
+          title:`🔴 ${h.name} 亏损已达历史极端水平`,
+          desc:`当前亏损 ${pnlPct.toFixed(1)}%，已达历史最大回撤(${fd.maxDD}%)的 ${(ddRatio*100).toFixed(0)}%。建议严格评估是否需要止损。`,
+          action:'🛑 建议止损评估'
+        });
+      }
+    }
+
+    // 信号4：持仓基金结构性下行（1年和3年均亏）
+    if(fd && fd.r1 < -5 && fd.r3 < -10){
+      signals.push({type:'danger', priority:1, code:h.code, name:h.name,
+        title:`🔴 ${h.name} 结构性下行`,
+        desc:`近1年 ${fd.r1}%，近3年 ${fd.r3}%，持续下行趋势明显。建议考虑换入同类更优基金。`,
+        action:'🔄 建议换基'
+      });
+    }
+  });
+
+  // === 市场机会信号（基于行情分析） ===
+  if(catRanks){
+    // 信号5：某类别整体大跌（定投加仓机会）
+    catRanks.forEach(c=>{
+      if(c.avgChg <= -1.5 && c.avgR1 > 0 && ['active','index','qdii'].includes(c.cat)){
+        const isHeld = allHeld.some(h=>{
+          const fd=CURATED_FUNDS.find(f=>f.code===h.code);
+          return fd && fd.cat === c.cat;
+        });
+        signals.push({type:'opportunity', priority:2, code:'_cat_'+c.cat, name:c.name,
+          title:`📊 ${c.name}板块整体回调 ${c.avgChg.toFixed(2)}%`,
+          desc: isHeld
+            ? `你持有该板块基金，板块回调可能是定投加仓的好时机（长期均收益 +${c.avgR1.toFixed(1)}%）。`
+            : `该板块长期均收益 +${c.avgR1.toFixed(1)}%，当前回调可关注是否有建仓机会。`,
+          action: isHeld ? '📈 定投加仓时机' : '👀 可关注建仓'
+        });
+      }
+
+      // 信号6：某类别连续强势
+      if(c.avgChg >= 1.5 && c.catTrend >= 2){
+        signals.push({type:'info', priority:3, code:'_cat_'+c.cat, name:c.name,
+          title:`🔥 ${c.name}板块持续强势 +${c.avgChg.toFixed(2)}%`,
+          desc:`三维趋势(短/中/长)一致向上，Calmar Ratio ${c.avgCalmar.toFixed(2)}。若未持有可关注，已持有建议持有享受趋势。`,
+          action:'✅ 趋势向好'
+        });
+      }
+    });
+  }
+
+  // === 定投提醒 ===
+  if(dcaPlans.length > 0){
+    const today = new Date();
+    const dayOfMonth = today.getDate();
+    // 每月初（1-3号）提醒执行定投
+    if(dayOfMonth <= 3){
+      const totalMonthly = dcaPlans.reduce((s,d)=>s+d.monthly,0);
+      signals.push({type:'info', priority:4, code:'_dca_remind', name:'定投提醒',
+        title:`📅 本月定投提醒`,
+        desc:`共 ${dcaPlans.length} 项定投计划，本月需投入 ¥${totalMonthly.toLocaleString()}。坚持纪律是定投成功的关键。`,
+        action:'执行定投'
+      });
+    }
+  }
+
+  // 按优先级排序
+  signals.sort((a,b) => a.priority - b.priority);
+
+  // 去重：同一code只保留最高优先级信号
+  const seen = new Set();
+  const uniqueSignals = signals.filter(s => {
+    if(seen.has(s.code)) return false;
+    seen.add(s.code);
+    return true;
+  });
+
+  // 渲染信号横幅
+  renderSignalBanner(uniqueSignals);
+
+  // 发送浏览器通知（仅对重要信号）
+  const importantSignals = uniqueSignals.filter(s => s.priority <= 1);
+  if(importantSignals.length > 0){
+    const hash = importantSignals.map(s=>s.code+s.title).join('|');
+    if(hash !== _lastSignalHash){
+      _lastSignalHash = hash;
+      sendBrowserNotification(importantSignals);
+    }
+  }
+}
+
+function renderSignalBanner(signals){
+  const banner = document.getElementById('signal-banner');
+  const titleEl = document.getElementById('signal-banner-title');
+  const listEl = document.getElementById('signal-banner-list');
+
+  if(!signals.length){
+    banner.style.display = 'none';
+    return;
+  }
+
+  const dangerCount = signals.filter(s=>s.type==='danger'||s.type==='warning').length;
+  const oppCount = signals.filter(s=>s.type==='opportunity'||s.type==='success').length;
+
+  // 根据信号类型设置横幅颜色
+  if(dangerCount > 0){
+    banner.style.background = 'linear-gradient(135deg,#fff1f0,#fff7e6)';
+    banner.style.borderColor = '#ffa39e';
+  } else if(oppCount > 0){
+    banner.style.background = 'linear-gradient(135deg,#f6ffed,#e6f4ff)';
+    banner.style.borderColor = '#b7eb8f';
+  } else {
+    banner.style.background = 'linear-gradient(135deg,#e6f4ff,#f0f5ff)';
+    banner.style.borderColor = '#91caff';
+  }
+
+  titleEl.textContent = `📡 智能监控 · ${signals.length} 条信号`;
+  titleEl.style.color = dangerCount > 0 ? '#cf1322' : '#0958d9';
+
+  const typeColors = {
+    danger: {bg:'#fff1f0', border:'#ffa39e', color:'#cf1322'},
+    warning: {bg:'#fff7e6', border:'#ffd591', color:'#ad6800'},
+    opportunity: {bg:'#f6ffed', border:'#b7eb8f', color:'#237804'},
+    success: {bg:'#f6ffed', border:'#b7eb8f', color:'#237804'},
+    info: {bg:'#e6f4ff', border:'#91caff', color:'#0958d9'},
+  };
+
+  listEl.innerHTML = signals.map(s => {
+    const tc = typeColors[s.type] || typeColors.info;
+    return `<div style="padding:10px 16px;border-bottom:1px solid #f5f5f5;display:flex;align-items:flex-start;gap:10px">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600;color:${tc.color};margin-bottom:3px">${s.title}</div>
+        <div style="font-size:12px;color:#595959;line-height:1.6">${s.desc}</div>
+      </div>
+      <div style="flex-shrink:0;font-size:12px;font-weight:600;color:${tc.color};padding:3px 8px;background:${tc.bg};border-radius:6px;white-space:nowrap">${s.action}</div>
+    </div>`;
+  }).join('');
+
+  banner.style.display = 'block';
+}
+
+function sendBrowserNotification(signals){
+  if(!('Notification' in window)) return;
+  if(Notification.permission !== 'granted') return;
+
+  signals.forEach(s => {
+    try {
+      new Notification(s.title, {
+        body: s.desc.substring(0, 100),
+        icon: 'icons/icon-192.png',
+        tag: 'fund-signal-' + s.code, // 防止重复通知
+        renotify: true,
+      });
+    } catch(e){ /* iOS PWA may not support all options */ }
+  });
+}
+
+// 请求通知权限
+function requestNotificationPermission(){
+  if(!('Notification' in window)) return;
+  if(Notification.permission === 'default'){
+    // 延迟请求，不在页面一加载就弹出
+    setTimeout(()=>{
+      Notification.requestPermission();
+    }, 10000); // 10秒后请求
+  }
+}
+
 // ═══════════════ 持仓健康诊断（动态阈值 + 集中度分析） ═══════════════
 function runHealthMonitor(){
   const wrap = document.getElementById('health-monitor-wrap');
@@ -2205,10 +2437,13 @@ function runHealthMonitor(){
     document.getElementById('ios-install-banner').style.display='';
   }
 
-  // 6. 页面加载后自动获取净值 + 自动生成方案
+  // 6. 请求通知权限（延迟10秒，不打扰用户）
+  requestNotificationPermission();
+
+  // 7. 页面加载后自动获取净值 + 自动生成方案
   setTimeout(()=>refreshAllNav(true), 600);
 
-  // 7. 每5分钟自动重刷净值 + 重新生成方案
+  // 8. 每5分钟自动重刷净值 + 重新生成方案
   setInterval(()=>refreshAllNav(true), 5 * 60 * 1000);
 })();
 
