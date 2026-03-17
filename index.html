@@ -48,7 +48,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue'
 .form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
 .form-item{display:flex;flex-direction:column;gap:4px}
 .form-item label{font-size:12px;color:var(--muted)}
-.form-item input,.form-item select{height:40px;border:1px solid var(--border);border-radius:8px;padding:0 10px;font-size:16px;outline:none;transition:border-color .2s;background:#fafafa;-webkit-appearance:none;appearance:none}
+.form-item input,.form-item select{height:40px;border:1px solid var(--border);border-radius:8px;padding:0 10px;font-size:16px;outline:none;transition:border-color .2s;background:#fafafa;-webkit-appearance:none;appearance:none;width:100%;min-width:0}
 .form-item input:focus,.form-item select:focus{border-color:var(--primary);background:#fff}
 .btn{height:40px;padding:0 16px;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:500;transition:all .15s;display:inline-flex;align-items:center;gap:5px;flex-shrink:0;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 .btn-primary{background:var(--primary);color:#fff}.btn-primary:hover{background:var(--primary-dark)}
@@ -156,7 +156,7 @@ tr:last-child td{border-bottom:none}
 .risk-block{height:8px;flex:1;border-radius:2px}
 .comparing-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
 @media(max-width:600px){
-  .form-grid,.profile-grid{grid-template-columns:1fr 1fr}
+  .form-grid,.profile-grid{grid-template-columns:1fr}
   .stat-row{grid-template-columns:1fr 1fr}
   .fund-grid{grid-template-columns:1fr}
   .expected-banner{flex-direction:column;gap:10px}
