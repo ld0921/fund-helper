@@ -322,11 +322,8 @@ tr:last-child td{border-bottom:none}
           <option value="10">5年以上（超长期）</option>
         </select>
       </div>
-      <div class="form-item">
-        <label>💳 每月还能追加多少(元)</label>
-        <input id="sp-monthly" type="number" value="1000" placeholder="0表示不追加">
-      </div>
     </div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px">💡 此方案为一次性投资配置建议。如需定投，请前往「定投计划」Tab。</div>
     <div class="action-bar">
       <button class="btn btn-primary" onclick="generateSmartPortfolio()" id="gen-btn" style="height:44px;font-size:15px;padding:0 28px">
         🤖 生成我的专属方案
@@ -494,13 +491,6 @@ tr:last-child td{border-bottom:none}
     <div class="card">
       <div class="card-title"><span class="icon icon-blue">📅</span>分步执行建议</div>
       <ul class="step-list" id="step-list"></ul>
-    </div>
-
-    <!-- 定投测算 -->
-    <div class="card" id="dca-calc-card" style="display:none">
-      <div class="card-title"><span class="icon icon-orange">📈</span>定投增值测算</div>
-      <div class="stat-row" id="dca-stats"></div>
-      <div class="chart-wrap"><canvas id="dcaChart"></canvas></div>
     </div>
 
   </div><!-- /portfolio-result -->
@@ -1508,12 +1498,12 @@ function selectFunds(cat, catData, riskProfile, pct, totalAmt){
     pct: perPick[i],
     amt: Math.round(totalAmt * perPick[i] / 100),
     role: i===0 ? '核心仓' : '卫星仓',
-    method: f.cat==='money'?'立即买入': f.cat==='bond'?'立即买入': f.cat==='qdii'?'一次性或定投':i===0?'分批定投':'一次性买入',
+    method: f.cat==='money'?'立即买入': f.cat==='bond'?'立即买入': f.cat==='qdii'?'分批买入':i===0?'分批买入':'一次性买入',
     methodClass: f.cat==='money'||f.cat==='bond'?'method-now': i===0?'method-dca':'method-hold',
   }));
 }
 
-// 生成执行步骤
+// 生成执行步骤（一次性投资，不含定投）
 function buildSteps(weights, picks, totalAmt, monthly, riskProfile, horizon){
   const allPicks = Object.values(picks).flat();
   const immediateFunds = allPicks.filter(f=>['money','bond'].includes(f.cat));
@@ -1522,34 +1512,29 @@ function buildSteps(weights, picks, totalAmt, monthly, riskProfile, horizon){
   const equityAmt      = equityFunds.reduce((s,f)=>s+f.amt,0);
 
   const steps = [];
-  steps.push({
-    title:`第一步：本周立即买入稳健底仓 ¥${immediateAmt.toLocaleString()}`,
-    desc:`在支付宝搜索 ${immediateFunds.map(f=>`「${f.name}」`).join('、')} 直接购买。这部分资金安全稳定，随时可取，作为组合的基础保障。`
-  });
+  if(immediateFunds.length){
+    steps.push({
+      title:`第一步：立即买入稳健底仓 ¥${immediateAmt.toLocaleString()}`,
+      desc:`在支付宝搜索 ${immediateFunds.map(f=>`「${f.name}」`).join('、')} 直接购买。这部分资金安全稳定，作为组合的基础保障。`
+    });
+  }
   if(equityFunds.length){
-    const dcaFunds = equityFunds.filter(f=>f.method.includes('定投'));
-    const lumpFunds = equityFunds.filter(f=>!f.method.includes('定投'));
-    if(dcaFunds.length){
-      const dcaAmt = monthly>0 ? Math.min(monthly, Math.round(equityFunds.reduce((s,f)=>s+f.amt,0)/6)) : Math.round(equityFunds.reduce((s,f)=>s+f.amt,0)/6);
-      steps.push({
-        title:`第二步：权益基金分批定投，每月 ¥${(monthly||dcaAmt).toLocaleString()}`,
-        desc:`对 ${dcaFunds.map(f=>`「${f.name}」`).join('、')} 设置支付宝自动定投。不要一次性全仓，分3-6个月买入可有效降低择时风险。${monthly>0?`建议每月定投额 ¥${monthly.toLocaleString()}。`:''}`
-      });
-    }
-    if(lumpFunds.length){
-      steps.push({
-        title:`第三步：择机买入 ¥${lumpFunds.reduce((s,f)=>s+f.amt,0).toLocaleString()} 增强收益`,
-        desc:`${lumpFunds.map(f=>`「${f.name}」`).join('、')} 建议在大盘回调5%以上时买入，以获得更好的入场价格。`
-      });
-    }
+    steps.push({
+      title:`第二步：分批买入权益基金 ¥${equityAmt.toLocaleString()}`,
+      desc:`${equityFunds.map(f=>`「${f.name}」(¥${f.amt.toLocaleString()})`).join('、')}。建议分2-3次买入，间隔1-2周，避免一次性买在高点。`
+    });
   }
   steps.push({
-    title:`第四步：${horizon<=2?'每半年':'每年'}检视并再平衡`,
-    desc:`定期检查各基金表现，若某类资产偏离目标权重超过10%，需卖出高估部分、补仓低估部分。保持组合比例符合初始规划。`
+    title:`第三步：${horizon<=2?'每半年':'每年'}检视并再平衡`,
+    desc:`定期检查各基金表现，若某类资产偏离目标权重超过15%，需卖出高配部分、补仓低配部分。`
   });
   steps.push({
-    title:'第五步：设置止损/止盈纪律',
-    desc:`建议：单只基金亏损超过${riskProfile==='conservative'?8:riskProfile==='moderate'?12:18}%时降仓；组合整体收益达到${riskProfile==='conservative'?10:riskProfile==='moderate'?20:30}%时考虑部分止盈，锁定利润。`
+    title:'第四步：设置止损/止盈纪律',
+    desc:`建议：单只基金亏损超过${riskProfile==='conservative'?8:riskProfile==='moderate'?12:18}%时降仓；组合整体收益达到${riskProfile==='conservative'?10:riskProfile==='moderate'?20:30}%时考虑部分止盈。`
+  });
+  steps.push({
+    title:'💡 想要定投？',
+    desc:'如果你希望每月定期投入，请切换到「定投计划」Tab，那里有专门的定投推荐和方案生成。'
   });
   return steps;
 }
@@ -1572,7 +1557,7 @@ function _doGenerate(){
   const totalAmt  = parseFloat(document.getElementById('sp-amount').value)||30000;
   const riskP     = document.getElementById('sp-risk').value;
   const horizon   = parseInt(document.getElementById('sp-horizon').value);
-  const monthly   = parseFloat(document.getElementById('sp-monthly').value)||0;
+  const monthly   = 0; // 智能方案为一次性配置，定投在独立Tab
 
   // 1. 行情分析
   const catRanks = analyzeCategoryPerf();
@@ -1665,8 +1650,7 @@ function _doGenerate(){
   ).join('');
 
   // 12. 定投测算（如有月定投）
-  if(monthly>0) renderDCACalc(monthly, horizon, expReturn);
-  document.getElementById('dca-calc-card').style.display = monthly>0 ? 'block':'none';
+  // 12. 定投测算已移至独立的「定投计划」Tab
 
   // 13. 调仓建议（有已有持仓时）
   const rebalPlan = computeRebalancePlan(selectedPicks, totalAmt);
