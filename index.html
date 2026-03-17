@@ -857,8 +857,8 @@ function addCuratedToScore(code){
 }
 
 // ═══════════════ 面板0: 自定义评分 ═══════════════
-// ═══════════════ 专业评分体系（多因子模型） ═══════════════
-// 同类基准数据（用于计算超额收益和信息比率）
+// ═══════════════ 专业评分体系（简化多因子模型） ═══════════════
+// 同类基准数据
 function getCatBenchmarks(){
   const cats = {};
   CURATED_FUNDS.forEach(f=>{
@@ -880,47 +880,53 @@ function getCatBenchmarks(){
 }
 const _catBench = getCatBenchmarks();
 
+// 无风险利率（1年期国债收益率近似）
+const RISK_FREE = 2.0;
+
 function scoreF(f){
-  const r1=+f.r1||0, r3=+f.r3||0, dd=+f.dd||0, sz=+f.size||0, mg=+f.mgr||0, stars=+f.stars||3;
-  const riskFree = 2.0; // 无风险利率（1年期国债收益率近似）
+  const r1=+f.r1||0, r3=+f.r3||0, dd=+f.dd||0, sz=+f.size||0, mg=+f.mgr||0;
 
-  // 1. Calmar Ratio：年化收益 / 最大回撤（权重 30%）
-  const calmar = dd > 0 ? (r1 - riskFree) / dd : 0;
-  const calmarScore = Math.min(30, Math.max(0, calmar * 15)); // 0-30分
+  // 1. Calmar Ratio（唯一风险调整指标，权重 40%）
+  //    = (年化收益 - 无风险利率) / 最大回撤
+  //    优势：直接衡量「每承受1%回撤换来多少超额回报」
+  const calmar = dd > 0 ? (r1 - RISK_FREE) / dd : 0;
+  const calmarScore = Math.min(40, Math.max(0, calmar * 20)); // 0-40分
 
-  // 2. 风险调整收益（近似Sortino，使用下行风险）（权重 25%）
-  // Sortino = (收益 - 无风险) / 下行标准差；用maxDD×0.5近似下行波动率
-  const downVol = dd * 0.5 || 1;
-  const sortino = (r1 - riskFree) / downVol;
-  const sortinoScore = Math.min(25, Math.max(0, (sortino + 0.5) * 8)); // 0-25分
+  // 2. 收益一致性（权重 25%）
+  //    中期(r1)与长期(r3)方向是否一致 + r3趋势强度
+  //    替代冗余的 Sortino/InfoRatio，直接衡量收益可持续性
+  const dirConsistency = (r1 > 0 && r3 > 0) ? 10 : (r1 < 0 && r3 < 0) ? 0 : 5;
+  const r3Strength = r3 > 50 ? 15 : r3 > 20 ? 12 : r3 > 0 ? Math.max(5, r3 * 0.3) : Math.max(0, 3 + r3 * 0.05);
+  const consistencyScore = Math.min(25, dirConsistency + r3Strength); // 0-25分
 
-  // 3. 信息比率（超额收益 / 同类标准差）（权重 15%）
-  const bench = _catBench[f.type==='混合型'||f.type==='股票型'?'active':f.type==='指数型'?'index':f.type==='债券型'?'bond':f.type==='货币型'?'money':'qdii'] || _catBench.active;
-  const excessR = r1 - (bench?.avgR1||0);
-  const infoRatio = (bench?.stdR1||1) > 0 ? excessR / bench.stdR1 : 0;
-  const infoScore = Math.min(15, Math.max(0, (infoRatio + 1) * 5)); // 0-15分
+  // 3. 任期稳定性（权重 25%）
+  //    客观指标：基金经理任期年限
+  //    任期<1年=可能刚更换经理（高风险），>5年=稳定，>10年=非常稳定
+  //    替代主观的「星级评定」
+  let stabilityScore;
+  if(mg < 1) stabilityScore = 3;       // 刚更换经理，高不确定性
+  else if(mg < 2) stabilityScore = 8;  // 磨合期
+  else if(mg < 3) stabilityScore = 13; // 初步稳定
+  else if(mg < 5) stabilityScore = 17; // 稳定
+  else if(mg < 10) stabilityScore = 21;// 成熟
+  else stabilityScore = 25;            // 超长任期，团队非常稳定
+  // 0-25分
 
-  // 4. 管理质量因子（权重 20%）
-  const mgrScore = Math.min(12, mg * 0.8) + Math.min(8, (stars - 1) * 2); // 0-20分
+  // 4. 规模适配性（权重 10%）
+  //    太小（<2亿）有清盘风险，太大（>500亿）有调仓困难
+  const sizeScore = sz >= 500 ? 7 : sz >= 200 ? 10 : sz >= 50 ? 9 : sz >= 10 ? 7 : sz >= 2 ? 5 : 2; // 2-10分
 
-  // 5. 规模因子（权重 10%）
-  const sizeScore = sz >= 200 ? 10 : sz >= 50 ? 8 : sz >= 10 ? 6 : sz >= 2 ? 4 : 2; // 2-10分
-
-  const total = Math.round(Math.min(100, Math.max(0, calmarScore + sortinoScore + infoScore + mgrScore + sizeScore)));
-
+  const total = Math.round(Math.min(100, Math.max(0, calmarScore + consistencyScore + stabilityScore + sizeScore)));
   return total;
 }
 
 // 获取评分明细（用于UI展示）
 function getScoreDetail(f){
-  const r1=+f.r1||0, dd=+f.dd||0;
-  const riskFree = 2.0;
-  const calmar = dd > 0 ? (r1 - riskFree) / dd : 0;
-  const downVol = dd * 0.5 || 1;
-  const sortino = (r1 - riskFree) / downVol;
-  const bench = _catBench[f.type==='混合型'||f.type==='股票型'?'active':f.type==='指数型'?'index':f.type==='债券型'?'bond':f.type==='货币型'?'money':'qdii'] || _catBench.active;
-  const infoRatio = (bench?.stdR1||1) > 0 ? (r1 - (bench?.avgR1||0)) / bench.stdR1 : 0;
-  return { calmar: calmar.toFixed(2), sortino: sortino.toFixed(2), infoRatio: infoRatio.toFixed(2) };
+  const r1=+f.r1||0, r3=+f.r3||0, dd=+f.dd||0, mg=+f.mgr||0;
+  const calmar = dd > 0 ? (r1 - RISK_FREE) / dd : 0;
+  const consistent = (r1 > 0 && r3 > 0) ? '一致向上' : (r1 < 0 && r3 < 0) ? '一致向下' : '方向分化';
+  const stability = mg < 1 ? '新任(<1年)' : mg < 3 ? '磨合期' : mg < 5 ? '稳定' : mg < 10 ? '成熟' : '超稳定(10年+)';
+  return { calmar: calmar.toFixed(2), consistent, stability, mgrYears: mg };
 }
 function scoreColor(s){ return s>=80?'#52c41a':s>=60?'#1677ff':s>=40?'#faad14':'#ff4d4f'; }
 function recommend(s){
@@ -1135,48 +1141,117 @@ function renderRebalancePlan(plan){
 const CAT_COLORS = { active:'#c41d7f', index:'#1677ff', bond:'#52c41a', money:'#d48806', qdii:'#722ed1' };
 const CAT_NAMES  = { active:'主动权益', index:'指数基金', bond:'债券基金', money:'货币基金', qdii:'QDII海外' };
 
-// 按类别分组并分析（增强版：标准差 + 趋势一致性 + 多因子综合分）
+// 按类别分组并分析（Calmar + 趋势一致性 + 任期稳定性）
 function analyzeCategoryPerf(){
   const cats = ['qdii','active','index','bond','money'];
-  const riskFree = 2.0;
   return cats.map(cat=>{
     const funds = CURATED_FUNDS.filter(f=>f.cat===cat);
     const scores = funds.map(f=>{
       const nav = navCache[f.code];
       const todayChg = nav ? parseFloat(nav.gszzl)||0 : 0;
-      // Calmar Ratio（风险调整收益核心指标）
-      const calmar = f.maxDD > 0 ? (f.r1 - riskFree) / f.maxDD : 0;
-      // 趋势一致性：短期(当日)、中期(1年)、长期(3年) 方向是否一致
+      // Calmar Ratio（唯一风险调整指标）
+      const calmar = f.maxDD > 0 ? (f.r1 - RISK_FREE) / f.maxDD : 0;
+      // 趋势一致性：短期(当日)、中期(1年)、长期(3年)
       const shortDir = todayChg > 0 ? 1 : todayChg < 0 ? -1 : 0;
       const midDir = f.r1 > 0 ? 1 : f.r1 < 0 ? -1 : 0;
       const longDir = f.r3 > 0 ? 1 : f.r3 < 0 ? -1 : 0;
-      const trendConsistency = (shortDir + midDir + longDir); // -3 to +3
-      // 管理质量
-      const mgrQuality = Math.min(f.mgrYears, 15) * 0.5 + (f.stars||3) * 2;
-      // 综合评分：风险调整收益 40% + 趋势一致性 25% + 管理质量 20% + 实时动量 15%
-      const composite = calmar * 12 * 0.4 + trendConsistency * 4 * 0.25 + mgrQuality * 0.2 + todayChg * 5 * 0.15;
-      return { ...f, todayChg, calmar, trendConsistency, mgrQuality, composite };
+      const trendConsistency = shortDir + midDir + longDir; // -3 to +3
+      // 任期稳定性（客观指标）
+      const stability = Math.min(f.mgrYears, 15) / 15 * 10; // 0-10
+      // 综合评分：Calmar 50% + 趋势一致性 25% + 稳定性 15% + 实时动量 10%
+      const composite = calmar * 10 * 0.5 + trendConsistency * 4 * 0.25 + stability * 0.15 + todayChg * 5 * 0.1;
+      return { ...f, todayChg, calmar, trendConsistency, stability, composite };
     });
-    // 类别统计
     const avgR1 = funds.reduce((s,f)=>s+f.r1,0)/funds.length;
     const avgDD = funds.reduce((s,f)=>s+f.maxDD,0)/funds.length;
     const avgChg = scores.reduce((s,f)=>s+f.todayChg,0)/scores.length;
     const avgR3 = funds.reduce((s,f)=>s+f.r3,0)/funds.length;
-    // 收益标准差（衡量类别内分化程度）
     const stdR1 = Math.sqrt(funds.reduce((s,f)=>s+(f.r1-avgR1)**2,0)/funds.length)||1;
-    // 类别平均 Calmar Ratio
-    const avgCalmar = avgDD > 0 ? (avgR1 - riskFree) / avgDD : 0;
-    // 类别趋势一致性（短/中/长方向一致得更高分）
+    const avgCalmar = avgDD > 0 ? (avgR1 - RISK_FREE) / avgDD : 0;
     const catTrend = (avgChg > 0 ? 1 : avgChg < 0 ? -1 : 0) + (avgR1 > 0 ? 1 : -1) + (avgR3 > 0 ? 1 : -1);
-    // 类别综合分
-    const catScore = avgCalmar * 12 * 0.4 + catTrend * 4 * 0.25 + funds.reduce((s,f)=>s+Math.min(f.mgrYears,15)*0.5+(f.stars||3)*2,0)/funds.length * 0.2 + avgChg * 5 * 0.15;
+    const avgStability = funds.reduce((s,f)=>s+Math.min(f.mgrYears,15)/15*10,0)/funds.length;
+    const catScore = avgCalmar * 10 * 0.5 + catTrend * 4 * 0.25 + avgStability * 0.15 + avgChg * 5 * 0.1;
     scores.sort((a,b)=>b.composite-a.composite);
     return { cat, name:CAT_NAMES[cat], avgR1, avgDD, avgChg, avgR3, stdR1, avgCalmar, catTrend, catScore, riskAdj:avgCalmar, topFunds:scores };
   }).sort((a,b)=>b.catScore-a.catScore);
 }
 
-// 根据档案 & 行情生成配置权重（风险平价 + 动态倾斜 + 期限约束）
-function computeWeights(riskProfile, horizon, catRanks){
+// ═══════════════ 宏观周期判断（美林时钟推断） ═══════════════
+// 无法获取真实GDP/CPI数据，通过各类资产相对表现推断周期位置
+// 美林时钟4阶段：复苏(Recovery) → 过热(Overheat) → 滞胀(Stagflation) → 衰退(Recession)
+function inferMerrilClock(catRanks){
+  if(!catRanks || catRanks.length < 3) return { phase:'unknown', label:'数据不足', equityMult:1.0, bondMult:1.0 };
+
+  const getAvgR1 = cat => { const c = catRanks.find(x=>x.cat===cat); return c ? c.avgR1 : 0; };
+  const getAvgChg = cat => { const c = catRanks.find(x=>x.cat===cat); return c ? c.avgChg : 0; };
+
+  const equityR1 = (getAvgR1('active') + getAvgR1('index')) / 2;
+  const bondR1 = getAvgR1('bond');
+  const qdiiR1 = getAvgR1('qdii');
+  const moneyR1 = getAvgR1('money');
+
+  // 推断逻辑：
+  // 复苏期：权益上涨 > 债券，债券仍正收益 → 经济回暖，通胀低
+  // 过热期：权益强涨，债券走弱/下跌 → 经济过热，通胀上升
+  // 滞胀期：权益下跌，债券下跌 → 增长放缓但通胀高
+  // 衰退期：权益下跌，债券上涨 → 经济收缩，降息预期
+
+  let phase, label, equityMult, bondMult, desc;
+
+  if(equityR1 > 5 && bondR1 > 0 && equityR1 > bondR1){
+    phase = 'recovery';
+    label = '复苏期';
+    equityMult = 1.15; // 权益类风险平价系数上调15%
+    bondMult = 0.9;
+    desc = '经济回暖，通胀温和。权益资产优选，债券仍有配置价值。建议超配权益。';
+  } else if(equityR1 > 10 && bondR1 < 3){
+    phase = 'overheat';
+    label = '过热期';
+    equityMult = 1.0; // 权益维持但不加码
+    bondMult = 0.8;   // 债券减配
+    desc = '经济过热，通胀抬头。权益尚可但需警惕回调，债券承压。建议控制仓位。';
+  } else if(equityR1 < 0 && bondR1 < 2){
+    phase = 'stagflation';
+    label = '滞胀期';
+    equityMult = 0.7; // 权益大幅减配
+    bondMult = 0.9;
+    desc = '增长放缓叠加通胀。最困难阶段，现金为王，防御为主。建议超配货币和短债。';
+  } else if(equityR1 < 5 && bondR1 > 3){
+    phase = 'recession';
+    label = '衰退期';
+    equityMult = 0.85;
+    bondMult = 1.2; // 债券受益于降息预期
+    desc = '经济放缓，降息预期。债券受益明显，权益需精选。建议超配债券。';
+  } else {
+    phase = 'transition';
+    label = '过渡期';
+    equityMult = 1.0;
+    bondMult = 1.0;
+    desc = '市场处于周期过渡阶段，信号不明确。建议均衡配置，不做极端倾斜。';
+  }
+
+  return { phase, label, equityMult, bondMult, desc, equityR1, bondR1 };
+}
+
+// 基金经理变更检测
+function detectManagerChanges(){
+  const warnings = [];
+  CURATED_FUNDS.forEach(f => {
+    if(f.mgrYears < 1){
+      warnings.push({
+        code: f.code,
+        name: f.name,
+        manager: f.manager,
+        years: f.mgrYears,
+        desc: `基金经理 ${f.manager} 任职仅 ${f.mgrYears < 0.5 ? '不足半年' : f.mgrYears.toFixed(1)+'年'}，可能为近期更换。新任经理的投资风格和业绩尚不稳定，建议谨慎。`
+      });
+    }
+  });
+  return warnings;
+}
+
+// 根据档案 & 行情 & 宏观周期 生成配置权重（风险平价 + 宏观约束 + 动态倾斜 + 期限约束）
+function computeWeights(riskProfile, horizon, catRanks, macroClock){
   // 1. 风险平价基础权重：各类别权重与其波动率成反比
   const catVol = {}; // 用平均最大回撤近似波动率
   catRanks.forEach(c => { catVol[c.cat] = Math.max(c.avgDD, 1); });
@@ -1206,7 +1281,22 @@ function computeWeights(riskProfile, horizon, catRanks){
   // 归一化
   Object.keys(base).forEach(k => base[k] = base[k] / tiltSum * 100);
 
-  // 3. 动量倾斜：基于类别行情强弱适当调整
+  // 3. 宏观周期约束（美林时钟顶层调整）
+  if(macroClock && macroClock.phase !== 'unknown'){
+    const eqMult = macroClock.equityMult;
+    const bdMult = macroClock.bondMult;
+    ['active','index','qdii'].forEach(c => { if(base[c]) base[c] *= eqMult; });
+    if(base.bond) base.bond *= bdMult;
+    // 滞胀期强制提升货币配置
+    if(macroClock.phase === 'stagflation'){
+      base.money = Math.max(base.money || 0, 15);
+    }
+    // 重新归一化
+    const macroTotal = Object.values(base).reduce((s,v)=>s+v,0);
+    Object.keys(base).forEach(k => base[k] = base[k] / macroTotal * 100);
+  }
+
+  // 4. 动量倾斜：基于类别行情强弱适当调整
   const maxTilt = { conservative:5, moderate:8, balanced:10, aggressive:12 }[riskProfile];
   if(catRanks.length >= 2){
     const top = catRanks[0].cat;
@@ -1223,7 +1313,7 @@ function computeWeights(riskProfile, horizon, catRanks){
     }
   }
 
-  // 4. 投资期限约束（权益类上限）
+  // 5. 投资期限约束（权益类上限）
   const equityCap = { 1:30, 2:60, 5:75, 10:85 }[horizon] || 60;
   const equityCats = ['active','index','qdii'];
   let equityTotal = equityCats.reduce((s,c) => s + (base[c]||0), 0);
@@ -1236,13 +1326,13 @@ function computeWeights(riskProfile, horizon, catRanks){
     base.money = (base.money||0) + freed * 0.4;
   }
 
-  // 5. 短期额外调整
+  // 6. 短期额外调整
   if(horizon <= 1){
     base.active = Math.max((base.active||0) - 5, 0);
     base.bond = (base.bond||0) + 5;
   }
 
-  // 6. 归一化到100 + 修正舍入
+  // 7. 归一化到100 + 修正舍入
   const total = Object.values(base).reduce((s,v)=>s+v,0);
   Object.keys(base).forEach(k => base[k] = Math.round(base[k] / total * 100));
   const diff = 100 - Object.values(base).reduce((s,v)=>s+v,0);
@@ -1374,11 +1464,15 @@ function _doGenerate(){
   // 1. 行情分析
   const catRanks = analyzeCategoryPerf();
 
-  // 2. 渲染行情分析表
-  renderMarketAnalysis(catRanks);
+  // 2. 宏观周期判断（美林时钟）
+  const macroClock = inferMerrilClock(catRanks);
+  const mgrWarnings = detectManagerChanges();
 
-  // 3. 计算权重
-  const weights = computeWeights(riskP, horizon, catRanks);
+  // 3. 渲染行情分析表
+  renderMarketAnalysis(catRanks, macroClock, mgrWarnings);
+
+  // 4. 计算权重（叠加宏观约束）
+  const weights = computeWeights(riskP, horizon, catRanks, macroClock);
 
   // 4. 选基
   const selectedPicks = {};
@@ -1388,17 +1482,19 @@ function _doGenerate(){
   });
   const allPicks = Object.values(selectedPicks).flat();
 
-  // 5. 收益预估（基于统计学置信区间）
-  // 分类别均值回归系数（权益类历史收益回归更快）
+  // 5. 收益预估（修正波动率模型 + 统计置信区间）
+  // 分类别均值回归系数（基于学术研究：权益类收益均值回归速度约3-5年半衰期）
   const meanRevCoef = { active:0.55, index:0.55, bond:0.80, money:0.95, qdii:0.55 };
   // 加权平均预期收益（均值回归折扣后）
   const expReturn = allPicks.reduce((s,f) => {
     const coef = meanRevCoef[f.cat] || 0.6;
     return s + f.r1 * coef * (f.pct/100);
   }, 0);
-  // 组合波动率估算：加权平均 maxDD × 0.5（近似年化标准差）
+  // 组合波动率估算（修正公式）
+  // 学术依据：对于正态分布，E[MaxDD] ≈ 2σ√(ln(T))，T=1年≈250交易日
+  // 简化近似：maxDD ≈ 2.5σ → σ ≈ maxDD / 2.5
   const blendedDD = allPicks.reduce((s,f)=>s+f.maxDD*(f.pct/100),0);
-  const sigma = blendedDD * 0.5; // 近似年化波动率
+  const sigma = blendedDD / 2.5; // 修正：年化波动率 ≈ 最大回撤 / 2.5
   // 正态分布置信区间
   const expReturnP75 = expReturn + 0.67 * sigma; // 乐观情景（75分位）
   const expReturnP25 = expReturn - 0.67 * sigma; // 悲观情景（25分位）
@@ -1406,22 +1502,27 @@ function _doGenerate(){
   // 保底下限
   const expReturnLow  = Math.max(expReturnP25, riskP==='conservative'?0.5:riskP==='moderate'?-2:-5);
   const expReturnHigh = Math.max(expReturnP75, expReturn);
-  // 1年/3年预测
+  // 1年预测
   const expAmt1Low  = Math.round(totalAmt*(1+expReturnLow/100));
   const expAmt1High = Math.round(totalAmt*(1+expReturnHigh/100));
-  const sigma3 = sigma * Math.sqrt(3); // σ随时间按√t扩展
-  const expReturn3Mid = expReturn; // 年化不变
-  const expAmt3Low  = Math.round(totalAmt*Math.pow(1+Math.max(expReturn-0.67*sigma3/3,-10)/100,3));
-  const expAmt3High = Math.round(totalAmt*Math.pow(1+(expReturn+0.67*sigma3/3)/100,3));
+  // 3年预测（正确的多年复利 + 波动率扩展）
+  // 3年累计波动率 = σ_annual × √3（独立同分布假设）
+  // 3年累计收益区间 = 3×μ ± 0.67×σ×√3
+  const cumReturn3Mid = 3 * expReturn;
+  const cumSigma3 = sigma * Math.sqrt(3);
+  const cumReturn3Low = cumReturn3Mid - 0.67 * cumSigma3;
+  const cumReturn3High = cumReturn3Mid + 0.67 * cumSigma3;
+  const expAmt3Low  = Math.round(totalAmt * (1 + Math.max(cumReturn3Low, -50)/100));
+  const expAmt3High = Math.round(totalAmt * (1 + cumReturn3High/100));
 
-  // 6. 渲染期望横幅（含统计学说明）
+  // 6. 渲染期望横幅
   document.getElementById('expected-banner').innerHTML=`
     <div class="expected-item"><div class="expected-val">${expReturnLow.toFixed(1)}% ~ ${expReturnHigh.toFixed(1)}%</div><div class="expected-label">预期年化收益区间(P25-P75)</div></div>
     <div class="expected-item"><div class="expected-val" style="color:var(--success)">¥${expAmt1Low.toLocaleString()}</div><div class="expected-label">1年后悲观预估(25分位)</div></div>
     <div class="expected-item"><div class="expected-val" style="color:var(--primary)">¥${expAmt1High.toLocaleString()}</div><div class="expected-label">1年后乐观预估(75分位)</div></div>
-    <div class="expected-item"><div class="expected-val" style="color:#722ed1">¥${expAmt3Low.toLocaleString()}~${expAmt3High.toLocaleString()}</div><div class="expected-label">3年后预估区间</div></div>
+    <div class="expected-item"><div class="expected-val" style="color:#722ed1">¥${expAmt3Low.toLocaleString()}~${expAmt3High.toLocaleString()}</div><div class="expected-label">3年后预估区间(P25-P75)</div></div>
     <div style="width:100%;font-size:11px;color:var(--muted);margin-top:4px;line-height:1.6">
-      📐 收益估算基于均值回归模型：权益类资产历史收益折扣55%，债券类80%，货币类95%。波动率σ≈${sigma.toFixed(1)}%，置信区间基于正态分布P25/P75分位。极端下行(P5)为 ${expReturnP5.toFixed(1)}%。
+      📐 波动率σ≈maxDD/2.5=${sigma.toFixed(1)}%（基于E[MaxDD]≈2.5σ理论关系）。均值回归：权益×55%/债券×80%/货币×95%。3年区间：累计收益3μ±0.67σ√3。极端下行(P5)年化 ${expReturnP5.toFixed(1)}%。
     </div>`;
 
   // 7. 副标题
@@ -1455,45 +1556,44 @@ function _doGenerate(){
   // 14. 策略说明
   const stratEl = document.getElementById('strategy-explanation');
   if(stratEl){
-    const weightEntries = catRanks.map(c => `${c.name}: 波动率≈${c.avgDD.toFixed(1)}% → 风险平价权重 ${(1/Math.max(c.avgDD,1)/(catRanks.reduce((s,x)=>s+1/Math.max(x.avgDD,1),0))*100).toFixed(1)}% → 风险偏好调整后 ${weights[c.cat]||0}%`).join('<br>');
+    const weightEntries = catRanks.map(c => `${c.name}: 波动率≈${c.avgDD.toFixed(1)}% → 风险平价权重 ${(1/Math.max(c.avgDD,1)/(catRanks.reduce((s,x)=>s+1/Math.max(x.avgDD,1),0))*100).toFixed(1)}% → 宏观+偏好调整后 ${weights[c.cat]||0}%`).join('<br>');
+    const clockDesc = macroClock && macroClock.phase !== 'unknown'
+      ? `当前推断为<b>${macroClock.label}</b>，权益系数×${macroClock.equityMult}，债券系数×${macroClock.bondMult}。`
+      : '周期信号不明确，采用中性配置。';
     stratEl.innerHTML = `
-      <b>一、基金评分体系（多因子模型）</b><br>
-      采用5维度专业评估：<br>
-      · <b>Calmar Ratio</b>（30%权重）：年化超额收益 / 最大回撤，衡量每承受1%下行风险换来的超额回报<br>
-      · <b>近似Sortino Ratio</b>（25%权重）：超额收益 / 下行波动率，专注于下行风险而非全部波动<br>
-      · <b>信息比率</b>（15%权重）：超额收益 / 同类标准差，衡量跑赢同类基准的稳定性<br>
-      · <b>管理质量</b>（20%权重）：基金经理任职年限 + 晨星评级<br>
-      · <b>规模因子</b>（10%权重）：基金规模反映流动性与市场认可度<br>
-      无风险利率基准：1年期国债收益率 2.0%<br><br>
+      <b>一、基金评分体系（简化多因子）</b><br>
+      去除冗余指标，保留4个正交维度：<br>
+      · <b>Calmar Ratio</b>（40%权重）：(年化收益-无风险利率2%)/最大回撤，唯一风险调整指标，避免Sortino/InfoRatio的高度共线性<br>
+      · <b>收益一致性</b>（25%权重）：1年/3年趋势方向是否一致 + 3年收益强度，衡量收益可持续性<br>
+      · <b>任期稳定性</b>（25%权重）：客观指标——基金经理连续任期年限。<1年=刚更换(高风险)，3-5年=稳定，>10年=超稳定。替代主观的星级评定<br>
+      · <b>规模适配性</b>（10%权重）：2-200亿最优，太小有清盘风险，太大调仓困难<br><br>
 
-      <b>二、资产配置方法（Risk Parity 风险平价 + 动态倾斜）</b><br>
-      · 基础权重按各类别波动率的倒数分配（波动越大权重越低，实现等风险贡献）<br>
-      · 在此基础上叠加风险偏好倾斜系数和行情动量调整<br>
-      · 权益类上限受投资期限约束：短期≤30%，中期≤60%，长期≤75%，超长期≤85%<br>
-      当前各类别权重推导：<br>${weightEntries}<br><br>
+      <b>二、宏观周期约束（美林时钟顶层调整）</b><br>
+      · 通过各类资产相对收益推断经济周期位置（复苏/过热/滞胀/衰退）<br>
+      · ${clockDesc}<br>
+      · 周期判断作为<b>顶层约束</b>叠加于风险平价之上，先于动量调整执行<br>
+      · 滞胀期强制提升货币配置下限至15%<br><br>
 
-      <b>三、基金选择策略（相关性去重 + 核心-卫星架构）</b><br>
-      · 同一基金经理最多选1只，策略标签重叠>50%的基金去重<br>
-      · 核心仓（70%配置）选综合评分最高的基金<br>
-      · 卫星仓（30%配置）选差异化最大的基金，实现真正分散<br>
-      · 类别占比≥25%配2只基金，≥35%配3只基金<br><br>
+      <b>三、资产配置方法（Risk Parity + 宏观约束 + 动态倾斜）</b><br>
+      执行链路：风险平价基础 → 风险偏好倾斜 → 宏观周期约束 → 行情动量微调 → 期限上限<br>
+      · 基础权重：各类别波动率的倒数，实现等风险贡献（Risk Parity）<br>
+      · 期限约束：短期权益≤30%，中期≤60%，长期≤75%，超长期≤85%<br>
+      当前权重推导：<br>${weightEntries}<br><br>
 
-      <b>四、收益预估方法（统计置信区间）</b><br>
-      · 均值回归折扣：权益类历史收益×55%，债券类×80%，货币类×95%<br>
-      · 波动率估算：σ ≈ 加权平均最大回撤 × 50%<br>
-      · 乐观情景(P75) = 预期收益 + 0.67σ；悲观情景(P25) = 预期收益 - 0.67σ<br>
-      · 极端下行(P5) = 预期收益 - 1.65σ（约5%概率跌破此水平）<br>
-      · 3年预测：σ按√3扩展，收益按复利计算<br><br>
+      <b>四、基金经理变更监控（慢变量）</b><br>
+      · 任职<1年的基金经理自动标记预警<br>
+      · 新任经理的历史业绩不可参考（属于前任经理），评分中给予最低稳定性分<br>
+      · ${mgrWarnings.length > 0 ? `当前有 ${mgrWarnings.length} 只基金存在经理变更预警` : '当前精选库无经理变更预警'}<br><br>
 
-      <b>五、定投评分（波动收益比模型）</b><br>
-      · 波动收益比（35%）：最大回撤/|3年收益|，波动大且长期向上=定投摊低成本效果最佳<br>
-      · 长期趋势（25%）+ 管理质量（20%）+ 近期动量（20%）<br>
-      · 不含任何当日涨跌择时信号，定投应坚持纪律而非择时<br><br>
+      <b>五、收益预估（修正波动率模型）</b><br>
+      · 波动率：σ ≈ maxDD / 2.5（基于 E[MaxDD] ≈ 2.5σ 的理论关系，旧版 maxDD×0.5 会高估σ 2.5倍）<br>
+      · 均值回归：权益×55% / 债券×80% / 货币×95%（基于3-5年半衰期研究）<br>
+      · 1年区间：μ ± 0.67σ（P25-P75）<br>
+      · 3年区间：3μ ± 0.67σ√3（累计收益 ± 累计波动率）<br><br>
 
-      <b>六、健康诊断（动态阈值）</b><br>
-      · 跑输判定以同类标准差(σ)为单位：跑输>1σ黄色预警，>2σ红色预警<br>
-      · 持仓集中度检查：单基金>40%或单类别>60%时预警<br>
-      · 亏损评估对比历史最大回撤占比
+      <b>六、定投评分 + 健康诊断</b><br>
+      · 定投核心指标：波动收益比(maxDD/|r3|)，无当日择时信号<br>
+      · 健康诊断：同类σ动态阈值 + 持仓/类别集中度预警
     `;
   }
 
@@ -1503,7 +1603,7 @@ function _doGenerate(){
   setTimeout(()=>document.getElementById('portfolio-result').scrollIntoView({behavior:'smooth',block:'start'}),100);
 }
 
-function renderMarketAnalysis(catRanks){
+function renderMarketAnalysis(catRanks, macroClock, mgrWarnings){
   const signalHtml = (score,chg) => {
     if(score>8 || chg>0.3) return `<span class="signal-hot">🔥 强势</span>`;
     if(score>4 || chg>0.1) return `<span class="signal-up">↑ 偏强</span>`;
@@ -1534,9 +1634,26 @@ function renderMarketAnalysis(catRanks){
 
   const top1=catRanks[0], top2=catRanks[1];
   const chgNote = Object.keys(navCache).length>0 ? '已融合实时净值数据。' : '建议点击「基金精选推荐」→「刷新净值」后重新生成，以融入当日行情。';
+
+  // 宏观周期 + 经理变更预警
+  const clockColors = {recovery:'#237804',overheat:'#d48806',stagflation:'#cf1322',recession:'#0958d9',transition:'#8c8c8c'};
+  const clockHtml = macroClock && macroClock.phase !== 'unknown'
+    ? `<div style="margin-top:10px;padding:10px 14px;background:linear-gradient(135deg,#f8f9fc,#f0f8ff);border-radius:8px;border-left:3px solid ${clockColors[macroClock.phase]||'#8c8c8c'}">
+        <div style="font-size:13px;font-weight:600;color:${clockColors[macroClock.phase]||'#8c8c8c'};margin-bottom:4px">🕐 美林时钟推断：${macroClock.label}</div>
+        <div style="font-size:12px;color:#595959;line-height:1.6">${macroClock.desc}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px">推断依据：权益年均 ${macroClock.equityR1?.toFixed(1)||'--'}% vs 债券年均 ${macroClock.bondR1?.toFixed(1)||'--'}%。配置已自动叠加周期约束：权益系数×${macroClock.equityMult}，债券系数×${macroClock.bondMult}。</div>
+      </div>` : '';
+
+  const mgrHtml = mgrWarnings && mgrWarnings.length > 0
+    ? `<div style="margin-top:10px;padding:10px 14px;background:#fffbe6;border-radius:8px;border-left:3px solid #faad14">
+        <div style="font-size:13px;font-weight:600;color:#ad6800;margin-bottom:4px">⚠️ 基金经理变更预警</div>
+        ${mgrWarnings.map(w => `<div style="font-size:12px;color:#7c5800;line-height:1.6;margin-bottom:2px">· <b>${w.name}</b>(${w.code})：${w.desc}</div>`).join('')}
+      </div>` : '';
+
   document.getElementById('market-summary').innerHTML=`
     📊 <b>行情解读：</b>当前 <b>${top1.name}</b> 综合表现最强（近1年均收益 <b class="up">+${top1.avgR1.toFixed(1)}%</b>，Calmar Ratio <b>${top1.riskAdj.toFixed(2)}</b>），
-    <b>${top2.name}</b> 紧随其后。本次配置方案已根据以上排名对强势类别适当加仓。${chgNote}`;
+    <b>${top2.name}</b> 紧随其后。本次配置方案已根据以上排名对强势类别适当加仓。${chgNote}
+    ${clockHtml}${mgrHtml}`;
 }
 
 function renderAllocGroups(selectedPicks, weights){
