@@ -246,7 +246,7 @@ tr:last-child td{border-bottom:none}
 
 <div class="header">
   <h1>📈 基金理财辅助工具</h1>
-  <p>全市场精选推荐 · 实时行情分析 · AI智能配置 · 定投计算 · 持仓管理</p>
+  <p>智能配置方案 · 实时行情监控 · 定投计划 · 持仓管理</p>
 </div>
 <!-- 全局自动加载进度条 -->
 <div id="auto-banner">
@@ -276,19 +276,75 @@ tr:last-child td{border-bottom:none}
 </div>
 
 <div class="tabs">
-  <div class="tab active" onclick="switchTab(0)">🔍 基金精选推荐</div>
-  <div class="tab" onclick="switchTab(1)">🤖 AI投资组合规划</div>
-  <div class="tab" onclick="switchTab(2)">⏰ 定投计划计算</div>
-  <div class="tab" onclick="switchTab(3)">💼 持仓记录统计</div>
+  <div class="tab active" onclick="switchTab(0)">🎯 智能方案</div>
+  <div class="tab" onclick="switchTab(1)">📈 定投计划</div>
+  <div class="tab" onclick="switchTab(2)">💼 我的持仓</div>
 </div>
 
 <div class="content">
 
-<!-- ===================== 面板0: 基金精选推荐 ===================== -->
+<!-- ===================== 面板0: 智能方案（合并精选+AI规划） ===================== -->
 <div class="panel active" id="panel0">
+
+  <!-- 快速开始引导 -->
+  <div class="card" id="welcome-card" style="background:linear-gradient(135deg,#e6f4ff,#f0f5ff);border:1px solid #91caff">
+    <div style="font-size:16px;font-weight:700;color:#0958d9;margin-bottom:8px">👋 欢迎使用基金理财助手</div>
+    <div style="font-size:13px;color:#595959;line-height:1.8;margin-bottom:12px">
+      只需3步即可获得专属投资方案：<br>
+      <b>① 设置你的情况</b>（下方填写金额和风险偏好）→ <b>② 查看AI推荐方案</b> → <b>③ 按步骤执行</b>
+    </div>
+    <div style="font-size:12px;color:var(--muted)">💡 方案会自动根据实时行情生成，每5分钟更新一次</div>
+  </div>
+
+  <!-- 我的投资档案（从Panel1移到Panel0顶部） -->
   <div class="card">
-    <div class="card-title">
-      <span class="icon icon-blue">📊</span>全市场精选推荐
+    <div class="card-title"><span class="icon icon-green">📋</span>第一步：设置你的投资情况</div>
+    <div class="profile-grid">
+      <div class="form-item">
+        <label>💰 可投资总金额(元)</label>
+        <input id="sp-amount" type="number" value="30000" placeholder="如：30000">
+      </div>
+      <div class="form-item">
+        <label>🛡️ 风险偏好</label>
+        <select id="sp-risk">
+          <option value="conservative">保守型 · 少亏为主（年化3-5%）</option>
+          <option value="moderate" selected>稳健型 · 稳中求进（年化6-10%）</option>
+          <option value="balanced">平衡型 · 能涨能扛（年化8-15%）</option>
+          <option value="aggressive">进取型 · 追求高收益（年化12%+）</option>
+        </select>
+      </div>
+      <div class="form-item">
+        <label>📅 打算投多久</label>
+        <select id="sp-horizon">
+          <option value="1">1年以内（短期）</option>
+          <option value="2" selected>1-3年（中期）</option>
+          <option value="5">3-5年（长期）</option>
+          <option value="10">5年以上（超长期）</option>
+        </select>
+      </div>
+      <div class="form-item">
+        <label>💳 每月还能追加多少(元)</label>
+        <input id="sp-monthly" type="number" value="1000" placeholder="0表示不追加">
+      </div>
+    </div>
+    <div class="action-bar">
+      <button class="btn btn-primary" onclick="generateSmartPortfolio()" id="gen-btn" style="height:44px;font-size:15px;padding:0 28px">
+        🤖 生成我的专属方案
+      </button>
+      <span id="gen-status" style="font-size:12px;color:var(--muted);align-self:center"></span>
+    </div>
+  </div>
+
+  <!-- 精选基金浏览（折叠起来，不再占主视觉） -->
+  <details style="margin-bottom:14px">
+    <summary class="card" style="cursor:pointer;margin-bottom:0;list-style:none;display:flex;align-items:center;gap:8px">
+      <span class="icon icon-blue">📊</span>
+      <span style="font-size:15px;font-weight:600">浏览精选基金库（21只）</span>
+      <span style="margin-left:auto;font-size:12px;color:var(--muted)" id="nav-update-time"></span>
+      <span style="font-size:12px;color:var(--primary)">展开 ▸</span>
+    </summary>
+    <div style="margin-top:-1px">
+  <div class="card" style="border-top-left-radius:0;border-top-right-radius:0">
       <span style="margin-left:auto;font-size:12px;color:var(--muted)" id="nav-update-time"></span>
     </div>
     <div class="chip-row" id="cat-filter">
@@ -302,7 +358,13 @@ tr:last-child td{border-bottom:none}
     <div class="fund-grid" id="market-grid"></div>
   </div>
   <div class="warning-notice">⚠️ <b>免责声明：</b>以上为参考性推荐，不构成投资建议。收益率数据参考截至2024年底，实际以当前数据为准。基金投资有风险，请根据自身风险承受能力决策。</div>
-  <div class="section-sep">⚙️ 自定义基金评分</div>
+  </div>
+  </div>
+  </details>
+
+  <!-- 自定义评分（高级功能，折叠） -->
+  <details>
+    <summary style="cursor:pointer;font-size:13px;color:var(--muted);padding:8px 0">⚙️ 高级功能：自定义基金评分（展开）</summary>
   <div class="card">
     <div class="card-title"><span class="icon icon-blue">✏️</span>手动添加评分</div>
     <div class="form-grid">
@@ -311,7 +373,7 @@ tr:last-child td{border-bottom:none}
       <div class="form-item"><label>基金类型</label><select id="f-type"><option>股票型</option><option>混合型</option><option>债券型</option><option>指数型</option><option>货币型</option><option>QDII</option></select></div>
       <div class="form-item"><label>近1年收益率(%)</label><input id="f-r1" type="number" placeholder="如：15.8"></div>
       <div class="form-item"><label>近3年收益率(%)</label><input id="f-r3" type="number" placeholder="如：45.2"></div>
-      <div class="form-item"><label>最大回撤(%)</label><input id="f-dd" type="number" placeholder="如：18.5"></div>
+      <div class="form-item"><label>最大跌幅(%)</label><input id="f-dd" type="number" placeholder="如：18.5（历史最大亏损幅度）"></div>
       <div class="form-item"><label>基金规模(亿元)</label><input id="f-size" type="number" placeholder="如：50"></div>
       <div class="form-item"><label>风险等级</label><select id="f-risk"><option value="1">R1</option><option value="2">R2</option><option value="3" selected>R3</option><option value="4">R4</option><option value="5">R5</option></select></div>
       <div class="form-item"><label>基金经理年限</label><input id="f-mgr" type="number" placeholder="如：5"></div>
@@ -321,53 +383,13 @@ tr:last-child td{border-bottom:none}
   <div class="card">
     <div class="card-title"><span class="icon icon-blue">📋</span>自定义评分列表</div>
     <div class="table-wrap">
-      <table><thead><tr><th>基金名称</th><th>代码</th><th>类型</th><th>1年收益</th><th>3年收益</th><th>最大回撤</th><th>综合评分</th><th>推荐</th><th>操作</th></tr></thead>
+      <table><thead><tr><th>基金名称</th><th>代码</th><th>类型</th><th>1年收益</th><th>3年收益</th><th>历史最大跌幅</th><th>综合评分</th><th>推荐</th><th>操作</th></tr></thead>
       <tbody id="fund-list"><tr><td colspan="9" class="empty">暂无自定义数据</td></tr></tbody></table>
     </div>
   </div>
-</div>
+  </details>
 
-<!-- ===================== 面板1: AI投资组合规划 ===================== -->
-<div class="panel" id="panel1">
-
-  <!-- 投资档案 -->
-  <div class="card">
-    <div class="card-title"><span class="icon icon-green">📋</span>我的投资档案</div>
-    <div class="profile-grid">
-      <div class="form-item">
-        <label>💰 可投资总金额(元)</label>
-        <input id="sp-amount" type="number" value="30000" placeholder="如：30000">
-      </div>
-      <div class="form-item">
-        <label>🛡️ 风险偏好</label>
-        <select id="sp-risk">
-          <option value="conservative">保守型 · R1-R2（年化3-5%）</option>
-          <option value="moderate" selected>稳健型 · R3（年化6-10%）</option>
-          <option value="balanced">平衡型 · R3-R4（年化8-15%）</option>
-          <option value="aggressive">进取型 · R4-R5（年化12%+）</option>
-        </select>
-      </div>
-      <div class="form-item">
-        <label>📅 投资期限</label>
-        <select id="sp-horizon">
-          <option value="1">1年以内（短期）</option>
-          <option value="2" selected>1-3年（中期）</option>
-          <option value="5">3-5年（长期）</option>
-          <option value="10">5年以上（超长期）</option>
-        </select>
-      </div>
-      <div class="form-item">
-        <label>💳 每月可追加定投(元)</label>
-        <input id="sp-monthly" type="number" value="1000" placeholder="0表示不定投">
-      </div>
-    </div>
-    <div class="action-bar">
-      <button class="btn btn-primary" onclick="generateSmartPortfolio()" id="gen-btn" style="height:40px;font-size:14px;padding:0 24px">
-        🤖 重新生成方案
-      </button>
-      <span id="gen-status" style="font-size:12px;color:var(--muted);align-self:center"></span>
-    </div>
-  </div>
+<!-- ═══ 以下为原Panel1内容，合并到Panel0 ═══ -->
 
   <!-- 已有持仓输入 -->
   <div class="card">
@@ -419,14 +441,18 @@ tr:last-child td{border-bottom:none}
       </div>
     </div>
 
-    <!-- 实时市场行情分析 -->
-    <div class="card">
-      <div class="card-title"><span class="icon icon-orange">📡</span>实时行情分析 <span style="font-size:12px;color:var(--muted);font-weight:400" id="analysis-time"></span></div>
+    <!-- 实时市场行情分析（折叠，减少信息密度） -->
+    <details>
+      <summary class="card" style="cursor:pointer;margin-bottom:0;list-style:none">
+        <div class="card-title" style="margin-bottom:0"><span class="icon icon-orange">📡</span>查看实时行情分析 <span style="font-size:12px;color:var(--muted);font-weight:400" id="analysis-time"></span><span style="margin-left:auto;font-size:12px;color:var(--primary)">展开 ▸</span></div>
+      </summary>
+    <div class="card" style="border-top-left-radius:0;border-top-right-radius:0;margin-top:-1px">
       <div class="table-wrap">
         <table class="market-table" id="market-analysis-table"></table>
       </div>
       <div id="market-summary" style="margin-top:12px;padding:12px;background:#f8f9fc;border-radius:8px;font-size:13px;line-height:1.8"></div>
     </div>
+    </details>
 
     <!-- 预期收益横幅 -->
     <div class="expected-banner" id="expected-banner"></div>
@@ -481,8 +507,8 @@ tr:last-child td{border-bottom:none}
 
 </div>
 
-<!-- ===================== 面板2: 智能定投 ===================== -->
-<div class="panel" id="panel2">
+<!-- ===================== 面板1: 定投计划 ===================== -->
+<div class="panel" id="panel1">
 
   <!-- 定投推荐榜 -->
   <div class="card">
@@ -583,8 +609,8 @@ tr:last-child td{border-bottom:none}
   </div>
 </div>
 
-<!-- ===================== 面板3: 持仓统计 ===================== -->
-<div class="panel" id="panel3">
+<!-- ===================== 面板2: 我的持仓 ===================== -->
+<div class="panel" id="panel2">
   <!-- 定投计划汇总（动态渲染） -->
   <div class="card" id="dca-holdings-section" style="display:none"></div>
   <!-- 持仓健康诊断（动态渲染） -->
@@ -838,7 +864,7 @@ function buildFundCard(f){
     <div class="fund-card-stats">
       <div class="stat-item"><div class="val">${fmtR(f.r1)}</div><div class="lbl">近1年</div></div>
       <div class="stat-item"><div class="val">${fmtR(f.r3)}</div><div class="lbl">近3年</div></div>
-      <div class="stat-item"><div class="val" style="color:var(--danger);text-align:center">-${f.maxDD}%</div><div class="lbl">最大回撤</div></div>
+      <div class="stat-item"><div class="val" style="color:var(--danger);text-align:center">-${f.maxDD}%</div><div class="lbl">历史最大跌幅</div></div>
     </div>
     <div class="fund-card-nav">${navHtml}</div>
     <div class="fund-card-reason">${f.reason}</div>
@@ -1604,12 +1630,12 @@ function _doGenerate(){
 
   // 6. 渲染期望横幅
   document.getElementById('expected-banner').innerHTML=`
-    <div class="expected-item"><div class="expected-val">${expReturnLow.toFixed(1)}% ~ ${expReturnHigh.toFixed(1)}%</div><div class="expected-label">预期年化收益区间(P25-P75)</div></div>
-    <div class="expected-item"><div class="expected-val" style="color:var(--success)">¥${expAmt1Low.toLocaleString()}</div><div class="expected-label">1年后悲观预估(25分位)</div></div>
-    <div class="expected-item"><div class="expected-val" style="color:var(--primary)">¥${expAmt1High.toLocaleString()}</div><div class="expected-label">1年后乐观预估(75分位)</div></div>
-    <div class="expected-item"><div class="expected-val" style="color:#722ed1">¥${expAmt3Low.toLocaleString()}~${expAmt3High.toLocaleString()}</div><div class="expected-label">3年后预估区间(P25-P75)</div></div>
+    <div class="expected-item"><div class="expected-val">${expReturnLow.toFixed(1)}% ~ ${expReturnHigh.toFixed(1)}%</div><div class="expected-label">预期年化收益区间</div></div>
+    <div class="expected-item"><div class="expected-val" style="color:var(--success)">¥${expAmt1Low.toLocaleString()}</div><div class="expected-label">1年后保守预估</div></div>
+    <div class="expected-item"><div class="expected-val" style="color:var(--primary)">¥${expAmt1High.toLocaleString()}</div><div class="expected-label">1年后乐观预估</div></div>
+    <div class="expected-item"><div class="expected-val" style="color:#722ed1">¥${expAmt3Low.toLocaleString()}~${expAmt3High.toLocaleString()}</div><div class="expected-label">3年后预估区间</div></div>
     <div style="width:100%;font-size:11px;color:var(--muted);margin-top:4px;line-height:1.6">
-      📐 波动率σ≈maxDD/2.5=${sigma.toFixed(1)}%（基于E[MaxDD]≈2.5σ理论关系）。均值回归：权益×55%/债券×80%/货币×95%。3年区间：累计收益3μ±0.67σ√3。极端下行(P5)年化 ${expReturnP5.toFixed(1)}%。
+      📐 收益预估说明：历史收益打折处理（股票类打55折，债券类打8折），并基于历史波动幅度(±${sigma.toFixed(1)}%)估算乐观和保守情景。极端不利情况下年化可能达 ${expReturnP5.toFixed(1)}%。
     </div>`;
 
   // 7. 副标题
@@ -1780,7 +1806,7 @@ function renderMarketAnalysis(catRanks, macroClock, mgrWarnings){
   };
   const table = document.getElementById('market-analysis-table');
   table.innerHTML=`<thead><tr>
-    <th>排名</th><th>资产类别</th><th>近1年均收益</th><th>Calmar Ratio</th>
+    <th>排名</th><th>资产类别</th><th>近1年均收益</th><th>性价比指数</th>
     <th>今日平均涨跌</th><th>数据来源</th><th>行情信号</th>
   </tr></thead><tbody>${catRanks.map((c,i)=>{
     const chgAvailable = Object.keys(navCache).length>0;
@@ -1789,7 +1815,7 @@ function renderMarketAnalysis(catRanks, macroClock, mgrWarnings){
       <td>${rankBadge(i)}</td>
       <td><b>${c.name}</b></td>
       <td class="${c.avgR1>=0?'up':'down'}">${c.avgR1>=0?'+':''}${c.avgR1.toFixed(1)}%</td>
-      <td>${c.riskAdj.toFixed(2)} <span style="font-size:10px;color:var(--muted)">(收益/回撤)</span></td>
+      <td>${c.riskAdj.toFixed(2)} <span style="font-size:10px;color:var(--muted)">(收益÷风险)</span></td>
       <td>${chgText}</td>
       <td style="font-size:11px;color:var(--muted)">${chgAvailable?'实时净值':'参考数据'}</td>
       <td>${signalHtml(c.catScore, c.avgChg)}</td>
@@ -1815,7 +1841,7 @@ function renderMarketAnalysis(catRanks, macroClock, mgrWarnings){
       </div>` : '';
 
   document.getElementById('market-summary').innerHTML=`
-    📊 <b>行情解读：</b>当前 <b>${top1.name}</b> 综合表现最强（近1年均收益 <b class="up">+${top1.avgR1.toFixed(1)}%</b>，Calmar Ratio <b>${top1.riskAdj.toFixed(2)}</b>），
+    📊 <b>行情解读：</b>当前 <b>${top1.name}</b> 综合表现最强（近1年均收益 <b class="up">+${top1.avgR1.toFixed(1)}%</b>，性价比指数 <b>${top1.riskAdj.toFixed(2)}</b>），
     <b>${top2.name}</b> 紧随其后。本次配置方案已根据以上排名对强势类别适当加仓。${chgNote}
     ${clockHtml}${mgrHtml}`;
 }
@@ -2045,7 +2071,7 @@ function renderDcaRanking(){
     const chg = nav ? parseFloat(nav.gszzl)||0 : null;
     const navStr = nav ? `<span class="${chg>0?'up':chg<0?'down':'neutral'}">${chg>0?'+':''}${chg}%</span>` : '<span style="color:var(--muted)">--</span>';
     const whyText = f.cat==='money'?'货币基金波动极小，不适合定投摊成本':
-      score>=80?`高波动(回撤${f.maxDD}%)长期向上，定投摊低成本效果极佳`:
+      score>=80?`波动大(历史最大跌${f.maxDD}%)但长期向上，定投摊低成本效果极佳`:
       score>=60?`中高波动，历史趋势向上，适合定投积累`:
       score>=40?`波动适中，可少量定投配置`:
       `波动偏小或趋势不明，定投优势有限`;
@@ -2595,10 +2621,10 @@ function runHealthMonitor(){
     // 1. 动态阈值：以同类标准差(σ)为单位判断跑输程度
     const zScore = (fd.r1 - stats.avgR1) / stats.stdR1;
     if(zScore < -2){
-      issues.push(`近1年收益 ${fd.r1>0?'+':''}${fd.r1}%，落后同类均值 ${stats.avgR1.toFixed(1)}% 达 ${Math.abs(zScore).toFixed(1)}σ（标准差），属显著落后`);
+      issues.push(`近1年收益 ${fd.r1>0?'+':''}${fd.r1}%，大幅落后同类均值 ${stats.avgR1.toFixed(1)}%，差距是同类正常波动的 ${Math.abs(zScore).toFixed(1)} 倍，属显著落后`);
       level = 'red';
     } else if(zScore < -1){
-      issues.push(`近1年收益 ${fd.r1>0?'+':''}${fd.r1}%，落后同类均值 ${stats.avgR1.toFixed(1)}% 约 ${Math.abs(zScore).toFixed(1)}σ`);
+      issues.push(`近1年收益 ${fd.r1>0?'+':''}${fd.r1}%，落后同类均值 ${stats.avgR1.toFixed(1)}%，偏离幅度较大`);
       level = 'yellow';
     }
 
@@ -2650,7 +2676,7 @@ function runHealthMonitor(){
         action: actionMap[level]});
     } else {
       okList.push({code:h.code,name:h.name,level:'green',
-        desc:`表现正常。近1年 ${fd.r1>0?'+':''}${fd.r1}%，同类均值 ${stats.avgR1.toFixed(1)}%（z=${zScore.toFixed(1)}σ）。${todayChg!==null?`今日 ${todayChg>0?'+':''}${todayChg.toFixed(2)}%。`:''}继续持有。`,
+        desc:`表现正常。近1年 ${fd.r1>0?'+':''}${fd.r1}%，同类均值 ${stats.avgR1.toFixed(1)}%。${todayChg!==null?`今日 ${todayChg>0?'+':''}${todayChg.toFixed(2)}%。`:''}继续持有。`,
         action:'🟢 持有'});
     }
   });
@@ -2680,7 +2706,7 @@ function runHealthMonitor(){
     </div>
     ${[...alerts,...okList].map(renderItem).join('')}
     <div style="padding:8px 14px;font-size:11px;color:var(--muted);background:#fafafa">
-      💡 诊断采用动态阈值（以同类标准差σ为单位）+ 持仓集中度分析。${Object.keys(navCache).length>0?'已融合实时行情数据':'建议等待净值加载后刷新'}。
+      💡 诊断基于同类基金对比 + 持仓集中度分析。${Object.keys(navCache).length>0?'已融合实时行情数据':'建议等待净值加载后刷新'}。
     </div>
   </div>`;
 }
