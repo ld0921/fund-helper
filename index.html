@@ -444,6 +444,12 @@ tr:last-child td{border-bottom:none}
 
       <!-- 同类方案对比 -->
       <div id="comparing-section"></div>
+
+      <!-- 策略说明 -->
+      <details style="margin-top:14px">
+        <summary style="cursor:pointer;font-size:13px;color:var(--primary);font-weight:500;padding:8px 0">📐 查看策略依据与算法说明</summary>
+        <div id="strategy-explanation" style="padding:12px;background:#f8f9fc;border-radius:8px;font-size:12px;color:#595959;line-height:1.8;margin-top:8px"></div>
+      </details>
     </div>
 
     <!-- 执行建议 -->
@@ -841,13 +847,70 @@ function addCuratedToScore(code){
 }
 
 // ═══════════════ 面板0: 自定义评分 ═══════════════
-function scoreF(f){ let s=0; const r1=+f.r1||0,r3=+f.r3||0,dd=+f.dd||0,sz=+f.size||0,mg=+f.mgr||0;
-  if(r1>30)s+=25;else if(r1>20)s+=20;else if(r1>10)s+=15;else if(r1>0)s+=8;
-  if(r3>80)s+=25;else if(r3>50)s+=20;else if(r3>20)s+=14;else if(r3>0)s+=8;
-  if(dd<5)s+=25;else if(dd<10)s+=20;else if(dd<20)s+=14;else if(dd<30)s+=8;else s+=3;
-  if(sz>200)s+=10;else if(sz>50)s+=8;else if(sz>10)s+=6;else if(sz>2)s+=4;
-  if(mg>10)s+=15;else if(mg>5)s+=12;else if(mg>3)s+=8;else if(mg>1)s+=4;
-  return Math.min(100,s);
+// ═══════════════ 专业评分体系（多因子模型） ═══════════════
+// 同类基准数据（用于计算超额收益和信息比率）
+function getCatBenchmarks(){
+  const cats = {};
+  CURATED_FUNDS.forEach(f=>{
+    if(!cats[f.cat]) cats[f.cat]={r1s:[],r3s:[],dds:[]};
+    cats[f.cat].r1s.push(f.r1);
+    cats[f.cat].r3s.push(f.r3);
+    cats[f.cat].dds.push(f.maxDD);
+  });
+  const result={};
+  Object.keys(cats).forEach(cat=>{
+    const d=cats[cat];
+    const avgR1=d.r1s.reduce((s,v)=>s+v,0)/d.r1s.length;
+    const avgR3=d.r3s.reduce((s,v)=>s+v,0)/d.r3s.length;
+    const avgDD=d.dds.reduce((s,v)=>s+v,0)/d.dds.length;
+    const stdR1=Math.sqrt(d.r1s.reduce((s,v)=>s+(v-avgR1)**2,0)/d.r1s.length)||1;
+    result[cat]={avgR1,avgR3,avgDD,stdR1,count:d.r1s.length};
+  });
+  return result;
+}
+const _catBench = getCatBenchmarks();
+
+function scoreF(f){
+  const r1=+f.r1||0, r3=+f.r3||0, dd=+f.dd||0, sz=+f.size||0, mg=+f.mgr||0, stars=+f.stars||3;
+  const riskFree = 2.0; // 无风险利率（1年期国债收益率近似）
+
+  // 1. Calmar Ratio：年化收益 / 最大回撤（权重 30%）
+  const calmar = dd > 0 ? (r1 - riskFree) / dd : 0;
+  const calmarScore = Math.min(30, Math.max(0, calmar * 15)); // 0-30分
+
+  // 2. 风险调整收益（近似Sortino，使用下行风险）（权重 25%）
+  // Sortino = (收益 - 无风险) / 下行标准差；用maxDD×0.5近似下行波动率
+  const downVol = dd * 0.5 || 1;
+  const sortino = (r1 - riskFree) / downVol;
+  const sortinoScore = Math.min(25, Math.max(0, (sortino + 0.5) * 8)); // 0-25分
+
+  // 3. 信息比率（超额收益 / 同类标准差）（权重 15%）
+  const bench = _catBench[f.type==='混合型'||f.type==='股票型'?'active':f.type==='指数型'?'index':f.type==='债券型'?'bond':f.type==='货币型'?'money':'qdii'] || _catBench.active;
+  const excessR = r1 - (bench?.avgR1||0);
+  const infoRatio = (bench?.stdR1||1) > 0 ? excessR / bench.stdR1 : 0;
+  const infoScore = Math.min(15, Math.max(0, (infoRatio + 1) * 5)); // 0-15分
+
+  // 4. 管理质量因子（权重 20%）
+  const mgrScore = Math.min(12, mg * 0.8) + Math.min(8, (stars - 1) * 2); // 0-20分
+
+  // 5. 规模因子（权重 10%）
+  const sizeScore = sz >= 200 ? 10 : sz >= 50 ? 8 : sz >= 10 ? 6 : sz >= 2 ? 4 : 2; // 2-10分
+
+  const total = Math.round(Math.min(100, Math.max(0, calmarScore + sortinoScore + infoScore + mgrScore + sizeScore)));
+
+  return total;
+}
+
+// 获取评分明细（用于UI展示）
+function getScoreDetail(f){
+  const r1=+f.r1||0, dd=+f.dd||0;
+  const riskFree = 2.0;
+  const calmar = dd > 0 ? (r1 - riskFree) / dd : 0;
+  const downVol = dd * 0.5 || 1;
+  const sortino = (r1 - riskFree) / downVol;
+  const bench = _catBench[f.type==='混合型'||f.type==='股票型'?'active':f.type==='指数型'?'index':f.type==='债券型'?'bond':f.type==='货币型'?'money':'qdii'] || _catBench.active;
+  const infoRatio = (bench?.stdR1||1) > 0 ? (r1 - (bench?.avgR1||0)) / bench.stdR1 : 0;
+  return { calmar: calmar.toFixed(2), sortino: sortino.toFixed(2), infoRatio: infoRatio.toFixed(2) };
 }
 function scoreColor(s){ return s>=80?'#52c41a':s>=60?'#1677ff':s>=40?'#faad14':'#ff4d4f'; }
 function recommend(s){
@@ -1062,82 +1125,176 @@ function renderRebalancePlan(plan){
 const CAT_COLORS = { active:'#c41d7f', index:'#1677ff', bond:'#52c41a', money:'#d48806', qdii:'#722ed1' };
 const CAT_NAMES  = { active:'主动权益', index:'指数基金', bond:'债券基金', money:'货币基金', qdii:'QDII海外' };
 
-// 按类别分组并分析
+// 按类别分组并分析（增强版：标准差 + 趋势一致性 + 多因子综合分）
 function analyzeCategoryPerf(){
   const cats = ['qdii','active','index','bond','money'];
+  const riskFree = 2.0;
   return cats.map(cat=>{
     const funds = CURATED_FUNDS.filter(f=>f.cat===cat);
-    // 使用实时数据（如有）增强r1信号
     const scores = funds.map(f=>{
       const nav = navCache[f.code];
       const todayChg = nav ? parseFloat(nav.gszzl)||0 : 0;
-      // 风险调整收益 (Calmar-like ratio)
-      const riskAdj = f.maxDD > 0 ? f.r1 / f.maxDD : 0;
-      // 综合评分：r1 45% + 风险调整 30% + 今日动态 10% + 管理年限 10% + 3年趋势 5%
-      const longtermSignal = f.r3 > 0 ? Math.min(f.r3 * 0.1, 5) : Math.max(f.r3 * 0.05, -3);
-      const composite = f.r1 * 0.45 + riskAdj * 10 * 0.3 + todayChg * 10 * 0.1 + Math.min(f.mgrYears,15) * 0.5 + longtermSignal;
-      return { ...f, todayChg, riskAdj, composite };
+      // Calmar Ratio（风险调整收益核心指标）
+      const calmar = f.maxDD > 0 ? (f.r1 - riskFree) / f.maxDD : 0;
+      // 趋势一致性：短期(当日)、中期(1年)、长期(3年) 方向是否一致
+      const shortDir = todayChg > 0 ? 1 : todayChg < 0 ? -1 : 0;
+      const midDir = f.r1 > 0 ? 1 : f.r1 < 0 ? -1 : 0;
+      const longDir = f.r3 > 0 ? 1 : f.r3 < 0 ? -1 : 0;
+      const trendConsistency = (shortDir + midDir + longDir); // -3 to +3
+      // 管理质量
+      const mgrQuality = Math.min(f.mgrYears, 15) * 0.5 + (f.stars||3) * 2;
+      // 综合评分：风险调整收益 40% + 趋势一致性 25% + 管理质量 20% + 实时动量 15%
+      const composite = calmar * 12 * 0.4 + trendConsistency * 4 * 0.25 + mgrQuality * 0.2 + todayChg * 5 * 0.15;
+      return { ...f, todayChg, calmar, trendConsistency, mgrQuality, composite };
     });
-    const avgR1   = funds.reduce((s,f)=>s+f.r1,0)/funds.length;
-    const avgDD   = funds.reduce((s,f)=>s+f.maxDD,0)/funds.length;
-    const avgChg  = scores.reduce((s,f)=>s+f.todayChg,0)/scores.length;
-    const avgRisk = avgDD>0 ? avgR1/avgDD : 0;
-    // 整体类别综合分（与fund-level composite权重一致）
+    // 类别统计
+    const avgR1 = funds.reduce((s,f)=>s+f.r1,0)/funds.length;
+    const avgDD = funds.reduce((s,f)=>s+f.maxDD,0)/funds.length;
+    const avgChg = scores.reduce((s,f)=>s+f.todayChg,0)/scores.length;
     const avgR3 = funds.reduce((s,f)=>s+f.r3,0)/funds.length;
-    const longtermCatSignal = avgR3 > 0 ? Math.min(avgR3 * 0.1, 5) : Math.max(avgR3 * 0.05, -3);
-    const catScore = avgR1*0.45 + avgRisk*10*0.3 + avgChg*10*0.1 + longtermCatSignal;
-    // 按 composite 排序，选 top funds
+    // 收益标准差（衡量类别内分化程度）
+    const stdR1 = Math.sqrt(funds.reduce((s,f)=>s+(f.r1-avgR1)**2,0)/funds.length)||1;
+    // 类别平均 Calmar Ratio
+    const avgCalmar = avgDD > 0 ? (avgR1 - riskFree) / avgDD : 0;
+    // 类别趋势一致性（短/中/长方向一致得更高分）
+    const catTrend = (avgChg > 0 ? 1 : avgChg < 0 ? -1 : 0) + (avgR1 > 0 ? 1 : -1) + (avgR3 > 0 ? 1 : -1);
+    // 类别综合分
+    const catScore = avgCalmar * 12 * 0.4 + catTrend * 4 * 0.25 + funds.reduce((s,f)=>s+Math.min(f.mgrYears,15)*0.5+(f.stars||3)*2,0)/funds.length * 0.2 + avgChg * 5 * 0.15;
     scores.sort((a,b)=>b.composite-a.composite);
-    return { cat, name:CAT_NAMES[cat], avgR1, avgDD, avgChg, catScore, riskAdj:avgRisk, topFunds:scores };
+    return { cat, name:CAT_NAMES[cat], avgR1, avgDD, avgChg, avgR3, stdR1, avgCalmar, catTrend, catScore, riskAdj:avgCalmar, topFunds:scores };
   }).sort((a,b)=>b.catScore-a.catScore);
 }
 
-// 根据档案 & 行情生成配置权重
+// 根据档案 & 行情生成配置权重（风险平价 + 动态倾斜 + 期限约束）
 function computeWeights(riskProfile, horizon, catRanks){
-  // 基础权重模板
-  const base = {
-    conservative: { money:30, bond:40, index:20, active:5, qdii:5 },
-    moderate:     { money:15, bond:20, index:30, active:15, qdii:20 },
-    balanced:     { money:10, bond:15, index:30, active:25, qdii:20 },
-    aggressive:   { money:5,  bond:5,  index:25, active:40, qdii:25 },
-  }[riskProfile];
+  // 1. 风险平价基础权重：各类别权重与其波动率成反比
+  const catVol = {}; // 用平均最大回撤近似波动率
+  catRanks.forEach(c => { catVol[c.cat] = Math.max(c.avgDD, 1); });
+  const invVols = {};
+  let invVolSum = 0;
+  catRanks.forEach(c => {
+    invVols[c.cat] = 1 / catVol[c.cat];
+    invVolSum += invVols[c.cat];
+  });
+  // 风险平价权重
+  const rpWeights = {};
+  catRanks.forEach(c => { rpWeights[c.cat] = invVols[c.cat] / invVolSum * 100; });
 
-  // 动量调整：按catScore差距比例加减仓，而非固定±值
-  const top    = catRanks[0].cat;
-  const bottom = catRanks[catRanks.length-1].cat;
-  const scoreGap = catRanks[0].catScore - catRanks[catRanks.length-1].catScore;
-  const boostAmt = Math.min(Math.round(scoreGap * 0.6), 10); // 差距越大调仓幅度越大，上限10%
-  const trimAmt  = Math.min(Math.round(scoreGap * 0.4), 6);
-  if(base[top]    !== undefined) base[top]    = Math.min(base[top]+boostAmt, riskProfile==='conservative'?35:50);
-  if(base[bottom] !== undefined) base[bottom] = Math.max(base[bottom]-trimAmt, 2);
-  // 第二强势类别也小幅加仓
-  if(catRanks.length>1){ const second=catRanks[1].cat; if(base[second]!==undefined && second!==top) base[second]=Math.min(base[second]+Math.round(boostAmt*0.4),40); }
-  // 短期减少波动性资产
-  if(horizon<=1){ base.active=Math.max(base.active-5,0); base.bond=Math.min(base.bond+5,50); }
-  // 归一化到100
+  // 2. 风险偏好倾斜系数（在风险平价基础上调整）
+  const tiltFactors = {
+    conservative: { money:1.6, bond:1.4, index:0.7, active:0.3, qdii:0.3 },
+    moderate:     { money:0.9, bond:1.0, index:1.2, active:0.8, qdii:0.9 },
+    balanced:     { money:0.5, bond:0.7, index:1.1, active:1.3, qdii:1.1 },
+    aggressive:   { money:0.2, bond:0.3, index:1.0, active:1.5, qdii:1.4 },
+  }[riskProfile];
+  const base = {};
+  let tiltSum = 0;
+  catRanks.forEach(c => {
+    base[c.cat] = rpWeights[c.cat] * (tiltFactors[c.cat] || 1);
+    tiltSum += base[c.cat];
+  });
+  // 归一化
+  Object.keys(base).forEach(k => base[k] = base[k] / tiltSum * 100);
+
+  // 3. 动量倾斜：基于类别行情强弱适当调整
+  const maxTilt = { conservative:5, moderate:8, balanced:10, aggressive:12 }[riskProfile];
+  if(catRanks.length >= 2){
+    const top = catRanks[0].cat;
+    const bottom = catRanks[catRanks.length-1].cat;
+    const scoreRange = catRanks[0].catScore - catRanks[catRanks.length-1].catScore;
+    if(scoreRange > 0){
+      const tiltAmt = Math.min(Math.round(scoreRange * 0.5), maxTilt);
+      const trimAmt = Math.min(Math.round(scoreRange * 0.3), maxTilt * 0.6);
+      base[top] = Math.min(base[top] + tiltAmt, 55);
+      base[bottom] = Math.max(base[bottom] - trimAmt, 2);
+      // 第二强势类别也小幅加仓
+      const second = catRanks[1].cat;
+      if(second !== top) base[second] = Math.min(base[second] + Math.round(tiltAmt * 0.3), 45);
+    }
+  }
+
+  // 4. 投资期限约束（权益类上限）
+  const equityCap = { 1:30, 2:60, 5:75, 10:85 }[horizon] || 60;
+  const equityCats = ['active','index','qdii'];
+  let equityTotal = equityCats.reduce((s,c) => s + (base[c]||0), 0);
+  if(equityTotal > equityCap){
+    const scale = equityCap / equityTotal;
+    equityCats.forEach(c => { if(base[c]) base[c] *= scale; });
+    // 释放的权重分配给债券和货币
+    const freed = equityTotal - equityCap;
+    base.bond = (base.bond||0) + freed * 0.6;
+    base.money = (base.money||0) + freed * 0.4;
+  }
+
+  // 5. 短期额外调整
+  if(horizon <= 1){
+    base.active = Math.max((base.active||0) - 5, 0);
+    base.bond = (base.bond||0) + 5;
+  }
+
+  // 6. 归一化到100 + 修正舍入
   const total = Object.values(base).reduce((s,v)=>s+v,0);
-  Object.keys(base).forEach(k=>base[k]=Math.round(base[k]/total*100));
-  // 修正舍入误差
-  const diff = 100-Object.values(base).reduce((s,v)=>s+v,0);
-  if(diff!==0){ const k=Object.keys(base).sort((a,b)=>base[b]-base[a])[0]; base[k]+=diff; }
+  Object.keys(base).forEach(k => base[k] = Math.round(base[k] / total * 100));
+  const diff = 100 - Object.values(base).reduce((s,v)=>s+v,0);
+  if(diff !== 0){
+    const k = Object.keys(base).sort((a,b) => base[b] - base[a])[0];
+    base[k] += diff;
+  }
+
+  // 确保最小权重 >= 2%
+  Object.keys(base).forEach(k => { if(base[k] < 2) base[k] = 2; });
+  const total2 = Object.values(base).reduce((s,v)=>s+v,0);
+  if(total2 !== 100){
+    const k = Object.keys(base).sort((a,b) => base[b] - base[a])[0];
+    base[k] += 100 - total2;
+  }
+
   return base;
 }
 
-// 在每个类别中选出最优基金（稳健型过滤R5）
+// 在每个类别中选出最优基金（相关性去重 + 核心-卫星架构）
 function selectFunds(cat, catData, riskProfile, pct, totalAmt){
-  const top = catData.topFunds.filter(f=>{
+  // 风险等级过滤
+  let pool = catData.topFunds.filter(f=>{
     if(riskProfile==='conservative') return ['R1','R2','R3'].includes(f.risk);
     if(riskProfile==='moderate')     return ['R1','R2','R3','R4'].includes(f.risk);
     return true;
   });
-  if(!top.length) return []; // 空类别保护
-  const pickCount = pct>=20 && top.length>=2 ? 2 : 1;
-  const picks = top.slice(0, pickCount);
-  const perPick = pickCount===2 ? [Math.round(pct*0.6), pct-Math.round(pct*0.6)] : [pct];
+  if(!pool.length) return [];
+
+  // 相关性去重：同一基金经理最多选1只
+  const usedManagers = new Set();
+  const usedTagGroups = new Set();
+  const deduped = [];
+  pool.forEach(f => {
+    if(usedManagers.has(f.manager) && deduped.length > 0) return; // 同经理跳过（首只除外）
+    // 标签重叠检查：与已选基金标签重叠 >50% 则跳过
+    const fTags = new Set(f.tags||[]);
+    let tooSimilar = false;
+    deduped.forEach(sel => {
+      const overlap = (sel.tags||[]).filter(t => fTags.has(t)).length;
+      if(fTags.size > 0 && overlap / fTags.size > 0.5) tooSimilar = true;
+    });
+    if(tooSimilar && deduped.length > 0) return;
+    usedManagers.add(f.manager);
+    deduped.push(f);
+  });
+
+  // 选几只：≥35%选3只，≥25%选2只，其他1只
+  const pickCount = pct >= 35 && deduped.length >= 3 ? 3 : pct >= 25 && deduped.length >= 2 ? 2 : 1;
+  const picks = deduped.slice(0, pickCount);
+
+  // 核心-卫星分配：核心仓70%，卫星仓30%（3只时50/25/25）
+  let perPick;
+  if(pickCount === 3) perPick = [Math.round(pct*0.5), Math.round(pct*0.25), pct - Math.round(pct*0.5) - Math.round(pct*0.25)];
+  else if(pickCount === 2) perPick = [Math.round(pct*0.7), pct - Math.round(pct*0.7)];
+  else perPick = [pct];
+
   return picks.map((f,i)=>({
     ...f,
     pct: perPick[i],
     amt: Math.round(totalAmt * perPick[i] / 100),
+    role: i===0 ? '核心仓' : '卫星仓',
     method: f.cat==='money'?'立即买入': f.cat==='bond'?'立即买入': f.cat==='qdii'?'一次性或定投':i===0?'分批定投':'一次性买入',
     methodClass: f.cat==='money'||f.cat==='bond'?'method-now': i===0?'method-dca':'method-hold',
   }));
@@ -1221,26 +1378,41 @@ function _doGenerate(){
   });
   const allPicks = Object.values(selectedPicks).flat();
 
-  // 5. 期望收益估算（用风险调整后的保守估计，避免过度乐观）
-  // 历史r1在牛市年份会夸大，保守折扣 × 0.6；乐观上限 × 1.1（非线性增长）
-  const rawReturn = allPicks.reduce((s,f)=>s+f.r1*(f.pct/100),0);
-  const expReturn = rawReturn * 0.65; // 长期均值回归折扣
-  const expReturnLow  = Math.max(expReturn*0.5, riskP==='conservative'?1.5:2.5);
-  const expReturnHigh = rawReturn * (riskP==='aggressive'?0.85:riskP==='balanced'?0.78:0.72);
+  // 5. 收益预估（基于统计学置信区间）
+  // 分类别均值回归系数（权益类历史收益回归更快）
+  const meanRevCoef = { active:0.55, index:0.55, bond:0.80, money:0.95, qdii:0.55 };
+  // 加权平均预期收益（均值回归折扣后）
+  const expReturn = allPicks.reduce((s,f) => {
+    const coef = meanRevCoef[f.cat] || 0.6;
+    return s + f.r1 * coef * (f.pct/100);
+  }, 0);
+  // 组合波动率估算：加权平均 maxDD × 0.5（近似年化标准差）
+  const blendedDD = allPicks.reduce((s,f)=>s+f.maxDD*(f.pct/100),0);
+  const sigma = blendedDD * 0.5; // 近似年化波动率
+  // 正态分布置信区间
+  const expReturnP75 = expReturn + 0.67 * sigma; // 乐观情景（75分位）
+  const expReturnP25 = expReturn - 0.67 * sigma; // 悲观情景（25分位）
+  const expReturnP5  = expReturn - 1.65 * sigma; // 极端下行（5分位）
+  // 保底下限
+  const expReturnLow  = Math.max(expReturnP25, riskP==='conservative'?0.5:riskP==='moderate'?-2:-5);
+  const expReturnHigh = Math.max(expReturnP75, expReturn);
+  // 1年/3年预测
   const expAmt1Low  = Math.round(totalAmt*(1+expReturnLow/100));
   const expAmt1High = Math.round(totalAmt*(1+expReturnHigh/100));
-  const expAmt3Low  = Math.round(totalAmt*Math.pow(1+expReturnLow/100,3));
-  const expAmt3High = Math.round(totalAmt*Math.pow(1+expReturnHigh/100,3));
+  const sigma3 = sigma * Math.sqrt(3); // σ随时间按√t扩展
+  const expReturn3Mid = expReturn; // 年化不变
+  const expAmt3Low  = Math.round(totalAmt*Math.pow(1+Math.max(expReturn-0.67*sigma3/3,-10)/100,3));
+  const expAmt3High = Math.round(totalAmt*Math.pow(1+(expReturn+0.67*sigma3/3)/100,3));
 
-  // 组合最大回撤估算
-  const blendedDD = allPicks.reduce((s,f)=>s+f.maxDD*(f.pct/100),0);
-
-  // 6. 渲染期望横幅
+  // 6. 渲染期望横幅（含统计学说明）
   document.getElementById('expected-banner').innerHTML=`
-    <div class="expected-item"><div class="expected-val">${expReturnLow.toFixed(1)}-${expReturnHigh.toFixed(1)}%</div><div class="expected-label">预期年化收益区间</div></div>
-    <div class="expected-item"><div class="expected-val" style="color:var(--success)">¥${expAmt1Low.toLocaleString()}</div><div class="expected-label">1年后最低预估</div></div>
-    <div class="expected-item"><div class="expected-val" style="color:var(--primary)">¥${expAmt1High.toLocaleString()}</div><div class="expected-label">1年后乐观预估</div></div>
-    <div class="expected-item"><div class="expected-val" style="color:#722ed1">¥${expAmt3Low.toLocaleString()}~${expAmt3High.toLocaleString()}</div><div class="expected-label">3年后预估区间</div></div>`;
+    <div class="expected-item"><div class="expected-val">${expReturnLow.toFixed(1)}% ~ ${expReturnHigh.toFixed(1)}%</div><div class="expected-label">预期年化收益区间(P25-P75)</div></div>
+    <div class="expected-item"><div class="expected-val" style="color:var(--success)">¥${expAmt1Low.toLocaleString()}</div><div class="expected-label">1年后悲观预估(25分位)</div></div>
+    <div class="expected-item"><div class="expected-val" style="color:var(--primary)">¥${expAmt1High.toLocaleString()}</div><div class="expected-label">1年后乐观预估(75分位)</div></div>
+    <div class="expected-item"><div class="expected-val" style="color:#722ed1">¥${expAmt3Low.toLocaleString()}~${expAmt3High.toLocaleString()}</div><div class="expected-label">3年后预估区间</div></div>
+    <div style="width:100%;font-size:11px;color:var(--muted);margin-top:4px;line-height:1.6">
+      📐 收益估算基于均值回归模型：权益类资产历史收益折扣55%，债券类80%，货币类95%。波动率σ≈${sigma.toFixed(1)}%，置信区间基于正态分布P25/P75分位。极端下行(P5)为 ${expReturnP5.toFixed(1)}%。
+    </div>`;
 
   // 7. 副标题
   const riskNames={conservative:'保守型',moderate:'稳健型',balanced:'平衡型',aggressive:'进取型'};
@@ -1270,6 +1442,51 @@ function _doGenerate(){
   const rebalPlan = computeRebalancePlan(selectedPicks, totalAmt);
   renderRebalancePlan(rebalPlan);
 
+  // 14. 策略说明
+  const stratEl = document.getElementById('strategy-explanation');
+  if(stratEl){
+    const weightEntries = catRanks.map(c => `${c.name}: 波动率≈${c.avgDD.toFixed(1)}% → 风险平价权重 ${(1/Math.max(c.avgDD,1)/(catRanks.reduce((s,x)=>s+1/Math.max(x.avgDD,1),0))*100).toFixed(1)}% → 风险偏好调整后 ${weights[c.cat]||0}%`).join('<br>');
+    stratEl.innerHTML = `
+      <b>一、基金评分体系（多因子模型）</b><br>
+      采用5维度专业评估：<br>
+      · <b>Calmar Ratio</b>（30%权重）：年化超额收益 / 最大回撤，衡量每承受1%下行风险换来的超额回报<br>
+      · <b>近似Sortino Ratio</b>（25%权重）：超额收益 / 下行波动率，专注于下行风险而非全部波动<br>
+      · <b>信息比率</b>（15%权重）：超额收益 / 同类标准差，衡量跑赢同类基准的稳定性<br>
+      · <b>管理质量</b>（20%权重）：基金经理任职年限 + 晨星评级<br>
+      · <b>规模因子</b>（10%权重）：基金规模反映流动性与市场认可度<br>
+      无风险利率基准：1年期国债收益率 2.0%<br><br>
+
+      <b>二、资产配置方法（Risk Parity 风险平价 + 动态倾斜）</b><br>
+      · 基础权重按各类别波动率的倒数分配（波动越大权重越低，实现等风险贡献）<br>
+      · 在此基础上叠加风险偏好倾斜系数和行情动量调整<br>
+      · 权益类上限受投资期限约束：短期≤30%，中期≤60%，长期≤75%，超长期≤85%<br>
+      当前各类别权重推导：<br>${weightEntries}<br><br>
+
+      <b>三、基金选择策略（相关性去重 + 核心-卫星架构）</b><br>
+      · 同一基金经理最多选1只，策略标签重叠>50%的基金去重<br>
+      · 核心仓（70%配置）选综合评分最高的基金<br>
+      · 卫星仓（30%配置）选差异化最大的基金，实现真正分散<br>
+      · 类别占比≥25%配2只基金，≥35%配3只基金<br><br>
+
+      <b>四、收益预估方法（统计置信区间）</b><br>
+      · 均值回归折扣：权益类历史收益×55%，债券类×80%，货币类×95%<br>
+      · 波动率估算：σ ≈ 加权平均最大回撤 × 50%<br>
+      · 乐观情景(P75) = 预期收益 + 0.67σ；悲观情景(P25) = 预期收益 - 0.67σ<br>
+      · 极端下行(P5) = 预期收益 - 1.65σ（约5%概率跌破此水平）<br>
+      · 3年预测：σ按√3扩展，收益按复利计算<br><br>
+
+      <b>五、定投评分（波动收益比模型）</b><br>
+      · 波动收益比（35%）：最大回撤/|3年收益|，波动大且长期向上=定投摊低成本效果最佳<br>
+      · 长期趋势（25%）+ 管理质量（20%）+ 近期动量（20%）<br>
+      · 不含任何当日涨跌择时信号，定投应坚持纪律而非择时<br><br>
+
+      <b>六、健康诊断（动态阈值）</b><br>
+      · 跑输判定以同类标准差(σ)为单位：跑输>1σ黄色预警，>2σ红色预警<br>
+      · 持仓集中度检查：单基金>40%或单类别>60%时预警<br>
+      · 亏损评估对比历史最大回撤占比
+    `;
+  }
+
   // 显示结果
   document.getElementById('analysis-time').textContent=Object.keys(navCache).length>0?`· 已融合${Object.keys(navCache).length}只基金实时净值`:'· 建议先刷新净值获取实时数据';
   document.getElementById('portfolio-result').style.display='block';
@@ -1289,7 +1506,7 @@ function renderMarketAnalysis(catRanks){
   };
   const table = document.getElementById('market-analysis-table');
   table.innerHTML=`<thead><tr>
-    <th>排名</th><th>资产类别</th><th>近1年均收益</th><th>风险调整收益</th>
+    <th>排名</th><th>资产类别</th><th>近1年均收益</th><th>Calmar Ratio</th>
     <th>今日平均涨跌</th><th>数据来源</th><th>行情信号</th>
   </tr></thead><tbody>${catRanks.map((c,i)=>{
     const chgAvailable = Object.keys(navCache).length>0;
@@ -1298,7 +1515,7 @@ function renderMarketAnalysis(catRanks){
       <td>${rankBadge(i)}</td>
       <td><b>${c.name}</b></td>
       <td class="${c.avgR1>=0?'up':'down'}">${c.avgR1>=0?'+':''}${c.avgR1.toFixed(1)}%</td>
-      <td>${c.riskAdj.toFixed(2)} <span style="font-size:10px;color:var(--muted)">(越高越好)</span></td>
+      <td>${c.riskAdj.toFixed(2)} <span style="font-size:10px;color:var(--muted)">(收益/回撤)</span></td>
       <td>${chgText}</td>
       <td style="font-size:11px;color:var(--muted)">${chgAvailable?'实时净值':'参考数据'}</td>
       <td>${signalHtml(c.catScore, c.avgChg)}</td>
@@ -1308,7 +1525,7 @@ function renderMarketAnalysis(catRanks){
   const top1=catRanks[0], top2=catRanks[1];
   const chgNote = Object.keys(navCache).length>0 ? '已融合实时净值数据。' : '建议点击「基金精选推荐」→「刷新净值」后重新生成，以融入当日行情。';
   document.getElementById('market-summary').innerHTML=`
-    📊 <b>行情解读：</b>当前 <b>${top1.name}</b> 综合表现最强（近1年均收益 <b class="up">+${top1.avgR1.toFixed(1)}%</b>，风险调整比 <b>${top1.riskAdj.toFixed(2)}</b>），
+    📊 <b>行情解读：</b>当前 <b>${top1.name}</b> 综合表现最强（近1年均收益 <b class="up">+${top1.avgR1.toFixed(1)}%</b>，Calmar Ratio <b>${top1.riskAdj.toFixed(2)}</b>），
     <b>${top2.name}</b> 紧随其后。本次配置方案已根据以上排名对强势类别适当加仓。${chgNote}`;
 }
 
@@ -1488,20 +1705,25 @@ function renderHoldingPie(){
 let currentDcaCat = 'all';
 
 function calcDCAScore(f){
-  // 定投评分：优先高波动+长期向上（摊低成本效果好）
+  // 定投评分：波动收益比 + 长期趋势 + 管理质量 + 近期动量（去除当日择时信号）
   if(f.cat==='money') return 10; // 货币基金不适合定投
-  const volatilityBenefit = Math.min(f.maxDD * 0.6, 40); // 波动性加分，上限40
-  const trendScore = Math.max(Math.min(f.r1 * 0.8, 25), -8); // 近1年趋势
-  const qualityScore = f.stars * 3 + Math.min(f.mgrYears, 15) * 0.5; // 管理质量
-  // 3年长期加分（正向）或扣分（持续亏损）
-  const longtermBonus = f.r3 > 20 ? Math.min(f.r3 * 0.12, 10) : f.r3 > 0 ? f.r3 * 0.06 : Math.max(f.r3 * 0.08, -8);
-  // 双负惩罚：1年和3年均为负 → 结构性下行，定投意义下降
-  const dualNegPenalty = (f.r1 < 0 && f.r3 < 0) ? -12 : 0;
-  // 实时信号：今日微跌是较好的定投时机
-  const nav = navCache[f.code];
-  const todayChg = nav ? parseFloat(nav.gszzl)||0 : 0;
-  const timingBonus = todayChg < -1 ? 6 : todayChg < -0.3 ? 3 : todayChg > 1 ? -2 : 0;
-  return Math.max(0, Math.min(100, Math.round(volatilityBenefit + trendScore + qualityScore + longtermBonus + dualNegPenalty + timingBonus)));
+  // 双负严格排除：1年和3年均为负 → 结构性下行，直接标为不推荐
+  if(f.r1 < 0 && f.r3 < 0) return Math.max(5, 15 + Math.round(f.r3 * 0.2));
+
+  // 1. 波动收益比（定投核心指标，35%）：波动越大且长期向上，定投越划算
+  const volReturnRatio = f.r3 > 0 && f.maxDD > 0 ? f.maxDD / Math.max(Math.abs(f.r3), 1) : 0;
+  const volScore = Math.min(35, volReturnRatio * 12); // 0-35分
+
+  // 2. 长期趋势 r3（25%）：定投需要长期向上的标的
+  const trendScore = f.r3 > 50 ? 25 : f.r3 > 20 ? 20 : f.r3 > 0 ? Math.max(8, f.r3 * 0.6) : Math.max(0, 5 + f.r3 * 0.15); // 0-25分
+
+  // 3. 管理质量（20%）：经理年限 + 星级
+  const qualityScore = Math.min(12, (f.mgrYears||0) * 0.8) + Math.min(8, ((f.stars||3) - 1) * 2); // 0-20分
+
+  // 4. 近期动量 r1（20%）：中期上涨趋势，但不考虑单日涨跌
+  const momentumScore = Math.max(0, Math.min(20, f.r1 > 0 ? Math.min(f.r1 * 0.6, 20) : f.r1 * 0.3 + 5)); // 0-20分
+
+  return Math.max(0, Math.min(100, Math.round(volScore + trendScore + qualityScore + momentumScore)));
 }
 
 function setDcaCat(cat){
@@ -1777,7 +1999,7 @@ function importFromDcaPlans(){
   else alert('定投计划中的基金已全部在已有持仓中');
 }
 
-// ═══════════════ 持仓健康诊断 ═══════════════
+// ═══════════════ 持仓健康诊断（动态阈值 + 集中度分析） ═══════════════
 function runHealthMonitor(){
   const wrap = document.getElementById('health-monitor-wrap');
   // 合并 holdings (Panel3) + existingHoldings (Panel1)
@@ -1791,18 +2013,51 @@ function runHealthMonitor(){
 
   if(!allHeld.length){ wrap.innerHTML=''; return; }
 
-  // 计算各类别平均r1
-  const catAvgR1 = {};
+  // 计算各类别统计（均值 + 标准差，用于动态阈值）
+  const catStats = {};
   ['active','index','bond','money','qdii'].forEach(cat=>{
     const fs=CURATED_FUNDS.filter(f=>f.cat===cat);
-    catAvgR1[cat] = fs.length ? fs.reduce((s,f)=>s+f.r1,0)/fs.length : 0;
+    if(!fs.length) return;
+    const avgR1 = fs.reduce((s,f)=>s+f.r1,0)/fs.length;
+    const stdR1 = Math.sqrt(fs.reduce((s,f)=>s+(f.r1-avgR1)**2,0)/fs.length)||1;
+    catStats[cat] = { avgR1, stdR1, count:fs.length };
   });
 
-  // 预缓存行情排名（避免循环内重复计算）
   const catRanksCache = Object.keys(navCache).length>0 ? analyzeCategoryPerf() : null;
+  const totalPortValue = allHeld.reduce((s,h)=>s+h.value,0);
 
   const alerts = [];
   const okList = [];
+
+  // 集中度检查
+  const catConcentration = {};
+  allHeld.forEach(h=>{
+    const fd = CURATED_FUNDS.find(f=>f.code===h.code);
+    const cat = fd ? fd.cat : 'other';
+    catConcentration[cat] = (catConcentration[cat]||0) + h.value;
+  });
+
+  // 单只基金集中度预警
+  allHeld.forEach(h=>{
+    const pct = totalPortValue > 0 ? h.value / totalPortValue * 100 : 0;
+    if(pct > 40){
+      alerts.push({code:h.code,name:h.name,level:'yellow',
+        desc:`单只基金占总持仓 ${pct.toFixed(1)}%，超过40%集中度警戒线。建议分散配置降低个基风险。`,
+        action:'🟡 需分散'});
+    }
+  });
+
+  // 类别集中度预警
+  Object.keys(catConcentration).forEach(cat=>{
+    if(cat === 'other') return;
+    const catPct = totalPortValue > 0 ? catConcentration[cat] / totalPortValue * 100 : 0;
+    if(catPct > 60){
+      const catName = CAT_NAMES[cat] || cat;
+      alerts.push({code:'_cat_'+cat,name:`${catName}类别`,level:'yellow',
+        desc:`${catName}类别占总持仓 ${catPct.toFixed(1)}%，超过60%集中度警戒线。过度集中于单一资产类别会放大系统性风险。`,
+        action:'🟡 需分散'});
+    }
+  });
 
   allHeld.forEach(h=>{
     const fd = CURATED_FUNDS.find(f=>f.code===h.code);
@@ -1811,7 +2066,6 @@ function runHealthMonitor(){
     const pnlPct = h.cost>0 ? (h.value-h.cost)/h.cost*100 : null;
 
     if(!fd){
-      // 非精选库基金：只看盈亏
       if(pnlPct!==null && pnlPct < -15){
         alerts.push({code:h.code,name:h.name,level:'red',
           desc:`持仓亏损 ${pnlPct.toFixed(1)}%，已超过-15%预警线。该基金不在精选库，缺乏参考数据。`,
@@ -1820,14 +2074,19 @@ function runHealthMonitor(){
       return;
     }
 
-    const catAvg = catAvgR1[fd.cat]||0;
+    const stats = catStats[fd.cat];
+    if(!stats) return;
     const issues = [];
     let level = 'green';
 
-    // 1. 近1年收益显著落后同类
-    if(fd.r1 < catAvg - 8){
-      issues.push(`近1年收益 ${fd.r1>0?'+':''}${fd.r1}%，落后同类均值 ${catAvg.toFixed(1)}% 达 ${(catAvg-fd.r1).toFixed(1)}个百分点`);
-      level = fd.r1 < catAvg - 15 ? 'red' : 'yellow';
+    // 1. 动态阈值：以同类标准差(σ)为单位判断跑输程度
+    const zScore = (fd.r1 - stats.avgR1) / stats.stdR1;
+    if(zScore < -2){
+      issues.push(`近1年收益 ${fd.r1>0?'+':''}${fd.r1}%，落后同类均值 ${stats.avgR1.toFixed(1)}% 达 ${Math.abs(zScore).toFixed(1)}σ（标准差），属显著落后`);
+      level = 'red';
+    } else if(zScore < -1){
+      issues.push(`近1年收益 ${fd.r1>0?'+':''}${fd.r1}%，落后同类均值 ${stats.avgR1.toFixed(1)}% 约 ${Math.abs(zScore).toFixed(1)}σ`);
+      level = 'yellow';
     }
 
     // 2. 1年和3年均为负（结构性亏损）
@@ -1836,19 +2095,25 @@ function runHealthMonitor(){
       level = 'red';
     }
 
-    // 3. 当前持仓亏损严重
-    if(pnlPct !== null && pnlPct < -fd.maxDD*0.7){
-      issues.push(`当前亏损 ${pnlPct.toFixed(1)}%，已触达最大回撤(${fd.maxDD}%)的 ${((-pnlPct/fd.maxDD)*100).toFixed(0)}%`);
-      if(level==='green') level='yellow';
+    // 3. 当前亏损占最大回撤比例
+    if(pnlPct !== null && pnlPct < 0 && fd.maxDD > 0){
+      const ddRatio = (-pnlPct / fd.maxDD * 100);
+      if(ddRatio > 80){
+        issues.push(`当前亏损 ${pnlPct.toFixed(1)}%，已达历史最大回撤(${fd.maxDD}%)的 ${ddRatio.toFixed(0)}%，接近极端水平`);
+        if(level !== 'red') level = 'red';
+      } else if(ddRatio > 50){
+        issues.push(`当前亏损 ${pnlPct.toFixed(1)}%，占历史最大回撤(${fd.maxDD}%)的 ${ddRatio.toFixed(0)}%`);
+        if(level === 'green') level = 'yellow';
+      }
     }
 
-    // 4. 今日大跌（相对同类）
+    // 4. 今日大跌
     if(todayChg!==null && todayChg < -2){
       issues.push(`今日下跌 ${todayChg.toFixed(2)}%，关注是否有负面消息驱动`);
       if(level==='green') level='yellow';
     }
 
-    // 5. 类别已在行情榜末位且仓位大
+    // 5. 类别行情末位且仓位大
     if(catRanksCache){
       const catRank = catRanksCache.findIndex(c=>c.cat===fd.cat);
       if(catRank>=3 && h.value > 5000){
@@ -1872,7 +2137,7 @@ function runHealthMonitor(){
         action: actionMap[level]});
     } else {
       okList.push({code:h.code,name:h.name,level:'green',
-        desc:`表现正常。近1年 ${fd.r1>0?'+':''}${fd.r1}%，同类均值 ${catAvg.toFixed(1)}%。${todayChg!==null?`今日 ${todayChg>0?'+':''}${todayChg.toFixed(2)}%。`:''}继续持有。`,
+        desc:`表现正常。近1年 ${fd.r1>0?'+':''}${fd.r1}%，同类均值 ${stats.avgR1.toFixed(1)}%（z=${zScore.toFixed(1)}σ）。${todayChg!==null?`今日 ${todayChg>0?'+':''}${todayChg.toFixed(2)}%。`:''}继续持有。`,
         action:'🟢 持有'});
     }
   });
@@ -1902,7 +2167,7 @@ function runHealthMonitor(){
     </div>
     ${[...alerts,...okList].map(renderItem).join('')}
     <div style="padding:8px 14px;font-size:11px;color:var(--muted);background:#fafafa">
-      💡 诊断基于精选基金库数据与实时净值，${Object.keys(navCache).length>0?'已融合实时行情':'建议等待净值加载后刷新'}。每次净值刷新自动更新。
+      💡 诊断采用动态阈值（以同类标准差σ为单位）+ 持仓集中度分析。${Object.keys(navCache).length>0?'已融合实时行情数据':'建议等待净值加载后刷新'}。
     </div>
   </div>`;
 }
