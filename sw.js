@@ -1,11 +1,12 @@
-const CACHE_NAME = 'fund-helper-v1';
+const CACHE_NAME = 'fund-helper-v2';
+const BASE = self.registration.scope;
 const ASSETS = [
-  '/',
-  '/index.html',
-  '/db.js',
-  '/manifest.json',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png'
+  './',
+  './index.html',
+  './db.js',
+  './manifest.json',
+  './icons/icon-192.png',
+  './icons/icon-512.png'
 ];
 const CDN_URLS = [
   'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js'
@@ -17,7 +18,7 @@ self.addEventListener('install', e => {
     caches.open(CACHE_NAME).then(cache =>
       cache.addAll(ASSETS).catch(() => {
         // If running from file://, addAll may fail - that's OK
-        return cache.addAll(ASSETS.filter(u => u !== '/'));
+        return cache.addAll(ASSETS.filter(u => u !== './'));
       })
     ).then(() => self.skipWaiting())
   );
