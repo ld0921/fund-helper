@@ -350,14 +350,7 @@ tr:last-child td{border-bottom:none}
       📋 <b>精选库：</b>21只经过人工验证的代表性基金作为基础池。点击「🔍 全市场扫描」可自动从全市场近2万只基金中发现近1年收益Top10的优质基金，合并到推荐池中参与评分（结果缓存7天）。
       <span style="font-size:11px;color:#722ed1" id="scan-status"></span>
     </div>
-    <div class="chip-row" id="cat-filter">
-      <button class="chip active" onclick="setCategory('all')">全部 (21)</button>
-      <button class="chip" onclick="setCategory('active')">主动权益 (6)</button>
-      <button class="chip" onclick="setCategory('index')">指数基金 (6)</button>
-      <button class="chip" onclick="setCategory('bond')">债券基金 (3)</button>
-      <button class="chip" onclick="setCategory('money')">货币基金 (2)</button>
-      <button class="chip" onclick="setCategory('qdii')">QDII海外 (4)</button>
-    </div>
+    <div class="chip-row" id="cat-filter"></div>
     <div class="fund-grid" id="market-grid"></div>
   </div>
   <div class="warning-notice">⚠️ <b>免责声明：</b>以上为参考性推荐，不构成投资建议。收益率、回撤等数据由天天基金网API实时拉取（每24小时自动更新），实际以最新行情为准。基金投资有风险，请根据自身风险承受能力决策。</div>
@@ -1060,20 +1053,20 @@ const SCAN_CATEGORIES = [
   { ft:'qdii', cat:'qdii', label:'QDII', type:'QDII' },
 ];
 
-// rankhandler 返回字段索引
+// rankhandler 返回字段索引（共25个字段，索引0-24）
 // 0:code 1:name 2:pinyin 3:date 4:dwjz 5:ljjz 6:日涨跌 7:近1周 8:近1月 9:近3月 10:近6月
 // 11:近1年 12:近2年 13:近3年 14:近5年 15:今年以来 16:成立以来 17:成立日期 18:类型标记
-// 19:累计净值精确 20:申购费 21:折后费 22:? 23:折后费2 24:? 25:规模(亿)
+// 19:累计净值精确 20:申购费 21:折后费 22:可购标记 23:折后费2 24:规模(亿)
 
 function parseRankData(datasArray, catInfo){
   return datasArray.map(item => {
     const f = item.split(',');
-    if(f.length < 20) return null;
+    if(f.length < 25) return null;
     const code = f[0];
     const name = f[1];
     const r1 = parseFloat(f[11]) || 0;
     const r3 = parseFloat(f[13]) || 0;
-    const size = parseFloat(f[25]) || 0;
+    const size = parseFloat(f[24]) || 0;
     const established = f[17] || '';
     // 基础过滤：成立至少3年、规模≥2亿、名称不含后端/C类/E类
     const estDate = new Date(established);
@@ -1166,8 +1159,10 @@ async function scanMarketFunds(forceRefresh){
     updateScanProgress(banner, `正在获取详情 ${done}/${total}…`, pct);
   });
 
-  // 第3步：过滤低质量基金（maxDD=0说明详情获取失败）
-  const qualified = discovered.filter(f => f.maxDD > 0 && f.mgrYears > 0);
+  // 第3步：过滤低质量基金
+  // maxDD=0 且 mgrYears=0 说明详情完全获取失败，丢弃
+  // 只要有其中一项数据就保留（排名数据中已有r1/r3/size）
+  const qualified = discovered.filter(f => f.maxDD > 0 || f.mgrYears > 0);
 
   // 第4步：合并到精选池
   mergeDiscoveredFunds(qualified);
@@ -1268,6 +1263,17 @@ function renderMarketGrid(){
   const titleEl=document.getElementById('curated-title');
   const discovered=CURATED_FUNDS.filter(f=>f.discovered).length;
   if(titleEl) titleEl.textContent=`浏览基金池（${CURATED_FUNDS.length}只${discovered>0?`，含${discovered}只新发现`:''}）`;
+  // 动态渲染分类筛选按钮（含实时计数）
+  const catCounts={all:CURATED_FUNDS.length};
+  CURATED_FUNDS.forEach(f=>{ catCounts[f.cat]=(catCounts[f.cat]||0)+1; });
+  const cats=[
+    {key:'all',label:'全部'},{key:'active',label:'主动权益'},{key:'index',label:'指数基金'},
+    {key:'bond',label:'债券基金'},{key:'money',label:'货币基金'},{key:'qdii',label:'QDII海外'}
+  ];
+  const filterEl=document.getElementById('cat-filter');
+  if(filterEl) filterEl.innerHTML=cats.map(c=>
+    `<button class="chip${currentCat===c.key?' active':''}" onclick="setCategory('${c.key}')">${c.label} (${catCounts[c.key]||0})</button>`
+  ).join('');
 }
 function setCategory(cat){
   currentCat=cat;
@@ -1387,7 +1393,7 @@ const _catBench = getCatBenchmarks();
 const RISK_FREE = 2.0;
 
 function scoreF(f){
-  const r1=+f.r1||0, r3=+f.r3||0, dd=+f.dd||0, sz=+f.size||0, mg=+f.mgr||0;
+  const r1=+f.r1||0, r3=+f.r3||0, dd=+(f.dd||f.maxDD)||0, sz=+f.size||0, mg=+(f.mgr||f.mgrYears)||0;
 
   // 1. Calmar Ratio（唯一风险调整指标，权重 40%）
   //    = (年化收益 - 无风险利率) / 最大回撤
