@@ -795,7 +795,7 @@ function renderAll(){
   renderFundList(); renderExistingHoldings(); renderHoldings(); renderDcaPlans(); renderDcaRanking(); runHealthMonitor();
 }
 let currentCat = 'all';
-let portfolioPieInst = null, sipChartInst = null, holdPieChartInst = null, dcaChartInst = null;
+let portfolioPieInst = null, sipChartInst = null, holdPieChartInst = null;
 
 // ═══════════════ 标签切换 ═══════════════
 function switchTab(i){
@@ -1149,7 +1149,7 @@ function computeRebalancePlan(targetPicks, newMoney){
     const held=existingHoldings.find(h=>h.code===pick.code);
     const currentAmt=held?held.value:0;
     const diff=targetAmt-currentAmt;
-    const tol=Math.max(targetAmt*0.12,500); // 12%容忍带 or ¥500
+    const tol=Math.max(targetAmt*0.15,500); // 15%容忍带 or ¥500
     let action,actionAmt,actionDesc,actionColor;
     if(currentAmt===0){
       action='buy'; actionAmt=targetAmt;
@@ -1900,29 +1900,6 @@ function renderRiskMeter(blendedDD, riskP){
     return `<div class="risk-block" style="background:${filled?col:'#f0f0f0'}"></div>`;
   }).join('');
   document.getElementById('risk-meter-desc').textContent=`组合加权最大回撤约 ${blendedDD.toFixed(1)}%（您的风险容忍上限 ${maxDD}%），风险占用 ${pct.toFixed(0)}%，处于${zone}区间。`;
-}
-
-function renderDCACalc(monthly, horizon, annualRate){
-  const years = Math.min(Math.max(horizon,2),10);
-  const r = annualRate/100/12;
-  const periods = years*12;
-  let val = 0, labels=[], vals=[], costs=[];
-  for(let i=1;i<=periods;i++){
-    val = (val+monthly)*(1+r);
-    if(i%12===0){ labels.push(`第${i/12}年`); vals.push(+val.toFixed(0)); costs.push(monthly*i); }
-  }
-  const finalCost=monthly*periods, finalVal=val, profit=finalVal-finalCost;
-  document.getElementById('dca-stats').innerHTML=`
-    <div class="stat-card"><div class="stat-val">¥${monthly.toLocaleString()}/月</div><div class="stat-label">每月定投</div></div>
-    <div class="stat-card"><div class="stat-val">¥${finalCost.toLocaleString()}</div><div class="stat-label">${years}年累计投入</div></div>
-    <div class="stat-card"><div class="stat-val" style="color:var(--primary)">¥${Math.round(finalVal).toLocaleString()}</div><div class="stat-label">预期资产总值</div></div>
-    <div class="stat-card"><div class="stat-val up">¥${Math.round(profit).toLocaleString()}</div><div class="stat-label">预期定投收益</div></div>`;
-  if(dcaChartInst) dcaChartInst.destroy();
-  dcaChartInst = new Chart(document.getElementById('dcaChart'),{
-    type:'bar',
-    data:{labels,datasets:[{label:'投入本金',data:costs,backgroundColor:'#bae0ff',borderRadius:4},{label:'预期市值',data:vals,backgroundColor:'#1677ff',borderRadius:4}]},
-    options:{plugins:{legend:{position:'bottom'}},scales:{y:{ticks:{callback:v=>'¥'+(v/10000).toFixed(0)+'万'}}},responsive:true,maintainAspectRatio:true}
-  });
 }
 
 // ═══════════════ 面板2: 定投计算 ═══════════════
