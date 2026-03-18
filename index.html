@@ -1107,6 +1107,19 @@ async function fetchMarketRanks(){
   return allDiscovered;
 }
 
+// 根据最大回撤和资产类别自动推断风险等级
+function inferRiskLevel(maxDD, cat){
+  // 货币基金固定R1，债券基金最高R2
+  if(cat === 'money') return 'R1';
+  if(cat === 'bond') return maxDD > 5 ? 'R3' : maxDD > 2 ? 'R2' : 'R1';
+  // 权益类/QDII：根据历史最大回撤分档
+  if(maxDD >= 45) return 'R5'; // 极高风险（跌幅≥45%）
+  if(maxDD >= 30) return 'R4'; // 高风险（跌幅30-45%）
+  if(maxDD >= 15) return 'R3'; // 中等风险（跌幅15-30%）
+  if(maxDD >= 5)  return 'R2'; // 中低风险（跌幅5-15%）
+  return 'R1';
+}
+
 // 为发现的基金补充详情（经理、回撤等）
 async function enrichDiscoveredFunds(funds, progressCb){
   let done = 0;
@@ -1120,8 +1133,9 @@ async function enrichDiscoveredFunds(funds, progressCb){
         if(detail.mgrYears > 0) f.mgrYears = Math.round(detail.mgrYears * 10) / 10;
         if(detail.stars >= 1 && detail.stars <= 5) f.stars = detail.stars;
         if(detail.size > 0) f.size = Math.round(detail.size * 100) / 100;
+        // 根据maxDD自动推断风险等级
+        f.risk = inferRiskLevel(f.maxDD, f.cat);
       }
-      // r3已从排名API获取，无需再调FundArchivesDatas
     } catch(e){}
     done++;
     if(progressCb) progressCb(done, funds.length);
