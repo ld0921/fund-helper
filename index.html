@@ -344,6 +344,9 @@ tr:last-child td{border-bottom:none}
   <div class="card" style="border-top-left-radius:0;border-top-right-radius:0">
       <span style="margin-left:auto;font-size:12px;color:var(--muted)" id="nav-update-time"></span>
     </div>
+    <div style="padding:6px 12px;font-size:11px;color:var(--muted);line-height:1.6;background:#fafafa;border-radius:6px;margin:8px 0">
+      📋 <b>精选标准：</b>从全市场6000+只基金中，按以下条件筛选21只覆盖5大资产类别的代表性基金：经理任期≥5年（或指数基金跟踪精准）、规模≥50亿（非货币）、成立≥3年、同类排名前30%。入选后由算法实时评分，而非人工推荐。如需分析其他基金，可在「自定义评分」中手动添加。
+    </div>
     <div class="chip-row" id="cat-filter">
       <button class="chip active" onclick="setCategory('all')">全部 (21)</button>
       <button class="chip" onclick="setCategory('active')">主动权益 (6)</button>
@@ -983,38 +986,50 @@ async function refreshFundDetails(forceRefresh){
   }
 
   // 应用数据
+  const successCount = Object.keys(allDetails).length;
   applyFundDetails(allDetails);
 
   // 缓存到IndexedDB
   try {
-    await FundDB.set('fundDetailCache', { data: allDetails, timestamp: Date.now() });
+    if(successCount > 0) await FundDB.set('fundDetailCache', { data: allDetails, timestamp: Date.now() });
   } catch(e){}
 
-  // 更新UI
+  // 更新UI — 区分成功和失败
   const now = new Date();
   const timeStr = `${now.getMonth()+1}/${now.getDate()} ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
-  updateDetailStatus(`数据更新于 ${timeStr}（实时）`);
+  if(successCount === 0){
+    updateDetailStatus(`⚠️ 数据拉取失败，当前显示为默认数据（可能已过期），请稍后重试`, true);
+  } else if(successCount < total){
+    updateDetailStatus(`数据更新于 ${timeStr}（${successCount}/${total}只成功，部分使用默认值）`, false);
+  } else {
+    updateDetailStatus(`数据更新于 ${timeStr}（实时）`, false);
+  }
   if(banner) setTimeout(()=>{ banner.style.display='none'; }, 2000);
 
-  console.log(`[FundDetail] 成功更新 ${Object.keys(allDetails).length}/${total} 只基金详情`);
+  console.log(`[FundDetail] 成功更新 ${successCount}/${total} 只基金详情`);
 }
 
-// 将API数据应用到CURATED_FUNDS
+// 将API数据应用到CURATED_FUNDS（含异常值防护）
 function applyFundDetails(allDetails){
   if(!allDetails || !Object.keys(allDetails).length) return;
   let updated = 0;
   CURATED_FUNDS.forEach(f=>{
     const d = allDetails[f.code];
     if(!d) return;
-    if(d.r1 !== undefined) f.r1 = Math.round(d.r1 * 100) / 100;
-    if(d.r3 !== undefined) f.r3 = Math.round(d.r3 * 100) / 100;
-    if(d.maxDD !== undefined && d.maxDD > 0) f.maxDD = d.maxDD;
-    if(d.size !== undefined && d.size > 0) f.size = Math.round(d.size * 100) / 100;
-    if(d.manager) f.manager = d.manager;
-    if(d.mgrYears !== undefined && d.mgrYears > 0) f.mgrYears = Math.round(d.mgrYears * 10) / 10;
-    if(d.stars !== undefined) f.stars = d.stars;
-    // 更新FUND_META中的机构占比
-    if(d.instPct !== undefined && FUND_META[f.code]){
+    // 收益率校验：合理范围 -99% ~ 500%
+    if(d.r1 !== undefined && isFinite(d.r1) && d.r1 > -99 && d.r1 < 500) f.r1 = Math.round(d.r1 * 100) / 100;
+    if(d.r3 !== undefined && isFinite(d.r3) && d.r3 > -99 && d.r3 < 1000) f.r3 = Math.round(d.r3 * 100) / 100;
+    // 最大回撤校验：0~100%
+    if(d.maxDD !== undefined && isFinite(d.maxDD) && d.maxDD > 0 && d.maxDD <= 100) f.maxDD = d.maxDD;
+    // 规模校验：>0（亿元）
+    if(d.size !== undefined && isFinite(d.size) && d.size > 0) f.size = Math.round(d.size * 100) / 100;
+    if(d.manager && typeof d.manager === 'string') f.manager = d.manager;
+    // 任期校验：0~50年
+    if(d.mgrYears !== undefined && isFinite(d.mgrYears) && d.mgrYears >= 0 && d.mgrYears < 50) f.mgrYears = Math.round(d.mgrYears * 10) / 10;
+    // 星级校验：1~5
+    if(d.stars !== undefined && d.stars >= 1 && d.stars <= 5) f.stars = d.stars;
+    // 更新FUND_META中的机构占比（0~100%）
+    if(d.instPct !== undefined && isFinite(d.instPct) && d.instPct >= 0 && d.instPct <= 100 && FUND_META[f.code]){
       FUND_META[f.code].instPct = d.instPct;
     }
     updated++;
@@ -1023,9 +1038,13 @@ function applyFundDetails(allDetails){
   if(updated > 0) renderMarketGrid();
 }
 
-function updateDetailStatus(text){
+function updateDetailStatus(text, isWarning){
   const el = document.getElementById('detail-update-time');
-  if(el) el.textContent = text;
+  if(el){
+    el.textContent = text;
+    el.style.color = isWarning ? '#cf1322' : 'var(--muted)';
+    el.style.fontWeight = isWarning ? '600' : 'normal';
+  }
 }
 
 // ═══════════════ 面板0: 精选基金 ═══════════════
@@ -1070,6 +1089,7 @@ function buildFundCard(f){
     <div class="fund-card-foot">
       <button class="btn btn-ghost btn-sm" onclick="addCuratedToScore('${f.code}')">📋 加入评分</button>
       <a href="https://fund.eastmoney.com/${f.code}.html" target="_blank" style="text-decoration:none"><button class="btn btn-ghost btn-sm">🔗 详情</button></a>
+      <a href="https://m.1234567.com.cn/fund/fundDetail/index?fundCode=${f.code}" target="_blank" style="text-decoration:none"><button class="btn btn-sm" style="background:var(--primary);color:#fff;font-weight:600">💰 购买</button></a>
     </div>
   </div>`;
 }
@@ -1254,7 +1274,9 @@ function renderFundList(){
 function addFund(){
   const name=document.getElementById('f-name').value.trim(),code=document.getElementById('f-code').value.trim();
   if(!name||!code){alert('请填写基金名称和代码');return;}
-  funds.push({name,code,type:document.getElementById('f-type').value,r1:document.getElementById('f-r1').value||0,r3:document.getElementById('f-r3').value||0,dd:document.getElementById('f-dd').value||0,size:document.getElementById('f-size').value||0,risk:document.getElementById('f-risk').value,mgr:document.getElementById('f-mgr').value||0});
+  if(!/^\d{6}$/.test(code)){alert('基金代码必须为6位数字（如：005827）');return;}
+  if(funds.some(f=>f.code===code)){alert('该基金已在列表中');return;}
+  funds.push({name,code,type:document.getElementById('f-type').value,r1:parseFloat(document.getElementById('f-r1').value)||0,r3:parseFloat(document.getElementById('f-r3').value)||0,dd:parseFloat(document.getElementById('f-dd').value)||0,size:parseFloat(document.getElementById('f-size').value)||0,risk:document.getElementById('f-risk').value,mgr:parseFloat(document.getElementById('f-mgr').value)||0});
   FundDB.set('funds',funds); renderFundList();
   ['f-name','f-code','f-r1','f-r3','f-dd','f-size','f-mgr'].forEach(id=>document.getElementById(id).value='');
 }
@@ -2085,6 +2107,7 @@ function renderAllocGroups(selectedPicks, weights){
           <div class="alloc-item-pct" style="color:${g.color}">${f.pct}%</div>
           <div class="alloc-item-amt">¥${f.amt.toLocaleString()}</div>
           <div class="alloc-item-method">${methodLabel(f.method)}</div>
+          <a href="https://m.1234567.com.cn/fund/fundDetail/index?fundCode=${f.code}" target="_blank" style="text-decoration:none;margin-left:4px"><button class="btn btn-sm" style="background:var(--primary);color:#fff;font-size:11px;padding:2px 8px">购买</button></a>
         </div>`;
       }).join('')}</div>
     </div>`;
@@ -2934,6 +2957,7 @@ function runHealthMonitor(){
   refreshFundDetails(false).then(()=>{
     setTimeout(()=>refreshAllNav(true), 300);
   }).catch(()=>{
+    updateDetailStatus('⚠️ 基金详情拉取失败，当前显示为默认数据（可能已过期）', true);
     setTimeout(()=>refreshAllNav(true), 300);
   });
 
