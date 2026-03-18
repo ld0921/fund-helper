@@ -1666,7 +1666,7 @@ function _doGenerate(){
     stratEl.innerHTML = `
       <b>一、基金评分体系（简化多因子）</b><br>
       去除冗余指标，保留4个正交维度：<br>
-      · <b>Calmar Ratio</b>（40%权重）：(年化收益-无风险利率2%)/最大回撤，唯一风险调整指标，避免Sortino/InfoRatio的高度共线性<br>
+      · <b>Calmar Ratio</b>（40%权重）：(年化收益-无风险利率2%)/历史最大跌幅，唯一风险调整指标，避免Sortino/InfoRatio的高度共线性<br>
       · <b>收益一致性</b>（25%权重）：1年/3年趋势方向是否一致 + 3年收益强度，衡量收益可持续性<br>
       · <b>任期稳定性</b>（25%权重）：客观指标——基金经理连续任期年限。<1年=刚更换(高风险)，3-5年=稳定，>10年=超稳定。替代主观的星级评定<br>
       · <b>规模适配性</b>（10%权重）：50-500亿为最优区间（满分），<2亿有清盘风险（2分），>1000亿调仓困难（4分）<br><br>
@@ -1899,7 +1899,7 @@ function renderRiskMeter(blendedDD, riskP){
     const filled = i<Math.round(pct/10);
     return `<div class="risk-block" style="background:${filled?col:'#f0f0f0'}"></div>`;
   }).join('');
-  document.getElementById('risk-meter-desc').textContent=`组合加权最大回撤约 ${blendedDD.toFixed(1)}%（您的风险容忍上限 ${maxDD}%），风险占用 ${pct.toFixed(0)}%，处于${zone}区间。`;
+  document.getElementById('risk-meter-desc').textContent=`组合加权历史最大跌幅约 ${blendedDD.toFixed(1)}%（您的风险容忍上限 ${maxDD}%），风险占用 ${pct.toFixed(0)}%，处于${zone}区间。`;
 }
 
 // ═══════════════ 面板2: 定投计算 ═══════════════
@@ -2040,7 +2040,7 @@ function renderDcaRanking(){
       <div class="dca-rank-num">${rankEmoji(i)}</div>
       <div class="dca-rank-info">
         <div class="dca-rank-name">${f.name} <span class="tag ${(()=>{const m={active:'tag-active',index:'tag-index',bond:'tag-bond',money:'tag-money',qdii:'tag-qdii'};return m[f.cat]||'tag-index';})()}" style="font-size:10px">${f.label}</span></div>
-        <div class="dca-rank-meta">代码 ${f.code} · ${f.manager} · 近1年 <span class="${f.r1>=0?'up':'down'}">${f.r1>=0?'+':''}${f.r1}%</span> · 最大回撤 ${f.maxDD}%</div>
+        <div class="dca-rank-meta">代码 ${f.code} · ${f.manager} · 近1年 <span class="${f.r1>=0?'up':'down'}">${f.r1>=0?'+':''}${f.r1}%</span> · 历史最大跌幅 ${f.maxDD}%</div>
         <div class="dca-rank-why">💡 ${whyText}</div>
       </div>
       <div class="dca-score-col">
@@ -2337,7 +2337,7 @@ function runSignalEngine(){
       if(ddRatio > 0.8){
         signals.push({type:'danger', priority:0, code:h.code, name:h.name,
           title:`🔴 ${h.name} 亏损已达历史极端水平`,
-          desc:`当前亏损 ${pnlPct.toFixed(1)}%，已达历史最大回撤(${fd.maxDD}%)的 ${(ddRatio*100).toFixed(0)}%。建议严格评估是否需要止损。`,
+          desc:`当前亏损 ${pnlPct.toFixed(1)}%，已达历史最大跌幅(${fd.maxDD}%)的 ${(ddRatio*100).toFixed(0)}%。建议严格评估是否需要止损。`,
           action:'🛑 建议止损评估'
         });
       }
@@ -2599,10 +2599,10 @@ function runHealthMonitor(){
     if(pnlPct !== null && pnlPct < 0 && fd.maxDD > 0){
       const ddRatio = (-pnlPct / fd.maxDD * 100);
       if(ddRatio > 80){
-        issues.push(`当前亏损 ${pnlPct.toFixed(1)}%，已达历史最大回撤(${fd.maxDD}%)的 ${ddRatio.toFixed(0)}%，接近极端水平`);
+        issues.push(`当前亏损 ${pnlPct.toFixed(1)}%，已达历史最大跌幅(${fd.maxDD}%)的 ${ddRatio.toFixed(0)}%，接近极端水平`);
         if(level !== 'red') level = 'red';
       } else if(ddRatio > 50){
-        issues.push(`当前亏损 ${pnlPct.toFixed(1)}%，占历史最大回撤(${fd.maxDD}%)的 ${ddRatio.toFixed(0)}%`);
+        issues.push(`当前亏损 ${pnlPct.toFixed(1)}%，占历史最大跌幅(${fd.maxDD}%)的 ${ddRatio.toFixed(0)}%`);
         if(level === 'green') level = 'yellow';
       }
     }
