@@ -37,8 +37,8 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
 
-  // API calls (fund NAV data) - network only, don't cache
-  if(url.hostname.includes('fundgz.1234567.com.cn') || url.hostname.includes('fund.eastmoney.com')){
+  // API calls (fund NAV & detail data) - network only, don't cache
+  if(url.hostname.includes('fundgz.1234567.com.cn') || url.hostname.includes('fund.eastmoney.com') || url.hostname.includes('fundf10.eastmoney.com')){
     return; // let browser handle normally
   }
 

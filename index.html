@@ -335,10 +335,12 @@ tr:last-child td{border-bottom:none}
     <summary class="card" style="cursor:pointer;margin-bottom:0;list-style:none;display:flex;align-items:center;gap:8px">
       <span class="icon icon-blue">📊</span>
       <span style="font-size:15px;font-weight:600">浏览精选基金库（21只）</span>
-      <span style="margin-left:auto;font-size:12px;color:var(--muted)" id="nav-update-time"></span>
+      <span style="margin-left:auto;font-size:11px;color:var(--muted)" id="detail-update-time"></span>
+      <button class="btn btn-sm" onclick="event.stopPropagation();refreshFundDetails(true)" style="font-size:11px;padding:2px 8px;margin-left:4px" title="重新拉取最新基金数据">🔄 刷新数据</button>
       <span style="font-size:12px;color:var(--primary)">展开 ▸</span>
     </summary>
     <div style="margin-top:-1px">
+  <div id="detail-progress" style="display:none;padding:0 12px"></div>
   <div class="card" style="border-top-left-radius:0;border-top-right-radius:0">
       <span style="margin-left:auto;font-size:12px;color:var(--muted)" id="nav-update-time"></span>
     </div>
@@ -352,7 +354,7 @@ tr:last-child td{border-bottom:none}
     </div>
     <div class="fund-grid" id="market-grid"></div>
   </div>
-  <div class="warning-notice">⚠️ <b>免责声明：</b>以上为参考性推荐，不构成投资建议。收益率数据参考截至2024年底，实际以当前数据为准。基金投资有风险，请根据自身风险承受能力决策。</div>
+  <div class="warning-notice">⚠️ <b>免责声明：</b>以上为参考性推荐，不构成投资建议。收益率、回撤等数据由天天基金网API实时拉取（每24小时自动更新），实际以最新行情为准。基金投资有风险，请根据自身风险承受能力决策。</div>
   </div>
   </div>
   </details>
@@ -817,6 +819,213 @@ function drainQ(){
   s.onerror=()=>{ if(done)return; done=true; clearTimeout(t); navBusy=false; cb(null); setTimeout(drainQ,200); };
   document.head.appendChild(s);
   setTimeout(()=>{ try{s.remove()}catch(e){} },5000);
+}
+
+// ═══════════════ 基金详情动态拉取（天天基金 pingzhongdata + FundArchivesDatas） ═══════════════
+// 从API实时获取基金核心指标，替代硬编码数据
+let fundDetailCache = {}; // { code: { data, timestamp } }
+const DETAIL_CACHE_TTL = 24 * 60 * 60 * 1000; // 24小时缓存
+
+// 通过script标签加载JS并提取全局变量
+function loadScript(url, timeout){
+  return new Promise((resolve, reject)=>{
+    const s = document.createElement('script');
+    s.src = url;
+    const t = setTimeout(()=>{ try{s.remove()}catch(e){} reject(new Error('timeout')); }, timeout||10000);
+    s.onload = ()=>{ clearTimeout(t); setTimeout(()=>{ try{s.remove()}catch(e){} },100); resolve(); };
+    s.onerror = ()=>{ clearTimeout(t); try{s.remove()}catch(e){} reject(new Error('load error')); };
+    document.head.appendChild(s);
+  });
+}
+
+// 从历史净值序列计算最大回撤
+function calcMaxDrawdown(navTrend){
+  if(!navTrend || navTrend.length < 10) return 0;
+  let peak = 0, maxDD = 0;
+  navTrend.forEach(p=>{
+    const v = p.y || 0;
+    if(v > peak) peak = v;
+    if(peak > 0){
+      const dd = (peak - v) / peak * 100;
+      if(dd > maxDD) maxDD = dd;
+    }
+  });
+  return Math.round(maxDD * 10) / 10; // 保留1位小数
+}
+
+// 从workTime字符串解析任期年数 (如 "13年又174天")
+function parseMgrYears(workTime){
+  if(!workTime) return 0;
+  const ym = workTime.match(/(\d+)年/);
+  const dm = workTime.match(/(\d+)天/);
+  return (ym ? parseInt(ym[1]) : 0) + (dm ? parseInt(dm[1]) / 365 : 0);
+}
+
+// 从FundArchivesDatas解析近3年收益率
+function parseR3FromJdzf(htmlContent){
+  if(!htmlContent) return null;
+  // HTML格式: <ul>...<li class='title'>近3年</li><li class='tor ...'>-10.85%</li>...
+  const match = htmlContent.match(/近3年<\/li><li[^>]*>([+-]?\d+\.?\d*)%/);
+  return match ? parseFloat(match[1]) : null;
+}
+
+// 拉取单只基金详情（pingzhongdata）
+async function fetchFundDetail(code){
+  // 保存当前全局变量引用，加载后提取，再恢复
+  const saved = {
+    syl_1n: window.syl_1n, syl_6y: window.syl_6y,
+    Data_currentFundManager: window.Data_currentFundManager,
+    Data_netWorthTrend: window.Data_netWorthTrend,
+    Data_fluctuationScale: window.Data_fluctuationScale,
+    Data_holderStructure: window.Data_holderStructure,
+    Data_performanceEvaluation: window.Data_performanceEvaluation,
+    fS_name: window.fS_name,
+  };
+  try {
+    await loadScript(`https://fund.eastmoney.com/pingzhongdata/${code}.js?v=${Date.now()}`, 15000);
+
+    const result = {};
+    // 近1年收益
+    if(typeof window.syl_1n !== 'undefined') result.r1 = parseFloat(window.syl_1n) || 0;
+    // 基金经理信息
+    if(window.Data_currentFundManager && window.Data_currentFundManager.length > 0){
+      const mgr = window.Data_currentFundManager[0];
+      result.manager = mgr.name || '';
+      result.mgrYears = Math.round(parseMgrYears(mgr.workTime) * 10) / 10;
+      result.stars = mgr.star || 3;
+      // 管理规模（从fundSize提取数字）
+      const sizeMatch = (mgr.fundSize || '').match(/([\d.]+)亿/);
+      if(sizeMatch) result.mgrFundSize = parseFloat(sizeMatch[1]);
+    }
+    // 最大回撤（从完整历史净值计算）
+    if(window.Data_netWorthTrend) result.maxDD = calcMaxDrawdown(window.Data_netWorthTrend);
+    // 最新规模（取最近一期净资产）
+    if(window.Data_fluctuationScale && window.Data_fluctuationScale.series){
+      const series = window.Data_fluctuationScale.series;
+      if(series.length > 0) result.size = series[series.length - 1].y || 0;
+    }
+    // 持有人结构（机构占比）
+    if(window.Data_holderStructure && window.Data_holderStructure.series){
+      const instSeries = window.Data_holderStructure.series.find(s => s.name && s.name.includes('机构'));
+      if(instSeries && instSeries.data && instSeries.data.length > 0){
+        result.instPct = instSeries.data[instSeries.data.length - 1] || 0;
+      }
+    }
+    // 基金名称
+    if(window.fS_name) result.name = window.fS_name;
+
+    return result;
+  } catch(e){
+    console.warn(`fetchFundDetail(${code}) failed:`, e);
+    return null;
+  } finally {
+    // 恢复全局变量（避免污染后续加载）
+    Object.keys(saved).forEach(k=>{ window[k] = saved[k]; });
+  }
+}
+
+// 拉取近3年收益（FundArchivesDatas）
+async function fetchFundR3(code){
+  try {
+    // 保存旧值
+    const savedApidata = window.apidata;
+    await loadScript(`https://fundf10.eastmoney.com/FundArchivesDatas.aspx?type=jdzf&code=${code}&v=${Date.now()}`, 10000);
+    const r3 = window.apidata && window.apidata.content ? parseR3FromJdzf(window.apidata.content) : null;
+    window.apidata = savedApidata; // 恢复
+    return r3;
+  } catch(e){
+    console.warn(`fetchFundR3(${code}) failed:`, e);
+    return null;
+  }
+}
+
+// 刷新所有精选基金详情数据
+async function refreshFundDetails(forceRefresh){
+  // 检查缓存
+  if(!forceRefresh){
+    try {
+      const cached = await FundDB.get('fundDetailCache');
+      if(cached && cached.timestamp && (Date.now() - cached.timestamp < DETAIL_CACHE_TTL)){
+        applyFundDetails(cached.data);
+        const t = new Date(cached.timestamp);
+        updateDetailStatus(`数据更新于 ${t.getMonth()+1}/${t.getDate()} ${t.getHours().toString().padStart(2,'0')}:${t.getMinutes().toString().padStart(2,'0')}（缓存）`);
+        console.log('[FundDetail] 使用24小时内缓存数据');
+        return;
+      }
+    } catch(e){}
+  }
+
+  // 显示进度
+  const banner = document.getElementById('detail-progress');
+  if(banner) banner.style.display = '';
+  const total = CURATED_FUNDS.length;
+  let done = 0;
+
+  const allDetails = {};
+
+  for(const f of CURATED_FUNDS){
+    try {
+      // 顺序加载（避免并发全局变量冲突）
+      const detail = await fetchFundDetail(f.code);
+      const r3 = await fetchFundR3(f.code);
+      if(detail){
+        if(r3 !== null) detail.r3 = r3;
+        allDetails[f.code] = detail;
+      }
+    } catch(e){
+      console.warn(`[FundDetail] ${f.code} error:`, e);
+    }
+    done++;
+    if(banner){
+      const pct = Math.round(done/total*100);
+      banner.innerHTML = `<div style="font-size:12px;color:var(--muted);padding:8px 0">📡 正在拉取基金详情 ${done}/${total}…<div style="height:3px;background:#f0f0f0;border-radius:2px;margin-top:4px"><div style="height:100%;width:${pct}%;background:var(--primary);border-radius:2px;transition:width 0.3s"></div></div></div>`;
+    }
+  }
+
+  // 应用数据
+  applyFundDetails(allDetails);
+
+  // 缓存到IndexedDB
+  try {
+    await FundDB.set('fundDetailCache', { data: allDetails, timestamp: Date.now() });
+  } catch(e){}
+
+  // 更新UI
+  const now = new Date();
+  const timeStr = `${now.getMonth()+1}/${now.getDate()} ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+  updateDetailStatus(`数据更新于 ${timeStr}（实时）`);
+  if(banner) setTimeout(()=>{ banner.style.display='none'; }, 2000);
+
+  console.log(`[FundDetail] 成功更新 ${Object.keys(allDetails).length}/${total} 只基金详情`);
+}
+
+// 将API数据应用到CURATED_FUNDS
+function applyFundDetails(allDetails){
+  if(!allDetails || !Object.keys(allDetails).length) return;
+  let updated = 0;
+  CURATED_FUNDS.forEach(f=>{
+    const d = allDetails[f.code];
+    if(!d) return;
+    if(d.r1 !== undefined) f.r1 = Math.round(d.r1 * 100) / 100;
+    if(d.r3 !== undefined) f.r3 = Math.round(d.r3 * 100) / 100;
+    if(d.maxDD !== undefined && d.maxDD > 0) f.maxDD = d.maxDD;
+    if(d.size !== undefined && d.size > 0) f.size = Math.round(d.size * 100) / 100;
+    if(d.manager) f.manager = d.manager;
+    if(d.mgrYears !== undefined && d.mgrYears > 0) f.mgrYears = Math.round(d.mgrYears * 10) / 10;
+    if(d.stars !== undefined) f.stars = d.stars;
+    // 更新FUND_META中的机构占比
+    if(d.instPct !== undefined && FUND_META[f.code]){
+      FUND_META[f.code].instPct = d.instPct;
+    }
+    updated++;
+  });
+  // 重新渲染精选基金列表
+  if(updated > 0) renderMarketGrid();
+}
+
+function updateDetailStatus(text){
+  const el = document.getElementById('detail-update-time');
+  if(el) el.textContent = text;
 }
 
 // ═══════════════ 面板0: 精选基金 ═══════════════
@@ -1655,6 +1864,7 @@ function _doGenerate(){
       ? `当前推断为<b>${macroClock.label}</b>，权益系数×${macroClock.equityMult}，债券系数×${macroClock.bondMult}。`
       : '周期信号不明确，采用中性配置。';
     stratEl.innerHTML = `
+      <div style="padding:6px 10px;background:#e6f7ff;border-radius:6px;font-size:11px;color:#0050b3;margin-bottom:10px">📡 基金收益率、最大回撤、规模、经理任期等核心数据由天天基金网API实时拉取（每24小时自动更新），确保评分和方案基于最新市场数据。</div>
       <b>一、基金评分体系（简化多因子）</b><br>
       去除冗余指标，保留4个正交维度：<br>
       · <b>Calmar Ratio</b>（40%权重）：(年化收益-无风险利率2%)/历史最大跌幅，唯一风险调整指标，避免Sortino/InfoRatio的高度共线性<br>
@@ -2720,8 +2930,12 @@ function runHealthMonitor(){
   // 6. 请求通知权限（延迟10秒，不打扰用户）
   requestNotificationPermission();
 
-  // 7. 页面加载后自动获取净值 + 自动生成方案
-  setTimeout(()=>refreshAllNav(true), 600);
+  // 7. 页面加载后先拉取基金详情（使用缓存或实时），再获取净值 + 自动生成方案
+  refreshFundDetails(false).then(()=>{
+    setTimeout(()=>refreshAllNav(true), 300);
+  }).catch(()=>{
+    setTimeout(()=>refreshAllNav(true), 300);
+  });
 
   // 8. 每5分钟自动重刷净值 + 重新生成方案
   setInterval(()=>refreshAllNav(true), 5 * 60 * 1000);
