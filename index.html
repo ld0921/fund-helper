@@ -504,10 +504,10 @@ tr:last-child td{border-bottom:none}
   <div class="card">
     <div class="card-title">
       <span class="icon icon-orange">🏆</span>定投推荐榜
-      <span style="font-size:12px;color:var(--muted);font-weight:400;margin-left:4px">基于实时市场数据智能排名</span>
+      <span style="font-size:12px;color:var(--muted);font-weight:400;margin-left:4px">基于历史数据多维智能排名</span>
       <span style="margin-left:auto;font-size:12px;color:var(--muted)" id="dca-rank-time"></span>
     </div>
-    <div class="notice" style="margin-bottom:12px">💡 定投最适合「波动大、长期向上」的资产——市场下跌时自动摊低成本，长期坚持能显著降低平均买入价格。排名综合考虑：历史波动率 × 长期趋势 × 管理质量 × 实时行情。</div>
+    <div class="notice" style="margin-bottom:12px">💡 定投最适合「波动大、长期向上」的资产——市场下跌时自动摊低成本，长期坚持能显著降低平均买入价格。排名综合考虑：波动收益比 × 长期趋势 × 管理质量 × 近期动量。</div>
     <div class="chip-row" id="dca-cat-filter">
       <button class="chip active" onclick="setDcaCat('all')">全部</button>
       <button class="chip" onclick="setDcaCat('qdii')">🌍 QDII海外</button>
@@ -1641,7 +1641,7 @@ function _doGenerate(){
   const styleExposure = analyzeStyleExposure(allPicks);
   const stressResults = stressTest(allPicks);
   renderStyleExposure(styleExposure, allPicks);
-  renderStressTest(stressResults);
+  renderStressTest(stressResults, totalAmt);
 
   // 11. 执行步骤
   const steps=buildSteps(weights,selectedPicks,totalAmt,monthly,riskP,horizon);
@@ -1754,7 +1754,7 @@ function renderStyleExposure(exposure, allPicks){
     ${riskHtml}`;
 }
 
-function renderStressTest(results){
+function renderStressTest(results, stressAmt){
   const sec = document.getElementById('stress-test-section');
   if(!sec) return;
   sec.style.display='block';
@@ -1762,11 +1762,11 @@ function renderStressTest(results){
     <div style="font-size:13px;font-weight:600;margin-bottom:8px">🧪 压力测试（历史情景回测）</div>
     <div style="font-size:11px;color:var(--muted);margin-bottom:8px">模拟组合在历史极端行情中的预估表现，帮助理解最坏情况</div>
     <div class="table-wrap"><table style="font-size:12px">
-      <thead><tr><th>历史情景</th><th>组合预估涨跌</th><th>¥30,000投入预估盈亏</th><th>风险等级</th></tr></thead>
+      <thead><tr><th>历史情景</th><th>组合预估涨跌</th><th>预估盈亏</th><th>风险等级</th></tr></thead>
       <tbody>${results.map(r=>{
         const cls = r.impact >= 0 ? 'up' : 'down';
         const risk = r.impact < -20 ? '🔴 极端' : r.impact < -10 ? '🟡 较高' : r.impact < 0 ? '🟢 可控' : '✅ 正收益';
-        const amt = Math.round(30000 * r.impact / 100);
+        const amt = Math.round(stressAmt * r.impact / 100);
         return `<tr><td>${r.name}</td><td class="${cls}">${r.impact>=0?'+':''}${r.impact.toFixed(1)}%</td><td class="${cls}">${amt>=0?'+':''}¥${Math.abs(amt).toLocaleString()}</td><td>${risk}</td></tr>`;
       }).join('')}</tbody>
     </table></div>
@@ -2095,9 +2095,13 @@ function generateDcaAiPlan(){
     withAmt[0].monthly += (budget - totalMonthly);
   }
 
-  // 期望年化收益（加权 + 保守折扣，与Portfolio模块保持一致）
+  // 期望年化收益（加权 + 分类别均值回归折扣，与智能方案保持一致）
+  const dcaMeanRevCoef = { active:0.55, index:0.55, bond:0.80, money:0.95, qdii:0.55 };
   const rawExpRate = withAmt.reduce((s,f)=>s+f.r1*(f.pct/100),0);
-  const expRate = rawExpRate * 0.65; // 均值回归保守折扣
+  const expRate = withAmt.reduce((s,f)=>{
+    const coef = dcaMeanRevCoef[f.cat] || 0.6;
+    return s + f.r1 * coef * (f.pct/100);
+  }, 0);
   const r = expRate/100/12;
   const periods = years*12;
   let val = 0;
