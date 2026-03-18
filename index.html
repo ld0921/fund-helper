@@ -154,13 +154,11 @@ tr:last-child td{border-bottom:none}
 .step-desc{font-size:12px;color:var(--muted);line-height:1.6}
 .risk-meter{display:flex;gap:4px;align-items:center;margin-top:10px}
 .risk-block{height:8px;flex:1;border-radius:2px}
-.comparing-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
 @media(max-width:600px){
   .form-grid,.profile-grid{grid-template-columns:1fr}
   .stat-row{grid-template-columns:1fr 1fr}
   .fund-grid{grid-template-columns:1fr}
   .expected-banner{flex-direction:column;gap:10px}
-  .comparing-grid{grid-template-columns:1fr}
   .card{padding:14px;margin-bottom:10px}
   .card-title{font-size:14px;gap:6px}
   .stat-card .stat-val{font-size:16px;word-break:break-all}
@@ -428,6 +426,11 @@ tr:last-child td{border-bottom:none}
   <!-- 结果区域（初始隐藏） -->
   <div id="portfolio-result" style="display:none">
 
+    <!-- 数据来源与时效说明 -->
+    <div class="warning-notice" id="data-source-notice">
+      📋 <b>数据来源说明：</b>基金历史收益(近1年/近3年)、历史最大跌幅、基金经理任期等核心数据来源于公开披露信息，参考截至2024年底。当日估算净值通过天天基金实时获取。配置方案主要基于历史数据模型生成，<b>不代表对未来收益的保证</b>。请结合最新市场情况综合判断。
+    </div>
+
     <!-- 调仓建议（有持仓时显示） -->
     <div class="card" id="rebal-card" style="display:none">
       <div class="card-title"><span class="icon icon-red">🔄</span>调仓建议 <span style="font-size:12px;color:var(--muted);font-weight:400">— 基于您的已有持仓生成</span></div>
@@ -472,9 +475,6 @@ tr:last-child td{border-bottom:none}
         <div class="risk-meter" id="risk-meter-bar"></div>
         <div id="risk-meter-desc" style="font-size:12px;color:var(--muted);margin-top:6px"></div>
       </div>
-
-      <!-- 同类方案对比 -->
-      <div id="comparing-section"></div>
 
       <!-- 风格暴露 + 压力测试 -->
       <div id="style-exposure-section" style="display:none;margin-top:14px"></div>
@@ -1597,16 +1597,16 @@ function _doGenerate(){
   const expReturnP75 = expReturn + 0.67 * sigma; // 乐观情景（75分位）
   const expReturnP25 = expReturn - 0.67 * sigma; // 悲观情景（25分位）
   const expReturnP5  = expReturn - 1.65 * sigma; // 极端下行（5分位）
-  // 保底下限
-  const expReturnLow  = Math.max(expReturnP25, riskP==='conservative'?0.5:riskP==='moderate'?-2:-5);
+  // 真实统计区间（不做人为保底，如实展示风险）
+  const expReturnLow  = expReturnP25;
   const expReturnHigh = Math.max(expReturnP75, expReturn);
   // 1年预测
   const expAmt1Low  = Math.round(totalAmt*(1+expReturnLow/100));
   const expAmt1High = Math.round(totalAmt*(1+expReturnHigh/100));
-  // 3年预测（正确的多年复利 + 波动率扩展）
+  // 3年预测（复利 + 波动率扩展）
+  // 3年累计复利收益 = (1+μ)^3 - 1
   // 3年累计波动率 = σ_annual × √3（独立同分布假设）
-  // 3年累计收益区间 = 3×μ ± 0.67×σ×√3
-  const cumReturn3Mid = 3 * expReturn;
+  const cumReturn3Mid = (Math.pow(1 + expReturn/100, 3) - 1) * 100;
   const cumSigma3 = sigma * Math.sqrt(3);
   const cumReturn3Low = cumReturn3Mid - 0.67 * cumSigma3;
   const cumReturn3High = cumReturn3Mid + 0.67 * cumSigma3;
@@ -1620,7 +1620,7 @@ function _doGenerate(){
     <div class="expected-item"><div class="expected-val" style="color:var(--primary)">¥${expAmt1High.toLocaleString()}</div><div class="expected-label">1年后乐观预估</div></div>
     <div class="expected-item"><div class="expected-val" style="color:#722ed1">¥${expAmt3Low.toLocaleString()}~${expAmt3High.toLocaleString()}</div><div class="expected-label">3年后预估区间</div></div>
     <div style="width:100%;font-size:11px;color:var(--muted);margin-top:4px;line-height:1.6">
-      📐 收益预估说明：历史收益打折处理（股票类打55折，债券类打8折），并基于历史波动幅度(±${sigma.toFixed(1)}%)估算乐观和保守情景。极端不利情况下年化可能达 ${expReturnP5.toFixed(1)}%。
+      📐 收益预估说明：基于历史收益均值回归折扣（主动/指数/QDII×55%，债券×80%，货币×95%），并基于历史波动幅度(±${sigma.toFixed(1)}%)估算P25-P75区间。极端不利情况(P5)年化可能达 ${expReturnP5.toFixed(1)}%。以上为统计模型估算，不代表收益保证，实际表现可能超出区间。
     </div>`;
 
   // 7. 副标题
@@ -1678,9 +1678,10 @@ function _doGenerate(){
       · 滞胀期强制提升货币配置下限至15%<br><br>
 
       <b>三、资产配置方法（Risk Parity + 宏观约束 + 动态倾斜）</b><br>
-      执行链路：风险平价基础 → 风险偏好倾斜 → 宏观周期约束 → 行情动量微调 → 期限上限<br>
+      执行链路：风险平价基础 → 风险偏好倾斜 → 宏观周期约束 → 行情动量微调 → 期限上限 → 短期额外调整<br>
       · 基础权重：各类别波动率的倒数，实现等风险贡献（Risk Parity）<br>
       · 期限约束：短期权益≤30%，中期≤60%，长期≤75%，超长期≤85%<br>
+      · 短期额外调整：投资期限≤1年时，主动权益再减配5%转入债券，进一步降低短期波动暴露<br>
       当前权重推导：<br>${weightEntries}<br><br>
 
       <b>四、基金经理变更监控（慢变量）</b><br>
@@ -1690,9 +1691,9 @@ function _doGenerate(){
 
       <b>五、收益预估（修正波动率模型）</b><br>
       · 波动率：σ ≈ maxDD / 2.5（基于 E[MaxDD] ≈ 2.5σ 的理论关系，旧版 maxDD×0.5 会高估σ 2.5倍）<br>
-      · 均值回归：权益×55% / 债券×80% / 货币×95%（基于3-5年半衰期研究）<br>
+      · 均值回归：主动权益/指数/QDII×55%，债券×80%，货币×95%（基于3-5年半衰期研究）<br>
       · 1年区间：μ ± 0.67σ（P25-P75）<br>
-      · 3年区间：3μ ± 0.67σ√3（累计收益 ± 累计波动率）<br><br>
+      · 3年区间：(1+μ)³−1 ± 0.67σ√3（复利累计收益 ± 累计波动率）<br><br>
 
       <b>六、风格/行业暴露控制（新增）</b><br>
       · 每只基金标注风格(大盘/中盘 × 价值/均衡/成长)和主要行业<br>
@@ -1710,9 +1711,18 @@ function _doGenerate(){
       · 交易成本：ETF申购0.1-0.15%，混合型0.6-1.5%(1折后)，赎回0-0.5%<br>
       · 压力测试：模拟2015股灾/2018熊市/2020疫情/2022风格切换/债灾/泡沫6种历史情景<br><br>
 
-      <b>九、定投评分 + 健康诊断</b><br>
-      · 定投核心指标：波动收益比(maxDD/|r3|)，无当日择时信号<br>
-      · 健康诊断：同类σ动态阈值 + 持仓/类别集中度预警
+      <b>九、定投评分体系</b><br>
+      定投评分独立于基金评分，专门为「定期定额」场景设计，包含4个维度：<br>
+      · <b>波动收益比</b>（35%权重）：maxDD/|r3|，波动越大且长期向上，定投摊低成本效果越好<br>
+      · <b>长期趋势</b>（25%权重）：3年累计收益r3，定投需要标的长期向上<br>
+      · <b>管理质量</b>（20%权重）：基金经理任期年限(12分) + 星级评定(8分)。注：此处保留星级作为辅助参考，因定投周期长，星级反映同类长期排名<br>
+      · <b>近期动量</b>（20%权重）：近1年收益r1，衡量中期上涨趋势。不使用当日涨跌，避免择时噪声<br>
+      特殊规则：货币基金(波动极小)固定10分；1年和3年收益双负的基金直接标为不推荐<br><br>
+
+      <b>十、持仓健康诊断</b><br>
+      · 动态阈值：以同类基金标准差(σ)为单位判断跑输程度（z-score &lt; -2为显著落后）<br>
+      · 持仓集中度：单只基金>40%预警，单一类别>60%预警<br>
+      · 结构性下行检测：1年和3年收益双负触发红色预警
     `;
   }
 
@@ -2061,7 +2071,7 @@ function generateDcaAiPlan(){
   // 按定投评分过滤（排除货币）
   let pool = CURATED_FUNDS.filter(f=>f.cat!=='money');
   if(risk==='conservative') pool = pool.filter(f=>['R1','R2','R3'].includes(f.risk));
-  else if(risk==='moderate') pool = pool.filter(f=>['R2','R3','R4'].includes(f.risk));
+  else if(risk==='moderate') pool = pool.filter(f=>['R1','R2','R3','R4'].includes(f.risk));
 
   const scored = pool.map(f=>({...f, dcaScore:calcDCAScore(f)})).sort((a,b)=>b.dcaScore-a.dcaScore);
 
