@@ -657,16 +657,16 @@ tr:last-child td{border-bottom:none}
 <script>
 // ═══════════════ 精选基金数据库 ═══════════════
 const CURATED_FUNDS = [
-  {code:'005827',name:'易方达蓝筹精选混合',type:'混合型',cat:'active',label:'主动权益',manager:'张坤',mgrYears:7,stars:5,risk:'R4',size:680,r1:18.5,r3:-22.3,maxDD:28.5,tags:['消费','医药','白酒'],reason:'张坤代表作，专注消费医药龙头，价值投资体系成熟，历经多轮牛熊考验，长期复利突出。'},
-  {code:'110011',name:'易方达中小盘混合',type:'混合型',cat:'active',label:'主动权益',manager:'张坤',mgrYears:12,stars:5,risk:'R4',size:430,r1:15.2,r3:-18.3,maxDD:26.2,tags:['消费','白酒','医药'],reason:'张坤管理时间最长的产品，穿越多轮牛熊，历史年化收益率优秀，适合长期持有。'},
-  {code:'161005',name:'富国天惠成长混合A',type:'混合型',cat:'active',label:'主动权益',manager:'朱少醒',mgrYears:20,stars:5,risk:'R4',size:310,r1:16.2,r3:-8.3,maxDD:32.1,tags:['成长','科技','消费'],reason:'朱少醒管理超20年，国内任职时间最长的基金经理之一，回撤控制优秀，长期业绩领先。'},
+  {code:'005827',name:'易方达蓝筹精选混合',type:'混合型',cat:'active',label:'主动权益',manager:'张坤',mgrYears:7,stars:5,risk:'R4',size:680,r1:18.5,r3:-22.3,maxDD:28.5,tags:['消费','医药','白酒'],reason:'张坤代表作，专注消费医药龙头，价值投资体系成熟。近3年受消费板块调整影响回撤较大，但投资框架稳定，适合看好消费复苏的长线投资者。'},
+  {code:'110011',name:'易方达中小盘混合',type:'混合型',cat:'active',label:'主动权益',manager:'张坤',mgrYears:12,stars:5,risk:'R4',size:430,r1:15.2,r3:-18.3,maxDD:26.2,tags:['消费','白酒','医药'],reason:'张坤管理时间最长的产品，穿越多轮牛熊。近3年受市场风格切换影响出现回撤，但超长任期积累的管理经验仍具参考价值，适合长期持有。'},
+  {code:'161005',name:'富国天惠成长混合A',type:'混合型',cat:'active',label:'主动权益',manager:'朱少醒',mgrYears:20,stars:5,risk:'R4',size:310,r1:16.2,r3:-8.3,maxDD:32.1,tags:['成长','科技','消费'],reason:'朱少醒管理超20年，国内任职时间最长的基金经理之一。近3年小幅回撤但远优于同类主动基金，回撤控制能力突出，长期配置价值高。'},
   {code:'163402',name:'兴全趋势投资混合',type:'混合型',cat:'active',label:'主动权益',manager:'谢治宇',mgrYears:8,stars:5,risk:'R4',size:408,r1:10.8,r3:-15.2,maxDD:24.6,tags:['均衡','成长','价值'],reason:'谢治宇经典产品，选股均衡多元，下行风险控制优于同类，适合作为权益基金底仓。'},
-  {code:'003095',name:'中欧医疗健康混合A',type:'混合型',cat:'active',label:'主动权益',manager:'葛兰',mgrYears:8,stars:4,risk:'R4',size:285,r1:5.3,r3:-38.2,maxDD:45.3,tags:['医疗','创新药','器械'],reason:'医疗健康专精，覆盖创新药、CXO、医疗器械，长期看好需求扩张，短期波动大。'},
-  {code:'260108',name:'景顺长城新兴成长混合',type:'混合型',cat:'active',label:'主动权益',manager:'刘彦春',mgrYears:12,stars:5,risk:'R4',size:586,r1:12.3,r3:-28.5,maxDD:36.8,tags:['消费','成长','港股'],reason:'刘彦春深度研究消费成长方向，选股精准，任职12年以上，历史业绩优秀。'},
+  {code:'003095',name:'中欧医疗健康混合A',type:'混合型',cat:'active',label:'主动权益',manager:'葛兰',mgrYears:8,stars:4,risk:'R4',size:285,r1:5.3,r3:-38.2,maxDD:45.3,tags:['医疗','创新药','器械'],reason:'医疗健康专精，覆盖创新药、CXO、医疗器械。近3年受医药行业深度调整影响回撤较大(约-38%)，波动高，仅适合看好医疗长期需求且能承受高波动的投资者。'},
+  {code:'260108',name:'景顺长城新兴成长混合',type:'混合型',cat:'active',label:'主动权益',manager:'刘彦春',mgrYears:12,stars:5,risk:'R4',size:586,r1:12.3,r3:-28.5,maxDD:36.8,tags:['消费','成长','港股'],reason:'刘彦春深度研究消费成长方向，任职12年以上。近3年受消费板块系统性调整影响回撤明显，选股能力需在市场回暖后再验证。'},
   {code:'510300',name:'华泰柏瑞沪深300ETF',type:'指数型',cat:'index',label:'指数基金',manager:'柳军/田中',mgrYears:10,stars:5,risk:'R3',size:3800,r1:14.7,r3:-11.2,maxDD:33.5,tags:['沪深300','宽基','蓝筹'],reason:'国内规模最大的沪深300ETF，跟踪A股核心蓝筹，流动性极佳，费率极低(0.15%)，长期定投首选。'},
   {code:'515180',name:'华泰柏瑞红利ETF',type:'指数型',cat:'index',label:'指数基金',manager:'柳军',mgrYears:8,stars:5,risk:'R3',size:580,r1:23.5,r3:15.8,maxDD:22.1,tags:['高股息','红利','防御'],reason:'聚焦高股息低估值标的，2022-2024市场低迷期明显跑赢大盘，防御性强，每年分红。'},
   {code:'513050',name:'易方达中概互联ETF',type:'指数型',cat:'index',label:'指数基金',manager:'成曦',mgrYears:5,stars:4,risk:'R4',size:430,r1:22.8,r3:-32.5,maxDD:58.2,tags:['互联网','港股','科技'],reason:'覆盖腾讯、阿里、美团等互联网龙头，估值处历史低位，波动较大，适合看好长期复苏。'},
-  {code:'159915',name:'易方达创业板ETF',type:'指数型',cat:'index',label:'指数基金',manager:'林伟斌',mgrYears:7,stars:4,risk:'R4',size:380,r1:-1.9,r3:-38.5,maxDD:52.3,tags:['创业板','科技','成长'],reason:'跟踪创业板指，弹性大，反弹力度强，适合激进型投资者少量配置或市场低位布局。'},
+  {code:'159915',name:'易方达创业板ETF',type:'指数型',cat:'index',label:'指数基金',manager:'林伟斌',mgrYears:7,stars:4,risk:'R4',size:380,r1:-1.9,r3:-38.5,maxDD:52.3,tags:['创业板','科技','成长'],reason:'跟踪创业板指，弹性大，反弹力度强。近3年受成长股估值回调影响大幅下跌，当前处于历史低位区间，仅适合激进型投资者少量配置或逆向布局。'},
   {code:'510500',name:'南方中证500ETF',type:'指数型',cat:'index',label:'指数基金',manager:'赵恒',mgrYears:8,stars:4,risk:'R4',size:560,r1:8.3,r3:-22.8,maxDD:42.1,tags:['中证500','中盘','成长'],reason:'覆盖500只中等市值股票，与沪深300互补，成长性更强，适合搭配宽基分散配置。'},
   {code:'159919',name:'嘉实沪深300ETF',type:'指数型',cat:'index',label:'指数基金',manager:'张帆',mgrYears:9,stars:4,risk:'R3',size:1200,r1:14.5,r3:-11.5,maxDD:33.8,tags:['沪深300','宽基','低费率'],reason:'老牌沪深300ETF，费率0.15%，跟踪精准，可与510300搭配增加流动性，适合长期定投。'},
   {code:'110017',name:'易方达增强回报债券A',type:'债券型',cat:'bond',label:'债券基金',manager:'张清华',mgrYears:12,stars:5,risk:'R2',size:182,r1:7.8,r3:18.5,maxDD:4.2,tags:['信用债','增强','稳健'],reason:'张清华管理，长期业绩位居债基前列，信用债与利率债均衡，适度增强收益，风险控制优秀。'},
@@ -1579,11 +1579,11 @@ function _doGenerate(){
     const coef = meanRevCoef[f.cat] || 0.6;
     return s + f.r1 * coef * (f.pct/100);
   }, 0);
-  // 组合波动率估算（修正公式）
-  // 学术依据：对于正态分布，E[MaxDD] ≈ 2σ√(ln(T))，T=1年≈250交易日
-  // 简化近似：maxDD ≈ 2.5σ → σ ≈ maxDD / 2.5
+  // 组合波动率估算（经验公式）
+  // 经验依据：基于国内公募基金历史数据回测，maxDD与年化波动率的比值约2-3倍
+  // 取中间值2.5作为换算系数：σ ≈ maxDD / 2.5
   const blendedDD = allPicks.reduce((s,f)=>s+f.maxDD*(f.pct/100),0);
-  const sigma = blendedDD / 2.5; // 修正：年化波动率 ≈ 最大回撤 / 2.5
+  const sigma = blendedDD / 2.5; // 年化波动率 ≈ 最大回撤 / 2.5（经验换算）
   // 正态分布置信区间
   const expReturnP75 = expReturn + 0.67 * sigma; // 乐观情景（75分位）
   const expReturnP25 = expReturn - 0.67 * sigma; // 悲观情景（25分位）
@@ -1659,7 +1659,7 @@ function _doGenerate(){
       去除冗余指标，保留4个正交维度：<br>
       · <b>Calmar Ratio</b>（40%权重）：(年化收益-无风险利率2%)/历史最大跌幅，唯一风险调整指标，避免Sortino/InfoRatio的高度共线性<br>
       · <b>收益一致性</b>（25%权重）：1年/3年趋势方向是否一致 + 3年收益强度，衡量收益可持续性<br>
-      · <b>任期稳定性</b>（25%权重）：客观指标——基金经理连续任期年限。<1年=刚更换(高风险)，3-5年=稳定，>10年=超稳定。替代主观的星级评定<br>
+      · <b>任期稳定性</b>（25%权重）：客观指标——基金经理连续任期年限，6档评分：<1年=3分(刚更换，高风险)，1-2年=8分(磨合期)，2-3年=13分(初步稳定)，3-5年=17分(稳定)，5-10年=21分(成熟)，>10年=25分(超稳定)。替代主观的星级评定<br>
       · <b>规模适配性</b>（10%权重）：50-500亿为最优区间（满分），<2亿有清盘风险（2分），>1000亿调仓困难（4分）<br><br>
 
       <b>二、宏观周期约束（美林时钟顶层调整）</b><br>
@@ -1673,17 +1673,23 @@ function _doGenerate(){
       执行链路：风险平价基础 → 风险偏好倾斜 → 宏观周期约束 → 行情动量微调 → 期限上限 → 短期额外调整<br>
       · 基础权重：各类别历史最大跌幅均值的倒数（跌幅越小→权重越高），实现等风险贡献（Risk Parity）<br>
       · 动量微调中的<b>类别排名</b>使用独立权重：Calmar Ratio 50% + 三维趋势一致性(短/中/长) 25% + 经理任期稳定性 15% + 实时动量 10%，与个基评分权重不同，侧重捕捉类别间相对强弱<br>
-      · 期限约束：短期权益≤30%，中期≤60%，长期≤75%，超长期≤85%<br>
+      · 期限约束：1年≤30%，1-3年≤60%，3-5年≤75%，5年以上≤85%<br>
       · 短期额外调整：投资期限≤1年时，主动权益再减配5%转入债券，进一步降低短期波动暴露<br>
       当前权重推导：<br>${weightEntries}<br><br>
+
+      <b>三(续)、类别内基金选择（核心-卫星架构）</b><br>
+      · 每个类别按评分排序后，去除同经理重复和标签重叠>50%的基金<br>
+      · 选择数量：该类别权重≥35%选3只，≥25%选2只，其他选1只<br>
+      · 核心-卫星分配：3只时核心仓50%+卫星仓25%+25%；2只时核心仓70%+卫星仓30%；1只时100%<br>
+      · 核心仓采用分批买入降低择时风险，卫星仓一次性建仓<br><br>
 
       <b>四、基金经理变更监控（慢变量）</b><br>
       · 任职<1年的基金经理自动标记预警<br>
       · 新任经理的历史业绩不可参考（属于前任经理），评分中给予最低稳定性分<br>
       · ${mgrWarnings.length > 0 ? `当前有 ${mgrWarnings.length} 只基金存在经理变更预警` : '当前精选库无经理变更预警'}<br><br>
 
-      <b>五、收益预估（修正波动率模型）</b><br>
-      · 波动率：σ ≈ maxDD / 2.5（基于 E[MaxDD] ≈ 2.5σ 的理论关系，旧版 maxDD×0.5 会高估σ 2.5倍）<br>
+      <b>五、收益预估（经验波动率模型）</b><br>
+      · 波动率：σ ≈ maxDD / 2.5（经验换算系数，基于国内公募基金历史数据中最大回撤与年化波动率的比值约2-3倍取中值）<br>
       · 均值回归：主动权益/指数/QDII×55%，债券×80%，货币×95%（基于3-5年半衰期研究）<br>
       · 1年区间：μ ± 0.67σ（P25-P75）<br>
       · 3年区间：(1+μ)³−1 ± 0.67σ√3（复利累计收益 ± 累计波动率）<br><br>
@@ -1710,7 +1716,7 @@ function _doGenerate(){
       · <b>长期趋势</b>（25%权重）：3年累计收益r3，定投需要标的长期向上<br>
       · <b>管理质量</b>（20%权重）：基金经理任期年限(满分12分，按任期×0.8计算，15年以上满分) + 星级评定(满分8分，按(星级-1)×2计算)。注：此处保留星级作为辅助参考，因定投周期长，星级反映同类长期排名<br>
       · <b>近期动量</b>（20%权重）：近1年收益r1，衡量中期上涨趋势。不使用当日涨跌，避免择时噪声<br>
-      特殊规则：货币基金(波动极小)固定10分；1年和3年收益双负的基金直接标为不推荐<br><br>
+      特殊规则：货币基金波动极小、不适合定投摊成本，已从定投排名中排除；1年和3年收益双负的基金直接标为不推荐<br><br>
 
       <b>十、持仓健康诊断</b><br>
       · 动态阈值：以同类基金标准差(σ)为单位判断跑输程度（z-score &lt; -2为显著落后）<br>
@@ -2015,16 +2021,15 @@ function setDcaCat(cat){
 
 function renderDcaRanking(){
   const list = currentDcaCat==='all' ? CURATED_FUNDS : CURATED_FUNDS.filter(f=>f.cat===currentDcaCat);
-  // 货币基金不适合定投，放最后
-  const sorted = [...list].sort((a,b)=>{
-    if(a.cat==='money' && b.cat!=='money') return 1;
-    if(b.cat==='money' && a.cat!=='money') return -1;
+  // 货币基金不适合定投，直接排除（除非用户专门筛选货币类别）
+  const filtered = currentDcaCat==='money' ? list : list.filter(f=>f.cat!=='money');
+  const sorted = [...filtered].sort((a,b)=>{
     return calcDCAScore(b) - calcDCAScore(a);
   });
   const catHasNav = Object.keys(navCache).length > 0;
   const timeEl = document.getElementById('dca-rank-time');
   if(timeEl && catHasNav){ const now=new Date(); timeEl.textContent=`净值更新于 ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`; }
-  const scoreColors = s => s>=80?'#52c41a':s>=60?'#1677ff':s>=40?'#faad14':'#ff4d4f';
+  const scoreColors = s => s>=80?'#52c41a':s>=65?'#1677ff':s>=50?'#faad14':'#ff4d4f';
   const rankEmoji = i => i===0?'🥇':i===1?'🥈':i===2?'🥉':`<span style="color:var(--muted);font-size:14px">${i+1}</span>`;
   const container = document.getElementById('dca-rank-list');
   if(!sorted.length){ container.innerHTML='<div class="empty">暂无数据</div>'; return; }
