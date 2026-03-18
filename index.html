@@ -332,20 +332,23 @@ tr:last-child td{border-bottom:none}
 
   <!-- 精选基金浏览（折叠起来，不再占主视觉） -->
   <details style="margin-bottom:14px">
-    <summary class="card" style="cursor:pointer;margin-bottom:0;list-style:none;display:flex;align-items:center;gap:8px">
+    <summary class="card" style="cursor:pointer;margin-bottom:0;list-style:none;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
       <span class="icon icon-blue">📊</span>
-      <span style="font-size:15px;font-weight:600">浏览精选基金库（21只）</span>
+      <span style="font-size:15px;font-weight:600" id="curated-title">浏览精选基金库</span>
       <span style="margin-left:auto;font-size:11px;color:var(--muted)" id="detail-update-time"></span>
       <button class="btn btn-sm" onclick="event.stopPropagation();refreshFundDetails(true)" style="font-size:11px;padding:2px 8px;margin-left:4px" title="重新拉取最新基金数据">🔄 刷新数据</button>
+      <button class="btn btn-sm" onclick="event.stopPropagation();scanMarketFunds(true)" style="font-size:11px;padding:2px 8px;background:#722ed1;color:#fff" title="扫描全市场排名前10基金，发现更优选择">🔍 全市场扫描</button>
       <span style="font-size:12px;color:var(--primary)">展开 ▸</span>
     </summary>
     <div style="margin-top:-1px">
   <div id="detail-progress" style="display:none;padding:0 12px"></div>
+  <div id="scan-progress" style="display:none;padding:0 12px"></div>
   <div class="card" style="border-top-left-radius:0;border-top-right-radius:0">
       <span style="margin-left:auto;font-size:12px;color:var(--muted)" id="nav-update-time"></span>
     </div>
     <div style="padding:6px 12px;font-size:11px;color:var(--muted);line-height:1.6;background:#fafafa;border-radius:6px;margin:8px 0">
-      📋 <b>精选标准：</b>从全市场6000+只基金中，按以下条件筛选21只覆盖5大资产类别的代表性基金：经理任期≥5年（或指数基金跟踪精准）、规模≥50亿（非货币）、成立≥3年、同类排名前30%。入选后由算法实时评分，而非人工推荐。如需分析其他基金，可在「自定义评分」中手动添加。
+      📋 <b>精选库：</b>21只经过人工验证的代表性基金作为基础池。点击「🔍 全市场扫描」可自动从全市场近2万只基金中发现近1年收益Top10的优质基金，合并到推荐池中参与评分（结果缓存7天）。
+      <span style="font-size:11px;color:#722ed1" id="scan-status"></span>
     </div>
     <div class="chip-row" id="cat-filter">
       <button class="chip active" onclick="setCategory('all')">全部 (21)</button>
@@ -662,11 +665,11 @@ tr:last-child td{border-bottom:none}
 <script>
 // ═══════════════ 精选基金数据库 ═══════════════
 const CURATED_FUNDS = [
-  {code:'005827',name:'易方达蓝筹精选混合',type:'混合型',cat:'active',label:'主动权益',manager:'张坤',mgrYears:7,stars:5,risk:'R4',size:680,r1:18.5,r3:-22.3,maxDD:28.5,tags:['消费','医药','白酒'],reason:'张坤代表作，专注消费医药龙头，价值投资体系成熟。近3年受消费板块调整影响回撤较大，但投资框架稳定，适合看好消费复苏的长线投资者。'},
-  {code:'110011',name:'易方达中小盘混合',type:'混合型',cat:'active',label:'主动权益',manager:'张坤',mgrYears:12,stars:5,risk:'R4',size:430,r1:15.2,r3:-18.3,maxDD:26.2,tags:['消费','白酒','医药'],reason:'张坤管理时间最长的产品，穿越多轮牛熊。近3年受市场风格切换影响出现回撤，但超长任期积累的管理经验仍具参考价值，适合长期持有。'},
-  {code:'161005',name:'富国天惠成长混合A',type:'混合型',cat:'active',label:'主动权益',manager:'朱少醒',mgrYears:20,stars:5,risk:'R4',size:310,r1:16.2,r3:-8.3,maxDD:32.1,tags:['成长','科技','消费'],reason:'朱少醒管理超20年，国内任职时间最长的基金经理之一。近3年小幅回撤但远优于同类主动基金，回撤控制能力突出，长期配置价值高。'},
+  {code:'005827',name:'易方达蓝筹精选混合',type:'混合型',cat:'active',label:'主动权益',manager:'张坤',mgrYears:7,stars:5,risk:'R4',size:680,r1:18.5,r3:-22.3,maxDD:28.5,tags:['消费','医药','白酒'],reason:'张坤代表作，专注消费医药龙头，价值投资体系成熟，历经多轮牛熊考验。持仓集中于白酒、医药等消费核心资产，适合认同价值投资理念的长线投资者。'},
+  {code:'110011',name:'易方达中小盘混合',type:'混合型',cat:'active',label:'主动权益',manager:'张坤',mgrYears:12,stars:5,risk:'R4',size:430,r1:15.2,r3:-18.3,maxDD:26.2,tags:['消费','白酒','医药'],reason:'张坤管理时间最长的产品，穿越多轮牛熊，超长任期积累丰富经验。持仓以消费白酒为主，风格稳定，适合长期持有。'},
+  {code:'161005',name:'富国天惠成长混合A',type:'混合型',cat:'active',label:'主动权益',manager:'朱少醒',mgrYears:20,stars:5,risk:'R4',size:310,r1:16.2,r3:-8.3,maxDD:32.1,tags:['成长','科技','消费'],reason:'朱少醒管理超20年，国内任职时间最长的基金经理之一。选股覆盖成长与消费，回撤控制能力突出，长期配置价值高。'},
   {code:'163402',name:'兴全趋势投资混合',type:'混合型',cat:'active',label:'主动权益',manager:'谢治宇',mgrYears:8,stars:5,risk:'R4',size:408,r1:10.8,r3:-15.2,maxDD:24.6,tags:['均衡','成长','价值'],reason:'谢治宇经典产品，选股均衡多元，下行风险控制优于同类，适合作为权益基金底仓。'},
-  {code:'003095',name:'中欧医疗健康混合A',type:'混合型',cat:'active',label:'主动权益',manager:'葛兰',mgrYears:8,stars:4,risk:'R4',size:285,r1:5.3,r3:-38.2,maxDD:45.3,tags:['医疗','创新药','器械'],reason:'医疗健康专精，覆盖创新药、CXO、医疗器械。近3年受医药行业深度调整影响回撤较大(约-38%)，波动高，仅适合看好医疗长期需求且能承受高波动的投资者。'},
+  {code:'003095',name:'中欧医疗健康混合A',type:'混合型',cat:'active',label:'主动权益',manager:'葛兰',mgrYears:8,stars:4,risk:'R4',size:285,r1:5.3,r3:-38.2,maxDD:45.3,tags:['医疗','创新药','器械'],reason:'医疗健康专精，覆盖创新药、CXO、医疗器械。行业集中度高，波动大，仅适合看好医疗长期需求且能承受高波动的投资者。'},
   {code:'260108',name:'景顺长城新兴成长混合',type:'混合型',cat:'active',label:'主动权益',manager:'刘彦春',mgrYears:12,stars:5,risk:'R4',size:586,r1:12.3,r3:-28.5,maxDD:36.8,tags:['消费','成长','港股'],reason:'刘彦春深度研究消费成长方向，任职12年以上。近3年受消费板块系统性调整影响回撤明显，选股能力需在市场回暖后再验证。'},
   {code:'510300',name:'华泰柏瑞沪深300ETF',type:'指数型',cat:'index',label:'指数基金',manager:'柳军/田中',mgrYears:10,stars:5,risk:'R3',size:3800,r1:14.7,r3:-11.2,maxDD:33.5,tags:['沪深300','宽基','蓝筹'],reason:'国内规模最大的沪深300ETF，跟踪A股核心蓝筹，流动性极佳，费率极低(0.15%)，长期定投首选。'},
   {code:'515180',name:'华泰柏瑞红利ETF',type:'指数型',cat:'index',label:'指数基金',manager:'柳军',mgrYears:8,stars:5,risk:'R3',size:580,r1:23.5,r3:15.8,maxDD:22.1,tags:['高股息','红利','防御'],reason:'聚焦高股息低估值标的，2022-2024市场低迷期明显跑赢大盘，防御性强，每年分红。'},
@@ -1047,6 +1050,170 @@ function updateDetailStatus(text, isWarning){
   }
 }
 
+// ═══════════════ 全市场扫描（动态发现优秀基金） ═══════════════
+const MARKET_SCAN_CACHE_TTL = 7 * 24 * 60 * 60 * 1000; // 7天缓存
+const SCAN_CATEGORIES = [
+  { ft:'gp', cat:'active', label:'股票型', type:'股票型' },
+  { ft:'hh', cat:'active', label:'混合型', type:'混合型' },
+  { ft:'zs', cat:'index', label:'指数型', type:'指数型' },
+  { ft:'zq', cat:'bond',  label:'债券型', type:'债券型' },
+  { ft:'qdii', cat:'qdii', label:'QDII', type:'QDII' },
+];
+
+// rankhandler 返回字段索引
+// 0:code 1:name 2:pinyin 3:date 4:dwjz 5:ljjz 6:日涨跌 7:近1周 8:近1月 9:近3月 10:近6月
+// 11:近1年 12:近2年 13:近3年 14:近5年 15:今年以来 16:成立以来 17:成立日期 18:类型标记
+// 19:累计净值精确 20:申购费 21:折后费 22:? 23:折后费2 24:? 25:规模(亿)
+
+function parseRankData(datasArray, catInfo){
+  return datasArray.map(item => {
+    const f = item.split(',');
+    if(f.length < 20) return null;
+    const code = f[0];
+    const name = f[1];
+    const r1 = parseFloat(f[11]) || 0;
+    const r3 = parseFloat(f[13]) || 0;
+    const size = parseFloat(f[25]) || 0;
+    const established = f[17] || '';
+    // 基础过滤：成立至少3年、规模≥2亿、名称不含后端/C类/E类
+    const estDate = new Date(established);
+    const yearsOld = (Date.now() - estDate.getTime()) / (365.25*24*60*60*1000);
+    if(yearsOld < 3) return null;
+    if(size < 2) return null;
+    if(/后端|C$|E$/.test(name)) return null;
+    // 排除已在精选库中的
+    if(CURATED_FUNDS.some(cf => cf.code === code)) return null;
+    return {
+      code, name, type: catInfo.type, cat: catInfo.cat, label: catInfo.label,
+      r1, r3, size, maxDD: 0,
+      manager:'', mgrYears:0, stars:3, risk:'R3',
+      tags:[], reason:'全市场扫描发现', discovered:true,
+      established
+    };
+  }).filter(Boolean);
+}
+
+// 从排名API拉取每个类别Top10
+async function fetchMarketRanks(){
+  const allDiscovered = [];
+  for(const catInfo of SCAN_CATEGORIES){
+    try {
+      const resp = await fetch(`/api/fund-rank?ft=${catInfo.ft}&pn=10&sc=1nzf`);
+      if(!resp.ok) continue;
+      const text = await resp.text();
+      // 解析 {datas:[...], allRecords:...} 格式
+      let data;
+      try { data = JSON.parse(text); } catch(e){ continue; }
+      if(!data.datas || !data.datas.length) continue;
+      const parsed = parseRankData(data.datas, catInfo);
+      allDiscovered.push(...parsed);
+    } catch(e){
+      console.warn(`[MarketScan] ${catInfo.label} failed:`, e);
+    }
+  }
+  return allDiscovered;
+}
+
+// 为发现的基金补充详情（经理、回撤等）
+async function enrichDiscoveredFunds(funds, progressCb){
+  let done = 0;
+  for(const f of funds){
+    try {
+      const detail = await fetchFundDetail(f.code);
+      if(detail){
+        if(detail.r1 !== undefined && isFinite(detail.r1)) f.r1 = detail.r1;
+        if(detail.maxDD > 0 && detail.maxDD <= 100) f.maxDD = detail.maxDD;
+        if(detail.manager) f.manager = detail.manager;
+        if(detail.mgrYears > 0) f.mgrYears = Math.round(detail.mgrYears * 10) / 10;
+        if(detail.stars >= 1 && detail.stars <= 5) f.stars = detail.stars;
+        if(detail.size > 0) f.size = Math.round(detail.size * 100) / 100;
+      }
+      // r3已从排名API获取，无需再调FundArchivesDatas
+    } catch(e){}
+    done++;
+    if(progressCb) progressCb(done, funds.length);
+  }
+  return funds;
+}
+
+// 全市场扫描主函数
+async function scanMarketFunds(forceRefresh){
+  // 检查缓存
+  if(!forceRefresh){
+    try {
+      const cached = await FundDB.get('marketScanCache');
+      if(cached && cached.timestamp && (Date.now() - cached.timestamp < MARKET_SCAN_CACHE_TTL)){
+        mergeDiscoveredFunds(cached.data);
+        updateScanStatus(`上次扫描于 ${new Date(cached.timestamp).toLocaleDateString('zh-CN')}，发现 ${cached.data.length} 只基金（缓存7天）`);
+        console.log('[MarketScan] 使用7天内缓存');
+        return cached.data;
+      }
+    } catch(e){}
+  }
+
+  // 显示进度
+  const banner = document.getElementById('scan-progress');
+  if(banner) banner.style.display = '';
+  updateScanProgress(banner, '正在拉取全市场排名数据…', 0);
+
+  // 第1步：拉排名
+  const discovered = await fetchMarketRanks();
+  updateScanProgress(banner, `发现 ${discovered.length} 只候选基金，正在获取详情…`, 20);
+
+  // 第2步：补充详情（经理、回撤）
+  await enrichDiscoveredFunds(discovered, (done, total) => {
+    const pct = 20 + Math.round(done/total*80);
+    updateScanProgress(banner, `正在获取详情 ${done}/${total}…`, pct);
+  });
+
+  // 第3步：过滤低质量基金（maxDD=0说明详情获取失败）
+  const qualified = discovered.filter(f => f.maxDD > 0 && f.mgrYears > 0);
+
+  // 第4步：合并到精选池
+  mergeDiscoveredFunds(qualified);
+
+  // 缓存
+  try {
+    await FundDB.set('marketScanCache', { data: qualified, timestamp: Date.now() });
+  } catch(e){}
+
+  updateScanStatus(`全市场扫描完成，发现 ${qualified.length} 只优质基金已纳入推荐池`);
+  if(banner) setTimeout(()=>{ banner.style.display='none'; }, 3000);
+
+  // 重新生成方案
+  renderMarketGrid();
+  renderDcaRanking();
+
+  return qualified;
+}
+
+// 合并发现的基金到CURATED_FUNDS
+function mergeDiscoveredFunds(discovered){
+  if(!discovered || !discovered.length) return;
+  // 移除旧的发现基金（重新合并）
+  const curatedCodes = new Set(CURATED_FUNDS.filter(f => !f.discovered).map(f => f.code));
+  // 先移除所有旧发现
+  while(CURATED_FUNDS.findIndex(f => f.discovered) >= 0){
+    CURATED_FUNDS.splice(CURATED_FUNDS.findIndex(f => f.discovered), 1);
+  }
+  // 添加新发现的（排除已在精选库中的）
+  discovered.forEach(f => {
+    if(!curatedCodes.has(f.code) && !CURATED_FUNDS.some(cf => cf.code === f.code)){
+      CURATED_FUNDS.push(f);
+    }
+  });
+}
+
+function updateScanProgress(banner, text, pct){
+  if(!banner) return;
+  banner.innerHTML = `<div style="font-size:12px;color:var(--muted);padding:8px 0">🔍 ${text}<div style="height:3px;background:#f0f0f0;border-radius:2px;margin-top:4px"><div style="height:100%;width:${pct}%;background:#722ed1;border-radius:2px;transition:width 0.3s"></div></div></div>`;
+}
+
+function updateScanStatus(text){
+  const el = document.getElementById('scan-status');
+  if(el) el.textContent = text;
+}
+
 // ═══════════════ 面板0: 精选基金 ═══════════════
 const CAT_TAG={'active':'tag-active','index':'tag-index','bond':'tag-bond','money':'tag-money','qdii':'tag-qdii'};
 function stars(n){ return '★'.repeat(n)+'☆'.repeat(5-n); }
@@ -1067,7 +1234,7 @@ function buildFundCard(f){
   return `<div class="fund-card">
     <div class="fund-card-head">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px">
-        <div class="fund-card-name">${f.name}</div>
+        <div class="fund-card-name">${f.name}${f.discovered?'<span style="background:#722ed1;color:#fff;font-size:9px;padding:1px 5px;border-radius:3px;margin-left:4px;vertical-align:middle">新发现</span>':''}</div>
         <span class="tag ${CAT_TAG[f.cat]||'tag-index'}" style="flex-shrink:0">${f.label}</span>
       </div>
       <div class="fund-card-meta">
@@ -1097,6 +1264,10 @@ function buildFundCard(f){
 function renderMarketGrid(){
   const list=currentCat==='all'?CURATED_FUNDS:CURATED_FUNDS.filter(f=>f.cat===currentCat);
   document.getElementById('market-grid').innerHTML=list.length?list.map(buildFundCard).join(''):'<div class="empty">暂无该类别基金</div>';
+  // 更新标题中的基金数量
+  const titleEl=document.getElementById('curated-title');
+  const discovered=CURATED_FUNDS.filter(f=>f.discovered).length;
+  if(titleEl) titleEl.textContent=`浏览基金池（${CURATED_FUNDS.length}只${discovered>0?`，含${discovered}只新发现`:''}）`;
 }
 function setCategory(cat){
   currentCat=cat;
@@ -2953,8 +3124,11 @@ function runHealthMonitor(){
   // 6. 请求通知权限（延迟10秒，不打扰用户）
   requestNotificationPermission();
 
-  // 7. 页面加载后先拉取基金详情（使用缓存或实时），再获取净值 + 自动生成方案
+  // 7. 页面加载后先拉取基金详情，再加载全市场扫描缓存，最后获取净值
   refreshFundDetails(false).then(()=>{
+    // 静默加载全市场扫描缓存（不触发新扫描，仅用已有缓存）
+    return scanMarketFunds(false).catch(()=>{});
+  }).then(()=>{
     setTimeout(()=>refreshAllNav(true), 300);
   }).catch(()=>{
     updateDetailStatus('⚠️ 基金详情拉取失败，当前显示为默认数据（可能已过期）', true);
