@@ -347,7 +347,7 @@ tr:last-child td{border-bottom:none}
       <span style="margin-left:auto;font-size:12px;color:var(--muted)" id="nav-update-time"></span>
     </div>
     <div style="padding:6px 12px;font-size:11px;color:var(--muted);line-height:1.6;background:#fafafa;border-radius:6px;margin:8px 0">
-      📋 <b>精选库：</b>21只经过人工验证的代表性基金作为基础池。点击「🔍 全市场扫描」可自动从全市场近2万只基金中发现近1年收益Top10的优质基金，合并到推荐池中参与评分（结果缓存7天）。
+      📋 <b>精选库：</b>21只经过人工验证的代表性基金作为基础池。点击「🔍 全市场扫描」可加载由 GitHub Actions 每周自动从近2万只基金中筛选的 Top10 优质基金，合并到推荐池参与评分。
       <span style="font-size:11px;color:#722ed1" id="scan-status"></span>
     </div>
     <div class="chip-row" id="cat-filter"></div>
@@ -1067,7 +1067,7 @@ function parseRankData(datasArray, catInfo){
     const r1 = parseFloat(f[11]) || 0;
     const r3 = parseFloat(f[13]) || 0;
     const size = parseFloat(f[24]) || 0;
-    const established = f[17] || '';
+    const established = f[16] || '';
     // 基础过滤：成立至少3年、规模≥2亿、名称不含后端/C类/E类
     const estDate = new Date(established);
     const yearsOld = (Date.now() - estDate.getTime()) / (365.25*24*60*60*1000);
@@ -1086,23 +1086,38 @@ function parseRankData(datasArray, catInfo){
   }).filter(Boolean);
 }
 
-// 从排名API拉取每个类别Top10
+// 从预拉取的静态JSON读取排名数据（由GitHub Actions每周更新）
 async function fetchMarketRanks(){
   const allDiscovered = [];
-  for(const catInfo of SCAN_CATEGORIES){
-    try {
-      const resp = await fetch(`/api/fund-rank?ft=${catInfo.ft}&pn=10&sc=1nzf`);
-      if(!resp.ok) continue;
-      const text = await resp.text();
-      // 解析 {datas:[...], allRecords:...} 格式
-      let data;
-      try { data = JSON.parse(text); } catch(e){ continue; }
-      if(!data.datas || !data.datas.length) continue;
-      const parsed = parseRankData(data.datas, catInfo);
-      allDiscovered.push(...parsed);
-    } catch(e){
-      console.warn(`[MarketScan] ${catInfo.label} failed:`, e);
+  try {
+    const resp = await fetch(`data/market-ranks.json?v=${Date.now()}`);
+    if(!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const result = await resp.json();
+    if(!result.categories) throw new Error('invalid data');
+
+    for(const catInfo of SCAN_CATEGORIES){
+      const catData = result.categories[catInfo.ft];
+      if(!catData || !catData.funds || !catData.funds.length) continue;
+      catData.funds.forEach(f => {
+        // 排除已在精选库中的
+        if(CURATED_FUNDS.some(cf => cf.code === f.code)) return;
+        allDiscovered.push({
+          code: f.code, name: f.name, type: f.type, cat: f.cat, label: f.label,
+          r1: f.r1, r3: f.r3, size: f.size, maxDD: 0,
+          manager:'', mgrYears:0, stars:3, risk:'R3',
+          tags:[], reason:'全市场扫描发现', discovered:true,
+          established: f.established
+        });
+      });
     }
+    // 记录数据时间
+    if(result.timestamp){
+      const t = new Date(result.timestamp);
+      updateScanStatus(`排名数据更新于 ${t.toLocaleDateString('zh-CN')}`);
+    }
+  } catch(e){
+    console.warn('[MarketScan] 读取排名数据失败:', e);
+    updateScanStatus('⚠️ 排名数据加载失败，仅使用精选库基金');
   }
   return allDiscovered;
 }

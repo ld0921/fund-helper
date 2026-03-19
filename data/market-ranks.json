@@ -1,0 +1,540 @@
+{
+  "timestamp": "2026-03-18T09:36:17.347Z",
+  "categories": {
+    "gp": {
+      "label": "股票型",
+      "cat": "active",
+      "type": "股票型",
+      "allRecords": 1053,
+      "funds": [
+        {
+          "code": "006265",
+          "name": "红土创新新科技股票A",
+          "type": "股票型",
+          "cat": "active",
+          "label": "股票型",
+          "r1": 113.86,
+          "r3": 106.06,
+          "size": 126.78,
+          "established": "2018-09-14"
+        },
+        {
+          "code": "006502",
+          "name": "财通集成电路产业股票A",
+          "type": "股票型",
+          "cat": "active",
+          "label": "股票型",
+          "r1": 112.64,
+          "r3": 135.99,
+          "size": 112.89,
+          "established": "2018-11-29"
+        },
+        {
+          "code": "008009",
+          "name": "华商高端装备制造股票A",
+          "type": "股票型",
+          "cat": "active",
+          "label": "股票型",
+          "r1": 102.01,
+          "r3": 100.17,
+          "size": 165.86,
+          "established": "2019-12-10"
+        },
+        {
+          "code": "001040",
+          "name": "新华策略精选股票A",
+          "type": "股票型",
+          "cat": "active",
+          "label": "股票型",
+          "r1": 96.38,
+          "r3": 62.64,
+          "size": 49.91,
+          "established": "2015-03-31"
+        },
+        {
+          "code": "519935",
+          "name": "长信创新驱动股票",
+          "type": "股票型",
+          "cat": "active",
+          "label": "股票型",
+          "r1": 95.17,
+          "r3": 70.48,
+          "size": 56.33,
+          "established": "2016-09-29"
+        },
+        {
+          "code": "010391",
+          "name": "易方达战略新兴产业股票A",
+          "type": "股票型",
+          "cat": "active",
+          "label": "股票型",
+          "r1": 92.23,
+          "r3": 135.8,
+          "size": 85.5,
+          "established": "2021-01-13"
+        },
+        {
+          "code": "008382",
+          "name": "融通产业趋势股票",
+          "type": "股票型",
+          "cat": "active",
+          "label": "股票型",
+          "r1": 92.08,
+          "r3": 64.73,
+          "size": 16.44,
+          "established": "2020-05-09"
+        },
+        {
+          "code": "005009",
+          "name": "申万菱信行业轮动股票A",
+          "type": "股票型",
+          "cat": "active",
+          "label": "股票型",
+          "r1": 92.03,
+          "r3": 74.28,
+          "size": 89.01,
+          "established": "2017-09-29"
+        },
+        {
+          "code": "005660",
+          "name": "嘉实资源精选股票A",
+          "type": "股票型",
+          "cat": "active",
+          "label": "股票型",
+          "r1": 90.09,
+          "r3": 115.58,
+          "size": 133.35,
+          "established": "2018-10-22"
+        },
+        {
+          "code": "010013",
+          "name": "易方达信息行业精选股票A",
+          "type": "股票型",
+          "cat": "active",
+          "label": "股票型",
+          "r1": 87.58,
+          "r3": 96.08,
+          "size": 86.6,
+          "established": "2020-08-24"
+        }
+      ]
+    },
+    "hh": {
+      "label": "混合型",
+      "cat": "active",
+      "type": "混合型",
+      "allRecords": 8268,
+      "funds": [
+        {
+          "code": "008528",
+          "name": "华泰柏瑞质量成长A",
+          "type": "混合型",
+          "cat": "active",
+          "label": "混合型",
+          "r1": 151.12,
+          "r3": 104.21,
+          "size": 36.3,
+          "established": "2020-03-18"
+        },
+        {
+          "code": "001753",
+          "name": "红土创新新兴产业混合A",
+          "type": "混合型",
+          "cat": "active",
+          "label": "混合型",
+          "r1": 138.92,
+          "r3": 112.63,
+          "size": 141.67,
+          "established": "2015-09-23"
+        },
+        {
+          "code": "008555",
+          "name": "华商龙头优势混合",
+          "type": "混合型",
+          "cat": "active",
+          "label": "混合型",
+          "r1": 135.75,
+          "r3": 96.02,
+          "size": 90.64,
+          "established": "2020-05-22"
+        },
+        {
+          "code": "001412",
+          "name": "德邦鑫星价值灵活配置混合A",
+          "type": "混合型",
+          "cat": "active",
+          "label": "混合型",
+          "r1": 131.71,
+          "r3": 223.42,
+          "size": 201.59,
+          "established": "2015-06-19"
+        },
+        {
+          "code": "001437",
+          "name": "易方达瑞享混合I",
+          "type": "混合型",
+          "cat": "active",
+          "label": "混合型",
+          "r1": 129.4,
+          "r3": 116.83,
+          "size": 247.94,
+          "established": "2015-06-26"
+        },
+        {
+          "code": "002152",
+          "name": "华宝核心优势混合A",
+          "type": "混合型",
+          "cat": "active",
+          "label": "混合型",
+          "r1": 129.2,
+          "r3": 148.74,
+          "size": 127.05,
+          "established": "2016-01-21"
+        },
+        {
+          "code": "002692",
+          "name": "富国创新科技混合A",
+          "type": "混合型",
+          "cat": "active",
+          "label": "混合型",
+          "r1": 127.6,
+          "r3": 105.05,
+          "size": 28.93,
+          "established": "2016-06-16"
+        },
+        {
+          "code": "010115",
+          "name": "易方达远见成长混合A",
+          "type": "混合型",
+          "cat": "active",
+          "label": "混合型",
+          "r1": 126.78,
+          "r3": 108.14,
+          "size": 130.88,
+          "established": "2021-03-05"
+        },
+        {
+          "code": "240011",
+          "name": "华宝大盘精选混合",
+          "type": "混合型",
+          "cat": "active",
+          "label": "混合型",
+          "r1": 126.69,
+          "r3": 124.7,
+          "size": 42.88,
+          "established": "2008-10-07"
+        },
+        {
+          "code": "004320",
+          "name": "前海开源沪港深乐享生活",
+          "type": "混合型",
+          "cat": "active",
+          "label": "混合型",
+          "r1": 124.02,
+          "r3": 129.51,
+          "size": 143.38,
+          "established": "2017-05-12"
+        }
+      ]
+    },
+    "zs": {
+      "label": "指数型",
+      "cat": "index",
+      "type": "指数型",
+      "allRecords": 4200,
+      "funds": [
+        {
+          "code": "008326",
+          "name": "东财通信A",
+          "type": "指数型",
+          "cat": "index",
+          "label": "指数型",
+          "r1": 123.34,
+          "r3": 213.27,
+          "size": 222.92,
+          "established": "2020-01-20"
+        },
+        {
+          "code": "007817",
+          "name": "国泰中证全指通信设备ETF联接A",
+          "type": "指数型",
+          "cat": "index",
+          "label": "指数型",
+          "r1": 115.12,
+          "r3": 200.6,
+          "size": 203.8,
+          "established": "2019-09-03"
+        },
+        {
+          "code": "008086",
+          "name": "华夏中证5G通信主题ETF联接A",
+          "type": "指数型",
+          "cat": "index",
+          "label": "指数型",
+          "r1": 90.97,
+          "r3": 150.01,
+          "size": 123.11,
+          "established": "2019-12-10"
+        },
+        {
+          "code": "165520",
+          "name": "中信保诚中证800有色指数(LOF)A",
+          "type": "指数型",
+          "cat": "index",
+          "label": "指数型",
+          "r1": 90.58,
+          "r3": 100.7,
+          "size": 115.65,
+          "established": "2013-08-30"
+        },
+        {
+          "code": "008889",
+          "name": "银华中证5G通信主题ETF联接A",
+          "type": "指数型",
+          "cat": "index",
+          "label": "指数型",
+          "r1": 88.62,
+          "r3": 146.83,
+          "size": 122.27,
+          "established": "2020-05-28"
+        }
+      ]
+    },
+    "zq": {
+      "label": "债券型",
+      "cat": "bond",
+      "type": "债券型",
+      "allRecords": 4647,
+      "funds": [
+        {
+          "code": "006030",
+          "name": "南方昌元可转债债券A",
+          "type": "债券型",
+          "cat": "bond",
+          "label": "债券型",
+          "r1": 34.31,
+          "r3": 36.13,
+          "size": 45.22,
+          "established": "2018-12-25"
+        },
+        {
+          "code": "006738",
+          "name": "工银瑞信添慧债券A",
+          "type": "债券型",
+          "cat": "bond",
+          "label": "债券型",
+          "r1": 30.27,
+          "r3": 23.93,
+          "size": 25.59,
+          "established": "2019-06-11"
+        },
+        {
+          "code": "217018",
+          "name": "招商安瑞进取债券A",
+          "type": "债券型",
+          "cat": "bond",
+          "label": "债券型",
+          "r1": 29.23,
+          "r3": 29.01,
+          "size": 29.41,
+          "established": "2011-03-17"
+        },
+        {
+          "code": "005945",
+          "name": "工银可转债优选债券A",
+          "type": "债券型",
+          "cat": "bond",
+          "label": "债券型",
+          "r1": 28.75,
+          "r3": 20.97,
+          "size": 11.58,
+          "established": "2018-07-02"
+        },
+        {
+          "code": "690002",
+          "name": "民生增强收益债券A",
+          "type": "债券型",
+          "cat": "bond",
+          "label": "债券型",
+          "r1": 26.59,
+          "r3": 36.28,
+          "size": 31.89,
+          "established": "2009-07-21"
+        },
+        {
+          "code": "001045",
+          "name": "华夏可转债增强债券A",
+          "type": "债券型",
+          "cat": "bond",
+          "label": "债券型",
+          "r1": 26.48,
+          "r3": 26.14,
+          "size": 8.6,
+          "established": "2016-09-27"
+        },
+        {
+          "code": "007316",
+          "name": "交银可转债债券A",
+          "type": "债券型",
+          "cat": "bond",
+          "label": "债券型",
+          "r1": 25.32,
+          "r3": 34.47,
+          "size": 48.63,
+          "established": "2019-07-11"
+        },
+        {
+          "code": "470058",
+          "name": "汇添富可转换债券A",
+          "type": "债券型",
+          "cat": "bond",
+          "label": "债券型",
+          "r1": 25.16,
+          "r3": 34.25,
+          "size": 34.25,
+          "established": "2011-06-17"
+        },
+        {
+          "code": "720003",
+          "name": "财通收益增强债券A",
+          "type": "债券型",
+          "cat": "bond",
+          "label": "债券型",
+          "r1": 24.98,
+          "r3": 38.29,
+          "size": 63.34,
+          "established": "2012-12-20"
+        },
+        {
+          "code": "005273",
+          "name": "华商可转债债券A",
+          "type": "债券型",
+          "cat": "bond",
+          "label": "债券型",
+          "r1": 24.28,
+          "r3": 32.82,
+          "size": 38.12,
+          "established": "2017-12-22"
+        }
+      ]
+    },
+    "qdii": {
+      "label": "QDII",
+      "cat": "qdii",
+      "type": "QDII",
+      "allRecords": 209,
+      "funds": [
+        {
+          "code": "539002",
+          "name": "建信新兴市场混合(QDII)A",
+          "type": "QDII",
+          "cat": "qdii",
+          "label": "QDII",
+          "r1": 87.62,
+          "r3": 114.93,
+          "size": 67.61,
+          "established": "2011-06-21"
+        },
+        {
+          "code": "457001",
+          "name": "国富亚洲机会股票(QDII)A",
+          "type": "QDII",
+          "cat": "qdii",
+          "label": "QDII",
+          "r1": 61.14,
+          "r3": 73.04,
+          "size": 17.15,
+          "established": "2012-02-22"
+        },
+        {
+          "code": "164701",
+          "name": "汇添富黄金及贵金属(QDII-LOF-FOF)A",
+          "type": "QDII",
+          "cat": "qdii",
+          "label": "QDII",
+          "r1": 58.61,
+          "r3": 142.81,
+          "size": 170.99,
+          "established": "2011-08-31"
+        },
+        {
+          "code": "006373",
+          "name": "国富全球科技互联混合(QDII)人民币A",
+          "type": "QDII",
+          "cat": "qdii",
+          "label": "QDII",
+          "r1": 58.23,
+          "r3": 151.37,
+          "size": 117.28,
+          "established": "2018-11-20"
+        },
+        {
+          "code": "320013",
+          "name": "诺安全球黄金",
+          "type": "QDII",
+          "cat": "qdii",
+          "label": "QDII",
+          "r1": 53.8,
+          "r3": 130.96,
+          "size": 160.85,
+          "established": "2011-01-13"
+        },
+        {
+          "code": "005699",
+          "name": "工银新经济混合(QDII)人民币A",
+          "type": "QDII",
+          "cat": "qdii",
+          "label": "QDII",
+          "r1": 53.72,
+          "r3": 33.51,
+          "size": 14.44,
+          "established": "2018-05-10"
+        },
+        {
+          "code": "378546",
+          "name": "摩根全球天然资源混合(QDII)A",
+          "type": "QDII",
+          "cat": "qdii",
+          "label": "QDII",
+          "r1": 50.04,
+          "r3": 69.46,
+          "size": 96.97,
+          "established": "2012-03-26"
+        },
+        {
+          "code": "165513",
+          "name": "中信保诚全球商品主题(QDII-FOF-LOF)A",
+          "type": "QDII",
+          "cat": "qdii",
+          "label": "QDII",
+          "r1": 49.92,
+          "r3": 125.71,
+          "size": 213.39,
+          "established": "2011-12-20"
+        },
+        {
+          "code": "005698",
+          "name": "华夏全球科技先锋混合(QDII)A(人民币)",
+          "type": "QDII",
+          "cat": "qdii",
+          "label": "QDII",
+          "r1": 49.84,
+          "r3": 137.89,
+          "size": 64.03,
+          "established": "2018-04-17"
+        },
+        {
+          "code": "040021",
+          "name": "华安大中华升级股票(QDII)A",
+          "type": "QDII",
+          "cat": "qdii",
+          "label": "QDII",
+          "r1": 49.77,
+          "r3": 89.04,
+          "size": 47.76,
+          "established": "2011-05-17"
+        }
+      ]
+    }
+  }
+}
