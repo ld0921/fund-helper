@@ -1094,8 +1094,12 @@ async function fetchMarketRanks(){
         if(CURATED_FUNDS.some(cf => cf.code === f.code)) return;
         allDiscovered.push({
           code: f.code, name: f.name, type: f.type, cat: f.cat, label: f.label,
-          r1: f.r1, r3: f.r3, size: f.size, maxDD: 0,
-          manager:'', mgrYears:0, stars:3, risk:'R3',
+          r1: f.r1, r3: f.r3, size: f.size,
+          maxDD: f.maxDD || 0,
+          manager: f.manager || '',
+          mgrYears: f.mgrYears || 0,
+          stars: f.stars || 3,
+          risk: f.risk || 'R3',
           tags:[], reason:'全市场扫描发现', discovered:true,
           established: f.established
         });
@@ -1127,28 +1131,6 @@ function inferRiskLevel(maxDD, cat){
 }
 
 // 为发现的基金补充详情（经理、回撤等）
-async function enrichDiscoveredFunds(funds, progressCb){
-  let done = 0;
-  for(const f of funds){
-    try {
-      const detail = await fetchFundDetail(f.code);
-      if(detail){
-        if(detail.r1 !== undefined && isFinite(detail.r1)) f.r1 = detail.r1;
-        if(detail.maxDD > 0 && detail.maxDD <= 100) f.maxDD = detail.maxDD;
-        if(detail.manager) f.manager = detail.manager;
-        if(detail.mgrYears > 0) f.mgrYears = Math.round(detail.mgrYears * 10) / 10;
-        if(detail.stars >= 1 && detail.stars <= 5) f.stars = detail.stars;
-        if(detail.size > 0) f.size = Math.round(detail.size * 100) / 100;
-        // 根据maxDD自动推断风险等级
-        f.risk = inferRiskLevel(f.maxDD, f.cat);
-      }
-    } catch(e){}
-    done++;
-    if(progressCb) progressCb(done, funds.length);
-  }
-  return funds;
-}
-
 // 全市场扫描主函数
 async function scanMarketFunds(forceRefresh){
   // 检查缓存
@@ -1167,24 +1149,17 @@ async function scanMarketFunds(forceRefresh){
   // 显示进度
   const banner = document.getElementById('scan-progress');
   if(banner) banner.style.display = '';
-  updateScanProgress(banner, '正在拉取全市场排名数据…', 0);
+  updateScanProgress(banner, '正在加载全市场排名数据…', 0);
 
-  // 第1步：拉排名
+  // 第1步：从预生成的静态JSON读取排名+详情数据（GitHub Actions已在服务端预获取详情）
   const discovered = await fetchMarketRanks();
-  updateScanProgress(banner, `发现 ${discovered.length} 只候选基金，正在获取详情…`, 20);
+  updateScanProgress(banner, `发现 ${discovered.length} 只基金`, 80);
 
-  // 第2步：补充详情（经理、回撤）
-  await enrichDiscoveredFunds(discovered, (done, total) => {
-    const pct = 20 + Math.round(done/total*80);
-    updateScanProgress(banner, `正在获取详情 ${done}/${total}…`, pct);
-  });
-
-  // 第3步：过滤低质量基金
-  // maxDD=0 且 mgrYears=0 说明详情完全获取失败，丢弃
-  // 只要有其中一项数据就保留（排名数据中已有r1/r3/size）
+  // 第2步：直接使用JSON中的完整数据（maxDD/manager/mgrYears已由服务端预获取）
+  // 过滤无效数据：maxDD=0 且 mgrYears=0 说明服务端也没能获取详情
   const qualified = discovered.filter(f => f.maxDD > 0 || f.mgrYears > 0);
 
-  // 第4步：合并到精选池
+  // 第3步：合并到精选池
   mergeDiscoveredFunds(qualified);
 
   // 缓存
