@@ -6,6 +6,14 @@ const fs = require('fs');
 const path = require('path');
 const https = require('https');
 
+// 精选库21只基金代码
+const CURATED_CODES = [
+  '005827','110011','161005','163402','003095','260108',
+  '510300','515180','513050','159915','510500','159919',
+  '110017','000171','070009','000198','003003',
+  '161125','270042','040046','006479',
+];
+
 const CATEGORIES = [
   { ft: 'gp',   cat: 'active', label: '股票型', type: '股票型' },
   { ft: 'hh',   cat: 'active', label: '混合型', type: '混合型' },
@@ -145,6 +153,23 @@ async function fetchFundDetail(code) {
   }
 }
 
+// 拉取近3年收益率（FundArchivesDatas页面）
+async function fetchFundR3(code) {
+  try {
+    const body = await httpGet(`https://fundf10.eastmoney.com/FundArchivesDatas.aspx?type=jdzf&code=${code}`, {
+      'Referer': 'https://fundf10.eastmoney.com/',
+      'User-Agent': 'Mozilla/5.0 (compatible; FundHelper/1.0)'
+    });
+    // 匹配"近3年"行后第一个百分比数字
+    const match = body.match(/近3年[\s\S]*?<li[^>]*>([-\d.]+)%/);
+    if (match) return parseFloat(match[1]) || null;
+    return null;
+  } catch (e) {
+    console.warn(`    R3获取失败 ${code}: ${e.message}`);
+    return null;
+  }
+}
+
 // 根据maxDD推断风险等级
 function inferRiskLevel(maxDD, cat) {
   if (cat === 'money') return 'R1';
@@ -208,6 +233,37 @@ async function main() {
   const outPath = path.join(outDir, 'market-ranks.json');
   fs.writeFileSync(outPath, JSON.stringify(result, null, 2), 'utf-8');
   console.log(`\n完成！共 ${totalFunds} 只基金，已写入 ${outPath}`);
+
+  // ═══ 精选库基金详情预拉取 ═══
+  console.log(`\n开始预拉取 ${CURATED_CODES.length} 只精选库基金详情…`);
+  const curatedResult = { timestamp: new Date().toISOString(), funds: {} };
+  let curatedDone = 0;
+
+  for (const code of CURATED_CODES) {
+    try {
+      const detail = await fetchFundDetail(code);
+      const r3 = await fetchFundR3(code);
+      if (detail) {
+        const entry = {};
+        if (detail.r1 !== undefined && isFinite(detail.r1)) entry.r1 = detail.r1;
+        if (r3 !== null) entry.r3 = r3;
+        if (detail.maxDD > 0 && detail.maxDD <= 100) entry.maxDD = detail.maxDD;
+        if (detail.manager) entry.manager = detail.manager;
+        if (detail.mgrYears > 0) entry.mgrYears = detail.mgrYears;
+        if (detail.star >= 1 && detail.star <= 5) entry.stars = detail.star;
+        if (detail.fundSize > 0) entry.size = Math.round(detail.fundSize * 100) / 100;
+        curatedResult.funds[code] = entry;
+        curatedDone++;
+      }
+    } catch (e) {
+      console.warn(`    精选库详情失败 ${code}: ${e.message}`);
+    }
+    await sleep(300);
+  }
+
+  const curatedPath = path.join(outDir, 'curated-details.json');
+  fs.writeFileSync(curatedPath, JSON.stringify(curatedResult, null, 2), 'utf-8');
+  console.log(`精选库详情完成！${curatedDone}/${CURATED_CODES.length} 只成功，已写入 ${curatedPath}`);
 }
 
 main().catch(e => { console.error(e); process.exit(1); });

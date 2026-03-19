@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-03-19T09:15:49.333Z",
+  "timestamp": "2026-03-19T09:49:02.698Z",
   "categories": {
     "gp": {
       "label": "股票型",
@@ -728,6 +728,22 @@
           "risk": "R5"
         },
         {
+          "code": "006555",
+          "name": "浦银安盛全球智能科技(QDII)A",
+          "type": "QDII",
+          "cat": "qdii",
+          "label": "QDII",
+          "r1": 46.08,
+          "r3": 122.83,
+          "size": 8.74,
+          "established": "2019-01-29",
+          "maxDD": 34.4,
+          "manager": "IKEDA KAE",
+          "mgrYears": 8.2,
+          "stars": 4,
+          "risk": "R4"
+        },
+        {
           "code": "005698",
           "name": "华夏全球科技先锋混合(QDII)A(人民币)",
           "type": "QDII",
@@ -740,22 +756,6 @@
           "maxDD": 54.3,
           "manager": "李湘杰",
           "mgrYears": 11.9,
-          "stars": 4,
-          "risk": "R5"
-        },
-        {
-          "code": "378546",
-          "name": "摩根全球天然资源混合(QDII)A",
-          "type": "QDII",
-          "cat": "qdii",
-          "label": "QDII",
-          "r1": 48.46,
-          "r3": 70.15,
-          "size": 1.87,
-          "established": "2012-03-26",
-          "maxDD": 64.6,
-          "manager": "张军",
-          "mgrYears": 18,
           "stars": 4,
           "risk": "R5"
         }

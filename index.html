@@ -248,7 +248,7 @@ tr:last-child td{border-bottom:none}
 </div>
 <!-- 全局自动加载进度条 -->
 <div id="auto-banner">
-  <span id="banner-text">⏳ 正在实时获取全市场净值数据…</span>
+  <span id="banner-text">⏳ 正在更新实时净值…</span>
   <div class="progress-wrap"><div class="progress-bar" id="progress-bar"></div></div>
   <span id="banner-count" style="white-space:nowrap;font-size:12px;opacity:.85">0 / 21</span>
   <button class="banner-action" onclick="manualRefresh()">⟳ 重新加载</button>
@@ -423,12 +423,10 @@ tr:last-child td{border-bottom:none}
       <span class="icon icon-blue">📊</span>
       <span style="font-size:15px;font-weight:600" id="curated-title">精选基金库</span>
       <span style="margin-left:auto;font-size:11px;color:var(--muted)" id="detail-update-time"></span>
-      <button class="btn btn-sm" onclick="refreshFundDetails(true)" style="font-size:11px;padding:2px 8px" title="重新拉取最新基金数据">🔄 刷新数据</button>
-      <button class="btn btn-sm" onclick="scanMarketFunds(true)" style="font-size:11px;padding:2px 8px;background:#722ed1;color:#fff" title="扫描全市场排名前10基金，发现更优选择">🔍 全市场扫描</button>
+      <button id="btn-refresh-detail" class="btn btn-sm" onclick="refreshFundDetails(true)" style="font-size:11px;padding:2px 8px" title="重新拉取最新基金数据">🔄 刷新数据</button>
+      <button id="btn-scan-market" class="btn btn-sm" onclick="scanMarketFunds(true)" style="font-size:11px;padding:2px 8px;background:#722ed1;color:#fff" title="扫描全市场排名前10基金，发现更优选择">🔍 全市场扫描</button>
     </div>
   </div>
-  <div id="detail-progress" style="display:none;padding:0 12px"></div>
-  <div id="scan-progress" style="display:none;padding:0 12px"></div>
   <div class="card" style="border-top-left-radius:0;border-top-right-radius:0">
     <span style="font-size:12px;color:var(--muted)" id="nav-update-time"></span>
     <div style="padding:6px 0;font-size:11px;color:var(--muted);line-height:1.6">
@@ -931,6 +929,8 @@ async function fetchFundR3(code){
 
 // 刷新所有精选基金详情数据
 async function refreshFundDetails(forceRefresh){
+  const btnRefresh = document.getElementById('btn-refresh-detail');
+
   // 检查缓存
   if(!forceRefresh){
     try {
@@ -945,7 +945,30 @@ async function refreshFundDetails(forceRefresh){
     } catch(e){}
   }
 
-  // 显示进度
+  // 按钮加载态
+  if(btnRefresh){ btnRefresh.textContent='⏳ 更新中...'; btnRefresh.disabled=true; }
+
+  // 优先尝试预生成的静态JSON
+  try {
+    const resp = await fetch('data/curated-details.json');
+    if(resp.ok){
+      const json = await resp.json();
+      if(json && json.funds && Object.keys(json.funds).length > 0){
+        applyFundDetails(json.funds);
+        try { await FundDB.set('fundDetailCache', { data: json.funds, timestamp: Date.now() }); } catch(e){}
+        const now = new Date();
+        const timeStr = `${now.getMonth()+1}/${now.getDate()} ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+        updateDetailStatus(`数据更新于 ${timeStr}（预生成）`, false);
+        console.log(`[FundDetail] 从curated-details.json加载 ${Object.keys(json.funds).length} 只基金详情`);
+        if(btnRefresh){ btnRefresh.textContent='🔄 刷新数据 ✓'; setTimeout(()=>{ btnRefresh.textContent='🔄 刷新数据'; btnRefresh.disabled=false; }, 2000); }
+        return;
+      }
+    }
+  } catch(e){
+    console.warn('[FundDetail] 预生成JSON加载失败，回退到逐只API拉取', e);
+  }
+
+  // Fallback: 逐只API拉取
   const banner = document.getElementById('detail-progress');
   if(banner) banner.style.display = '';
   const total = CURATED_FUNDS.length;
@@ -955,7 +978,6 @@ async function refreshFundDetails(forceRefresh){
 
   for(const f of CURATED_FUNDS){
     try {
-      // 顺序加载（避免并发全局变量冲突）
       const detail = await fetchFundDetail(f.code);
       const r3 = await fetchFundR3(f.code);
       if(detail){
@@ -981,7 +1003,7 @@ async function refreshFundDetails(forceRefresh){
     if(successCount > 0) await FundDB.set('fundDetailCache', { data: allDetails, timestamp: Date.now() });
   } catch(e){}
 
-  // 更新UI — 区分成功和失败
+  // 更新UI
   const now = new Date();
   const timeStr = `${now.getMonth()+1}/${now.getDate()} ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
   if(successCount === 0){
@@ -992,6 +1014,7 @@ async function refreshFundDetails(forceRefresh){
     updateDetailStatus(`数据更新于 ${timeStr}（实时）`, false);
   }
   if(banner) setTimeout(()=>{ banner.style.display='none'; }, 2000);
+  if(btnRefresh){ btnRefresh.textContent='🔄 刷新数据 ✓'; setTimeout(()=>{ btnRefresh.textContent='🔄 刷新数据'; btnRefresh.disabled=false; }, 2000); }
 
   console.log(`[FundDetail] 成功更新 ${successCount}/${total} 只基金详情`);
 }
@@ -1133,6 +1156,8 @@ function inferRiskLevel(maxDD, cat){
 // 为发现的基金补充详情（经理、回撤等）
 // 全市场扫描主函数
 async function scanMarketFunds(forceRefresh){
+  const btnScan = document.getElementById('btn-scan-market');
+
   // 检查缓存
   if(!forceRefresh){
     try {
@@ -1145,6 +1170,9 @@ async function scanMarketFunds(forceRefresh){
       }
     } catch(e){}
   }
+
+  // 按钮加载态
+  if(btnScan){ btnScan.textContent='⏳ 扫描中...'; btnScan.disabled=true; }
 
   // 显示进度
   const banner = document.getElementById('scan-progress');
@@ -1169,6 +1197,7 @@ async function scanMarketFunds(forceRefresh){
 
   updateScanStatus(`全市场扫描完成，发现 ${qualified.length} 只优质基金已纳入推荐池`);
   if(banner) setTimeout(()=>{ banner.style.display='none'; }, 3000);
+  if(btnScan){ btnScan.textContent='🔍 全市场扫描 ✓'; setTimeout(()=>{ btnScan.textContent='🔍 全市场扫描'; btnScan.disabled=false; }, 2000); }
 
   // 重新生成方案
   renderMarketGrid();
@@ -1317,8 +1346,9 @@ function updateNavCard(code,data){
 }
 
 // 核心：自动加载净值 → 自动生成方案
-function refreshAllNav(autoGenerate){
+function refreshAllNav(autoGenerate, silent){
   if(autoGenerate===undefined) autoGenerate=true;
+  if(silent===undefined) silent=false;
   const total=CURATED_FUNDS.length;
   let done=0;
 
@@ -1327,37 +1357,45 @@ function refreshAllNav(autoGenerate){
   const bar=document.getElementById('progress-bar');
   const countEl=document.getElementById('banner-count');
   const textEl=document.getElementById('banner-text');
-  banner.className=''; // show, loading style
-  bar.style.width='0%';
-  textEl.textContent='⏳ 正在实时获取全市场净值数据…';
-  countEl.textContent=`0 / ${total}`;
+  if(!silent){
+    banner.className=''; // show, loading style
+    bar.style.width='0%';
+    textEl.textContent='⏳ 正在更新实时净值…';
+    countEl.textContent=`0 / ${total}`;
+  }
 
-  // 重置基金卡净值显示
-  CURATED_FUNDS.forEach(f=>{
-    const el=document.getElementById(`nav-${f.code}`);
-    if(el){el.textContent='加载中…'; el.style.color='var(--muted)';}
-    const chgEl=document.getElementById(`chg-${f.code}`);
-    if(chgEl){chgEl.textContent='--'; chgEl.className='nav-change neutral';}
-  });
+  // 重置基金卡净值显示（仅非静默模式）
+  if(!silent){
+    CURATED_FUNDS.forEach(f=>{
+      const el=document.getElementById(`nav-${f.code}`);
+      if(el){el.textContent='加载中…'; el.style.color='var(--muted)';}
+      const chgEl=document.getElementById(`chg-${f.code}`);
+      if(chgEl){chgEl.textContent='--'; chgEl.className='nav-change neutral';}
+    });
+  }
 
   CURATED_FUNDS.forEach(f=>fetchNav(f.code, data=>{
     updateNavCard(f.code,data);
     done++;
     const pct=Math.round(done/total*100);
-    bar.style.width=pct+'%';
-    countEl.textContent=`${done} / ${total}`;
+    if(!silent){
+      bar.style.width=pct+'%';
+      countEl.textContent=`${done} / ${total}`;
+    }
 
     if(done===total){
       // 全部加载完成
       const now=new Date();
       const timeStr=`${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
       const successCount=Object.keys(navCache).length;
-      textEl.textContent=`✅ 已获取 ${successCount} 只基金实时净值，更新于 ${timeStr}`;
-      banner.className='done';
+      if(!silent){
+        textEl.textContent=`✅ 已获取 ${successCount} 只基金实时净值，更新于 ${timeStr}`;
+        banner.className='done';
+      }
       document.getElementById('nav-update-time').textContent=`净值更新于 ${timeStr}`;
 
       // 5秒后隐藏进度条
-      setTimeout(()=>{ banner.className='hidden'; },5000);
+      if(!silent) setTimeout(()=>{ banner.className='hidden'; },5000);
 
       // 刷新定投排行榜
       renderDcaRanking();
@@ -3125,14 +3163,14 @@ function runHealthMonitor(){
     // 静默加载全市场扫描缓存（不触发新扫描，仅用已有缓存）
     return scanMarketFunds(false).catch(()=>{});
   }).then(()=>{
-    setTimeout(()=>refreshAllNav(true), 300);
+    setTimeout(()=>refreshAllNav(true, false), 300);
   }).catch(()=>{
     updateDetailStatus('⚠️ 基金详情拉取失败，当前显示为默认数据（可能已过期）', true);
-    setTimeout(()=>refreshAllNav(true), 300);
+    setTimeout(()=>refreshAllNav(true, false), 300);
   });
 
-  // 8. 每5分钟自动重刷净值 + 重新生成方案
-  setInterval(()=>refreshAllNav(true), 5 * 60 * 1000);
+  // 8. 每5分钟自动重刷净值 + 重新生成方案（静默模式）
+  setInterval(()=>refreshAllNav(true, true), 5 * 60 * 1000);
 })();
 
 // ═══════════════ Service Worker 注册 ═══════════════
