@@ -275,8 +275,8 @@ tr:last-child td{border-bottom:none}
 
 <div class="tabs">
   <div class="tab active" onclick="switchTab(0)">🎯 智能方案</div>
-  <div class="tab" onclick="switchTab(1)">📈 定投计划</div>
-  <div class="tab" onclick="switchTab(2)">💼 我的持仓</div>
+  <div class="tab" onclick="switchTab(1)">🔍 基金探索</div>
+  <div class="tab" onclick="switchTab(2)">💼 我的资产</div>
 </div>
 
 <div class="content">
@@ -321,7 +321,7 @@ tr:last-child td{border-bottom:none}
         </select>
       </div>
     </div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:12px">💡 此方案为一次性投资配置建议。如需定投，请前往「定投计划」Tab。</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px">💡 此方案为一次性投资配置建议。如需定投，请前往「基金探索」Tab。</div>
     <div class="action-bar">
       <button class="btn btn-primary" onclick="generateSmartPortfolio()" id="gen-btn" style="height:44px;font-size:15px;padding:0 28px">
         🤖 生成我的专属方案
@@ -330,98 +330,14 @@ tr:last-child td{border-bottom:none}
     </div>
   </div>
 
-  <!-- 精选基金浏览（折叠起来，不再占主视觉） -->
-  <details style="margin-bottom:14px">
-    <summary class="card" style="cursor:pointer;margin-bottom:0;list-style:none;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-      <span class="icon icon-blue">📊</span>
-      <span style="font-size:15px;font-weight:600" id="curated-title">浏览精选基金库</span>
-      <span style="margin-left:auto;font-size:11px;color:var(--muted)" id="detail-update-time"></span>
-      <button class="btn btn-sm" onclick="event.stopPropagation();refreshFundDetails(true)" style="font-size:11px;padding:2px 8px;margin-left:4px" title="重新拉取最新基金数据">🔄 刷新数据</button>
-      <button class="btn btn-sm" onclick="event.stopPropagation();scanMarketFunds(true)" style="font-size:11px;padding:2px 8px;background:#722ed1;color:#fff" title="扫描全市场排名前10基金，发现更优选择">🔍 全市场扫描</button>
-      <span style="font-size:12px;color:var(--primary)">展开 ▸</span>
-    </summary>
-    <div style="margin-top:-1px">
-  <div id="detail-progress" style="display:none;padding:0 12px"></div>
-  <div id="scan-progress" style="display:none;padding:0 12px"></div>
-  <div class="card" style="border-top-left-radius:0;border-top-right-radius:0">
-      <span style="margin-left:auto;font-size:12px;color:var(--muted)" id="nav-update-time"></span>
+  <!-- 精选基金库、自定义评分已移至「基金探索」Tab；已有持仓已移至「我的资产」Tab -->
+  <div class="card" style="background:#f6ffed;border:1px solid #b7eb8f">
+    <div style="font-size:13px;color:#389e0d;line-height:1.8">
+      💼 如需录入已有持仓获取个性化<b>调仓建议</b>，请前往
+      <button class="btn btn-sm" onclick="switchTab(2)" style="font-size:12px;padding:2px 10px;background:#52c41a;color:#fff;border-radius:4px;margin:0 4px">我的资产</button>
+      管理您的持仓。浏览精选基金请前往
+      <button class="btn btn-sm" onclick="switchTab(1)" style="font-size:12px;padding:2px 10px;background:var(--primary);color:#fff;border-radius:4px;margin:0 4px">基金探索</button>
     </div>
-    <div style="padding:6px 12px;font-size:11px;color:var(--muted);line-height:1.6;background:#fafafa;border-radius:6px;margin:8px 0">
-      📋 <b>精选库：</b>21只经过人工验证的代表性基金作为基础池。点击「🔍 全市场扫描」可加载由 GitHub Actions 每周自动从近2万只基金中筛选的 Top10 优质基金，合并到推荐池参与评分。
-      <span style="font-size:11px;color:#722ed1" id="scan-status"></span>
-    </div>
-    <div class="chip-row" id="cat-filter"></div>
-    <div class="fund-grid" id="market-grid"></div>
-  </div>
-  <div class="warning-notice">⚠️ <b>免责声明：</b>以上为参考性推荐，不构成投资建议。收益率、回撤等数据由天天基金网API实时拉取（每24小时自动更新），实际以最新行情为准。基金投资有风险，请根据自身风险承受能力决策。</div>
-  </div>
-  </div>
-  </details>
-
-  <!-- 自定义评分（高级功能，折叠） -->
-  <details>
-    <summary style="cursor:pointer;font-size:13px;color:var(--muted);padding:8px 0">⚙️ 高级功能：自定义基金评分（展开）</summary>
-  <div class="card">
-    <div class="card-title"><span class="icon icon-blue">✏️</span>手动添加评分</div>
-    <div class="form-grid">
-      <div class="form-item"><label>基金名称</label><input id="f-name" placeholder="如：华夏成长混合"></div>
-      <div class="form-item"><label>基金代码</label><input id="f-code" placeholder="如：000001" maxlength="6"></div>
-      <div class="form-item"><label>基金类型</label><select id="f-type"><option>股票型</option><option>混合型</option><option>债券型</option><option>指数型</option><option>货币型</option><option>QDII</option></select></div>
-      <div class="form-item"><label>近1年收益率(%)</label><input id="f-r1" type="number" placeholder="如：15.8"></div>
-      <div class="form-item"><label>近3年收益率(%)</label><input id="f-r3" type="number" placeholder="如：45.2"></div>
-      <div class="form-item"><label>最大跌幅(%)</label><input id="f-dd" type="number" placeholder="如：18.5（历史最大亏损幅度）"></div>
-      <div class="form-item"><label>基金规模(亿元)</label><input id="f-size" type="number" placeholder="如：50"></div>
-      <div class="form-item"><label>风险等级</label><select id="f-risk"><option value="1">R1</option><option value="2">R2</option><option value="3" selected>R3</option><option value="4">R4</option><option value="5">R5</option></select></div>
-      <div class="form-item"><label>基金经理年限</label><input id="f-mgr" type="number" placeholder="如：5"></div>
-    </div>
-    <div class="action-bar"><button class="btn btn-primary" onclick="addFund()">＋ 添加并评分</button></div>
-  </div>
-  <div class="card">
-    <div class="card-title"><span class="icon icon-blue">📋</span>自定义评分列表</div>
-    <div class="table-wrap">
-      <table><thead><tr><th>基金名称</th><th>代码</th><th>类型</th><th>1年收益</th><th>3年收益</th><th>历史最大跌幅</th><th>综合评分</th><th>推荐</th><th>操作</th></tr></thead>
-      <tbody id="fund-list"><tr><td colspan="9" class="empty">暂无自定义数据</td></tr></tbody></table>
-    </div>
-  </div>
-  </details>
-
-<!-- ═══ 以下为原Panel1内容，合并到Panel0 ═══ -->
-
-  <!-- 已有持仓输入 -->
-  <div class="card">
-    <div class="card-title">
-      <span class="icon icon-red">💼</span>我的已有持仓
-      <span style="font-size:12px;color:var(--muted);font-weight:400;margin-left:4px">（可选）填写后将生成个性化调仓方案</span>
-      <button class="btn btn-ghost btn-sm" style="margin-left:auto" onclick="importFromHoldings()">从持仓记录导入</button>
-      <button class="btn btn-ghost btn-sm" onclick="importFromDcaPlans()">从定投计划导入</button>
-    </div>
-    <div class="form-grid" style="margin-bottom:10px">
-      <div class="form-item">
-        <label>基金代码</label>
-        <input id="eh-code" placeholder="6位代码" maxlength="6" oninput="ehAutoFill(this.value)">
-      </div>
-      <div class="form-item">
-        <label>基金名称</label>
-        <input id="eh-name" placeholder="输入代码后自动填充">
-      </div>
-      <div class="form-item">
-        <label>当前持仓市值 (元)</label>
-        <input id="eh-value" type="number" placeholder="如：8000">
-      </div>
-      <div class="form-item">
-        <label>买入总成本 (元，选填)</label>
-        <input id="eh-cost" type="number" placeholder="用于计算盈亏">
-      </div>
-    </div>
-    <div class="action-bar" style="margin-top:0">
-      <button class="btn btn-primary btn-sm" onclick="addExistingHolding()">＋ 添加</button>
-      <button class="btn btn-ghost btn-sm" onclick="clearExistingHoldings()">清空全部</button>
-    </div>
-    <!-- 已有持仓列表 -->
-    <div id="eh-list" style="margin-top:12px;border:1px solid var(--border);border-radius:10px;overflow:hidden;display:none"></div>
-    <div id="eh-empty" style="margin-top:10px;font-size:12px;color:var(--muted)">暂未填写已有持仓，将按全新建仓方式生成方案</div>
-    <!-- 汇总 -->
-    <div id="eh-summary" style="display:none;margin-top:10px;padding:10px 14px;background:#f0f8ff;border-radius:8px;font-size:13px"></div>
   </div>
 
   <!-- 结果区域（初始隐藏） -->
@@ -498,29 +414,71 @@ tr:last-child td{border-bottom:none}
 
 </div>
 
-<!-- ===================== 面板1: 定投计划 ===================== -->
+<!-- ===================== 面板1: 基金探索 ===================== -->
 <div class="panel" id="panel1">
 
-  <!-- 定投推荐榜 -->
-  <div class="card">
-    <div class="card-title">
-      <span class="icon icon-orange">🏆</span>定投推荐榜
-      <span style="font-size:12px;color:var(--muted);font-weight:400;margin-left:4px">基于历史数据多维智能排名</span>
-      <span style="margin-left:auto;font-size:12px;color:var(--muted)" id="dca-rank-time"></span>
-    </div>
-    <div class="notice" style="margin-bottom:12px">💡 定投最适合「波动大、长期向上」的资产——市场下跌时自动摊低成本，长期坚持能显著降低平均买入价格。排名综合考虑：波动收益比 × 长期趋势 × 管理质量 × 近期动量。</div>
-    <div class="chip-row" id="dca-cat-filter">
-      <button class="chip active" onclick="setDcaCat('all')">全部</button>
-      <button class="chip" onclick="setDcaCat('qdii')">🌍 QDII海外</button>
-      <button class="chip" onclick="setDcaCat('index')">📊 指数基金</button>
-      <button class="chip" onclick="setDcaCat('active')">🎯 主动权益</button>
-      <button class="chip" onclick="setDcaCat('bond')">📑 债券</button>
-      <button class="chip" onclick="setDcaCat('money')">🏦 货币</button>
-    </div>
-    <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden" id="dca-rank-list">
-      <div class="empty">正在加载实时数据…</div>
+  <!-- 精选基金库（从Panel0移入，不再折叠） -->
+  <div class="card" style="margin-bottom:0">
+    <div class="card-title" style="flex-wrap:wrap;gap:8px">
+      <span class="icon icon-blue">📊</span>
+      <span style="font-size:15px;font-weight:600" id="curated-title">精选基金库</span>
+      <span style="margin-left:auto;font-size:11px;color:var(--muted)" id="detail-update-time"></span>
+      <button class="btn btn-sm" onclick="refreshFundDetails(true)" style="font-size:11px;padding:2px 8px" title="重新拉取最新基金数据">🔄 刷新数据</button>
+      <button class="btn btn-sm" onclick="scanMarketFunds(true)" style="font-size:11px;padding:2px 8px;background:#722ed1;color:#fff" title="扫描全市场排名前10基金，发现更优选择">🔍 全市场扫描</button>
     </div>
   </div>
+  <div id="detail-progress" style="display:none;padding:0 12px"></div>
+  <div id="scan-progress" style="display:none;padding:0 12px"></div>
+  <div class="card" style="border-top-left-radius:0;border-top-right-radius:0">
+    <span style="font-size:12px;color:var(--muted)" id="nav-update-time"></span>
+    <div style="padding:6px 0;font-size:11px;color:var(--muted);line-height:1.6">
+      📋 <b>精选库：</b>21只经过人工验证的代表性基金。点击「🔍 全市场扫描」可加载由 GitHub Actions 每周从近2万只基金中筛选的 Top10 优质基金。
+      <span style="font-size:11px;color:#722ed1" id="scan-status"></span>
+    </div>
+
+    <!-- 排序切换：综合评分 / 定投推荐 -->
+    <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center">
+      <span style="font-size:12px;color:var(--muted)">排序方式：</span>
+      <button class="chip active" id="sort-mode-score" onclick="setSortMode('score')">📊 综合评分</button>
+      <button class="chip" id="sort-mode-dca" onclick="setSortMode('dca')">📈 定投推荐</button>
+      <span style="margin-left:auto;font-size:12px;color:var(--muted)" id="dca-rank-time"></span>
+    </div>
+    <!-- 定投排序说明（仅定投模式显示） -->
+    <div id="dca-sort-notice" style="display:none;margin-bottom:10px" class="notice">
+      💡 定投最适合「波动大、长期向上」的资产——市场下跌时自动摊低成本。排名综合考虑：波动收益比 × 长期趋势 × 管理质量 × 近期动量。
+    </div>
+
+    <div class="chip-row" id="cat-filter"></div>
+    <div class="fund-grid" id="market-grid"></div>
+  </div>
+  <div class="warning-notice">⚠️ <b>免责声明：</b>以上为参考性推荐，不构成投资建议。收益率、回撤等数据由天天基金网API实时拉取（每24小时自动更新），实际以最新行情为准。基金投资有风险，请根据自身风险承受能力决策。</div>
+
+  <!-- 自定义评分（高级功能，折叠） -->
+  <details>
+    <summary style="cursor:pointer;font-size:13px;color:var(--muted);padding:8px 0">⚙️ 高级功能：自定义基金评分（展开）</summary>
+  <div class="card">
+    <div class="card-title"><span class="icon icon-blue">✏️</span>手动添加评分</div>
+    <div class="form-grid">
+      <div class="form-item"><label>基金名称</label><input id="f-name" placeholder="如：华夏成长混合"></div>
+      <div class="form-item"><label>基金代码</label><input id="f-code" placeholder="如：000001" maxlength="6"></div>
+      <div class="form-item"><label>基金类型</label><select id="f-type"><option>股票型</option><option>混合型</option><option>债券型</option><option>指数型</option><option>货币型</option><option>QDII</option></select></div>
+      <div class="form-item"><label>近1年收益率(%)</label><input id="f-r1" type="number" placeholder="如：15.8"></div>
+      <div class="form-item"><label>近3年收益率(%)</label><input id="f-r3" type="number" placeholder="如：45.2"></div>
+      <div class="form-item"><label>最大跌幅(%)</label><input id="f-dd" type="number" placeholder="如：18.5（历史最大亏损幅度）"></div>
+      <div class="form-item"><label>基金规模(亿元)</label><input id="f-size" type="number" placeholder="如：50"></div>
+      <div class="form-item"><label>风险等级</label><select id="f-risk"><option value="1">R1</option><option value="2">R2</option><option value="3" selected>R3</option><option value="4">R4</option><option value="5">R5</option></select></div>
+      <div class="form-item"><label>基金经理年限</label><input id="f-mgr" type="number" placeholder="如：5"></div>
+    </div>
+    <div class="action-bar"><button class="btn btn-primary" onclick="addFund()">＋ 添加并评分</button></div>
+  </div>
+  <div class="card">
+    <div class="card-title"><span class="icon icon-blue">📋</span>自定义评分列表</div>
+    <div class="table-wrap">
+      <table><thead><tr><th>基金名称</th><th>代码</th><th>类型</th><th>1年收益</th><th>3年收益</th><th>历史最大跌幅</th><th>综合评分</th><th>推荐</th><th>操作</th></tr></thead>
+      <tbody id="fund-list"><tr><td colspan="9" class="empty">暂无自定义数据</td></tr></tbody></table>
+    </div>
+  </div>
+  </details>
 
   <!-- AI定投方案 -->
   <div class="card">
@@ -555,7 +513,65 @@ tr:last-child td{border-bottom:none}
     <div id="dca-ai-result" style="display:none;margin-top:14px"></div>
   </div>
 
-  <!-- 我的定投计划 -->
+  <!-- 收益测算 -->
+  <div class="card">
+    <div class="card-title"><span class="icon icon-orange">📈</span>定投收益测算</div>
+    <div class="form-grid">
+      <div class="form-item"><label>每期投入金额(元)</label><input id="sip-amount" type="number" value="1000"></div>
+      <div class="form-item"><label>投入频率</label><select id="sip-freq"><option value="12">每月</option><option value="4">每季</option><option value="52">每周</option></select></div>
+      <div class="form-item"><label>投资年限(年)</label><input id="sip-years" type="number" value="5" min="1" max="40"></div>
+      <div class="form-item"><label>预期年化收益率(%)</label><input id="sip-rate" type="number" value="8" step="0.5"></div>
+      <div class="form-item"><label>已有本金(元)</label><input id="sip-init" type="number" value="0"></div>
+    </div>
+    <div class="action-bar"><button class="btn btn-primary" onclick="calcSIP()">开始测算</button></div>
+  </div>
+  <div class="card" id="sip-result" style="display:none">
+    <div class="card-title"><span class="icon icon-orange">📊</span>收益预测结果</div>
+    <div class="stat-row" id="sip-stats"></div>
+    <div class="chart-wrap"><canvas id="sipChart"></canvas></div>
+    <div id="sip-table-wrap" style="margin-top:14px"></div>
+  </div>
+</div>
+
+<!-- ===================== 面板2: 我的资产 ===================== -->
+<div class="panel" id="panel2">
+
+  <!-- 已有持仓输入（从Panel0移入，用于调仓建议） -->
+  <div class="card">
+    <div class="card-title">
+      <span class="icon icon-red">💼</span>我的已有持仓
+      <span style="font-size:12px;color:var(--muted);font-weight:400;margin-left:4px">填写后可在「智能方案」中获取调仓建议</span>
+      <button class="btn btn-ghost btn-sm" style="margin-left:auto" onclick="importFromHoldings()">从持仓记录导入</button>
+      <button class="btn btn-ghost btn-sm" onclick="importFromDcaPlans()">从定投计划导入</button>
+    </div>
+    <div class="form-grid" style="margin-bottom:10px">
+      <div class="form-item">
+        <label>基金代码</label>
+        <input id="eh-code" placeholder="6位代码" maxlength="6" oninput="ehAutoFill(this.value)">
+      </div>
+      <div class="form-item">
+        <label>基金名称</label>
+        <input id="eh-name" placeholder="输入代码后自动填充">
+      </div>
+      <div class="form-item">
+        <label>当前持仓市值 (元)</label>
+        <input id="eh-value" type="number" placeholder="如：8000">
+      </div>
+      <div class="form-item">
+        <label>买入总成本 (元，选填)</label>
+        <input id="eh-cost" type="number" placeholder="用于计算盈亏">
+      </div>
+    </div>
+    <div class="action-bar" style="margin-top:0">
+      <button class="btn btn-primary btn-sm" onclick="addExistingHolding()">＋ 添加</button>
+      <button class="btn btn-ghost btn-sm" onclick="clearExistingHoldings()">清空全部</button>
+    </div>
+    <div id="eh-list" style="margin-top:12px;border:1px solid var(--border);border-radius:10px;overflow:hidden;display:none"></div>
+    <div id="eh-empty" style="margin-top:10px;font-size:12px;color:var(--muted)">暂未填写已有持仓，将按全新建仓方式生成方案</div>
+    <div id="eh-summary" style="display:none;margin-top:10px;padding:10px 14px;background:#f0f8ff;border-radius:8px;font-size:13px"></div>
+  </div>
+
+  <!-- 我的定投计划（从Panel1移入） -->
   <div class="card">
     <div class="card-title">
       <span class="icon icon-green">📅</span>我的定投计划
@@ -580,34 +596,12 @@ tr:last-child td{border-bottom:none}
     <div id="dp-summary" style="display:none;margin-top:10px;padding:10px 14px;background:#f6ffed;border-radius:8px;font-size:13px"></div>
   </div>
 
-  <!-- 收益测算 -->
-  <div class="card">
-    <div class="card-title"><span class="icon icon-orange">📈</span>定投收益测算</div>
-    <div class="form-grid">
-      <div class="form-item"><label>每期投入金额(元)</label><input id="sip-amount" type="number" value="1000"></div>
-      <div class="form-item"><label>投入频率</label><select id="sip-freq"><option value="12">每月</option><option value="4">每季</option><option value="52">每周</option></select></div>
-      <div class="form-item"><label>投资年限(年)</label><input id="sip-years" type="number" value="5" min="1" max="40"></div>
-      <div class="form-item"><label>预期年化收益率(%)</label><input id="sip-rate" type="number" value="8" step="0.5"></div>
-      <div class="form-item"><label>已有本金(元)</label><input id="sip-init" type="number" value="0"></div>
-    </div>
-    <div class="action-bar"><button class="btn btn-primary" onclick="calcSIP()">开始测算</button></div>
-  </div>
-  <div class="card" id="sip-result" style="display:none">
-    <div class="card-title"><span class="icon icon-orange">📊</span>收益预测结果</div>
-    <div class="stat-row" id="sip-stats"></div>
-    <div class="chart-wrap"><canvas id="sipChart"></canvas></div>
-    <div id="sip-table-wrap" style="margin-top:14px"></div>
-  </div>
-</div>
-
-<!-- ===================== 面板2: 我的持仓 ===================== -->
-<div class="panel" id="panel2">
   <!-- 定投计划汇总（动态渲染） -->
   <div class="card" id="dca-holdings-section" style="display:none"></div>
   <!-- 持仓健康诊断（动态渲染） -->
   <div id="health-monitor-wrap"></div>
   <div class="card">
-    <div class="card-title"><span class="icon icon-red">💼</span>添加持仓</div>
+    <div class="card-title"><span class="icon icon-red">💼</span>添加持仓记录</div>
     <div class="form-grid">
       <div class="form-item"><label>基金名称</label><input id="h-name" placeholder="如：易方达蓝筹精选"></div>
       <div class="form-item"><label>基金代码</label><input id="h-code" placeholder="如：005827"></div>
@@ -633,24 +627,20 @@ tr:last-child td{border-bottom:none}
       <tbody id="holding-list"><tr><td colspan="10" class="empty">暂无持仓记录</td></tr></tbody></table>
     </div>
   </div>
-</div>
 
-</div>
-
-<!-- 数据备份管理（在tabs内容区内，与其他卡片同宽） -->
-<div class="card" style="margin-bottom:calc(14px + env(safe-area-inset-bottom))">
-  <div class="card-title">💾 数据备份管理</div>
-  <p style="font-size:13px;color:var(--muted);margin-bottom:14px">数据存储在本地浏览器中，建议定期导出备份。导出的文件可在任意设备导入恢复。</p>
-  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
-    <button class="btn btn-primary" onclick="doExportBackup()">📤 导出备份文件</button>
-    <label class="btn btn-outline" style="cursor:pointer;margin:0">
-      📥 导入备份文件
-      <input type="file" accept=".json" onchange="doImportBackup(event)" style="display:none">
-    </label>
+  <!-- 数据备份管理（从页面底部移入） -->
+  <div class="card" style="margin-bottom:calc(14px + env(safe-area-inset-bottom))">
+    <div class="card-title">💾 数据备份管理</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:14px">数据存储在本地浏览器中，建议定期导出备份。导出的文件可在任意设备导入恢复。</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+      <button class="btn btn-primary" onclick="doExportBackup()">📤 导出备份文件</button>
+      <label class="btn btn-outline" style="cursor:pointer;margin:0">
+        📥 导入备份文件
+        <input type="file" accept=".json" onchange="doImportBackup(event)" style="display:none">
+      </label>
+    </div>
+    <div id="backup-status" style="font-size:12px;color:var(--muted)"></div>
   </div>
-  <div id="backup-status" style="font-size:12px;color:var(--muted)"></div>
-</div>
-
 </div>
 
 </div>
@@ -796,6 +786,7 @@ function renderAll(){
   renderFundList(); renderExistingHoldings(); renderHoldings(); renderDcaPlans(); renderDcaRanking(); runHealthMonitor();
 }
 let currentCat = 'all';
+let currentSortMode = 'score'; // 'score' or 'dca'
 let portfolioPieInst = null, sipChartInst = null, holdPieChartInst = null;
 
 // ═══════════════ 标签切换 ═══════════════
@@ -1243,7 +1234,7 @@ const CAT_TAG={'active':'tag-active','index':'tag-index','bond':'tag-bond','mone
 function stars(n){ return '★'.repeat(n)+'☆'.repeat(5-n); }
 function fmtR(v){ if(v==null) return '--'; const c=v>0?'up':v<0?'down':'neutral'; return `<span class="${c}">${v>0?'+':''}${v}%</span>`; }
 
-function buildFundCard(f){
+function buildFundCard(f,sortMode){
   const nav=navCache[f.code];
   let navHtml;
   if(nav){
@@ -1254,6 +1245,21 @@ function buildFundCard(f){
   } else {
     navHtml=`<div><span class="nav-label">估算净值 </span><span class="nav-val" id="nav-${f.code}" style="color:var(--muted)">加载中…</span></div>
       <span class="nav-change neutral" id="chg-${f.code}">--</span><span id="time-${f.code}" style="font-size:10px;color:var(--muted)"></span>`;
+  }
+  // DCA排序模式额外显示定投评分
+  let dcaHtml='';
+  if(sortMode==='dca'){
+    const dcaScore=calcDCAScore(f);
+    const col=dcaScore>=80?'#52c41a':dcaScore>=65?'#1677ff':dcaScore>=50?'#faad14':'#ff4d4f';
+    const whyText=f.cat==='money'?'货币基金波动极小，不适合定投摊成本':
+      dcaScore>=80?'波动大但长期向上，定投摊低成本效果极佳':
+      dcaScore>=60?'中高波动，适合定投积累':
+      dcaScore>=40?'波动适中，可少量定投配置':'波动偏小，定投优势有限';
+    dcaHtml=`<div style="padding:6px 10px;background:#f0f5ff;border-radius:6px;margin-top:6px;display:flex;align-items:center;gap:8px">
+      <span style="font-size:13px;font-weight:700;color:${col}">定投评分 ${dcaScore}</span>
+      <span style="flex:1;height:4px;background:#f0f0f0;border-radius:2px"><span style="display:block;height:100%;width:${dcaScore}%;background:${col};border-radius:2px"></span></span>
+      <span style="font-size:11px;color:var(--muted)">💡 ${whyText}</span>
+    </div>`;
   }
   return `<div class="fund-card">
     <div class="fund-card-head">
@@ -1276,7 +1282,7 @@ function buildFundCard(f){
       <div class="stat-item"><div class="val" style="color:var(--danger);text-align:center">-${f.maxDD}%</div><div class="lbl">历史最大跌幅</div></div>
     </div>
     <div class="fund-card-nav">${navHtml}</div>
-    <div class="fund-card-reason">${f.reason}</div>
+    <div class="fund-card-reason">${f.reason}</div>${dcaHtml}
     <div class="fund-card-foot">
       <button class="btn btn-ghost btn-sm" onclick="addCuratedToScore('${f.code}')">📋 加入评分</button>
       <a href="https://fund.eastmoney.com/${f.code}.html" target="_blank" style="text-decoration:none"><button class="btn btn-ghost btn-sm">🔗 详情</button></a>
@@ -1286,12 +1292,17 @@ function buildFundCard(f){
 }
 
 function renderMarketGrid(){
-  const list=currentCat==='all'?CURATED_FUNDS:CURATED_FUNDS.filter(f=>f.cat===currentCat);
-  document.getElementById('market-grid').innerHTML=list.length?list.map(buildFundCard).join(''):'<div class="empty">暂无该类别基金</div>';
+  let list=currentCat==='all'?[...CURATED_FUNDS]:CURATED_FUNDS.filter(f=>f.cat===currentCat);
+  // 定投排序模式：排除货币基金（除非专门筛选），按DCA评分降序
+  if(currentSortMode==='dca'){
+    if(currentCat!=='money') list=list.filter(f=>f.cat!=='money');
+    list.sort((a,b)=>calcDCAScore(b)-calcDCAScore(a));
+  }
+  document.getElementById('market-grid').innerHTML=list.length?list.map(f=>buildFundCard(f,currentSortMode)).join(''):'<div class="empty">暂无该类别基金</div>';
   // 更新标题中的基金数量
   const titleEl=document.getElementById('curated-title');
   const discovered=CURATED_FUNDS.filter(f=>f.discovered).length;
-  if(titleEl) titleEl.textContent=`浏览基金池（${CURATED_FUNDS.length}只${discovered>0?`，含${discovered}只新发现`:''}）`;
+  if(titleEl) titleEl.textContent=`精选基金库（${CURATED_FUNDS.length}只${discovered>0?`，含${discovered}只新发现`:''}）`;
   // 动态渲染分类筛选按钮（含实时计数）
   const catCounts={all:CURATED_FUNDS.length};
   CURATED_FUNDS.forEach(f=>{ catCounts[f.cat]=(catCounts[f.cat]||0)+1; });
@@ -1307,6 +1318,14 @@ function renderMarketGrid(){
 function setCategory(cat){
   currentCat=cat;
   document.querySelectorAll('#cat-filter .chip').forEach(c=>c.classList.toggle('active',c.getAttribute('onclick')?.includes(`'${cat}'`)));
+  renderMarketGrid();
+}
+function setSortMode(mode){
+  currentSortMode=mode;
+  document.getElementById('sort-mode-score').classList.toggle('active',mode==='score');
+  document.getElementById('sort-mode-dca').classList.toggle('active',mode==='dca');
+  const dcaNotice=document.getElementById('dca-sort-notice');
+  if(dcaNotice) dcaNotice.style.display=mode==='dca'?'':'none';
   renderMarketGrid();
 }
 function updateNavCard(code,data){
@@ -1390,7 +1409,7 @@ function addCuratedToScore(code){
   const f=CURATED_FUNDS.find(x=>x.code===code); if(!f) return;
   if(funds.some(x=>x.code===code)){alert('已在评分列表');return;}
   funds.push({name:f.name,code:f.code,type:f.type,r1:f.r1,r3:f.r3,dd:f.maxDD,size:f.size,risk:f.risk==='R1'?1:f.risk==='R2'?2:f.risk==='R3'?3:f.risk==='R4'?4:5,mgr:f.mgrYears});
-  FundDB.set('funds',funds); renderFundList(); switchTab(0);
+  FundDB.set('funds',funds); renderFundList(); switchTab(1);
   setTimeout(()=>document.getElementById('fund-list').closest('.card').scrollIntoView({behavior:'smooth'}),200);
 }
 
@@ -1519,7 +1538,7 @@ function clearExistingHoldings(){
   }
 }
 function importFromHoldings(){
-  if(!holdings.length){alert('持仓记录为空，请先在「持仓记录统计」页添加');return;}
+  if(!holdings.length){alert('持仓记录为空，请先在「我的资产」页添加');return;}
   let added=0;
   holdings.forEach(h=>{
     if(!existingHoldings.some(e=>e.code===h.code)){
@@ -1962,7 +1981,7 @@ function buildSteps(weights, picks, totalAmt, monthly, riskProfile, horizon){
   });
   steps.push({
     title:'💡 想要定投？',
-    desc:'如果你希望每月定期投入，请切换到「定投计划」Tab，那里有专门的定投推荐和方案生成。'
+    desc:'如果你希望每月定期投入，请切换到「基金探索」Tab，那里有专门的定投推荐和方案生成。'
   });
   return steps;
 }
@@ -2078,7 +2097,7 @@ function _doGenerate(){
   ).join('');
 
   // 12. 定投测算（如有月定投）
-  // 12. 定投测算已移至独立的「定投计划」Tab
+  // 12. 定投测算已移至独立的「基金探索」Tab
 
   // 13. 调仓建议（有已有持仓时）
   const rebalPlan = computeRebalancePlan(selectedPicks, totalAmt);
@@ -2453,51 +2472,18 @@ function calcDCAScore(f){
 }
 
 function setDcaCat(cat){
+  // DCA分类筛选已整合到精选基金库的统一分类中，此函数保留兼容性
   currentDcaCat = cat;
-  document.querySelectorAll('#dca-cat-filter .chip').forEach(c=>c.classList.toggle('active', c.getAttribute('onclick')?.includes(`'${cat}'`)));
-  renderDcaRanking();
+  setCategory(cat);
 }
 
 function renderDcaRanking(){
-  const list = currentDcaCat==='all' ? CURATED_FUNDS : CURATED_FUNDS.filter(f=>f.cat===currentDcaCat);
-  // 货币基金不适合定投，直接排除（除非用户专门筛选货币类别）
-  const filtered = currentDcaCat==='money' ? list : list.filter(f=>f.cat!=='money');
-  const sorted = [...filtered].sort((a,b)=>{
-    return calcDCAScore(b) - calcDCAScore(a);
-  });
+  // DCA排名已整合到精选基金库的排序切换中，此函数仅更新时间标签
   const catHasNav = Object.keys(navCache).length > 0;
   const timeEl = document.getElementById('dca-rank-time');
   if(timeEl && catHasNav){ const now=new Date(); timeEl.textContent=`净值更新于 ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`; }
-  const scoreColors = s => s>=80?'#52c41a':s>=65?'#1677ff':s>=50?'#faad14':'#ff4d4f';
-  const rankEmoji = i => i===0?'🥇':i===1?'🥈':i===2?'🥉':`<span style="color:var(--muted);font-size:14px">${i+1}</span>`;
-  const container = document.getElementById('dca-rank-list');
-  if(!sorted.length){ container.innerHTML='<div class="empty">暂无数据</div>'; return; }
-  container.innerHTML = sorted.map((f,i)=>{
-    const score = calcDCAScore(f);
-    const col = scoreColors(score);
-    const nav = navCache[f.code];
-    const chg = nav ? parseFloat(nav.gszzl)||0 : null;
-    const navStr = nav ? `<span class="${chg>0?'up':chg<0?'down':'neutral'}">${chg>0?'+':''}${chg}%</span>` : '<span style="color:var(--muted)">--</span>';
-    const whyText = f.cat==='money'?'货币基金波动极小，不适合定投摊成本':
-      score>=80?`波动大(历史最大跌${f.maxDD}%)但长期向上，定投摊低成本效果极佳`:
-      score>=60?`中高波动，历史趋势向上，适合定投积累`:
-      score>=40?`波动适中，可少量定投配置`:
-      `波动偏小或趋势不明，定投优势有限`;
-    return `<div class="dca-rank-item">
-      <div class="dca-rank-num">${rankEmoji(i)}</div>
-      <div class="dca-rank-info">
-        <div class="dca-rank-name">${f.name} <span class="tag ${(()=>{const m={active:'tag-active',index:'tag-index',bond:'tag-bond',money:'tag-money',qdii:'tag-qdii'};return m[f.cat]||'tag-index';})()}" style="font-size:10px">${f.label}</span></div>
-        <div class="dca-rank-meta">代码 ${f.code} · ${f.manager} · 近1年 <span class="${f.r1>=0?'up':'down'}">${f.r1>=0?'+':''}${f.r1}%</span> · 历史最大跌幅 ${f.maxDD}%</div>
-        <div class="dca-rank-why">💡 ${whyText}</div>
-      </div>
-      <div class="dca-score-col">
-        <div class="dca-score-val" style="color:${col}">${score}</div>
-        <div class="dca-score-bar-wrap"><div class="dca-score-fill" style="width:${score}%;background:${col}"></div></div>
-        <div class="dca-score-lbl">定投评分</div>
-      </div>
-      <div class="dca-nav-col">${navStr}<div style="font-size:10px;color:var(--muted)">今日</div></div>
-    </div>`;
-  }).join('');
+  // 如果当前是定投排序模式，刷新市场列表
+  if(currentSortMode==='dca') renderMarketGrid();
 }
 
 function generateDcaAiPlan(){
@@ -2712,7 +2698,7 @@ function renderDcaInHoldings(){
 
 // Panel1: 从定投计划导入到已有持仓
 function importFromDcaPlans(){
-  if(!dcaPlans.length){alert('定投计划为空，请先在「定投计划计算」页添加');return;}
+  if(!dcaPlans.length){alert('定投计划为空，请先在「我的资产」页添加');return;}
   let added=0;
   dcaPlans.forEach(d=>{
     if(!existingHoldings.some(e=>e.code===d.code)){
