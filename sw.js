@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fund-helper-v2';
+const CACHE_NAME = 'fund-helper-v3';
 const BASE = self.registration.scope;
 const ASSETS = [
   './',
@@ -59,18 +59,14 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // App assets - cache first, fallback to network
+  // App assets - network first, fallback to cache
   e.respondWith(
-    caches.match(e.request).then(cached => {
-      const fetchPromise = fetch(e.request).then(resp => {
-        if(resp.ok){
-          const clone = resp.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
-        }
-        return resp;
-      }).catch(() => cached);
-
-      return cached || fetchPromise;
-    })
+    fetch(e.request).then(resp => {
+      if(resp.ok){
+        const clone = resp.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
+      }
+      return resp;
+    }).catch(() => caches.match(e.request))
   );
 });
