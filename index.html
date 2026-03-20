@@ -751,7 +751,13 @@ window.addEventListener('scroll',function(){
 // ═══════════════ 资产Tab子导航滚动 ═══════════════
 function scrollToSection(id){
   const el=document.getElementById(id);
-  if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
+  if(!el) return;
+  // 计算sticky元素总高度（tabs + sub-nav），避免内容被遮挡
+  const tabs=document.querySelector('.tabs');
+  const subnav=document.getElementById('asset-subnav');
+  const offset=(tabs?tabs.offsetHeight:0)+(subnav?subnav.offsetHeight:0)+8;
+  const top=el.getBoundingClientRect().top+window.pageYOffset-offset;
+  window.scrollTo({top,behavior:'smooth'});
   // 更新子导航高亮
   document.querySelectorAll('#asset-subnav .chip').forEach(c=>c.classList.remove('active'));
   event.target.classList.add('active');
