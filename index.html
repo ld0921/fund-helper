@@ -493,14 +493,13 @@ tr:last-child td{border-bottom:none}
       <span class="icon icon-blue">📊</span>
       <span style="font-size:15px;font-weight:600" id="curated-title">精选基金库</span>
       <span style="margin-left:auto;font-size:11px;color:var(--muted)" id="detail-update-time"></span>
-      <button id="btn-refresh-detail" class="btn btn-sm" onclick="refreshFundDetails(true)" style="font-size:11px;padding:2px 8px" title="重新拉取最新基金数据">🔄 刷新数据</button>
-      <button id="btn-scan-market" class="btn btn-sm" onclick="scanMarketFunds(true)" style="font-size:11px;padding:2px 8px;background:#722ed1;color:#fff" title="扫描全市场排名前10基金，发现更优选择">🔍 全市场扫描</button>
+      <button id="btn-update-all" class="btn btn-sm" onclick="updateAllData()" style="font-size:11px;padding:3px 10px" title="更新精选库详情 + 加载全市场优质基金">🔄 更新数据</button>
     </div>
   </div>
   <div class="card" style="border-top-left-radius:0;border-top-right-radius:0">
     <span style="font-size:12px;color:var(--muted)" id="nav-update-time"></span>
     <div style="padding:6px 0;font-size:11px;color:var(--muted);line-height:1.6">
-      📋 <b>精选库：</b>21只经过人工验证的代表性基金。点击「🔍 全市场扫描」可加载由 GitHub Actions 每周从近2万只基金中筛选的 Top10 优质基金。
+      📋 <b>精选库：</b>21只经过人工验证的代表性基金。点击「更新数据」可刷新最新收益/回撤数据，并加载由 GitHub Actions 每周从近2万只基金中筛选的 Top10 优质基金。
       <span style="font-size:11px;color:#722ed1" id="scan-status"></span>
     </div>
 
@@ -1066,9 +1065,22 @@ async function fetchFundR3(code){
   }
 }
 
+// 统一更新按钮：刷新详情 + 全市场扫描
+async function updateAllData(){
+  const btn = document.getElementById('btn-update-all');
+  if(btn){ btn.textContent='⏳ 更新中...'; btn.disabled=true; }
+  try {
+    await refreshFundDetails(true);
+    await scanMarketFunds(true);
+    if(btn){ btn.textContent='✅ 已更新'; setTimeout(()=>{ btn.textContent='🔄 更新数据'; btn.disabled=false; }, 2000); }
+  } catch(e){
+    console.error('[UpdateAll]', e);
+    if(btn){ btn.textContent='🔄 更新数据'; btn.disabled=false; }
+  }
+}
+
 // 刷新所有精选基金详情数据
 async function refreshFundDetails(forceRefresh){
-  const btnRefresh = document.getElementById('btn-refresh-detail');
 
   // 检查缓存
   if(!forceRefresh){
@@ -1084,8 +1096,7 @@ async function refreshFundDetails(forceRefresh){
     } catch(e){}
   }
 
-  // 按钮加载态
-  if(btnRefresh){ btnRefresh.textContent='⏳ 更新中...'; btnRefresh.disabled=true; }
+  // 按钮加载态（由 updateAllData 统一管理）
 
   // 优先尝试预生成的静态JSON
   try {
@@ -1099,7 +1110,6 @@ async function refreshFundDetails(forceRefresh){
         const timeStr = `${now.getMonth()+1}/${now.getDate()} ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
         updateDetailStatus(`数据更新于 ${timeStr}（预生成）`, false);
         console.log(`[FundDetail] 从curated-details.json加载 ${Object.keys(json.funds).length} 只基金详情`);
-        if(btnRefresh){ btnRefresh.textContent='🔄 刷新数据 ✓'; setTimeout(()=>{ btnRefresh.textContent='🔄 刷新数据'; btnRefresh.disabled=false; }, 2000); }
         return;
       }
     }
@@ -1153,7 +1163,6 @@ async function refreshFundDetails(forceRefresh){
     updateDetailStatus(`数据更新于 ${timeStr}（实时）`, false);
   }
   if(banner) setTimeout(()=>{ banner.style.display='none'; }, 2000);
-  if(btnRefresh){ btnRefresh.textContent='🔄 刷新数据 ✓'; setTimeout(()=>{ btnRefresh.textContent='🔄 刷新数据'; btnRefresh.disabled=false; }, 2000); }
 
   console.log(`[FundDetail] 成功更新 ${successCount}/${total} 只基金详情`);
 }
@@ -1295,7 +1304,6 @@ function inferRiskLevel(maxDD, cat){
 // 为发现的基金补充详情（经理、回撤等）
 // 全市场扫描主函数
 async function scanMarketFunds(forceRefresh){
-  const btnScan = document.getElementById('btn-scan-market');
 
   // 检查缓存
   if(!forceRefresh){
@@ -1309,9 +1317,6 @@ async function scanMarketFunds(forceRefresh){
       }
     } catch(e){}
   }
-
-  // 按钮加载态
-  if(btnScan){ btnScan.textContent='⏳ 扫描中...'; btnScan.disabled=true; }
 
   try {
   // 显示进度
@@ -1346,8 +1351,6 @@ async function scanMarketFunds(forceRefresh){
   } catch(e){
     console.error('[MarketScan] 扫描失败:', e);
     updateScanStatus('⚠️ 全市场扫描失败，请稍后重试');
-  } finally {
-    if(btnScan){ btnScan.textContent='🔍 全市场扫描'; btnScan.disabled=false; }
   }
 }
 
