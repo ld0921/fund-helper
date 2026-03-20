@@ -1915,9 +1915,10 @@ function analyzeCategoryPerf(){
   }).sort((a,b)=>b.catScore-a.catScore);
 }
 
-// ═══════════════ 宏观周期判断（美林时钟推断） ═══════════════
-// 无法获取真实GDP/CPI数据，通过各类资产相对表现推断周期位置
-// 美林时钟4阶段：复苏(Recovery) → 过热(Overheat) → 滞胀(Stagflation) → 衰退(Recession)
+// ═══════════════ 市场动量信号（基于资产相对强弱） ═══════════════
+// 注意：此模块基于各类资产近1年相对表现推断市场状态，本质是动量/相对强弱信号，
+// 而非真正的宏观经济周期判断（后者需要GDP/CPI/PMI等外部宏观数据）。
+// 分类命名借鉴美林时钟框架便于理解，但推断依据为资产回报而非宏观指标。
 function inferMerrilClock(catRanks){
   if(!catRanks || catRanks.length < 3) return { phase:'unknown', label:'数据不足', equityMult:1.0, bondMult:1.0 };
 
@@ -1989,7 +1990,7 @@ function detectManagerChanges(){
   return warnings;
 }
 
-// 根据档案 & 行情 & 宏观周期 生成配置权重（风险平价 + 宏观约束 + 动态倾斜 + 期限约束）
+// 根据档案 & 行情 & 市场动量 生成配置权重（风险平价 + 动量约束 + 动态倾斜 + 期限约束）
 function computeWeights(riskProfile, horizon, catRanks, macroClock){
   // 1. 风险平价基础权重：各类别权重与其波动率成反比
   const catVol = {}; // 用平均最大回撤近似波动率
@@ -2020,7 +2021,7 @@ function computeWeights(riskProfile, horizon, catRanks, macroClock){
   // 归一化
   Object.keys(base).forEach(k => base[k] = base[k] / tiltSum * 100);
 
-  // 3. 宏观周期约束（美林时钟顶层调整）
+  // 3. 市场动量约束（基于资产相对强弱的顶层调整）
   if(macroClock && macroClock.phase !== 'unknown'){
     const eqMult = macroClock.equityMult;
     const bdMult = macroClock.bondMult;
@@ -2197,14 +2198,14 @@ function _doGenerate(){
   // 1. 行情分析
   const catRanks = analyzeCategoryPerf();
 
-  // 2. 宏观周期判断（美林时钟）
+  // 2. 市场动量信号
   const macroClock = inferMerrilClock(catRanks);
   const mgrWarnings = detectManagerChanges();
 
   // 3. 渲染行情分析表
   renderMarketAnalysis(catRanks, macroClock, mgrWarnings);
 
-  // 4. 计算权重（叠加宏观约束）
+  // 4. 计算权重（叠加动量约束）
   const weights = computeWeights(riskP, horizon, catRanks, macroClock);
 
   // 4. 选基
@@ -2255,7 +2256,7 @@ function _doGenerate(){
     <div class="expected-item"><div class="expected-val" style="color:var(--primary)">¥${expAmt1High.toLocaleString()}</div><div class="expected-label">1年后乐观预估</div></div>
     <div class="expected-item"><div class="expected-val" style="color:#722ed1">¥${expAmt3Low.toLocaleString()}~${expAmt3High.toLocaleString()}</div><div class="expected-label">3年后预估区间</div></div>
     <div style="width:100%;font-size:11px;color:var(--muted);margin-top:4px;line-height:1.6">
-      📐 收益预估说明：基于历史收益均值回归折扣（主动/指数/QDII×55%，债券×80%，货币×95%），并基于历史波动幅度(±${sigma.toFixed(1)}%)估算P25-P75区间。极端不利情况(P5)年化可能达 ${expReturnP5.toFixed(1)}%。以上为统计模型估算，不代表收益保证，实际表现可能超出区间。
+      ⚠️ <b>收益预估仅供参考，不构成收益承诺。</b>模型局限：①均值回归系数（权益×55%、债券×80%）为经验估值，未经本基金池回测验证；②波动率由最大回撤÷2.5粗略换算，精度有限；③正态分布假设会低估极端尾部风险。实际收益可能大幅偏离上述区间。P5极端情景年化可能达 ${expReturnP5.toFixed(1)}%。
     </div>`;
 
   // 7. 副标题
@@ -2294,10 +2295,10 @@ function _doGenerate(){
   // 14. 策略说明
   const stratEl = document.getElementById('strategy-explanation');
   if(stratEl){
-    const weightEntries = catRanks.map(c => `${c.name}: 历史最大跌幅均值≈${c.avgDD.toFixed(1)}% → 风险平价权重 ${(1/Math.max(c.avgDD,1)/(catRanks.reduce((s,x)=>s+1/Math.max(x.avgDD,1),0))*100).toFixed(1)}% → 宏观+偏好调整后 ${weights[c.cat]||0}%`).join('<br>');
+    const weightEntries = catRanks.map(c => `${c.name}: 历史最大跌幅均值≈${c.avgDD.toFixed(1)}% → 风险平价权重 ${(1/Math.max(c.avgDD,1)/(catRanks.reduce((s,x)=>s+1/Math.max(x.avgDD,1),0))*100).toFixed(1)}% → 动量+偏好调整后 ${weights[c.cat]||0}%`).join('<br>');
     const clockDesc = macroClock && macroClock.phase !== 'unknown'
-      ? `当前推断为<b>${macroClock.label}</b>，权益系数×${macroClock.equityMult}，债券系数×${macroClock.bondMult}。`
-      : '周期信号不明确，采用中性配置。';
+      ? `当前市场动量信号为<b>${macroClock.label}</b>（基于资产相对强弱推断，非宏观经济指标），权益系数×${macroClock.equityMult}，债券系数×${macroClock.bondMult}。`
+      : '市场动量信号不明确，采用中性配置。';
     stratEl.innerHTML = `
       <div style="padding:6px 10px;background:#e6f7ff;border-radius:6px;font-size:11px;color:#0050b3;margin-bottom:10px">📡 基金收益率、最大回撤、规模、经理任期等核心数据由天天基金网API实时拉取（每24小时自动更新），确保评分和方案基于最新市场数据。</div>
       <b>一、基金评分体系（简化多因子）</b><br>
@@ -2307,15 +2308,15 @@ function _doGenerate(){
       · <b>任期稳定性</b>（25%权重）：客观指标——基金经理连续任期年限，6档评分：<1年=3分(刚更换，高风险)，1-2年=8分(磨合期)，2-3年=13分(初步稳定)，3-5年=17分(稳定)，5-10年=21分(成熟)，>10年=25分(超稳定)。替代主观的星级评定<br>
       · <b>规模适配性</b>（10%权重）：50-500亿为最优区间（满分），<2亿有清盘风险（2分），>1000亿调仓困难（4分）<br><br>
 
-      <b>二、宏观周期约束（美林时钟顶层调整）</b><br>
-      · 通过各类资产相对收益推断经济周期位置（复苏/过热/滞胀/衰退/过渡）<br>
+      <b>二、市场动量约束（基于资产相对强弱的顶层调整）</b><br>
+      · 通过各类资产近1年相对收益推断市场状态，本质为动量/相对强弱信号（非真实宏观经济指标）<br>
       · ${clockDesc}<br>
-      · 周期判断作为<b>顶层约束</b>叠加于风险平价之上，先于动量调整执行<br>
+      · 动量判断作为<b>顶层约束</b>叠加于风险平价之上，先于动量调整执行<br>
       · 滞胀期强制提升货币配置下限至15%<br>
       · 当信号不满足4种经典阶段时，判定为<b>过渡期</b>，采用中性配置（权益/债券系数均为1.0），不做极端倾斜<br><br>
 
-      <b>三、资产配置方法（Risk Parity + 宏观约束 + 动态倾斜）</b><br>
-      执行链路：风险平价基础 → 风险偏好倾斜 → 宏观周期约束 → 行情动量微调 → 期限上限 → 短期额外调整<br>
+      <b>三、资产配置方法（Risk Parity + 动量约束 + 动态倾斜）</b><br>
+      执行链路：风险平价基础 → 风险偏好倾斜 → 市场动量约束 → 行情动量微调 → 期限上限 → 短期额外调整<br>
       · 基础权重：各类别历史最大跌幅均值的倒数（跌幅越小→权重越高），实现等风险贡献（Risk Parity）<br>
       · 动量微调中的<b>类别排名</b>使用独立权重：Calmar Ratio 50% + 三维趋势一致性(短/中/长) 25% + 经理任期稳定性 15% + 实时动量 10%，与个基评分权重不同，侧重捕捉类别间相对强弱<br>
       · 期限约束：1年≤30%，1-3年≤60%，3-5年≤75%，5年以上≤85%<br>
@@ -2467,9 +2468,9 @@ function renderMarketAnalysis(catRanks, macroClock, mgrWarnings){
   const clockColors = {recovery:'#237804',overheat:'#d48806',stagflation:'#cf1322',recession:'#0958d9',transition:'#8c8c8c'};
   const clockHtml = macroClock && macroClock.phase !== 'unknown'
     ? `<div style="margin-top:10px;padding:10px 14px;background:linear-gradient(135deg,#f8f9fc,#f0f8ff);border-radius:8px;border-left:3px solid ${clockColors[macroClock.phase]||'#8c8c8c'}">
-        <div style="font-size:13px;font-weight:600;color:${clockColors[macroClock.phase]||'#8c8c8c'};margin-bottom:4px">🕐 美林时钟推断：${macroClock.label}</div>
+        <div style="font-size:13px;font-weight:600;color:${clockColors[macroClock.phase]||'#8c8c8c'};margin-bottom:4px">🕐 市场动量信号：${macroClock.label}</div>
         <div style="font-size:12px;color:#595959;line-height:1.6">${macroClock.desc}</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:4px">推断依据：权益年均 ${macroClock.equityR1?.toFixed(1)||'--'}% vs 债券年均 ${macroClock.bondR1?.toFixed(1)||'--'}%。配置已自动叠加周期约束：权益系数×${macroClock.equityMult}，债券系数×${macroClock.bondMult}。</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px">推断依据：权益年均 ${macroClock.equityR1?.toFixed(1)||'--'}% vs 债券年均 ${macroClock.bondR1?.toFixed(1)||'--'}%（基于资产相对强弱，非宏观经济指标）。配置已自动叠加动量约束：权益系数×${macroClock.equityMult}，债券系数×${macroClock.bondMult}。</div>
       </div>` : '';
 
   const mgrHtml = mgrWarnings && mgrWarnings.length > 0
@@ -2665,14 +2666,23 @@ function renderHoldingPie(){
 let currentDcaCat = 'all';
 
 function calcDCAScore(f){
-  // 定投评分：波动收益比 + 长期趋势 + 管理质量 + 近期动量（去除当日择时信号）
+  // 定投评分：波动适度性 + 长期趋势 + 管理质量 + 近期动量（去除当日择时信号）
   if(f.cat==='money') return 10; // 货币基金不适合定投
   // 双负严格排除：1年和3年均为负 → 结构性下行，直接标为不推荐
   if(f.r1 < 0 && f.r3 < 0) return Math.max(5, 15 + Math.round(f.r3 * 0.2));
 
-  // 1. 波动收益比（定投核心指标，35%）：波动越大且长期向上，定投越划算
-  const volReturnRatio = f.r3 > 0 && f.maxDD > 0 ? f.maxDD / Math.max(Math.abs(f.r3), 1) : 0;
-  const volScore = Math.min(35, volReturnRatio * 12); // 0-35分
+  // 1. 波动适度性（定投核心指标，35%）
+  // 定投受益于波动，但超高波动（>35%）时散户大概率放弃定投，实际效果反降
+  // 使用钟形曲线：15-30%回撤区间为最优（满分），过低/过高都扣分
+  let volScore = 0;
+  if(f.r3 > 0 && f.maxDD > 0){
+    const dd = Math.min(f.maxDD, 80);
+    // 钟形适度性：以22.5%为峰值，标准差12
+    volScore = 35 * Math.exp(-Math.pow(dd - 22.5, 2) / (2 * 12 * 12));
+    // 长期正收益加成：r3越高，波动越有价值
+    const r3Bonus = Math.min(1.0, f.r3 / 30); // r3>=30%时加成满额
+    volScore = volScore * (0.6 + 0.4 * r3Bonus); // 基础60% + r3加成40%
+  }
 
   // 2. 长期趋势 r3（25%）：定投需要长期向上的标的
   const trendScore = f.r3 > 50 ? 25 : f.r3 > 20 ? 20 : f.r3 > 0 ? Math.max(8, f.r3 * 0.6) : Math.max(0, 5 + f.r3 * 0.15); // 0-25分
@@ -2786,7 +2796,7 @@ function generateDcaAiPlan(){
       }).join('')}
     </div>
     <div style="margin-top:10px;padding:10px 14px;background:#fffbe6;border-radius:8px;font-size:12px;color:#7c5800;line-height:1.7">
-      💡 <b>方案说明（${riskNames[risk]}·${years}年）：</b>以上为${count}只基金的月定投分配，预期加权年化收益约 <b>${expRate.toFixed(1)}%</b>，${years}年后预估收益 <b>+¥${Math.round(profit).toLocaleString()}</b>（收益率 +${((profit/totalCost)*100).toFixed(1)}%）。定投建议每月固定日期执行，坚持不懈效果最佳。
+      💡 <b>方案说明（${riskNames[risk]}·${years}年）：</b>以上为${count}只基金的月定投分配，预期加权年化收益约 <b>${expRate.toFixed(1)}%</b>，${years}年后预估收益 <b>+¥${Math.round(profit).toLocaleString()}</b>（收益率 +${((profit/totalCost)*100).toFixed(1)}%）。定投建议每月固定日期执行，坚持不懈效果最佳。<br><span style="color:#ad6800">⚠️ 预期收益基于历史数据经均值回归折扣估算，仅供参考，不构成收益承诺。</span>
     </div>
     <div style="margin-top:8px">
       <button class="btn btn-primary btn-sm" onclick="importDcaAiToPlan()">⬇ 一键加入我的定投计划</button>
