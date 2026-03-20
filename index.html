@@ -1236,8 +1236,8 @@ function parseRankData(datasArray, catInfo){
     if(yearsOld < 3) return null;
     if(size < 2) return null;
     if(/后端|C$|E$/.test(name)) return null;
-    // 排除已在精选库中的
-    if(CURATED_FUNDS.some(cf => cf.code === code)) return null;
+    // 排除已在精选库中的（仅排除原始精选基金，不排除上轮扫描发现的）
+    if(CURATED_FUNDS.some(cf => cf.code === code && !cf.discovered)) return null;
     return {
       code, name, type: catInfo.type, cat: catInfo.cat, label: catInfo.label,
       r1, r3, size, maxDD: 0,
@@ -1261,8 +1261,8 @@ async function fetchMarketRanks(){
       const catData = result.categories[catInfo.ft];
       if(!catData || !catData.funds || !catData.funds.length) continue;
       catData.funds.forEach(f => {
-        // 排除已在精选库中的
-        if(CURATED_FUNDS.some(cf => cf.code === f.code)) return;
+        // 排除已在精选库中的（仅排除原始精选基金，不排除上轮扫描发现的）
+        if(CURATED_FUNDS.some(cf => cf.code === f.code && !cf.discovered)) return;
         allDiscovered.push({
           code: f.code, name: f.name, type: f.type, cat: f.cat, label: f.label,
           r1: f.r1, r3: f.r3, size: f.size,
