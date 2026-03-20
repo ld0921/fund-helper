@@ -1438,7 +1438,7 @@ function buildFundCard(f,sortMode){
     <div class="fund-card-foot">
       <button class="btn btn-ghost btn-sm" onclick="addCuratedToScore('${f.code}')">📋 加入评分</button>
       <a href="https://fund.eastmoney.com/${f.code}.html" target="_blank" style="text-decoration:none"><button class="btn btn-ghost btn-sm">🔗 详情</button></a>
-      <a href="https://m.1234567.com.cn/fund/fundDetail/index?fundCode=${f.code}" target="_blank" style="text-decoration:none"><button class="btn btn-sm" style="background:var(--primary);color:#fff;font-weight:600">💰 购买</button></a>
+      <a href="https://fund.eastmoney.com/${f.code}.html" target="_blank" style="text-decoration:none"><button class="btn btn-sm" style="background:var(--primary);color:#fff;font-weight:600">💰 购买</button></a>
     </div>
   </div>`;
 }
@@ -2521,7 +2521,7 @@ function renderAllocGroups(selectedPicks, weights){
           <div class="alloc-item-pct" style="color:${g.color}">${f.pct}%</div>
           <div class="alloc-item-amt">¥${f.amt.toLocaleString()}</div>
           <div class="alloc-item-method">${methodLabel(f.method)}</div>
-          <a href="https://m.1234567.com.cn/fund/fundDetail/index?fundCode=${f.code}" target="_blank" style="text-decoration:none;margin-left:4px"><button class="btn btn-sm" style="background:var(--primary);color:#fff;font-size:11px;padding:2px 8px">购买</button></a>
+          <a href="https://fund.eastmoney.com/${f.code}.html" target="_blank" style="text-decoration:none;margin-left:4px"><button class="btn btn-sm" style="background:var(--primary);color:#fff;font-size:11px;padding:2px 8px">购买</button></a>
         </div>`;
       }).join('')}</div>
     </div>`;
