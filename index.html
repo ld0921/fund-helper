@@ -1179,6 +1179,7 @@ async function scanMarketFunds(forceRefresh){
   // 按钮加载态
   if(btnScan){ btnScan.textContent='⏳ 扫描中...'; btnScan.disabled=true; }
 
+  try {
   // 显示进度
   const banner = document.getElementById('scan-progress');
   if(banner) banner.style.display = '';
@@ -1202,13 +1203,18 @@ async function scanMarketFunds(forceRefresh){
 
   updateScanStatus(`全市场扫描完成，发现 ${qualified.length} 只优质基金已纳入推荐池`);
   if(banner) setTimeout(()=>{ banner.style.display='none'; }, 3000);
-  if(btnScan){ btnScan.textContent='🔍 全市场扫描 ✓'; setTimeout(()=>{ btnScan.textContent='🔍 全市场扫描'; btnScan.disabled=false; }, 2000); }
 
   // 重新生成方案
   renderMarketGrid();
   renderDcaRanking();
 
   return qualified;
+  } catch(e){
+    console.error('[MarketScan] 扫描失败:', e);
+    updateScanStatus('⚠️ 全市场扫描失败，请稍后重试');
+  } finally {
+    if(btnScan){ btnScan.textContent='🔍 全市场扫描'; btnScan.disabled=false; }
+  }
 }
 
 // 合并发现的基金到CURATED_FUNDS

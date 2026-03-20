@@ -22,14 +22,17 @@ const CATEGORIES = [
   { ft: 'qdii', cat: 'qdii',   label: 'QDII',   type: 'QDII' },
 ];
 
-function httpGet(url, headers) {
+function httpGet(url, headers, timeout) {
+  timeout = timeout || 15000;
   return new Promise((resolve, reject) => {
-    https.get(url, { headers: headers || {} }, res => {
+    const req = https.get(url, { headers: headers || {} }, res => {
       let body = '';
       res.on('data', chunk => body += chunk);
       res.on('end', () => resolve(body));
       res.on('error', reject);
-    }).on('error', reject);
+    });
+    req.on('error', reject);
+    req.setTimeout(timeout, () => { req.destroy(new Error(`请求超时 ${timeout}ms: ${url}`)); });
   });
 }
 
