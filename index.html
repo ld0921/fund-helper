@@ -29,7 +29,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue'
 .tabs::-webkit-scrollbar{display:none}
 .tab{padding:13px 16px;cursor:pointer;font-size:14px;font-weight:500;color:var(--muted);white-space:nowrap;border-bottom:2px solid transparent;transition:all .2s;-webkit-tap-highlight-color:transparent}
 .tab:hover{color:var(--primary)}.tab.active{color:var(--primary);border-bottom-color:var(--primary)}
-.content{padding:14px;padding-left:calc(14px + env(safe-area-inset-left));padding-right:calc(14px + env(safe-area-inset-right));max-width:980px;margin:0 auto}
+.content{padding:14px;padding-left:calc(14px + env(safe-area-inset-left));padding-right:calc(14px + env(safe-area-inset-right));max-width:1200px;margin:0 auto}
 .panel{display:none}.panel.active{display:block}
 .card{background:#fff;border-radius:var(--radius);padding:18px;margin-bottom:14px;box-shadow:0 1px 6px rgba(0,0,0,.07)}
 .card-title{font-size:15px;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
@@ -69,7 +69,7 @@ tr:last-child td{border-bottom:none}
 .stat-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:14px}
 .stat-card{background:var(--bg);border-radius:10px;padding:12px;text-align:center}
 .stat-card .stat-val{font-size:20px;font-weight:700}.stat-card .stat-label{font-size:11px;color:var(--muted);margin-top:2px}
-.chart-wrap{position:relative;height:220px;max-height:40vh}
+.chart-wrap{position:relative;height:220px;max-height:40vh;min-height:180px}
 .alloc-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
 .alloc-name{width:95px;font-size:13px;flex-shrink:0}
 .alloc-bar{flex:1;height:18px;border-radius:9px;background:var(--border);overflow:hidden}
@@ -81,7 +81,7 @@ tr:last-child td{border-bottom:none}
 .section-sep::before,.section-sep::after{content:'';flex:1;height:1px;background:var(--border)}
 .up{color:var(--danger)}.down{color:var(--success)}.neutral{color:var(--muted)}
 /* ── Fund Cards (Panel 0) ── */
-.fund-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.fund-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
 .fund-card{border:1px solid var(--border);border-radius:10px;overflow:hidden;transition:box-shadow .2s}
 .fund-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.1)}
 .fund-card-head{padding:12px 14px 10px;border-bottom:1px solid #f5f5f5}
@@ -225,6 +225,7 @@ tr:last-child td{border-bottom:none}
   .chip-row{gap:6px}
   .chip{height:30px;padding:0 10px;font-size:12px}
   .card{padding:12px}
+  .tabs{padding:0}.tab{flex:1;text-align:center;padding:11px 6px;font-size:12px}
 }
 /* ── 持仓健康诊断 ── */
 .health-item{display:flex;align-items:flex-start;gap:10px;padding:11px 14px;border-bottom:1px solid #f5f5f5}
@@ -238,9 +239,72 @@ tr:last-child td{border-bottom:none}
 .alert-card-title{font-size:14px;font-weight:700;color:#cf1322;margin-bottom:8px;display:flex;align-items:center;gap:6px}
 .alert-green{background:linear-gradient(135deg,#f6ffed,#f0fff4);border-color:#b7eb8f}
 .alert-green .alert-card-title{color:#237804}
+/* ── Toast 通知系统 ── */
+.toast-container{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none;max-width:90vw}
+.toast{padding:10px 18px;border-radius:8px;font-size:13px;color:#fff;opacity:0;transform:translateY(-12px);transition:all .3s;pointer-events:auto;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,.15)}
+.toast.show{opacity:1;transform:translateY(0)}
+.toast-success{background:#237804}
+.toast-error{background:#cf1322}
+.toast-info{background:#0958d9}
+/* ── 回到顶部 ── */
+.back-top{position:fixed;right:18px;bottom:calc(24px + env(safe-area-inset-bottom));width:42px;height:42px;border-radius:50%;background:var(--primary);color:#fff;font-size:20px;border:none;box-shadow:0 2px 8px rgba(22,119,255,.4);cursor:pointer;display:none;align-items:center;justify-content:center;z-index:99;-webkit-tap-highlight-color:transparent;transition:opacity .2s}
+/* ── Reason 文字截断 ── */
+.fund-card-reason{-webkit-line-clamp:2;display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden}
+.fund-card-reason.expanded{-webkit-line-clamp:unset}
+/* ── 手机端表格卡片化 ── */
+@media(max-width:600px){
+  .mobile-cards table,.mobile-cards thead{display:none}
+  .mobile-card-list{display:flex;flex-direction:column;gap:8px}
+  .mobile-card-item{background:#fafafa;border-radius:8px;padding:12px;font-size:13px}
+  .mobile-card-item .mc-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+  .mobile-card-item .mc-name{font-weight:600;font-size:14px}
+  .mobile-card-item .mc-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;font-size:12px;color:var(--muted)}
+  .mobile-card-item .mc-val{color:var(--text);font-weight:500}
+  .mobile-card-item .mc-foot{margin-top:8px;display:flex;justify-content:flex-end;gap:6px}
+}
+/* ── 手机端卡片标题布局 ── */
+@media(max-width:600px){
+  .card-title .card-desc{width:100%;order:10;margin-left:0!important}
+  .card-title .card-actions{width:100%;order:11;display:flex;gap:6px}
+  .fund-card-foot{flex-wrap:wrap}
+}
+/* ── 暗色模式 ── */
+@media(prefers-color-scheme:dark){
+  :root{--bg:#141414;--card:#1f1f1f;--border:#303030;--text:#e8e8e8;--muted:#8c8c8c}
+  body{background:var(--bg);color:var(--text)}
+  .card{background:var(--card);box-shadow:0 1px 4px rgba(0,0,0,.3)}
+  .header{background:linear-gradient(135deg,#0958d9 0%,#003a8c 100%)}
+  .tabs{background:var(--card);border-bottom-color:var(--border)}
+  .form-item input,.form-item select{background:#2a2a2a;border-color:var(--border);color:var(--text)}
+  .form-item input:focus,.form-item select:focus{background:#333;border-color:var(--primary)}
+  .chip{background:#2a2a2a;border-color:var(--border);color:var(--muted)}
+  .btn-ghost{background:#2a2a2a;border-color:var(--border);color:var(--text)}
+  .fund-card{border-color:var(--border)}
+  .fund-card-head{border-bottom-color:var(--border)}
+  .fund-card-stats{background:#2a2a2a;border-bottom-color:var(--border)}
+  .fund-card-nav,.fund-card-reason{border-bottom-color:var(--border)}
+  .fund-card-reason{color:#b0b0b0}
+  .stat-card{background:#2a2a2a}
+  table th{background:#2a2a2a}
+  table td{border-bottom-color:var(--border)}
+  .notice{background:#0a2744;border-left-color:var(--primary);color:#6db3f8}
+  .warning-notice{background:#2a1f00;border-left-color:var(--warning);color:#e8b339}
+  #auto-banner{background:linear-gradient(90deg,#003a8c,#0958d9)}
+  .alloc-group-head{background:#2a2a2a}
+  .expected-banner{background:linear-gradient(135deg,#0a2744,#0d3363);border-color:#0958d9}
+  .step-item{background:#2a2a2a}
+  .empty{color:var(--muted)}
+  .eh-row,.dp-item,.dca-rank-item,.dca-ai-item,.health-item,.rebal-row{border-bottom-color:var(--border)}
+  .alloc-bar,.score-bar,.dca-score-bar-wrap{background:#333}
+  .alert-card{background:linear-gradient(135deg,#2a1a1a,#2a2010);border-color:#5c2020}
+  .alert-green{background:linear-gradient(135deg,#1a2a1a,#162a16);border-color:#274916}
+  .mobile-card-item{background:#2a2a2a}
+}
 </style>
 </head>
 <body>
+
+<div class="toast-container" id="toast-container"></div>
 
 <div class="header">
   <h1>📈 基金理财辅助工具</h1>
@@ -285,7 +349,8 @@ tr:last-child td{border-bottom:none}
 <div class="panel active" id="panel0">
 
   <!-- 快速开始引导 -->
-  <div class="card" id="welcome-card" style="background:linear-gradient(135deg,#e6f4ff,#f0f5ff);border:1px solid #91caff">
+  <div class="card" id="welcome-card" style="position:relative;background:linear-gradient(135deg,#e6f4ff,#f0f5ff);border:1px solid #91caff">
+    <button onclick="this.parentElement.style.display='none';localStorage.setItem('_welcomeDismissed','1')" style="position:absolute;right:10px;top:10px;background:none;border:none;color:#0958d9;font-size:18px;cursor:pointer;line-height:1">&times;</button>
     <div style="font-size:16px;font-weight:700;color:#0958d9;margin-bottom:8px">👋 欢迎使用基金理财助手</div>
     <div style="font-size:13px;color:#595959;line-height:1.8;margin-bottom:12px">
       只需3步即可获得专属投资方案：<br>
@@ -476,9 +541,10 @@ tr:last-child td{border-bottom:none}
   </div>
   <div class="card">
     <div class="card-title"><span class="icon icon-blue">📋</span>自定义评分列表</div>
-    <div class="table-wrap">
+    <div class="table-wrap mobile-cards">
       <table><thead><tr><th>基金名称</th><th>代码</th><th>类型</th><th>1年收益</th><th>3年收益</th><th>历史最大跌幅</th><th>综合评分</th><th>推荐</th><th>操作</th></tr></thead>
       <tbody id="fund-list"><tr><td colspan="9" class="empty">暂无自定义数据</td></tr></tbody></table>
+      <div id="fund-cards" class="mobile-card-list"></div>
     </div>
   </div>
   </details>
@@ -523,13 +589,13 @@ tr:last-child td{border-bottom:none}
       <div class="form-item"><label>每期投入金额(元)</label><input id="sip-amount" type="number" value="1000"></div>
       <div class="form-item"><label>投入频率</label><select id="sip-freq"><option value="12">每月</option><option value="4">每季</option><option value="52">每周</option></select></div>
       <div class="form-item"><label>投资年限(年)</label><input id="sip-years" type="number" value="5" min="1" max="40"></div>
-      <div class="form-item"><label>预期年化收益率(%)</label><input id="sip-rate" type="number" value="8" step="0.5"></div>
+      <div class="form-item"><label>预期年化收益率(%)</label><input id="sip-rate" type="number" value="8" step="0.5" inputmode="decimal"></div>
       <div class="form-item"><label>已有本金(元)</label><input id="sip-init" type="number" value="0"></div>
     </div>
     <div class="action-bar"><button class="btn btn-primary" onclick="calcSIP()">开始测算</button></div>
   </div>
   <div class="card" id="sip-result" style="display:none">
-    <div class="card-title"><span class="icon icon-orange">📊</span>收益预测结果</div>
+    <div class="card-title"><span class="icon icon-orange">📊</span>收益预测结果 <span id="sip-synced-hint" style="display:none;font-size:11px;color:var(--success);font-weight:400">✓ 参数已从AI定投方案同步</span></div>
     <div class="stat-row" id="sip-stats"></div>
     <div class="chart-wrap"><canvas id="sipChart"></canvas></div>
     <div id="sip-table-wrap" style="margin-top:14px"></div>
@@ -539,18 +605,32 @@ tr:last-child td{border-bottom:none}
 <!-- ===================== 面板2: 我的资产 ===================== -->
 <div class="panel" id="panel2">
 
+  <div class="chip-row" id="asset-subnav" style="position:sticky;top:46px;z-index:50;background:var(--bg);padding:8px 0">
+    <button class="chip active" onclick="scrollToSection('eh-section')">持仓</button>
+    <button class="chip" onclick="scrollToSection('dp-section')">定投</button>
+    <button class="chip" onclick="scrollToSection('holdings-section')">记录</button>
+    <button class="chip" onclick="scrollToSection('backup-section')">备份</button>
+  </div>
+
   <!-- 已有持仓输入（从Panel0移入，用于调仓建议） -->
-  <div class="card">
+  <div class="card" id="eh-section">
     <div class="card-title">
       <span class="icon icon-red">💼</span>我的已有持仓
-      <span style="font-size:12px;color:var(--muted);font-weight:400;margin-left:4px">汇总您的持仓信息，用于生成调仓建议。可从下方「持仓记录」或「定投计划」一键导入，无需重复录入</span>
-      <button class="btn btn-ghost btn-sm" style="margin-left:auto" onclick="importFromHoldings()">从持仓记录导入</button>
-      <button class="btn btn-ghost btn-sm" onclick="importFromDcaPlans()">从定投计划导入</button>
+      <span class="card-desc" style="font-size:12px;color:var(--muted);font-weight:400;margin-left:4px">汇总您的持仓信息，用于生成调仓建议。可从下方「持仓记录」或「定投计划」一键导入，无需重复录入</span>
+      <span class="card-actions" style="margin-left:auto">
+        <button class="btn btn-ghost btn-sm" onclick="importFromHoldings()">从持仓记录导入</button>
+        <button class="btn btn-ghost btn-sm" onclick="importFromDcaPlans()">从定投计划导入</button>
+      </span>
     </div>
     <div class="form-grid" style="margin-bottom:10px">
       <div class="form-item">
         <label>基金代码</label>
         <input id="eh-code" placeholder="6位代码" maxlength="6" oninput="ehAutoFill(this.value)">
+      </div>
+      <div class="form-item">
+        <label>按名称搜索</label>
+        <input id="eh-search" placeholder="输入基金名称搜索" oninput="fundSearchFilter('eh',this.value)" list="eh-datalist">
+        <datalist id="eh-datalist"></datalist>
       </div>
       <div class="form-item">
         <label>基金名称</label>
@@ -575,13 +655,14 @@ tr:last-child td{border-bottom:none}
   </div>
 
   <!-- 我的定投计划（从Panel1移入） -->
-  <div class="card">
+  <div class="card" id="dp-section">
     <div class="card-title">
       <span class="icon icon-green">📅</span>我的定投计划
       <span style="font-size:12px;color:var(--muted);font-weight:400;margin-left:4px">— 将同步至已有持仓和持仓统计</span>
     </div>
     <div class="form-grid" style="margin-bottom:10px">
       <div class="form-item"><label>基金代码</label><input id="dp-code" placeholder="6位代码" maxlength="6" oninput="dpAutoFill(this.value)"></div>
+      <div class="form-item"><label>按名称搜索</label><input id="dp-search" placeholder="输入基金名称搜索" oninput="fundSearchFilter('dp',this.value)" list="dp-datalist"><datalist id="dp-datalist"></datalist></div>
       <div class="form-item"><label>基金名称</label><input id="dp-name" placeholder="输入代码后自动填充"></div>
       <div class="form-item"><label>每月定投金额(元)</label><input id="dp-monthly" type="number" placeholder="如：500"></div>
       <div class="form-item"><label>开始定投日期</label><input id="dp-start" type="date"></div>
@@ -603,15 +684,15 @@ tr:last-child td{border-bottom:none}
   <div class="card" id="dca-holdings-section" style="display:none"></div>
   <!-- 持仓健康诊断（动态渲染） -->
   <div id="health-monitor-wrap"></div>
-  <div class="card">
+  <div class="card" id="holdings-section">
     <div class="card-title"><span class="icon icon-red">💼</span>添加持仓记录</div>
     <div class="form-grid">
       <div class="form-item"><label>基金名称</label><input id="h-name" placeholder="如：易方达蓝筹精选"></div>
       <div class="form-item"><label>基金代码</label><input id="h-code" placeholder="如：005827"></div>
       <div class="form-item"><label>买入日期</label><input id="h-date" type="date"></div>
       <div class="form-item"><label>买入份额(份)</label><input id="h-shares" type="number" placeholder="如：10000"></div>
-      <div class="form-item"><label>买入净值(元)</label><input id="h-cost" type="number" placeholder="如：2.5" step="0.0001"></div>
-      <div class="form-item"><label>当前净值(元)</label><input id="h-cur" type="number" placeholder="如：2.8" step="0.0001"></div>
+      <div class="form-item"><label>买入净值(元)</label><input id="h-cost" type="number" placeholder="如：2.5" step="0.0001" inputmode="decimal"></div>
+      <div class="form-item"><label>当前净值(元)</label><input id="h-cur" type="number" placeholder="如：2.8" step="0.0001" inputmode="decimal"></div>
       <div class="form-item"><label>基金类型</label><select id="h-type"><option>股票型</option><option>混合型</option><option>债券型</option><option>指数型</option><option>货币型</option><option>QDII</option></select></div>
     </div>
     <div class="action-bar"><button class="btn btn-primary" onclick="addHolding()">＋ 添加持仓</button></div>
@@ -625,14 +706,15 @@ tr:last-child td{border-bottom:none}
       <div class="stat-card"><div class="stat-val" id="hs-pct">--</div><div class="stat-label">总收益率</div></div>
     </div>
     <div class="chart-wrap" style="max-width:300px;margin:0 auto 14px"><canvas id="holdPieChart"></canvas></div>
-    <div class="table-wrap">
+    <div class="table-wrap mobile-cards">
       <table><thead><tr><th>基金名称</th><th>代码</th><th>类型</th><th>买入日</th><th>成本金额</th><th>当前市值</th><th>盈亏金额</th><th>收益率</th><th>持有天数</th><th>操作</th></tr></thead>
       <tbody id="holding-list"><tr><td colspan="10" class="empty">暂无持仓记录</td></tr></tbody></table>
+      <div id="holding-cards" class="mobile-card-list"></div>
     </div>
   </div>
 
   <!-- 数据备份管理（从页面底部移入） -->
-  <div class="card" style="margin-bottom:calc(14px + env(safe-area-inset-bottom))">
+  <div class="card" id="backup-section" style="margin-bottom:calc(14px + env(safe-area-inset-bottom))">
     <div class="card-title">💾 数据备份管理</div>
     <p style="font-size:13px;color:var(--muted);margin-bottom:14px">数据存储在本地浏览器中，建议定期导出备份。导出的文件可在任意设备导入恢复。</p>
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
@@ -649,6 +731,51 @@ tr:last-child td{border-bottom:none}
 </div>
 
 <script>
+// ═══════════════ Toast 通知系统 ═══════════════
+function showToast(msg, type='info', duration=2500){
+  const c=document.getElementById('toast-container');
+  const t=document.createElement('div');
+  t.className='toast toast-'+type;
+  t.textContent=msg;
+  c.appendChild(t);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>t.classList.add('show')));
+  setTimeout(()=>{t.classList.remove('show');setTimeout(()=>t.remove(),300);},duration);
+}
+
+// ═══════════════ 回到顶部 ═══════════════
+window.addEventListener('scroll',function(){
+  const btn=document.getElementById('back-top');
+  if(btn){if(window.scrollY>600){btn.style.display='flex';}else{btn.style.display='none';}}
+},{passive:true});
+
+// ═══════════════ 资产Tab子导航滚动 ═══════════════
+function scrollToSection(id){
+  const el=document.getElementById(id);
+  if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
+  // 更新子导航高亮
+  document.querySelectorAll('#asset-subnav .chip').forEach(c=>c.classList.remove('active'));
+  event.target.classList.add('active');
+}
+
+// ═══════════════ 基金名称搜索 ═══════════════
+function fundSearchFilter(prefix, val){
+  const dl=document.getElementById(prefix+'-datalist');
+  dl.innerHTML='';
+  if(val.length<1) return;
+  const matches=CURATED_FUNDS.filter(f=>f.name.includes(val)||f.code.includes(val)).slice(0,8);
+  matches.forEach(f=>{
+    const opt=document.createElement('option');
+    opt.value=f.name+' ('+f.code+')';
+    dl.appendChild(opt);
+  });
+  // 如果精确匹配某个选项，自动填充代码和名称
+  const exact=CURATED_FUNDS.find(f=>val===f.name+' ('+f.code+')' || val===f.name);
+  if(exact){
+    document.getElementById(prefix+'-code').value=exact.code;
+    document.getElementById(prefix+'-name').value=exact.name;
+    if(prefix==='dp' && exact.type) document.getElementById('dp-type').value=exact.type;
+  }
+}
 // ═══════════════ 精选基金数据库 ═══════════════
 const CURATED_FUNDS = [
   {code:'005827',name:'易方达蓝筹精选混合',type:'混合型',cat:'active',label:'主动权益',manager:'张坤',mgrYears:7,stars:5,risk:'R4',size:680,r1:18.5,r3:-22.3,maxDD:28.5,tags:['消费','医药','白酒'],reason:'张坤代表作，专注消费医药龙头，价值投资体系成熟，历经多轮牛熊考验。持仓集中于白酒、医药等消费核心资产，适合认同价值投资理念的长线投资者。'},
@@ -780,7 +907,7 @@ function doImportBackup(e){
       funds=data.funds||[]; holdings=data.holdings||[]; existingHoldings=data.existingHoldings||[]; dcaPlans=data.dcaPlans||[]; navCache=data.navCache||{};
       renderAll();
       document.getElementById('backup-status').textContent='✅ 数据已恢复 — '+new Date().toLocaleString('zh-CN');
-    }).catch(err=>alert('导入失败: '+err.message));
+    }).catch(err=>showToast('导入失败: '+err.message,'error'));
   };
   reader.readAsText(file);
   e.target.value='';
@@ -796,6 +923,7 @@ let portfolioPieInst = null, sipChartInst = null, holdPieChartInst = null;
 function switchTab(i){
   document.querySelectorAll('.tab').forEach((t,j)=>t.classList.toggle('active',i===j));
   document.querySelectorAll('.panel').forEach((p,j)=>p.classList.toggle('active',i===j));
+  window.scrollTo({top:0});
 }
 
 // ═══════════════ JSONP净值队列 ═══════════════
@@ -1306,7 +1434,7 @@ function buildFundCard(f,sortMode){
       <div class="stat-item"><div class="val" style="color:var(--danger);text-align:center">${f.maxDD > 0 ? `-${f.maxDD}%` : '0%'}</div><div class="lbl">历史最大跌幅</div></div>
     </div>
     <div class="fund-card-nav">${navHtml}</div>
-    <div class="fund-card-reason">${f.reason}</div>${dcaHtml}
+    <div class="fund-card-reason" onclick="this.classList.toggle('expanded')">${f.reason}</div>${dcaHtml}
     <div class="fund-card-foot">
       <button class="btn btn-ghost btn-sm" onclick="addCuratedToScore('${f.code}')">📋 加入评分</button>
       <a href="https://fund.eastmoney.com/${f.code}.html" target="_blank" style="text-decoration:none"><button class="btn btn-ghost btn-sm">🔗 详情</button></a>
@@ -1445,7 +1573,7 @@ function refreshAllNav(autoGenerate, silent){
 function manualRefresh(){ refreshAllNav(true); }
 function addCuratedToScore(code){
   const f=CURATED_FUNDS.find(x=>x.code===code); if(!f) return;
-  if(funds.some(x=>x.code===code)){alert('已在评分列表');return;}
+  if(funds.some(x=>x.code===code)){showToast('已在评分列表','info');return;}
   funds.push({name:f.name,code:f.code,type:f.type,r1:f.r1,r3:f.r3,dd:f.maxDD,size:f.size,risk:f.risk==='R1'?1:f.risk==='R2'?2:f.risk==='R3'?3:f.risk==='R4'?4:5,mgr:f.mgrYears});
   FundDB.set('funds',funds); renderFundList(); switchTab(1);
   setTimeout(()=>document.getElementById('fund-list').closest('.card').scrollIntoView({behavior:'smooth'}),200);
@@ -1525,7 +1653,8 @@ function recommend(s){
 function typeTag(t){ const m={'股票型':'tag-active','混合型':'tag-active','债券型':'tag-bond','指数型':'tag-index','货币型':'tag-money','QDII':'tag-qdii'};return`<span class="tag ${m[t]||'tag-index'}">${t}</span>`; }
 function renderFundList(){
   const tb=document.getElementById('fund-list');
-  if(!funds.length){tb.innerHTML='<tr><td colspan="9" class="empty">暂无自定义数据</td></tr>';return;}
+  const cardsEl=document.getElementById('fund-cards');
+  if(!funds.length){tb.innerHTML='<tr><td colspan="9" class="empty">暂无自定义数据</td></tr>';if(cardsEl)cardsEl.innerHTML='';return;}
   tb.innerHTML=funds.map((f,i)=>{ const sc=scoreF(f),cl=scoreColor(sc);
     return`<tr><td><b>${f.name}</b></td><td><code>${f.code}</code></td><td>${typeTag(f.type)}</td>
       <td class="${f.r1>=0?'up':'down'}">${f.r1>=0?'+':''}${f.r1}%</td><td class="${f.r3>=0?'up':'down'}">${f.r3>=0?'+':''}${f.r3}%</td>
@@ -1533,12 +1662,33 @@ function renderFundList(){
       <td><div style="display:flex;align-items:center;gap:8px"><div class="score-bar"><div class="score-fill" style="width:${sc}%;background:${cl}"></div></div><b style="color:${cl};min-width:24px">${sc}</b></div></td>
       <td>${recommend(sc)}</td><td><button class="btn btn-danger btn-sm" onclick="removeFund(${i})">删除</button></td></tr>`;
   }).join('');
+  // 移动端卡片渲染
+  if(cardsEl){
+    if(window.innerWidth<=600){
+      cardsEl.innerHTML=funds.map((f,i)=>{ const sc=scoreF(f),cl=scoreColor(sc);
+        return`<div class="mobile-card-item">
+          <div class="mc-head"><span class="mc-name">${f.name}</span>${typeTag(f.type)}</div>
+          <div class="mc-grid">
+            <span>代码</span><span class="mc-val">${f.code}</span>
+            <span>近1年</span><span class="mc-val ${f.r1>=0?'up':'down'}">${f.r1>=0?'+':''}${f.r1}%</span>
+            <span>近3年</span><span class="mc-val ${f.r3>=0?'up':'down'}">${f.r3>=0?'+':''}${f.r3}%</span>
+            <span>最大跌幅</span><span class="mc-val" style="color:var(--danger)">-${f.dd}%</span>
+            <span>评分</span><span class="mc-val" style="color:${cl}">${sc}</span>
+            <span>推荐</span><span class="mc-val">${recommend(sc)}</span>
+          </div>
+          <div class="mc-foot"><button class="btn btn-danger btn-sm" onclick="removeFund(${i})">删除</button></div>
+        </div>`;
+      }).join('');
+    } else {
+      cardsEl.innerHTML='';
+    }
+  }
 }
 function addFund(){
   const name=document.getElementById('f-name').value.trim(),code=document.getElementById('f-code').value.trim();
-  if(!name||!code){alert('请填写基金名称和代码');return;}
-  if(!/^\d{6}$/.test(code)){alert('基金代码必须为6位数字（如：005827）');return;}
-  if(funds.some(f=>f.code===code)){alert('该基金已在列表中');return;}
+  if(!name||!code){showToast('请填写基金名称和代码','error');return;}
+  if(!/^\d{6}$/.test(code)){showToast('基金代码必须为6位数字（如：005827）','error');return;}
+  if(funds.some(f=>f.code===code)){showToast('该基金已在列表中','info');return;}
   funds.push({name,code,type:document.getElementById('f-type').value,r1:parseFloat(document.getElementById('f-r1').value)||0,r3:parseFloat(document.getElementById('f-r3').value)||0,dd:parseFloat(document.getElementById('f-dd').value)||0,size:parseFloat(document.getElementById('f-size').value)||0,risk:document.getElementById('f-risk').value,mgr:parseFloat(document.getElementById('f-mgr').value)||0});
   FundDB.set('funds',funds); renderFundList();
   ['f-name','f-code','f-r1','f-r3','f-dd','f-size','f-mgr'].forEach(id=>document.getElementById(id).value='');
@@ -1556,8 +1706,8 @@ function addExistingHolding(){
   const name=document.getElementById('eh-name').value.trim();
   const value=parseFloat(document.getElementById('eh-value').value)||0;
   const cost=parseFloat(document.getElementById('eh-cost').value)||0;
-  if(!code||!name||!value){alert('请填写基金代码、名称和当前市值');return;}
-  if(existingHoldings.some(h=>h.code===code)){alert('该基金已存在，请修改现有记录');return;}
+  if(!code||!name||!value){showToast('请填写基金代码、名称和当前市值','error');return;}
+  if(existingHoldings.some(h=>h.code===code)){showToast('该基金已存在，请修改现有记录','info');return;}
   existingHoldings.push({code,name,value,cost});
   FundDB.set('existingHoldings',existingHoldings);
   renderExistingHoldings(); runHealthMonitor();
@@ -1576,7 +1726,7 @@ function clearExistingHoldings(){
   }
 }
 function importFromHoldings(){
-  if(!holdings.length){alert('持仓记录为空，请先在「我的资产」页添加');return;}
+  if(!holdings.length){showToast('持仓记录为空，请先在「我的资产」页添加','error');return;}
   let added=0;
   holdings.forEach(h=>{
     if(!existingHoldings.some(e=>e.code===h.code)){
@@ -1586,8 +1736,8 @@ function importFromHoldings(){
   });
   FundDB.set('existingHoldings',existingHoldings);
   renderExistingHoldings(); runHealthMonitor();
-  if(added>0) alert(`已导入 ${added} 条持仓记录`);
-  else alert('所有持仓已存在，无需重复导入');
+  if(added>0) showToast(`已导入 ${added} 条持仓记录`,'success');
+  else showToast('所有持仓已存在，无需重复导入','info');
 }
 function renderExistingHoldings(){
   const list=document.getElementById('eh-list');
@@ -2414,7 +2564,7 @@ function calcSIP(){
   const years=parseInt(document.getElementById('sip-years').value)||5;
   const rate=parseFloat(document.getElementById('sip-rate').value)/100;
   const init=parseFloat(document.getElementById('sip-init').value)||0;
-  if(!amount||!rate){alert('请填写投入金额和预期收益率');return;}
+  if(!amount||!rate){showToast('请填写投入金额和预期收益率','error');return;}
   const periods=years*freq, rPer=rate/freq;
   let totalCost=init, totalValue=init;
   const sipData=[], labels=[], costArr=[], valArr=[];
@@ -2444,7 +2594,7 @@ function addHolding(){
   const name=document.getElementById('h-name').value.trim(),code=document.getElementById('h-code').value.trim();
   const date=document.getElementById('h-date').value,shares=parseFloat(document.getElementById('h-shares').value);
   const cost=parseFloat(document.getElementById('h-cost').value),cur=parseFloat(document.getElementById('h-cur').value);
-  if(!name||!code||!shares||!cost||!cur){alert('请完整填写持仓信息');return;}
+  if(!name||!code||!shares||!cost||!cur){showToast('请完整填写持仓信息','error');return;}
   holdings.push({name,code,date,shares,cost,cur,type:document.getElementById('h-type').value});
   FundDB.set('holdings',holdings); renderHoldings(); runHealthMonitor();
   ['h-name','h-code','h-shares','h-cost','h-cur'].forEach(id=>document.getElementById(id).value='');
@@ -2463,8 +2613,10 @@ function renderHoldingStats(){
 }
 function renderHoldingTable(){
   const tb=document.getElementById('holding-list');
-  if(!holdings.length){tb.innerHTML='<tr><td colspan="10" class="empty">暂无持仓记录</td></tr>';return;}
+  const cardsEl=document.getElementById('holding-cards');
+  if(!holdings.length){tb.innerHTML='<tr><td colspan="10" class="empty">暂无持仓记录</td></tr>';if(cardsEl)cardsEl.innerHTML='';return;}
   const today=new Date();
+  const isMobile=window.innerWidth<=600;
   tb.innerHTML=holdings.map((h,i)=>{
     const ca=h.shares*h.cost,cv=h.shares*h.cur,pnl=cv-ca,pct=(pnl/ca*100).toFixed(2);
     const days=h.date?Math.floor((today-new Date(h.date))/86400000):'--';
@@ -2474,6 +2626,31 @@ function renderHoldingTable(){
       <td class="${pct>=0?'up':'down'}">${pct>=0?'+':''}${pct}%</td><td>${days}天</td>
       <td><button class="btn btn-danger btn-sm" onclick="removeHolding(${i})">删除</button></td></tr>`;
   }).join('');
+  // 移动端卡片渲染
+  if(cardsEl){
+    if(isMobile){
+      cardsEl.innerHTML=holdings.map((h,i)=>{
+        const ca=h.shares*h.cost,cv=h.shares*h.cur,pnl=cv-ca,pct=(pnl/ca*100).toFixed(2);
+        const days=h.date?Math.floor((today-new Date(h.date))/86400000):'--';
+        const pnlCls=pnl>=0?'up':'down';
+        return`<div class="mobile-card-item">
+          <div class="mc-head"><span class="mc-name">${h.name}</span>${typeTag(h.type)}</div>
+          <div class="mc-grid">
+            <span>代码</span><span class="mc-val">${h.code}</span>
+            <span>买入日</span><span class="mc-val">${h.date||'--'}</span>
+            <span>成本</span><span class="mc-val">¥${ca.toLocaleString('zh-CN',{maximumFractionDigits:0})}</span>
+            <span>市值</span><span class="mc-val">¥${cv.toLocaleString('zh-CN',{maximumFractionDigits:0})}</span>
+            <span>盈亏</span><span class="mc-val ${pnlCls}">${pnl>=0?'+':''}¥${pnl.toLocaleString('zh-CN',{maximumFractionDigits:0})}</span>
+            <span>收益率</span><span class="mc-val ${pnlCls}">${pct>=0?'+':''}${pct}%</span>
+            <span>天数</span><span class="mc-val">${days}天</span>
+          </div>
+          <div class="mc-foot"><button class="btn btn-danger btn-sm" onclick="removeHolding(${i})">删除</button></div>
+        </div>`;
+      }).join('');
+    } else {
+      cardsEl.innerHTML='';
+    }
+  }
 }
 function renderHoldingPie(){
   if(!holdings.length)return;
@@ -2619,11 +2796,13 @@ function generateDcaAiPlan(){
   document.getElementById('sip-rate').value = expRate.toFixed(1);
   document.getElementById('sip-years').value = years;
   calcSIP();
+  const hintEl=document.getElementById('sip-synced-hint');
+  if(hintEl){hintEl.style.display='inline';setTimeout(()=>hintEl.style.display='none',5000);}
 }
 
 function importDcaAiToPlan(planArr){
   const arr = planArr || window._lastDcaAiPicks || [];
-  if(!arr.length){ alert('请先生成AI定投方案'); return; }
+  if(!arr.length){ showToast('请先生成AI定投方案','error'); return; }
   let added = 0;
   arr.forEach(p=>{
     if(!dcaPlans.some(d=>d.code===p.code)){
@@ -2634,8 +2813,8 @@ function importDcaAiToPlan(planArr){
   });
   FundDB.set('dcaPlans', dcaPlans);
   renderDcaPlans();
-  if(added>0){ alert(`已添加 ${added} 只基金到您的定投计划`); }
-  else { alert('所有基金已在定投计划中'); }
+  if(added>0){ showToast(`已添加 ${added} 只基金到您的定投计划`,'success'); }
+  else { showToast('所有基金已在定投计划中','info'); }
 }
 
 function dpAutoFill(code){
@@ -2651,8 +2830,8 @@ function addDcaPlan(){
   const start=document.getElementById('dp-start').value;
   const curval=parseFloat(document.getElementById('dp-curval').value)||0;
   const type=document.getElementById('dp-type').value;
-  if(!code||!name||!monthly){alert('请填写基金代码、名称和每月定投金额');return;}
-  if(dcaPlans.some(d=>d.code===code)){alert('该基金已在定投计划中');return;}
+  if(!code||!name||!monthly){showToast('请填写基金代码、名称和每月定投金额','error');return;}
+  if(dcaPlans.some(d=>d.code===code)){showToast('该基金已在定投计划中','info');return;}
   dcaPlans.push({code,name,monthly,start,curval,type});
   FundDB.set('dcaPlans',dcaPlans);
   renderDcaPlans();
@@ -2744,7 +2923,7 @@ function renderDcaInHoldings(){
 
 // Panel1: 从定投计划导入到已有持仓
 function importFromDcaPlans(){
-  if(!dcaPlans.length){alert('定投计划为空，请先在「我的资产」页添加');return;}
+  if(!dcaPlans.length){showToast('定投计划为空，请先在「我的资产」页添加','error');return;}
   let added=0;
   dcaPlans.forEach(d=>{
     if(!existingHoldings.some(e=>e.code===d.code)){
@@ -2756,8 +2935,8 @@ function importFromDcaPlans(){
   });
   FundDB.set('existingHoldings',existingHoldings);
   renderExistingHoldings(); runHealthMonitor();
-  if(added>0) alert(`已从定投计划导入 ${added} 条持仓`);
-  else alert('定投计划中的基金已全部在已有持仓中');
+  if(added>0) showToast(`已从定投计划导入 ${added} 条持仓`,'success');
+  else showToast('定投计划中的基金已全部在已有持仓中','info');
 }
 
 // ═══════════════ 智能买卖信号引擎（均衡型灵敏度） ═══════════════
@@ -3176,6 +3355,12 @@ function runHealthMonitor(){
   document.getElementById('h-date').valueAsDate=new Date();
   document.getElementById('dp-start').valueAsDate=new Date();
 
+  // 3.5 欢迎卡片初始化检查
+  if(localStorage.getItem('_welcomeDismissed')){
+    const wc=document.getElementById('welcome-card');
+    if(wc) wc.style.display='none';
+  }
+
   // 4. 检查备份提醒
   FundDB.checkBackupReminder().then(needRemind => {
     if(needRemind) document.getElementById('backup-reminder').style.display='';
@@ -3213,5 +3398,6 @@ if('serviceWorker' in navigator){
   });
 }
 </script>
+<button class="back-top" id="back-top" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
 </body>
 </html>
