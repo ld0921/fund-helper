@@ -38,10 +38,25 @@ function httpGet(url, headers, timeout) {
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
+// 带指数退避的重试包装
+async function httpGetWithRetry(url, headers, timeout, retries) {
+  retries = retries || 3;
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      return await httpGet(url, headers, timeout);
+    } catch (e) {
+      if (attempt >= retries) throw e;
+      const delay = 1000 * Math.pow(2, attempt - 1); // 1s, 2s, 4s
+      console.warn(`    请求失败(第${attempt}次)，${delay}ms后重试: ${e.message}`);
+      await sleep(delay);
+    }
+  }
+}
+
 // ═══ 排名数据 ═══
 function fetchRank(ft, pn) {
   const url = `https://fund.eastmoney.com/data/rankhandler.aspx?op=ph&dt=kf&ft=${ft}&rs=&gs=0&sc=1nzf&st=desc&pi=1&pn=${pn}&dx=1`;
-  return httpGet(url, {
+  return httpGetWithRetry(url, {
     'Referer': 'https://fund.eastmoney.com/data/fundranking.html',
     'User-Agent': 'Mozilla/5.0 (compatible; FundHelper/1.0)'
   }).then(body => {
@@ -71,7 +86,7 @@ function parseFund(item, catInfo) {
 // ═══ 基金详情（pingzhongdata） ═══
 async function fetchFundDetail(code) {
   try {
-    const body = await httpGet(`https://fund.eastmoney.com/pingzhongdata/${code}.js`, {
+    const body = await httpGetWithRetry(`https://fund.eastmoney.com/pingzhongdata/${code}.js`, {
       'Referer': 'https://fund.eastmoney.com/',
       'User-Agent': 'Mozilla/5.0 (compatible; FundHelper/1.0)'
     });
@@ -159,7 +174,7 @@ async function fetchFundDetail(code) {
 // 拉取近3年收益率（FundArchivesDatas页面）
 async function fetchFundR3(code) {
   try {
-    const body = await httpGet(`https://fundf10.eastmoney.com/FundArchivesDatas.aspx?type=jdzf&code=${code}`, {
+    const body = await httpGetWithRetry(`https://fundf10.eastmoney.com/FundArchivesDatas.aspx?type=jdzf&code=${code}`, {
       'Referer': 'https://fundf10.eastmoney.com/',
       'User-Agent': 'Mozilla/5.0 (compatible; FundHelper/1.0)'
     });

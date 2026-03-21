@@ -889,6 +889,12 @@ function stressTest(allPicks){
   });
 }
 
+// ═══════════════ HTML 转义（防 XSS） ═══════════════
+function escHtml(s){
+  if(typeof s!=='string') return s==null?'':String(s);
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
 // ═══════════════ 全局状态 ═══════════════
 let funds    = [];
 let holdings = [];
@@ -1319,6 +1325,11 @@ async function scanMarketFunds(forceRefresh){
   }
 
   try {
+  // 先清除旧的discovered基金，确保fetchMarketRanks以原始精选库为基准判断
+  while(CURATED_FUNDS.findIndex(f => f.discovered) >= 0){
+    CURATED_FUNDS.splice(CURATED_FUNDS.findIndex(f => f.discovered), 1);
+  }
+
   // 显示进度
   const banner = document.getElementById('scan-progress');
   if(banner) banner.style.display = '';
@@ -1425,16 +1436,16 @@ function buildFundCard(f,sortMode){
   return `<div class="fund-card">
     <div class="fund-card-head">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px">
-        <div class="fund-card-name">${f.name}${f.discovered?'<span style="background:#722ed1;color:#fff;font-size:9px;padding:1px 5px;border-radius:3px;margin-left:4px;vertical-align:middle">新发现</span>':''}</div>
-        <span class="tag ${CAT_TAG[f.cat]||'tag-index'}" style="flex-shrink:0">${f.label}</span>
+        <div class="fund-card-name">${escHtml(f.name)}${f.discovered?'<span style="background:#722ed1;color:#fff;font-size:9px;padding:1px 5px;border-radius:3px;margin-left:4px;vertical-align:middle">新发现</span>':''}</div>
+        <span class="tag ${CAT_TAG[f.cat]||'tag-index'}" style="flex-shrink:0">${escHtml(f.label)}</span>
       </div>
       <div class="fund-card-meta">
-        <span>代码: <b>${f.code}</b></span><span>${f.manager} · ${f.mgrYears}年</span>
+        <span>代码: <b>${escHtml(f.code)}</b></span><span>${escHtml(f.manager)} · ${f.mgrYears}年</span>
         <span class="stars">${stars(f.stars)}</span>
         <span class="tag tag-${f.risk.toLowerCase()}">${f.risk}</span>
       </div>
       <div style="margin-top:6px;display:flex;gap:4px;flex-wrap:wrap">
-        ${f.tags.map(t=>`<span style="background:#f5f5f5;color:#595959;padding:1px 7px;border-radius:4px;font-size:11px;display:inline-block">${t}</span>`).join('')}
+        ${f.tags.map(t=>`<span style="background:#f5f5f5;color:#595959;padding:1px 7px;border-radius:4px;font-size:11px;display:inline-block">${escHtml(t)}</span>`).join('')}
       </div>
     </div>
     <div class="fund-card-stats">
@@ -1443,7 +1454,7 @@ function buildFundCard(f,sortMode){
       <div class="stat-item"><div class="val" style="color:var(--danger);text-align:center">${f.maxDD > 0 ? `-${f.maxDD}%` : '0%'}</div><div class="lbl">历史最大跌幅</div></div>
     </div>
     <div class="fund-card-nav">${navHtml}</div>
-    <div class="fund-card-reason" onclick="this.classList.toggle('expanded')">${f.reason}</div>${dcaHtml}
+    <div class="fund-card-reason" onclick="this.classList.toggle('expanded')">${escHtml(f.reason)}</div>${dcaHtml}
     <div class="fund-card-foot">
       <button class="btn btn-ghost btn-sm" onclick="addCuratedToScore('${f.code}')">📋 加入评分</button>
       <button class="btn btn-ghost btn-sm" onclick="window.open('https://fund.eastmoney.com/${f.code}.html','_blank','noopener')">🔗 详情</button>
@@ -1665,7 +1676,7 @@ function renderFundList(){
   const cardsEl=document.getElementById('fund-cards');
   if(!funds.length){tb.innerHTML='<tr><td colspan="9" class="empty">暂无自定义数据</td></tr>';if(cardsEl)cardsEl.innerHTML='';return;}
   tb.innerHTML=funds.map((f,i)=>{ const sc=scoreF(f),cl=scoreColor(sc);
-    return`<tr><td><b>${f.name}</b></td><td><code>${f.code}</code></td><td>${typeTag(f.type)}</td>
+    return`<tr><td><b>${escHtml(f.name)}</b></td><td><code>${escHtml(f.code)}</code></td><td>${typeTag(f.type)}</td>
       <td class="${f.r1>=0?'up':'down'}">${f.r1>=0?'+':''}${f.r1}%</td><td class="${f.r3>=0?'up':'down'}">${f.r3>=0?'+':''}${f.r3}%</td>
       <td style="color:var(--danger)">-${f.dd}%</td>
       <td><div style="display:flex;align-items:center;gap:8px"><div class="score-bar"><div class="score-fill" style="width:${sc}%;background:${cl}"></div></div><b style="color:${cl};min-width:24px">${sc}</b></div></td>
@@ -1676,9 +1687,9 @@ function renderFundList(){
     if(window.innerWidth<=600){
       cardsEl.innerHTML=funds.map((f,i)=>{ const sc=scoreF(f),cl=scoreColor(sc);
         return`<div class="mobile-card-item">
-          <div class="mc-head"><span class="mc-name">${f.name}</span>${typeTag(f.type)}</div>
+          <div class="mc-head"><span class="mc-name">${escHtml(f.name)}</span>${typeTag(f.type)}</div>
           <div class="mc-grid">
-            <span>代码</span><span class="mc-val">${f.code}</span>
+            <span>代码</span><span class="mc-val">${escHtml(f.code)}</span>
             <span>近1年</span><span class="mc-val ${f.r1>=0?'up':'down'}">${f.r1>=0?'+':''}${f.r1}%</span>
             <span>近3年</span><span class="mc-val ${f.r3>=0?'up':'down'}">${f.r3>=0?'+':''}${f.r3}%</span>
             <span>最大跌幅</span><span class="mc-val" style="color:var(--danger)">-${f.dd}%</span>
@@ -1766,8 +1777,8 @@ function renderExistingHoldings(){
     const pnlHtml=pnlAmt!=null?`<span class="${pnlAmt>=0?'up':'down'}">${pnlAmt>=0?'+':'-'}¥${Math.abs(pnlAmt).toLocaleString('zh-CN',{maximumFractionDigits:0})} (${pnlAmt>=0?'+':''}${pnlPct}%)</span>`:'<span style="color:var(--muted)">--</span>';
     return `<div class="eh-row">
       <div class="eh-fund">
-        <div class="eh-fund-name">${h.name} <code style="font-size:11px;color:var(--muted)">${h.code}</code></div>
-        <div class="eh-fund-meta">${fd?`${fd.type} · ${fd.manager} · 近1年 <span class="${fd.r1>=0?'up':'down'}">${fd.r1>=0?'+':''}${fd.r1}%</span>`:'持仓基金'}</div>
+        <div class="eh-fund-name">${escHtml(h.name)} <code style="font-size:11px;color:var(--muted)">${escHtml(h.code)}</code></div>
+        <div class="eh-fund-meta">${fd?`${escHtml(fd.type)} · ${escHtml(fd.manager)} · 近1年 <span class="${fd.r1>=0?'up':'down'}">${fd.r1>=0?'+':''}${fd.r1}%</span>`:'持仓基金'}</div>
       </div>
       <div class="eh-value">¥${h.value.toLocaleString('zh-CN',{maximumFractionDigits:0})}</div>
       <div class="eh-pnl">${pnlHtml}</div>
@@ -1870,8 +1881,8 @@ function renderRebalancePlan(plan){
     <div class="rebal-row">
       <div style="width:88px;flex-shrink:0"><span class="rebal-action ${a.actionColor}">${actionIcons[a.action]} ${actionLabels[a.action]}</span></div>
       <div class="rebal-fund">
-        <div class="rebal-fund-name">${a.name}</div>
-        <div class="rebal-fund-meta">代码 ${a.code} · ${a.type} · ${a.manager} · 近1年 <span class="${(+a.r1)>=0?'up':'down'}">${(+a.r1)>=0?'+':''}${a.r1}%</span></div>
+        <div class="rebal-fund-name">${escHtml(a.name)}</div>
+        <div class="rebal-fund-meta">代码 ${escHtml(a.code)} · ${escHtml(a.type)} · ${escHtml(a.manager)} · 近1年 <span class="${(+a.r1)>=0?'up':'down'}">${(+a.r1)>=0?'+':''}${a.r1}%</span></div>
       </div>
       <div class="rebal-amts">
         <div class="rebal-amt"><div class="rebal-amt-val">¥${a.currentAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}</div><div class="rebal-amt-lbl">当前持仓</div></div>
@@ -1879,7 +1890,7 @@ function renderRebalancePlan(plan){
         <div class="rebal-amt"><div class="rebal-amt-val" style="color:var(--primary)">¥${a.targetAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}</div><div class="rebal-amt-lbl">目标仓位</div></div>
         <div class="rebal-amt"><div class="rebal-amt-val" style="color:${a.action==='sell'||a.action==='reduce'?'var(--danger)':a.action==='buy'||a.action==='buy_more'?'var(--success)':'var(--muted)'}">${a.actionAmt>0?(a.action==='sell'||a.action==='reduce'?'-':'+')+'¥'+a.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0}):'--'}</div><div class="rebal-amt-lbl">调仓金额</div></div>
       </div>
-      <div class="rebal-op" style="font-size:12px;color:var(--muted);min-width:120px">${a.actionDesc}</div>
+      <div class="rebal-op" style="font-size:12px;color:var(--muted);min-width:120px">${escHtml(a.actionDesc)}</div>
     </div>`).join('');
 }
 
@@ -2394,7 +2405,7 @@ function renderStyleExposure(exposure, allPicks){
   const riskHtml = exposure.risks.length > 0
     ? `<div style="margin-top:10px;padding:10px;background:#fff1f0;border-radius:8px;border-left:3px solid #ff4d4f">
         <div style="font-size:13px;font-weight:600;color:#cf1322;margin-bottom:6px">⚠️ 风险预警 (${exposure.risks.length}项)</div>
-        ${exposure.risks.map(r=>`<div style="font-size:12px;color:#7c5800;line-height:1.6;margin-bottom:2px">· <b>${r.name}</b>：${r.desc}</div>`).join('')}
+        ${exposure.risks.map(r=>`<div style="font-size:12px;color:#7c5800;line-height:1.6;margin-bottom:2px">· <b>${escHtml(r.name)}</b>：${escHtml(r.desc)}</div>`).join('')}
       </div>` : '<div style="margin-top:8px;font-size:12px;color:var(--success)">✅ 未发现风格集中、流动性或信用风险预警</div>';
   sec.style.display='block';
   sec.innerHTML=`
@@ -2403,14 +2414,14 @@ function renderStyleExposure(exposure, allPicks){
       <div style="flex:1;min-width:140px">
         <div style="font-size:12px;color:var(--muted);margin-bottom:6px">风格暴露</div>
         ${styleEntries.map(([s,pct])=>`<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
-          <span style="font-size:12px;width:70px;flex-shrink:0">${STYLE_LABELS[s]||s}</span>
+          <span style="font-size:12px;width:70px;flex-shrink:0">${escHtml(STYLE_LABELS[s]||s)}</span>
           <div style="flex:1;height:14px;background:#f0f0f0;border-radius:7px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${pct>50?'#ff4d4f':pct>30?'#faad14':'#1677ff'};border-radius:7px;font-size:10px;color:#fff;text-align:right;padding-right:4px;line-height:14px">${pct}%</div></div>
         </div>`).join('')}
       </div>
       <div style="flex:1;min-width:140px">
         <div style="font-size:12px;color:var(--muted);margin-bottom:6px">行业暴露</div>
         ${indEntries.map(([ind,pct])=>`<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
-          <span style="font-size:12px;width:50px;flex-shrink:0">${ind}</span>
+          <span style="font-size:12px;width:50px;flex-shrink:0">${escHtml(ind)}</span>
           <div style="flex:1;height:14px;background:#f0f0f0;border-radius:7px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${pct>40?'#ff4d4f':pct>25?'#faad14':'#52c41a'};border-radius:7px;font-size:10px;color:#fff;text-align:right;padding-right:4px;line-height:14px">${pct}%</div></div>
         </div>`).join('')}
       </div>
@@ -2630,7 +2641,7 @@ function renderHoldingTable(){
   tb.innerHTML=holdings.map((h,i)=>{
     const ca=h.shares*h.cost,cv=h.shares*h.cur,pnl=cv-ca,pct=(pnl/ca*100).toFixed(2);
     const days=h.date?Math.floor((today-new Date(h.date))/86400000):'--';
-    return`<tr><td><b>${h.name}</b></td><td><code>${h.code}</code></td><td>${typeTag(h.type)}</td><td>${h.date||'--'}</td><td>¥${ca.toLocaleString('zh-CN',{maximumFractionDigits:2})}</td>
+    return`<tr><td><b>${escHtml(h.name)}</b></td><td><code>${escHtml(h.code)}</code></td><td>${typeTag(h.type)}</td><td>${h.date||'--'}</td><td>¥${ca.toLocaleString('zh-CN',{maximumFractionDigits:2})}</td>
       <td><input type="number" value="${h.cur}" step="0.0001" style="width:76px;height:26px;border:1px solid var(--border);border-radius:5px;padding:0 4px;font-size:12px" onchange="updateHoldingCur(${i},this.value)"><span style="font-size:11px;color:var(--muted)"> = ¥${cv.toLocaleString('zh-CN',{maximumFractionDigits:0})}</span></td>
       <td class="${pnl>=0?'up':'down'}">${pnl>=0?'+':'-'}¥${Math.abs(pnl).toLocaleString('zh-CN',{maximumFractionDigits:2})}</td>
       <td class="${pct>=0?'up':'down'}">${pct>=0?'+':''}${pct}%</td><td>${days}天</td>
@@ -2644,9 +2655,9 @@ function renderHoldingTable(){
         const days=h.date?Math.floor((today-new Date(h.date))/86400000):'--';
         const pnlCls=pnl>=0?'up':'down';
         return`<div class="mobile-card-item">
-          <div class="mc-head"><span class="mc-name">${h.name}</span>${typeTag(h.type)}</div>
+          <div class="mc-head"><span class="mc-name">${escHtml(h.name)}</span>${typeTag(h.type)}</div>
           <div class="mc-grid">
-            <span>代码</span><span class="mc-val">${h.code}</span>
+            <span>代码</span><span class="mc-val">${escHtml(h.code)}</span>
             <span>买入日</span><span class="mc-val">${h.date||'--'}</span>
             <span>成本</span><span class="mc-val">¥${ca.toLocaleString('zh-CN',{maximumFractionDigits:0})}</span>
             <span>市值</span><span class="mc-val">¥${cv.toLocaleString('zh-CN',{maximumFractionDigits:0})}</span>
@@ -2895,8 +2906,8 @@ function renderDcaPlans(){
     const invested=d.monthly*months;
     return `<div class="dp-item">
       <div class="dp-fund">
-        <div class="dp-name">${d.name} <code style="font-size:11px;color:var(--muted)">${d.code}</code>${chg!==null?`<span style="margin-left:6px;font-size:11px;color:${chg>=0?'var(--danger)':'var(--success)'}">${chg>=0?'+':''}${chg}%</span>`:''}</div>
-        <div class="dp-meta">${d.type}${d.start?` · 始于 ${d.start}`:''} · 已定投约 ${months} 期 · 累计约 ¥${invested.toLocaleString()}</div>
+        <div class="dp-name">${escHtml(d.name)} <code style="font-size:11px;color:var(--muted)">${escHtml(d.code)}</code>${chg!==null?`<span style="margin-left:6px;font-size:11px;color:${chg>=0?'var(--danger)':'var(--success)'}">${chg>=0?'+':''}${chg}%</span>`:''}</div>
+        <div class="dp-meta">${escHtml(d.type)}${d.start?` · 始于 ${escHtml(d.start)}`:''} · 已定投约 ${months} 期 · 累计约 ¥${invested.toLocaleString()}</div>
       </div>
       <div class="dp-monthly"><div class="dp-monthly-val">¥${d.monthly.toLocaleString()}</div><div class="dp-monthly-lbl">每月定投</div></div>
       <div class="dp-total"><div class="dp-total-val">¥${d.curval>0?d.curval.toLocaleString():'--'}</div><div class="dp-total-lbl">当前市值</div></div>
@@ -2926,8 +2937,8 @@ function renderDcaInHoldings(){
       const pnl=d.curval>0&&invested>0?d.curval-invested:null;
       return `<div class="dp-item">
         <div class="dp-fund">
-          <div class="dp-name">${d.name} <code style="font-size:11px;color:var(--muted)">${d.code}</code>${chg!==null?`<span style="margin-left:6px;font-size:11px;color:${chg>=0?'var(--danger)':'var(--success)'}">${chg>=0?'+':''}${chg}%</span>`:''}  </div>
-          <div class="dp-meta">${d.type}${d.start?` · 始于 ${d.start}`:''} · 已约 ${months} 期 · 累计约 ¥${invested.toLocaleString()}${pnl!=null?` · <span class="${pnl>=0?'up':'down'}">${pnl>=0?'+':'-'}¥${Math.abs(pnl).toLocaleString()}</span>`:''}</div>
+          <div class="dp-name">${escHtml(d.name)} <code style="font-size:11px;color:var(--muted)">${escHtml(d.code)}</code>${chg!==null?`<span style="margin-left:6px;font-size:11px;color:${chg>=0?'var(--danger)':'var(--success)'}">${chg>=0?'+':''}${chg}%</span>`:''}  </div>
+          <div class="dp-meta">${escHtml(d.type)}${d.start?` · 始于 ${escHtml(d.start)}`:''} · 已约 ${months} 期 · 累计约 ¥${invested.toLocaleString()}${pnl!=null?` · <span class="${pnl>=0?'up':'down'}">${pnl>=0?'+':'-'}¥${Math.abs(pnl).toLocaleString()}</span>`:''}</div>
         </div>
         <div class="dp-monthly"><div class="dp-monthly-val">¥${d.monthly.toLocaleString()}</div><div class="dp-monthly-lbl">每月</div></div>
         <div class="dp-total"><div class="dp-total-val">${d.curval>0?'¥'+d.curval.toLocaleString():'--'}</div><div class="dp-total-lbl">当前市值</div></div>
@@ -3143,10 +3154,10 @@ function renderSignalBanner(signals){
     const tc = typeColors[s.type] || typeColors.info;
     return `<div style="padding:10px 16px;border-bottom:1px solid #f5f5f5;display:flex;align-items:flex-start;gap:10px">
       <div style="flex:1;min-width:0">
-        <div style="font-size:13px;font-weight:600;color:${tc.color};margin-bottom:3px">${s.title}</div>
-        <div style="font-size:12px;color:#595959;line-height:1.6">${s.desc}</div>
+        <div style="font-size:13px;font-weight:600;color:${tc.color};margin-bottom:3px">${escHtml(s.title)}</div>
+        <div style="font-size:12px;color:#595959;line-height:1.6">${escHtml(s.desc)}</div>
       </div>
-      <div style="flex-shrink:0;font-size:12px;font-weight:600;color:${tc.color};padding:3px 8px;background:${tc.bg};border-radius:6px;white-space:nowrap">${s.action}</div>
+      <div style="flex-shrink:0;font-size:12px;font-weight:600;color:${tc.color};padding:3px 8px;background:${tc.bg};border-radius:6px;white-space:nowrap">${escHtml(s.action)}</div>
     </div>`;
   }).join('');
 
@@ -3335,10 +3346,10 @@ function runHealthMonitor(){
   const renderItem = a => `<div class="health-item">
     <div class="health-dot health-${a.level}"></div>
     <div class="health-fund">
-      <div class="health-name">${a.name} <code style="font-size:10px;color:var(--muted)">${a.code}</code></div>
-      <div class="health-desc">${a.desc}</div>
+      <div class="health-name">${escHtml(a.name)} <code style="font-size:10px;color:var(--muted)">${escHtml(a.code)}</code></div>
+      <div class="health-desc">${escHtml(a.desc)}</div>
     </div>
-    <div class="health-action" style="color:${a.level==='red'?'var(--danger)':a.level==='yellow'?'var(--warning)':'var(--success)'}">${a.action}</div>
+    <div class="health-action" style="color:${a.level==='red'?'var(--danger)':a.level==='yellow'?'var(--warning)':'var(--success)'}">${escHtml(a.action)}</div>
   </div>`;
 
   wrap.innerHTML=`<div class="card ${headerClass} alert-card" style="padding:0;overflow:hidden">

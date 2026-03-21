@@ -81,6 +81,15 @@ const FundDB = (function(){
     return open().then(db => {
       let data;
       try { data = JSON.parse(jsonStr); } catch(e){ return Promise.reject(new Error('JSON 格式无效')); }
+      // Schema 验证：数组字段必须是数组，navCache 必须是对象
+      for(const key of DATA_KEYS){
+        if(data[key] === undefined) continue;
+        if(key === 'navCache'){
+          if(typeof data[key] !== 'object' || Array.isArray(data[key])){ return Promise.reject(new Error(`备份数据格式错误：${key} 应为对象`)); }
+        } else {
+          if(!Array.isArray(data[key])){ return Promise.reject(new Error(`备份数据格式错误：${key} 应为数组`)); }
+        }
+      }
       const tx = db.transaction(STORE_NAME, 'readwrite');
       const store = tx.objectStore(STORE_NAME);
       const promises = DATA_KEYS.map(key => {
