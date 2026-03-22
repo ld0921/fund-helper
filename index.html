@@ -976,28 +976,29 @@ function fundSearchFilter(prefix, val){
   }
 }
 // ═══════════════ 精选基金数据库 ═══════════════
+// 初始值基于 2026-03-19 API 数据，运行时会被实时 API 覆盖
 const CURATED_FUNDS = [
-  {code:'005827',name:'易方达蓝筹精选混合',type:'混合型',cat:'active',label:'主动权益',manager:'张坤',mgrYears:7,stars:5,risk:'R4',size:680,r1:18.5,r3:-22.3,maxDD:28.5,fee:1.70,vol:0,tags:['消费','医药','白酒'],reason:'张坤代表作，专注消费医药龙头，价值投资体系成熟，历经多轮牛熊考验。持仓集中于白酒、医药等消费核心资产，适合认同价值投资理念的长线投资者。'},
-  {code:'110011',name:'易方达中小盘混合',type:'混合型',cat:'active',label:'主动权益',manager:'张坤',mgrYears:12,stars:5,risk:'R4',size:430,r1:15.2,r3:-18.3,maxDD:26.2,fee:1.70,vol:0,tags:['消费','白酒','医药'],reason:'张坤管理时间最长的产品，穿越多轮牛熊，超长任期积累丰富经验。持仓以消费白酒为主，风格稳定，适合长期持有。'},
-  {code:'161005',name:'富国天惠成长混合A',type:'混合型',cat:'active',label:'主动权益',manager:'朱少醒',mgrYears:20,stars:5,risk:'R4',size:310,r1:16.2,r3:-8.3,maxDD:32.1,fee:1.70,vol:0,tags:['成长','科技','消费'],reason:'朱少醒管理超20年，国内任职时间最长的基金经理之一。选股覆盖成长与消费，回撤控制能力突出，长期配置价值高。'},
-  {code:'163402',name:'兴全趋势投资混合',type:'混合型',cat:'active',label:'主动权益',manager:'谢治宇',mgrYears:8,stars:5,risk:'R4',size:408,r1:10.8,r3:-15.2,maxDD:24.6,fee:1.70,vol:0,tags:['均衡','成长','价值'],reason:'谢治宇经典产品，选股均衡多元，下行风险控制优于同类，适合作为权益基金底仓。'},
-  {code:'003095',name:'中欧医疗健康混合A',type:'混合型',cat:'active',label:'主动权益',manager:'葛兰',mgrYears:8,stars:4,risk:'R4',size:285,r1:5.3,r3:-38.2,maxDD:45.3,fee:1.70,vol:0,tags:['医疗','创新药','器械'],reason:'医疗健康专精，覆盖创新药、CXO、医疗器械。行业集中度高，波动大，仅适合看好医疗长期需求且能承受高波动的投资者。'},
-  {code:'260108',name:'景顺长城新兴成长混合',type:'混合型',cat:'active',label:'主动权益',manager:'刘彦春',mgrYears:12,stars:5,risk:'R4',size:586,r1:12.3,r3:-28.5,maxDD:36.8,fee:1.70,vol:0,tags:['消费','成长','港股'],reason:'刘彦春深度研究消费成长方向，任职超12年。持仓偏重消费与港股，选股集中度高，波动较大，适合看好消费赛道的长线投资者。'},
-  {code:'510300',name:'华泰柏瑞沪深300ETF',type:'指数型',cat:'index',label:'指数基金',manager:'柳军/田中',mgrYears:10,stars:5,risk:'R3',size:3800,r1:14.7,r3:-11.2,maxDD:33.5,fee:0.15,vol:0,tags:['沪深300','宽基','蓝筹'],reason:'国内规模最大的沪深300ETF，跟踪A股核心蓝筹，流动性极佳，费率极低(0.15%)，长期定投首选。'},
-  {code:'515180',name:'华泰柏瑞红利ETF',type:'指数型',cat:'index',label:'指数基金',manager:'柳军',mgrYears:8,stars:5,risk:'R3',size:580,r1:23.5,r3:15.8,maxDD:22.1,fee:0.15,vol:0,tags:['高股息','红利','防御'],reason:'聚焦高股息低估值标的，防御性强，每年分红。市场下跌时相对抗跌，适合追求稳定现金流的投资者。'},
-  {code:'513050',name:'易方达中概互联ETF',type:'指数型',cat:'index',label:'指数基金',manager:'成曦',mgrYears:5,stars:4,risk:'R4',size:430,r1:22.8,r3:-32.5,maxDD:58.2,fee:0.20,vol:0,tags:['互联网','港股','科技'],reason:'覆盖腾讯、阿里、美团等互联网龙头，估值处历史低位，波动较大，适合看好长期复苏。'},
-  {code:'159915',name:'易方达创业板ETF',type:'指数型',cat:'index',label:'指数基金',manager:'林伟斌',mgrYears:7,stars:4,risk:'R4',size:380,r1:-1.9,r3:-38.5,maxDD:52.3,fee:0.15,vol:0,tags:['创业板','科技','成长'],reason:'跟踪创业板指，弹性大，反弹力度强。成长股集中，波动高于宽基指数，仅适合激进型投资者少量配置或逆向布局。'},
-  {code:'510500',name:'南方中证500ETF',type:'指数型',cat:'index',label:'指数基金',manager:'赵恒',mgrYears:8,stars:4,risk:'R4',size:560,r1:8.3,r3:-22.8,maxDD:42.1,fee:0.15,vol:0,tags:['中证500','中盘','成长'],reason:'覆盖500只中等市值股票，与沪深300互补，成长性更强，适合搭配宽基分散配置。'},
-  {code:'159919',name:'嘉实沪深300ETF',type:'指数型',cat:'index',label:'指数基金',manager:'张帆',mgrYears:9,stars:4,risk:'R3',size:1200,r1:14.5,r3:-11.5,maxDD:33.8,fee:0.15,vol:0,tags:['沪深300','宽基','低费率'],reason:'老牌沪深300ETF，费率0.15%，跟踪精准，可与510300搭配增加流动性，适合长期定投。'},
-  {code:'110017',name:'易方达增强回报债券A',type:'债券型',cat:'bond',label:'债券基金',manager:'张清华',mgrYears:12,stars:5,risk:'R2',size:182,r1:7.8,r3:18.5,maxDD:4.2,fee:0.70,vol:0,tags:['信用债','增强','稳健'],reason:'张清华管理，长期业绩位居债基前列，信用债与利率债均衡，适度增强收益，风险控制优秀。'},
-  {code:'000171',name:'华夏纯债债券A',type:'债券型',cat:'bond',label:'债券基金',manager:'李俊',mgrYears:8,stars:4,risk:'R2',size:105,r1:5.2,r3:14.3,maxDD:1.8,fee:0.50,vol:0,tags:['纯债','稳定','无权益'],reason:'完全不含权益资产，纯债配置，回撤极小，适合短期理财或稳健资金债券仓，替代银行理财。'},
-  {code:'070009',name:'嘉实超短债债券A',type:'债券型',cat:'bond',label:'债券基金',manager:'刘斌',mgrYears:6,stars:4,risk:'R1',size:225,r1:3.8,r3:11.2,maxDD:0.5,fee:0.30,vol:0,tags:['超短债','流动性','保守'],reason:'持仓期限极短，流动性优异，收益高于货币基金，风险接近零，适合短期过渡资金。'},
-  {code:'000198',name:'天弘余额宝货币A',type:'货币型',cat:'money',label:'货币基金',manager:'王登峰',mgrYears:10,stars:5,risk:'R1',size:7200,r1:2.1,r3:7.5,maxDD:0.0,fee:0.05,vol:0,tags:['余额宝','支付宝','随存随取'],reason:'支付宝默认货币基金，全球规模最大，T+0取用，历史从未亏损，适合闲置资金管理。'},
-  {code:'003003',name:'工银瑞信货币A',type:'货币型',cat:'money',label:'货币基金',manager:'曾颖',mgrYears:7,stars:4,risk:'R1',size:850,r1:2.3,r3:7.8,maxDD:0.0,fee:0.05,vol:0,tags:['大行品牌','稳健','货币'],reason:'工商银行旗下货币基金，银行系品牌背书，七日年化略高于余额宝，适合资金备用仓。'},
-  {code:'161125',name:'易方达标普500指数(QDII)A',type:'QDII',cat:'qdii',label:'QDII海外',manager:'陈苏桥',mgrYears:8,stars:5,risk:'R4',size:125,r1:27.5,r3:52.3,maxDD:24.8,fee:0.80,vol:0,tags:['美股','标普500','全球配置'],reason:'跟踪标普500，投资苹果微软英伟达等美股核心资产，历史年化约10%+，全球配置首选。'},
-  {code:'270042',name:'广发纳斯达克100(QDII)A',type:'QDII',cat:'qdii',label:'QDII海外',manager:'李耀柱',mgrYears:7,stars:5,risk:'R5',size:95,r1:31.2,r3:65.8,maxDD:35.2,fee:0.80,vol:0,tags:['美股','纳斯达克','科技'],reason:'跟踪纳斯达克100，高度集中科技巨头，弹性极大，长期表现优异，适合激进型配置。'},
-  {code:'040046',name:'华安标普500指数(QDII)A',type:'QDII',cat:'qdii',label:'QDII海外',manager:'许之彦',mgrYears:10,stars:4,risk:'R4',size:88,r1:26.8,r3:50.5,maxDD:25.1,fee:0.80,vol:0,tags:['美股','标普500','稳健'],reason:'老牌标普500QDII，管理经验丰富，费率合理，适合想稳健配置美股的投资者。'},
-  {code:'006479',name:'博时标普500ETF联接(QDII)A',type:'QDII',cat:'qdii',label:'QDII海外',manager:'赵云阳',mgrYears:5,stars:4,risk:'R4',size:82,r1:27.1,r3:51.2,maxDD:24.6,fee:0.80,vol:0,tags:['美股','标普500','联接'],reason:'博时旗下标普500产品，可支付宝直接申购，跟踪误差小，适合小额定投分散市场风险。'},
+  {code:'005827',name:'易方达蓝筹精选混合',type:'混合型',cat:'active',label:'主动权益',manager:'张坤',mgrYears:13.5,stars:4,risk:'R4',size:310.21,r1:-6.75,r3:-11.51,maxDD:57.9,fee:1.70,vol:0,tags:['消费','医药','白酒'],reason:'张坤代表作，专注消费医药龙头，价值投资体系成熟，历经多轮牛熊考验。持仓集中于白酒、医药等消费核心资产，适合认同价值投资理念的长线投资者。'},
+  {code:'110011',name:'易方达中小盘混合',type:'混合型',cat:'active',label:'主动权益',manager:'张坤',mgrYears:13.5,stars:4,risk:'R4',size:113.85,r1:-7.76,r3:-11.28,maxDD:61.2,fee:1.70,vol:0,tags:['消费','白酒','医药'],reason:'张坤管理时间最长的产品，穿越多轮牛熊，超长任期积累丰富经验。持仓以消费白酒为主，风格稳定，适合长期持有。'},
+  {code:'161005',name:'富国天惠成长混合A',type:'混合型',cat:'active',label:'主动权益',manager:'朱少醒',mgrYears:20.4,stars:4,risk:'R4',size:211.02,r1:17.93,r3:10.81,maxDD:65.2,fee:1.70,vol:0,tags:['成长','科技','消费'],reason:'朱少醒管理超20年，国内任职时间最长的基金经理之一。选股覆盖成长与消费，回撤控制能力突出，长期配置价值高。'},
+  {code:'163402',name:'兴全趋势投资混合',type:'混合型',cat:'active',label:'主动权益',manager:'杨世进',mgrYears:5.3,stars:5,risk:'R4',size:140.12,r1:33.25,r3:20.83,maxDD:87.7,fee:1.70,vol:0,tags:['均衡','成长','价值'],reason:'经典趋势产品，选股均衡多元，下行风险控制优于同类，适合作为权益基金底仓。'},
+  {code:'003095',name:'中欧医疗健康混合A',type:'混合型',cat:'active',label:'主动权益',manager:'葛兰',mgrYears:10.7,stars:4,risk:'R4',size:138.43,r1:6.86,r3:-22.69,maxDD:68.5,fee:1.70,vol:0,tags:['医疗','创新药','器械'],reason:'医疗健康专精，覆盖创新药、CXO、医疗器械。行业集中度高，波动大，仅适合看好医疗长期需求且能承受高波动的投资者。'},
+  {code:'260108',name:'景顺长城新兴成长混合',type:'混合型',cat:'active',label:'主动权益',manager:'刘彦春',mgrYears:16.9,stars:4,risk:'R4',size:158.8,r1:-10.97,r3:-30.49,maxDD:77.9,fee:1.70,vol:0,tags:['消费','成长','港股'],reason:'刘彦春深度研究消费成长方向，任职超16年。持仓偏重消费与港股，选股集中度高，波动较大，适合看好消费赛道的长线投资者。'},
+  {code:'510300',name:'华泰柏瑞沪深300ETF',type:'指数型',cat:'index',label:'指数基金',manager:'柳军',mgrYears:16.8,stars:5,risk:'R4',size:4222.58,r1:19.27,r3:26.4,maxDD:46.5,fee:0.15,vol:0,tags:['沪深300','宽基','蓝筹'],reason:'国内规模最大的沪深300ETF，跟踪A股核心蓝筹，流动性极佳，费率极低(0.15%)，长期定投首选。'},
+  {code:'515180',name:'华泰柏瑞红利ETF',type:'指数型',cat:'index',label:'指数基金',manager:'林伟斌',mgrYears:11.9,stars:5,risk:'R3',size:118.05,r1:12.25,r3:29.45,maxDD:22.5,fee:0.15,vol:0,tags:['高股息','红利','防御'],reason:'聚焦高股息低估值标的，防御性强，每年分红。市场下跌时相对抗跌，适合追求稳定现金流的投资者。'},
+  {code:'513050',name:'易方达中概互联ETF',type:'指数型',cat:'index',label:'指数基金',manager:'余海燕',mgrYears:14.3,stars:5,risk:'R4',size:398.59,r1:-15.1,r3:33.73,maxDD:73.4,fee:0.20,vol:0,tags:['互联网','港股','科技'],reason:'覆盖腾讯、阿里、美团等互联网龙头，波动较大，适合看好中概长期复苏。'},
+  {code:'159915',name:'易方达创业板ETF',type:'指数型',cat:'index',label:'指数基金',manager:'成曦',mgrYears:9.9,stars:5,risk:'R4',size:1004.46,r1:52.72,r3:50.01,maxDD:69.7,fee:0.15,vol:0,tags:['创业板','科技','成长'],reason:'跟踪创业板指，弹性大，反弹力度强。成长股集中，波动高于宽基指数，仅适合激进型投资者少量配置或逆向布局。'},
+  {code:'510500',name:'南方中证500ETF',type:'指数型',cat:'index',label:'指数基金',manager:'罗文杰',mgrYears:12.9,stars:5,risk:'R4',size:1446.9,r1:34.17,r3:36.88,maxDD:63.2,fee:0.15,vol:0,tags:['中证500','中盘','成长'],reason:'覆盖500只中等市值股票，与沪深300互补，成长性更强，适合搭配宽基分散配置。'},
+  {code:'159919',name:'嘉实沪深300ETF',type:'指数型',cat:'index',label:'指数基金',manager:'刘珈吟',mgrYears:10,stars:5,risk:'R4',size:1971.24,r1:19.24,r3:26.4,maxDD:45.9,fee:0.15,vol:0,tags:['沪深300','宽基','低费率'],reason:'老牌沪深300ETF，费率0.15%，跟踪精准，可与510300搭配增加流动性，适合长期定投。'},
+  {code:'110017',name:'易方达增强回报债券A',type:'债券型',cat:'bond',label:'债券基金',manager:'王晓晨',mgrYears:14.6,stars:5,risk:'R3',size:316.96,r1:5.55,r3:17.39,maxDD:21.1,fee:0.70,vol:0,tags:['信用债','增强','稳健'],reason:'长期业绩位居债基前列，信用债与利率债均衡，适度增强收益，风险控制优秀。'},
+  {code:'000171',name:'华夏纯债债券A',type:'债券型',cat:'bond',label:'债券基金',manager:'张清华',mgrYears:12.2,stars:4,risk:'R3',size:152.65,r1:7.09,r3:16.01,maxDD:26,fee:0.50,vol:0,tags:['纯债','稳定','无权益'],reason:'纯债配置，适合短期理财或稳健资金债券仓，替代银行理财。'},
+  {code:'070009',name:'嘉实超短债债券A',type:'债券型',cat:'bond',label:'债券基金',manager:'王亚洲',mgrYears:10.7,stars:5,risk:'R1',size:63.48,r1:1.54,r3:6.55,maxDD:2.3,fee:0.30,vol:0,tags:['超短债','流动性','保守'],reason:'持仓期限极短，流动性优异，收益高于货币基金，风险接近零，适合短期过渡资金。'},
+  {code:'000198',name:'天弘余额宝货币A',type:'货币型',cat:'money',label:'货币基金',manager:'刘莹',mgrYears:8,stars:3,risk:'R1',size:7646.28,r1:1.11,r3:4.47,maxDD:0.0,fee:0.05,vol:0,tags:['余额宝','支付宝','随存随取'],reason:'支付宝默认货币基金，全球规模最大，T+0取用，历史从未亏损，适合闲置资金管理。'},
+  {code:'003003',name:'工银瑞信货币A',type:'货币型',cat:'money',label:'货币基金',manager:'曲波',mgrYears:18.2,stars:3,risk:'R1',size:593.88,r1:1.13,r3:4.57,maxDD:0.0,fee:0.05,vol:0,tags:['大行品牌','稳健','货币'],reason:'工商银行旗下货币基金，银行系品牌背书，七日年化略高于余额宝，适合资金备用仓。'},
+  {code:'161125',name:'易方达标普500指数(QDII)A',type:'QDII',cat:'qdii',label:'QDII海外',manager:'刘依姗',mgrYears:1.3,stars:4,risk:'R4',size:14.75,r1:13.32,r3:66.24,maxDD:32.9,fee:0.80,vol:0,tags:['美股','标普500','全球配置'],reason:'跟踪标普500，投资苹果微软英伟达等美股核心资产，历史年化约10%+，全球配置首选。'},
+  {code:'270042',name:'广发纳斯达克100(QDII)A',type:'QDII',cat:'qdii',label:'QDII海外',manager:'刘杰',mgrYears:12,stars:5,risk:'R5',size:108.44,r1:18.61,r3:88.66,maxDD:31.2,fee:0.80,vol:0,tags:['美股','纳斯达克','科技'],reason:'跟踪纳斯达克100，高度集中科技巨头，弹性极大，长期表现优异，适合激进型配置。'},
+  {code:'040046',name:'华安标普500指数(QDII)A',type:'QDII',cat:'qdii',label:'QDII海外',manager:'倪斌',mgrYears:7.5,stars:4,risk:'R4',size:55.2,r1:17.03,r3:85.36,maxDD:31.2,fee:0.80,vol:0,tags:['美股','标普500','稳健'],reason:'老牌标普500QDII，管理经验丰富，费率合理，适合想稳健配置美股的投资者。'},
+  {code:'006479',name:'博时标普500ETF联接(QDII)A',type:'QDII',cat:'qdii',label:'QDII海外',manager:'刘杰',mgrYears:12,stars:5,risk:'R4',size:65.44,r1:18.38,r3:87.53,maxDD:31.4,fee:0.80,vol:0,tags:['美股','标普500','联接'],reason:'博时旗下标普500产品，可支付宝直接申购，跟踪误差小，适合小额定投分散市场风险。'},
 ];
 
 // ═══════════════ 基金元数据增强（风格/行业/流动性风险） ═══════════════
@@ -1517,6 +1518,7 @@ function applyFundDetails(allDetails){
     if(d.instPct !== undefined && isFinite(d.instPct) && d.instPct >= 0 && d.instPct <= 100 && FUND_META[f.code]){
       FUND_META[f.code].instPct = d.instPct;
     }
+    f._apiUpdated = true; // 标记已被API数据覆盖
     updated++;
   });
   // 重新渲染精选基金列表
@@ -2677,6 +2679,27 @@ function _finishGenerate(btn){
 }
 
 function _doGenerate(){
+  // 数据新鲜度守卫：检测 CURATED_FUNDS 是否已被 API 数据覆盖
+  const origFunds = CURATED_FUNDS.filter(f => !f.discovered);
+  const apiUpdatedCount = origFunds.filter(f => f._apiUpdated).length;
+  const staleNotice = document.getElementById('data-stale-notice');
+  if(apiUpdatedCount < origFunds.length * 0.8){
+    // 超过 80% 的精选基金未被 API 更新，显示警告
+    if(!staleNotice){
+      const notice = document.createElement('div');
+      notice.id = 'data-stale-notice';
+      notice.className = 'warning-notice';
+      notice.style.cssText = 'background:#fff1f0;border-left-color:#ff4d4f;color:#a8071a;font-weight:500';
+      notice.innerHTML = '⚠️ <b>基金数据尚未更新</b>，当前方案基于默认数据生成，可能不够准确。请点击「基金探索」Tab 中的「更新数据」按钮刷新，或检查网络连接后稍后重试。';
+      const resultEl = document.getElementById('portfolio-result');
+      if(resultEl) resultEl.insertBefore(notice, resultEl.firstChild);
+    } else {
+      staleNotice.style.display = '';
+    }
+  } else {
+    if(staleNotice) staleNotice.style.display = 'none';
+  }
+
   const totalAmt  = parseFloat(document.getElementById('sp-amount').value)||30000;
   const riskP     = document.getElementById('sp-risk').value;
   const horizon   = parseInt(document.getElementById('sp-horizon').value);
