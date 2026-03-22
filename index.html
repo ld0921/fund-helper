@@ -388,6 +388,9 @@ tr:last-child td{border-bottom:none}
 /* 持仓变化提示条 */
 .stale-hint{background:#fffbe6;border:1px solid #ffe58f;border-radius:8px;padding:10px 14px;font-size:13px;color:#ad6800;display:none;margin-bottom:14px;line-height:1.6}
 .stale-hint.show{display:block}
+/* 折叠箭头自动切换 */
+.toggle-arrow::after{content:'展开 ▸'}
+details[open] .toggle-arrow::after{content:'收起 ▾'}
 /* 全局错误横幅 */
 .global-error{position:fixed;top:0;left:0;right:0;background:#ff4d4f;color:#fff;padding:10px 16px;font-size:13px;text-align:center;z-index:9997;transform:translateY(-100%);transition:transform .3s}
 .global-error.show{transform:translateY(0)}
@@ -542,7 +545,7 @@ tr:last-child td{border-bottom:none}
     <summary style="padding:14px 18px;list-style:none;display:flex;align-items:center;gap:8px">
       <span class="icon icon-blue">📐</span>
       <span style="font-size:14px;font-weight:600;flex:1">投资策略说明</span>
-      <span style="font-size:12px;color:var(--primary)">点击展开 ▸</span>
+      <span class="toggle-arrow" style="font-size:12px;color:var(--primary)"></span>
     </summary>
     <div style="padding:0 18px 18px;font-size:12px;color:#595959;line-height:1.8">
       <div class="notice" style="padding:6px 10px;border-radius:6px;font-size:11px;margin-bottom:12px;border-left:none">
@@ -643,7 +646,7 @@ tr:last-child td{border-bottom:none}
     <!-- 实时市场行情分析（折叠，减少信息密度） -->
     <details>
       <summary class="card" style="cursor:pointer;margin-bottom:0;list-style:none">
-        <div class="card-title" style="margin-bottom:0"><span class="icon icon-orange">📡</span>查看实时行情分析 <span style="font-size:12px;color:var(--muted);font-weight:400" id="analysis-time"></span><span style="margin-left:auto;font-size:12px;color:var(--primary)">展开 ▸</span></div>
+        <div class="card-title" style="margin-bottom:0"><span class="icon icon-orange">📡</span>查看实时行情分析 <span style="font-size:12px;color:var(--muted);font-weight:400" id="analysis-time"></span><span class="toggle-arrow" style="margin-left:auto;font-size:12px;color:var(--primary)"></span></div>
       </summary>
     <div class="card" style="border-top-left-radius:0;border-top-right-radius:0;margin-top:-1px">
       <div class="table-wrap" id="market-analysis-desktop">
@@ -682,7 +685,7 @@ tr:last-child td{border-bottom:none}
 
       <!-- 策略说明 -->
       <details style="margin-top:14px">
-        <summary style="cursor:pointer;font-size:13px;color:var(--primary);font-weight:500;padding:8px 0">📐 查看策略依据与算法说明</summary>
+        <summary style="cursor:pointer;font-size:13px;color:var(--primary);font-weight:500;padding:8px 0">📐 策略依据与算法说明 <span class="toggle-arrow" style="font-size:12px"></span></summary>
         <div id="strategy-explanation" style="padding:12px;background:#f8f9fc;border-radius:8px;font-size:12px;color:#595959;line-height:1.8;margin-top:8px"></div>
       </details>
     </div>
@@ -3450,7 +3453,7 @@ function calcSIP(){
     <div class="stat-card"><div class="stat-val" style="color:var(--success)">+${pct}%</div><div class="stat-label">累计收益率</div></div>`;
   if(sipChartInst) sipChartInst.destroy();
   sipChartInst=new Chart(document.getElementById('sipChart'),{type:'bar',data:{labels,datasets:[{label:'投入本金',data:costArr,backgroundColor:'#bae0ff',borderRadius:4},{label:'预期市值',data:valArr,backgroundColor:'#1677ff',borderRadius:4}]},options:{plugins:{legend:{position:'bottom'}},scales:{y:{ticks:{callback:v=>'¥'+(v/10000).toFixed(0)+'万'}}},responsive:true,maintainAspectRatio:true}});
-  document.getElementById('sip-table-wrap').innerHTML=`<details><summary style="cursor:pointer;font-size:13px;color:var(--primary);margin-bottom:8px">查看逐年明细 ▸</summary><div class="table-wrap"><table><thead><tr><th>年份</th><th>累计投入</th><th>预期市值</th><th>累计收益</th><th>收益率</th></tr></thead><tbody>${sipData.map(d=>{const p=d.value-d.cost,pc=(p/d.cost*100).toFixed(1);return`<tr><td>第${d.year}年</td><td>¥${d.cost.toLocaleString('zh-CN',{maximumFractionDigits:0})}</td><td style="color:var(--primary)">¥${d.value.toLocaleString('zh-CN',{maximumFractionDigits:0})}</td><td class="up">+¥${p.toLocaleString('zh-CN',{maximumFractionDigits:0})}</td><td class="up">+${pc}%</td></tr>`;}).join('')}</tbody></table></div></details>`;
+  document.getElementById('sip-table-wrap').innerHTML=`<details><summary style="cursor:pointer;font-size:13px;color:var(--primary);margin-bottom:8px">查看逐年明细 <span class="toggle-arrow" style="font-size:12px"></span></summary><div class="table-wrap"><table><thead><tr><th>年份</th><th>累计投入</th><th>预期市值</th><th>累计收益</th><th>收益率</th></tr></thead><tbody>${sipData.map(d=>{const p=d.value-d.cost,pc=(p/d.cost*100).toFixed(1);return`<tr><td>第${d.year}年</td><td>¥${d.cost.toLocaleString('zh-CN',{maximumFractionDigits:0})}</td><td style="color:var(--primary)">¥${d.value.toLocaleString('zh-CN',{maximumFractionDigits:0})}</td><td class="up">+¥${p.toLocaleString('zh-CN',{maximumFractionDigits:0})}</td><td class="up">+${pc}%</td></tr>`;}).join('')}</tbody></table></div></details>`;
   document.getElementById('sip-result').style.display='block';
 }
 
