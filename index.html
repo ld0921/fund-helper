@@ -339,12 +339,50 @@ tr:last-child td{border-bottom:none}
 .fund-grid{transition:opacity .2s}
 .fund-grid.fading{opacity:.3}
 /* 定投计划操作按钮组 */
-.dp-actions{display:flex;gap:4px;flex-shrink:0;align-items:center}
+.dp-actions{display:flex;gap:6px;flex-shrink:0;align-items:center}
+/* 自定义弹窗 */
+.modal-mask{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9998;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;transition:opacity .2s}
+.modal-mask.show{opacity:1}
+.modal-box{background:var(--card);border-radius:14px;padding:24px;width:100%;max-width:360px;box-shadow:0 12px 40px rgba(0,0,0,.25);transform:scale(.92);transition:transform .2s}
+.modal-mask.show .modal-box{transform:scale(1)}
+.modal-title{font-size:16px;font-weight:700;margin-bottom:14px}
+.modal-input{width:100%;height:44px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-size:16px;background:var(--card);color:var(--text);outline:none;transition:border-color .2s}
+.modal-input:focus{border-color:var(--primary);box-shadow:0 0 0 2px rgba(22,119,255,.15)}
+.modal-actions{display:flex;gap:8px;margin-top:18px;justify-content:flex-end}
+/* 内联校验错误 */
+.form-item.has-error input,.form-item.has-error select{border-color:var(--danger);background:#fff1f0}
+.form-item .field-error{font-size:11px;color:var(--danger);margin-top:2px;display:none}
+.form-item.has-error .field-error{display:block}
+/* 按钮loading态 */
+.btn.is-loading{opacity:.7;pointer-events:none}
+/* 基金名截断 */
+.fund-name-truncate{max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:inline-block;vertical-align:middle}
+@media(max-width:600px){.fund-name-truncate{max-width:140px}}
+/* 代码复制按钮 */
+.code-copy{cursor:pointer;-webkit-tap-highlight-color:transparent;border-bottom:1px dashed var(--muted);transition:color .15s}
+.code-copy:active{color:var(--primary)}
+/* 信号列表滚动渐变遮罩 */
+.signal-scroll-wrap{position:relative}
+.signal-scroll-wrap::after{content:'';position:absolute;bottom:0;left:0;right:0;height:30px;background:linear-gradient(transparent,rgba(255,241,240,.9));pointer-events:none;border-radius:0 0 10px 10px;display:none}
+.signal-scroll-wrap.has-overflow::after{display:block}
+/* 保存微提示 */
+.save-tick{display:inline-block;font-size:11px;color:var(--success);opacity:0;transition:opacity .3s;margin-left:6px}
+.save-tick.show{opacity:1}
 </style>
 </head>
 <body>
 
 <div class="toast-container" id="toast-container"></div>
+<div class="modal-mask" id="modal-mask" style="display:none" onclick="if(event.target===this)closeModal()">
+  <div class="modal-box">
+    <div class="modal-title" id="modal-title"></div>
+    <input class="modal-input" id="modal-input" type="number" inputmode="decimal">
+    <div class="modal-actions">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal()">取消</button>
+      <button class="btn btn-primary btn-sm" id="modal-confirm" onclick="confirmModal()">确认</button>
+    </div>
+  </div>
+</div>
 
 <div class="header">
   <h1>📈 基金理财辅助工具</h1>
@@ -369,7 +407,7 @@ tr:last-child td{border-bottom:none}
   <button onclick="document.getElementById('ios-install-banner').style.display='none';localStorage.setItem('_iosInstallDismissed','1')" style="margin-left:8px;background:none;border:none;color:#0958d9;cursor:pointer;font-size:16px;line-height:1">&times;</button>
 </div>
 <!-- 智能信号通知横幅 -->
-<div id="signal-banner" style="display:none;background:linear-gradient(135deg,#fff1f0,#fff7e6);border-bottom:1px solid #ffa39e;padding:0;max-height:300px;overflow-y:auto;-webkit-overflow-scrolling:touch">
+<div id="signal-banner" class="signal-scroll-wrap" style="display:none;background:linear-gradient(135deg,#fff1f0,#fff7e6);border-bottom:1px solid #ffa39e;padding:0;max-height:300px;overflow-y:auto;-webkit-overflow-scrolling:touch">
   <div style="padding:10px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #ffe0de">
     <span style="font-size:14px;font-weight:600;color:#cf1322" id="signal-banner-title">📡 智能监控信号</span>
     <button onclick="document.getElementById('signal-banner').style.display='none'" style="background:none;border:none;color:#cf1322;cursor:pointer;font-size:18px;line-height:1">&times;</button>
@@ -626,7 +664,7 @@ tr:last-child td{border-bottom:none}
       </div>
     </div>
     <div class="action-bar">
-      <button class="btn btn-primary" onclick="generateDcaAiPlan()">🤖 生成AI定投方案</button>
+      <button class="btn btn-primary" onclick="generateDcaAiPlan()" id="dca-gen-btn">🤖 生成AI定投方案</button>
     </div>
     <div id="dca-ai-result" style="display:none;margin-top:14px"></div>
   </div>
@@ -696,7 +734,7 @@ tr:last-child td{border-bottom:none}
     </div>
     <div class="action-bar" style="margin-top:0">
       <button class="btn btn-primary btn-sm" onclick="addExistingHolding()">＋ 添加</button>
-      <button class="btn btn-ghost btn-sm" onclick="clearExistingHoldings()">清空全部</button>
+      <button class="btn btn-danger btn-sm" onclick="clearExistingHoldings()">清空全部</button>
     </div>
     <div id="eh-list" style="margin-top:12px;border:1px solid var(--border);border-radius:10px;overflow:hidden;display:none"></div>
     <div id="eh-empty" class="empty-state" style="margin-top:10px">
@@ -726,7 +764,7 @@ tr:last-child td{border-bottom:none}
     </div>
     <div class="action-bar">
       <button class="btn btn-primary btn-sm" onclick="addDcaPlan()">＋ 添加定投计划</button>
-      <button class="btn btn-ghost btn-sm" onclick="clearDcaPlans()">清空全部</button>
+      <button class="btn btn-danger btn-sm" onclick="clearDcaPlans()">清空全部</button>
     </div>
     <div id="dp-list" style="margin-top:12px;border:1px solid var(--border);border-radius:10px;overflow:hidden;display:none"></div>
     <div id="dp-empty" class="empty-state" style="margin-top:8px">
@@ -797,6 +835,40 @@ function showToast(msg, type='info', duration=2500){
   c.appendChild(t);
   requestAnimationFrame(()=>requestAnimationFrame(()=>t.classList.add('show')));
   setTimeout(()=>{t.classList.remove('show');setTimeout(()=>t.remove(),300);},duration);
+}
+// 保存成功微提示
+function flashSaved(sectionId){
+  const sec=document.getElementById(sectionId);
+  if(!sec) return;
+  let tick=sec.querySelector('.save-tick');
+  if(!tick){
+    tick=document.createElement('span');
+    tick.className='save-tick';
+    tick.textContent='✓ 已保存';
+    const title=sec.querySelector('.card-title');
+    if(title) title.appendChild(tick);
+  }
+  tick.classList.add('show');
+  setTimeout(()=>tick.classList.remove('show'),2000);
+}
+// 日期格式化为中文
+function fmtDateCN(dateStr){
+  if(!dateStr) return '';
+  const d=new Date(dateStr);
+  if(isNaN(d.getTime())) return dateStr;
+  return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日`;
+}
+// 基金代码一键复制
+function copyCode(code, el){
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(code).then(()=>showToast(`已复制 ${code}`,'success',1500));
+  } else {
+    // fallback
+    const ta=document.createElement('textarea');
+    ta.value=code;ta.style.position='fixed';ta.style.opacity='0';
+    document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();
+    showToast(`已复制 ${code}`,'success',1500);
+  }
 }
 
 // ═══════════════ 回到顶部 ═══════════════
@@ -1632,7 +1704,7 @@ function buildFundCard(f,sortMode){
         <span class="tag ${CAT_TAG[f.cat]||'tag-index'}" style="flex-shrink:0">${escHtml(f.label)}</span>
       </div>
       <div class="fund-card-meta">
-        <span>代码: <b>${escHtml(f.code)}</b></span><span>${escHtml(f.manager)} · ${f.mgrYears}年</span>
+        <span>代码: <b class="code-copy" onclick="copyCode('${escHtml(f.code)}',this)" title="点击复制">${escHtml(f.code)}</b></span><span>${escHtml(f.manager)} · ${f.mgrYears}年</span>
         <span class="stars">${stars(f.stars)}</span>
         <span class="tag tag-${f.risk.toLowerCase()}">${f.risk}</span>
       </div>
@@ -1931,14 +2003,23 @@ function addExistingHolding(){
   const name=document.getElementById('eh-name').value.trim();
   const value=parseFloat(document.getElementById('eh-value').value)||0;
   const cost=parseFloat(document.getElementById('eh-cost').value)||0;
-  if(!code||!name||!value){showToast('请填写基金代码、名称和当前市值','error');return;}
+  // 内联校验
+  let hasErr=false;
+  [['eh-code',!code],['eh-name',!name],['eh-value',!value]].forEach(([id,err])=>{
+    document.getElementById(id).closest('.form-item').classList.toggle('has-error',err);
+    if(err) hasErr=true;
+  });
+  if(hasErr){showToast('请填写标红的必填项','error');return;}
   if(existingHoldings.some(h=>h.code===code)){showToast('该基金已存在，请修改现有记录','info');return;}
   existingHoldings.push({code,name,value,cost});
   FundDB.set('existingHoldings',existingHoldings);
+  flashSaved('eh-section');
   renderExistingHoldings(); runHealthMonitor();
   ['eh-code','eh-name','eh-value','eh-cost'].forEach(id=>document.getElementById(id).value='');
 }
 function removeExistingHolding(i){
+  const h=existingHoldings[i];
+  if(h && !confirm(`确定删除「${h.name||h.code}」？`)) return;
   existingHoldings.splice(i,1);
   FundDB.set('existingHoldings',existingHoldings);
   renderExistingHoldings(); runHealthMonitor();
@@ -2913,9 +2994,14 @@ function addHolding(){
   const name=document.getElementById('h-name').value.trim(),code=document.getElementById('h-code').value.trim();
   const date=document.getElementById('h-date').value,shares=parseFloat(document.getElementById('h-shares').value);
   const cost=parseFloat(document.getElementById('h-cost').value),cur=parseFloat(document.getElementById('h-cur').value);
-  if(!name||!code||!shares||!cost||!cur){showToast('请完整填写持仓信息','error');return;}
+  let hasErr=false;
+  [['h-name',!name],['h-code',!code],['h-shares',!shares],['h-cost',!cost],['h-cur',!cur]].forEach(([id,err])=>{
+    document.getElementById(id).closest('.form-item').classList.toggle('has-error',err);
+    if(err) hasErr=true;
+  });
+  if(hasErr){showToast('请填写标红的必填项','error');return;}
   holdings.push({name,code,date,shares,cost,cur,type:document.getElementById('h-type').value});
-  FundDB.set('holdings',holdings); renderHoldings(); runHealthMonitor();
+  FundDB.set('holdings',holdings); renderHoldings(); runHealthMonitor(); flashSaved('holdings-section');
   ['h-name','h-code','h-shares','h-cost','h-cur'].forEach(id=>document.getElementById(id).value='');
 }
 function removeHolding(i){ holdings.splice(i,1); FundDB.set('holdings',holdings); renderHoldings(); runHealthMonitor(); }
@@ -3030,6 +3116,14 @@ function renderDcaRanking(){
 }
 
 function generateDcaAiPlan(){
+  const btn=document.getElementById('dca-gen-btn');
+  if(btn){btn.classList.add('is-loading');btn.innerHTML='<span class="loading-dot"></span> 生成中…';}
+  setTimeout(()=>{
+  try{ _doGenerateDca(); }catch(e){ console.error(e); }
+  if(btn){btn.classList.remove('is-loading');btn.innerHTML='🤖 生成AI定投方案';}
+  },200);
+}
+function _doGenerateDca(){
   const budget = parseFloat(document.getElementById('dca-budget').value)||1000;
   const risk = document.getElementById('dca-risk-pref').value;
   const years = parseInt(document.getElementById('dca-plan-years').value)||5;
@@ -3177,31 +3271,62 @@ function addDcaPlan(){
   const start=document.getElementById('dp-start').value;
   const curval=parseFloat(document.getElementById('dp-curval').value)||0;
   const type=document.getElementById('dp-type').value;
-  if(!code||!name||!monthly){showToast('请填写基金代码、名称和每月定投金额','error');return;}
+  // 内联校验
+  let hasErr=false;
+  [['dp-code',!code],['dp-name',!name],['dp-monthly',!monthly]].forEach(([id,err])=>{
+    document.getElementById(id).closest('.form-item').classList.toggle('has-error',err);
+    if(err) hasErr=true;
+  });
+  if(hasErr){showToast('请填写标红的必填项','error');return;}
   if(dcaPlans.some(d=>d.code===code)){showToast('该基金已在定投计划中','info');return;}
   dcaPlans.push({code,name,monthly,start,curval,type});
   FundDB.set('dcaPlans',dcaPlans);
-  renderDcaPlans();
+  renderDcaPlans(); flashSaved('dp-section');
   ['dp-code','dp-name','dp-monthly','dp-curval'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('dca-ai-result').style.display='none';
 }
 
 function removeDcaPlan(i){
+  const plan=dcaPlans[i]; if(!plan) return;
+  if(!confirm(`确定删除「${plan.name}」的定投计划？`)) return;
   dcaPlans.splice(i,1);
   FundDB.set('dcaPlans',dcaPlans);
   renderDcaPlans();
   document.getElementById('dca-ai-result').style.display='none';
 }
+// 自定义弹窗系统
+let _modalCb=null;
+function openModal(title,defaultVal,cb){
+  _modalCb=cb;
+  document.getElementById('modal-title').textContent=title;
+  const inp=document.getElementById('modal-input');
+  inp.value=defaultVal||'';
+  const mask=document.getElementById('modal-mask');
+  mask.style.display='flex';
+  requestAnimationFrame(()=>mask.classList.add('show'));
+  setTimeout(()=>inp.focus(),200);
+}
+function closeModal(){
+  const mask=document.getElementById('modal-mask');
+  mask.classList.remove('show');
+  setTimeout(()=>{mask.style.display='none';},200);
+  _modalCb=null;
+}
+function confirmModal(){
+  const val=document.getElementById('modal-input').value;
+  if(_modalCb) _modalCb(val);
+  closeModal();
+}
 function editDcaPlan(i){
   const plan=dcaPlans[i]; if(!plan) return;
-  const newAmt=prompt(`修改「${plan.name}」的每月定投金额（当前 ¥${plan.monthly}）：`,plan.monthly);
-  if(newAmt===null) return;
-  const parsed=parseInt(newAmt);
-  if(!parsed||parsed<1){ showToast('请输入有效金额','error'); return; }
-  dcaPlans[i].monthly=parsed;
-  FundDB.set('dcaPlans',dcaPlans);
-  renderDcaPlans();
-  showToast(`已修改为 ¥${parsed}/月`,'success');
+  openModal(`修改「${plan.name}」每月定投金额`,plan.monthly,function(val){
+    const parsed=parseInt(val);
+    if(!parsed||parsed<1){ showToast('请输入有效金额','error'); return; }
+    dcaPlans[i].monthly=parsed;
+    FundDB.set('dcaPlans',dcaPlans);
+    renderDcaPlans();
+    showToast(`已修改为 ¥${parsed}/月`,'success');
+  });
 }
 function toggleDcaPause(i){
   const plan=dcaPlans[i]; if(!plan) return;
@@ -3241,8 +3366,8 @@ function renderDcaPlans(){
     const invested=d.monthly*months;
     return `<div class="dp-item">
       <div class="dp-fund">
-        <div class="dp-name">${escHtml(d.name)} <code style="font-size:11px;color:var(--muted)">${escHtml(d.code)}</code>${chg!==null?`<span style="margin-left:6px;font-size:11px;color:${chg>=0?'var(--danger)':'var(--success)'}">${chg>=0?'+':''}${chg}%</span>`:''}</div>
-        <div class="dp-meta">${escHtml(d.type)}${d.start?` · 始于 ${escHtml(d.start)}`:''} · 已定投约 ${months} 期 · 累计约 ¥${invested.toLocaleString()}</div>
+        <div class="dp-name">${escHtml(d.name)} <code class="code-copy" onclick="copyCode('${escHtml(d.code)}',this)" title="点击复制" style="font-size:11px;color:var(--muted)">${escHtml(d.code)}</code>${chg!==null?`<span style="margin-left:6px;font-size:11px;color:${chg>=0?'var(--danger)':'var(--success)'}">${chg>=0?'+':''}${chg}%</span>`:''}</div>
+        <div class="dp-meta">${escHtml(d.type)}${d.start?` · 始于 ${fmtDateCN(d.start)}`:''} · 已定投约 ${months} 期 · 累计约 ¥${invested.toLocaleString()}</div>
       </div>
       <div class="dp-monthly"><div class="dp-monthly-val">¥${d.monthly.toLocaleString()}</div><div class="dp-monthly-lbl">每月定投</div></div>
       <div class="dp-total"><div class="dp-total-val">¥${d.curval>0?d.curval.toLocaleString():'--'}</div><div class="dp-total-lbl">当前市值</div></div>
@@ -3278,8 +3403,8 @@ function renderDcaInHoldings(){
       const pnl=d.curval>0&&invested>0?d.curval-invested:null;
       return `<div class="dp-item">
         <div class="dp-fund">
-          <div class="dp-name">${escHtml(d.name)} <code style="font-size:11px;color:var(--muted)">${escHtml(d.code)}</code>${chg!==null?`<span style="margin-left:6px;font-size:11px;color:${chg>=0?'var(--danger)':'var(--success)'}">${chg>=0?'+':''}${chg}%</span>`:''}  </div>
-          <div class="dp-meta">${escHtml(d.type)}${d.start?` · 始于 ${escHtml(d.start)}`:''} · 已约 ${months} 期 · 累计约 ¥${invested.toLocaleString()}${pnl!=null?` · <span class="${pnl>=0?'up':'down'}">${pnl>=0?'+':'-'}¥${Math.abs(pnl).toLocaleString()}</span>`:''}</div>
+          <div class="dp-name">${escHtml(d.name)} <code class="code-copy" onclick="copyCode('${escHtml(d.code)}',this)" title="点击复制" style="font-size:11px;color:var(--muted)">${escHtml(d.code)}</code>${chg!==null?`<span style="margin-left:6px;font-size:11px;color:${chg>=0?'var(--danger)':'var(--success)'}">${chg>=0?'+':''}${chg}%</span>`:''}  </div>
+          <div class="dp-meta">${escHtml(d.type)}${d.start?` · 始于 ${fmtDateCN(d.start)}`:''} · 已约 ${months} 期 · 累计约 ¥${invested.toLocaleString()}${pnl!=null?` · <span class="${pnl>=0?'up':'down'}">${pnl>=0?'+':'-'}¥${Math.abs(pnl).toLocaleString()}</span>`:''}</div>
         </div>
         <div class="dp-monthly"><div class="dp-monthly-val">¥${d.monthly.toLocaleString()}</div><div class="dp-monthly-lbl">每月</div></div>
         <div class="dp-total"><div class="dp-total-val">${d.curval>0?'¥'+d.curval.toLocaleString():'--'}</div><div class="dp-total-lbl">当前市值</div></div>
@@ -3469,6 +3594,11 @@ function runSignalEngine(){
 
   // 渲染信号横幅
   renderSignalBanner(uniqueSignals);
+  // 信号列表溢出检测（显示渐变遮罩提示可滚动）
+  setTimeout(()=>{
+    const banner=document.getElementById('signal-banner');
+    if(banner) banner.classList.toggle('has-overflow', banner.scrollHeight > banner.clientHeight + 20);
+  },100);
   // 更新Tab角标
   const highPriorityCount = uniqueSignals.filter(s=>s.priority<=1).length;
   updateTabBadge(highPriorityCount);
