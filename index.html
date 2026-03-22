@@ -15,6 +15,8 @@
 <script src="db.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+input[type="number"]::-webkit-inner-spin-button,input[type="number"]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+input[type="number"]{-moz-appearance:textfield}
 :root{
   --primary:#1677ff;--primary-dark:#0958d9;--primary-bg:#e6f4ff;
   --success:#52c41a;--danger:#ff4d4f;--warning:#faad14;--purple:#722ed1;
@@ -226,7 +228,7 @@ tr:last-child td{border-bottom:none}
 .dca-ai-bar-fill{height:100%;border-radius:4px}.dca-ai-amt{text-align:right;font-size:15px;font-weight:700;color:var(--primary);width:70px;flex-shrink:0}
 .dca-ai-pct{text-align:right;font-size:12px;color:var(--muted);width:36px;flex-shrink:0}
 .dca-tag{display:inline-block;padding:1px 7px;border-radius:4px;font-size:10px;font-weight:600;background:#f9f0ff;color:#722ed1}
-@media(max-width:600px){.rebal-amts{display:none}.dca-nav-col{display:none}}
+@media(max-width:600px){.rebal-amts{grid-template-columns:1fr 16px 1fr;gap:4px}.rebal-amts .rebal-amt:nth-child(4){grid-column:1/-1;text-align:center}.rebal-amt-val{font-size:12px}.rebal-amt-lbl{font-size:9px}.rebal-arrow{font-size:12px}.dca-nav-col{display:none}}
 @media(max-width:380px){
   .form-grid,.profile-grid{grid-template-columns:1fr}
   .stat-row{grid-template-columns:1fr 1fr}
@@ -258,8 +260,10 @@ tr:last-child td{border-bottom:none}
 /* ── 回到顶部 ── */
 .back-top{position:fixed;right:18px;bottom:calc(24px + env(safe-area-inset-bottom));width:42px;height:42px;border-radius:50%;background:var(--primary);color:#fff;font-size:20px;border:none;box-shadow:0 2px 8px rgba(22,119,255,.4);cursor:pointer;display:none;align-items:center;justify-content:center;z-index:99;-webkit-tap-highlight-color:transparent;transition:opacity .2s}
 /* ── Reason 文字截断 ── */
-.fund-card-reason{-webkit-line-clamp:2;display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden}
+.fund-card-reason{-webkit-line-clamp:2;display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden;cursor:pointer;position:relative}
+.fund-card-reason::after{content:'… 查看更多';color:var(--primary);font-size:11px;font-weight:500}
 .fund-card-reason.expanded{-webkit-line-clamp:unset}
+.fund-card-reason.expanded::after{content:' 收起';color:var(--muted)}
 /* ── 手机端表格卡片化 ── */
 @media(max-width:600px){
   .mobile-cards table,.mobile-cards thead{display:none}
@@ -760,18 +764,18 @@ tr:last-child td{border-bottom:none}
       </span>
     </div>
     <div class="form-grid" style="margin-bottom:10px">
-      <div class="form-item">
-        <label>基金代码</label>
-        <input id="eh-code" placeholder="6位代码" maxlength="6" oninput="ehAutoFill(this.value)">
-      </div>
-      <div class="form-item">
-        <label>按名称搜索</label>
-        <input id="eh-search" placeholder="输入基金名称搜索" oninput="fundSearchFilter('eh',this.value)" list="eh-datalist">
+      <div class="form-item" style="grid-column:1/-1">
+        <label>搜索基金（输入名称或6位代码）</label>
+        <input id="eh-search" placeholder="如：易方达蓝筹 或 005827" oninput="smartFundSearch('eh',this.value)" list="eh-datalist" autocomplete="off">
         <datalist id="eh-datalist"></datalist>
+        <input type="hidden" id="eh-code"><input type="hidden" id="eh-name">
       </div>
-      <div class="form-item">
-        <label>基金名称</label>
-        <input id="eh-name" placeholder="输入代码后自动填充">
+      <div class="form-item" id="eh-matched" style="display:none;grid-column:1/-1">
+        <div style="font-size:13px;padding:8px 12px;background:var(--primary-bg);border-radius:6px;display:flex;align-items:center;gap:8px">
+          <span style="font-weight:600" id="eh-matched-name"></span>
+          <code style="font-size:11px;color:var(--muted)" id="eh-matched-code"></code>
+          <button onclick="clearFundMatch('eh')" style="margin-left:auto;background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px">&times;</button>
+        </div>
       </div>
       <div class="form-item">
         <label>当前持仓市值 (元)</label>
@@ -790,7 +794,7 @@ tr:last-child td{border-bottom:none}
     <div id="eh-empty" class="empty-state" style="margin-top:10px">
       <div class="empty-icon">💼</div>
       <div class="empty-text">暂未填写已有持仓<br>添加后可获得个性化调仓建议和健康诊断</div>
-      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('eh-code').focus()">＋ 添加第一笔持仓</button>
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('eh-search').focus()">＋ 添加第一笔持仓</button>
     </div>
     <div id="eh-summary" style="display:none;margin-top:10px;padding:10px 14px;background:#f0f8ff;border-radius:8px;font-size:13px"></div>
   </div>
@@ -802,9 +806,19 @@ tr:last-child td{border-bottom:none}
       <span style="font-size:12px;color:var(--muted);font-weight:400;margin-left:4px">— 将同步至已有持仓和持仓统计</span>
     </div>
     <div class="form-grid" style="margin-bottom:10px">
-      <div class="form-item"><label>基金代码</label><input id="dp-code" placeholder="6位代码" maxlength="6" oninput="dpAutoFill(this.value)"></div>
-      <div class="form-item"><label>按名称搜索</label><input id="dp-search" placeholder="输入基金名称搜索" oninput="fundSearchFilter('dp',this.value)" list="dp-datalist"><datalist id="dp-datalist"></datalist></div>
-      <div class="form-item"><label>基金名称</label><input id="dp-name" placeholder="输入代码后自动填充"></div>
+      <div class="form-item" style="grid-column:1/-1">
+        <label>搜索基金（输入名称或6位代码）</label>
+        <input id="dp-search" placeholder="如：沪深300 或 510300" oninput="smartFundSearch('dp',this.value)" list="dp-datalist" autocomplete="off">
+        <datalist id="dp-datalist"></datalist>
+        <input type="hidden" id="dp-code"><input type="hidden" id="dp-name">
+      </div>
+      <div class="form-item" id="dp-matched" style="display:none;grid-column:1/-1">
+        <div style="font-size:13px;padding:8px 12px;background:var(--primary-bg);border-radius:6px;display:flex;align-items:center;gap:8px">
+          <span style="font-weight:600" id="dp-matched-name"></span>
+          <code style="font-size:11px;color:var(--muted)" id="dp-matched-code"></code>
+          <button onclick="clearFundMatch('dp')" style="margin-left:auto;background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px">&times;</button>
+        </div>
+      </div>
       <div class="form-item"><label>每月定投金额(元)</label><input id="dp-monthly" type="number" placeholder="如：500"></div>
       <div class="form-item"><label>开始定投日期</label><input id="dp-start" type="date"></div>
       <div class="form-item"><label>当前持仓市值(元)</label><input id="dp-curval" type="number" placeholder="最新估值，可不填"></div>
@@ -820,7 +834,7 @@ tr:last-child td{border-bottom:none}
     <div id="dp-empty" class="empty-state" style="margin-top:8px">
       <div class="empty-icon">📅</div>
       <div class="empty-text">暂无定投计划<br>添加后将自动同步至持仓统计</div>
-      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('dp-code').focus()">＋ 创建第一个定投计划</button>
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('dp-search').focus()">＋ 创建第一个定投计划</button>
     </div>
     <div id="dp-summary" style="display:none;margin-top:10px;padding:10px 14px;background:#f6ffed;border-radius:8px;font-size:13px"></div>
   </div>
@@ -948,39 +962,82 @@ window.addEventListener('scroll',function(){
 })();
 
 // ═══════════════ 资产Tab子导航滚动 ═══════════════
+const _subnavSections = ['eh-section','dp-section','holdings-section','backup-section'];
+let _subnavScrolling = false; // 防止点击触发滚动时 observer 回调覆盖
+
 function scrollToSection(id){
   const el=document.getElementById(id);
   if(!el) return;
-  // 计算sticky元素总高度（tabs + sub-nav），避免内容被遮挡
   const tabs=document.querySelector('.tabs');
   const subnav=document.getElementById('asset-subnav');
   const offset=(tabs?tabs.offsetHeight:0)+(subnav?subnav.offsetHeight:0)+8;
   const top=el.getBoundingClientRect().top+window.pageYOffset-offset;
+  _subnavScrolling = true;
   window.scrollTo({top,behavior:'smooth'});
-  // 更新子导航高亮
-  document.querySelectorAll('#asset-subnav .chip').forEach(c=>c.classList.remove('active'));
-  event.target.classList.add('active');
+  // 手动设置高亮
+  _highlightSubnav(id);
+  setTimeout(()=>{ _subnavScrolling = false; }, 800);
 }
 
-// ═══════════════ 基金名称搜索 ═══════════════
-function fundSearchFilter(prefix, val){
+function _highlightSubnav(sectionId){
+  const chips = document.querySelectorAll('#asset-subnav .chip');
+  const idx = _subnavSections.indexOf(sectionId);
+  chips.forEach((c,i) => c.classList.toggle('active', i === idx));
+}
+
+// IntersectionObserver：滚动时自动高亮最近可见的 section
+(function(){
+  if(!('IntersectionObserver' in window)) return;
+  const obs = new IntersectionObserver(entries => {
+    if(_subnavScrolling) return;
+    entries.forEach(entry => {
+      if(entry.isIntersecting){
+        _highlightSubnav(entry.target.id);
+      }
+    });
+  }, { rootMargin: '-100px 0px -60% 0px', threshold: 0 });
+  // 延迟到 DOM 就绪后观察
+  setTimeout(()=>{
+    _subnavSections.forEach(id => {
+      const el = document.getElementById(id);
+      if(el) obs.observe(el);
+    });
+  }, 500);
+})();
+
+// ═══════════════ 基金智能搜索（合并代码+名称为一个输入框） ═══════════════
+function smartFundSearch(prefix, val){
   const dl=document.getElementById(prefix+'-datalist');
   dl.innerHTML='';
   if(val.length<1) return;
+  // 同时匹配代码和名称
   const matches=CURATED_FUNDS.filter(f=>f.name.includes(val)||f.code.includes(val)).slice(0,8);
   matches.forEach(f=>{
     const opt=document.createElement('option');
     opt.value=f.name+' ('+f.code+')';
     dl.appendChild(opt);
   });
-  // 如果精确匹配某个选项，自动填充代码和名称
-  const exact=CURATED_FUNDS.find(f=>val===f.name+' ('+f.code+')' || val===f.name);
+  // 精确匹配：选中 datalist 选项或输入完整6位代码
+  const exact = CURATED_FUNDS.find(f=>val===f.name+' ('+f.code+')' || val===f.name || (val.length===6 && val===f.code));
   if(exact){
     document.getElementById(prefix+'-code').value=exact.code;
     document.getElementById(prefix+'-name').value=exact.name;
+    document.getElementById(prefix+'-matched-name').textContent=exact.name;
+    document.getElementById(prefix+'-matched-code').textContent=exact.code;
+    document.getElementById(prefix+'-matched').style.display='';
     if(prefix==='dp' && exact.type) document.getElementById('dp-type').value=exact.type;
   }
 }
+function clearFundMatch(prefix){
+  document.getElementById(prefix+'-search').value='';
+  document.getElementById(prefix+'-code').value='';
+  document.getElementById(prefix+'-name').value='';
+  document.getElementById(prefix+'-matched').style.display='none';
+}
+// 保留旧函数名兼容（eh-code 的 oninput 已移除，但 dp 可能有残留引用）
+function ehAutoFill(){}
+function dpAutoFill(){}
+function fundSearchFilter(prefix, val){ smartFundSearch(prefix, val); }
 // ═══════════════ 精选基金数据库 ═══════════════
 // 初始值基于 2026-03-19 API 数据，运行时会被实时 API 覆盖
 const CURATED_FUNDS = [
@@ -2118,17 +2175,18 @@ function addExistingHolding(){
   const cost=parseFloat(document.getElementById('eh-cost').value)||0;
   // 内联校验
   let hasErr=false;
-  [['eh-code',!code],['eh-name',!name],['eh-value',!value]].forEach(([id,err])=>{
-    document.getElementById(id).closest('.form-item').classList.toggle('has-error',err);
-    if(err) hasErr=true;
-  });
-  if(hasErr){showToast('请填写标红的必填项','error');return;}
+  const searchEmpty = !code || !name;
+  document.getElementById('eh-search').closest('.form-item').classList.toggle('has-error',searchEmpty);
+  document.getElementById('eh-value').closest('.form-item').classList.toggle('has-error',!value);
+  if(searchEmpty || !value) hasErr=true;
+  if(hasErr){showToast(searchEmpty?'请先搜索并选择一只基金':'请填写持仓市值','error');return;}
   if(existingHoldings.some(h=>h.code===code)){showToast('该基金已存在，请修改现有记录','info');return;}
   existingHoldings.push({code,name,value,cost});
   FundDB.set('existingHoldings',existingHoldings);
   flashSaved('eh-section');
   renderExistingHoldings(); runHealthMonitor();
-  ['eh-code','eh-name','eh-value','eh-cost'].forEach(id=>document.getElementById(id).value='');
+  clearFundMatch('eh');
+  ['eh-value','eh-cost'].forEach(id=>document.getElementById(id).value='');
 }
 function removeExistingHolding(i){
   const h=existingHoldings[i];
@@ -3579,16 +3637,17 @@ function addDcaPlan(){
   const type=document.getElementById('dp-type').value;
   // 内联校验
   let hasErr=false;
-  [['dp-code',!code],['dp-name',!name],['dp-monthly',!monthly]].forEach(([id,err])=>{
-    document.getElementById(id).closest('.form-item').classList.toggle('has-error',err);
-    if(err) hasErr=true;
-  });
-  if(hasErr){showToast('请填写标红的必填项','error');return;}
+  const searchEmpty = !code || !name;
+  document.getElementById('dp-search').closest('.form-item').classList.toggle('has-error',searchEmpty);
+  document.getElementById('dp-monthly').closest('.form-item').classList.toggle('has-error',!monthly);
+  if(searchEmpty || !monthly) hasErr=true;
+  if(hasErr){showToast(searchEmpty?'请先搜索并选择一只基金':'请填写每月定投金额','error');return;}
   if(dcaPlans.some(d=>d.code===code)){showToast('该基金已在定投计划中','info');return;}
   dcaPlans.push({code,name,monthly,start,curval,type});
   FundDB.set('dcaPlans',dcaPlans);
   renderDcaPlans(); flashSaved('dp-section');
-  ['dp-code','dp-name','dp-monthly','dp-curval'].forEach(id=>document.getElementById(id).value='');
+  clearFundMatch('dp');
+  ['dp-monthly','dp-curval'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('dca-ai-result').style.display='none';
 }
 
@@ -4223,8 +4282,15 @@ function runHealthMonitor(){
     updateDetailStatus('⚠️ 基金详情拉取失败，当前显示为默认数据（可能已过期）', true);
   });
 
-  // 8. 每5分钟自动重刷净值 + 重新生成方案（静默模式）
-  setInterval(()=>refreshAllNav(true, true), 5 * 60 * 1000);
+  // 8. 每5分钟自动重刷净值 + 重新生成方案（静默模式，仅页面可见时执行）
+  setInterval(()=>{
+    if(document.hidden) return; // 页面不可见（后台/息屏）时跳过，节省电量和流量
+    refreshAllNav(true, true);
+  }, 5 * 60 * 1000);
+  // 页面从后台恢复时立即刷新一次
+  document.addEventListener('visibilitychange', ()=>{
+    if(!document.hidden) refreshAllNav(true, true);
+  });
 })();
 
 // ═══════════════ Service Worker 注册 ═══════════════
