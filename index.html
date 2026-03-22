@@ -388,8 +388,8 @@ tr:last-child td{border-bottom:none}
   <h1>📈 基金理财辅助工具</h1>
   <p>智能配置方案 · 实时行情监控 · 定投计划 · 持仓管理</p>
 </div>
-<!-- 全局自动加载进度条 -->
-<div id="auto-banner">
+<!-- 全局自动加载进度条（默认隐藏，仅手动刷新时显示） -->
+<div id="auto-banner" class="hidden">>
   <span id="banner-text">⏳ 正在更新实时净值…</span>
   <div class="progress-wrap"><div class="progress-bar" id="progress-bar"></div></div>
   <span id="banner-count" style="white-space:nowrap;font-size:12px;opacity:.85">0 / 21</span>
@@ -475,7 +475,7 @@ tr:last-child td{border-bottom:none}
       <button class="btn btn-primary" onclick="generateSmartPortfolio()" id="gen-btn" style="height:44px;font-size:15px;padding:0 28px">
         🤖 生成我的专属方案
       </button>
-      <span id="gen-status" style="font-size:12px;color:var(--muted);align-self:center"></span>
+      <span id="gen-status" style="font-size:12px;color:var(--muted);align-self:center">点击后将自动获取最新数据并生成</span>
     </div>
   </div>
 
@@ -491,6 +491,16 @@ tr:last-child td{border-bottom:none}
 
   <!-- 结果区域（初始隐藏） -->
   <div id="portfolio-result" style="display:none">
+
+    <!-- 生成中加载卡片（内联进度） -->
+    <div class="card" id="gen-loading-card" style="display:none;text-align:center;padding:40px 20px">
+      <div style="font-size:36px;margin-bottom:14px;animation:pulse 1.2s infinite">📡</div>
+      <div style="font-size:15px;font-weight:600;margin-bottom:8px" id="gen-loading-text">正在获取实时数据…</div>
+      <div style="max-width:280px;margin:0 auto 10px;height:6px;background:var(--border);border-radius:3px;overflow:hidden">
+        <div id="gen-loading-bar" style="height:100%;background:var(--primary);border-radius:3px;transition:width .3s;width:0%"></div>
+      </div>
+      <div style="font-size:12px;color:var(--muted)" id="gen-loading-count">0 / 0</div>
+    </div>
 
     <!-- 方案摘要（一眼看到结论） -->
     <div class="plan-summary" id="plan-summary"></div>
@@ -2528,15 +2538,77 @@ function buildSteps(weights, picks, totalAmt, monthly, riskProfile, horizon){
 // 主函数
 function generateSmartPortfolio(){
   const btn=document.getElementById('gen-btn');
-  btn.disabled=true; btn.innerHTML='<span class="loading-dot"></span> 生成中…';
+  btn.disabled=true; btn.innerHTML='<span class="loading-dot"></span> 加载数据中…';
   document.getElementById('gen-status').textContent='';
-  setTimeout(()=>{
-    try { _doGenerate(); } catch(e){ console.error(e); }
-    btn.disabled=false;
-    btn.innerHTML='🤖 重新生成方案';
-    const cached=Object.keys(navCache).length;
-    document.getElementById('gen-status').textContent=cached>0?`已融合 ${cached} 只基金实时净值`:'（建议等待净值加载完成后再生成）';
-  }, 300);
+
+  // 显示结果区 + 内联加载卡片
+  document.getElementById('portfolio-result').style.display='block';
+  const loadCard=document.getElementById('gen-loading-card');
+  const planSummary=document.getElementById('plan-summary');
+  const resultSections=document.querySelectorAll('#portfolio-result > *:not(#gen-loading-card)');
+  resultSections.forEach(el=>{el.style.display='none';});
+  loadCard.style.display='';
+
+  // 滚动到加载卡片
+  setTimeout(()=>loadCard.scrollIntoView({behavior:'smooth',block:'center'}),100);
+
+  // 如果已有足够净值缓存（>10只），直接生成
+  if(Object.keys(navCache).length >= 10){
+    loadCard.style.display='none';
+    resultSections.forEach(el=>{el.style.display='';});
+    _finishGenerate(btn);
+    return;
+  }
+
+  // 否则，先拉取净值，带进度显示
+  const bar=document.getElementById('gen-loading-bar');
+  const countEl=document.getElementById('gen-loading-count');
+  const textEl=document.getElementById('gen-loading-text');
+  const total=CURATED_FUNDS.length;
+  let done=0;
+
+  bar.style.width='0%';
+  countEl.textContent=`0 / ${total}`;
+  textEl.textContent='正在获取实时净值数据…';
+
+  CURATED_FUNDS.forEach(f=>fetchNav(f.code, data=>{
+    updateNavCard(f.code,data);
+    done++;
+    const pct=Math.round(done/total*100);
+    bar.style.width=pct+'%';
+    countEl.textContent=`${done} / ${total}`;
+    if(done >= Math.floor(total*0.3)){
+      textEl.textContent='正在分析市场行情…';
+    }
+    if(done >= Math.floor(total*0.7)){
+      textEl.textContent='正在生成专属方案…';
+    }
+
+    if(done===total){
+      const now=new Date();
+      document.getElementById('nav-update-time').textContent=`净值更新于 ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+
+      // 隐藏加载卡片，显示方案内容
+      setTimeout(()=>{
+        loadCard.style.display='none';
+        resultSections.forEach(el=>{el.style.display='';});
+        _finishGenerate(btn);
+        // 刷新其他模块
+        renderDcaRanking();
+        runHealthMonitor();
+        runSignalEngine();
+        renderTodayOverview();
+      },400);
+    }
+  }));
+}
+
+function _finishGenerate(btn){
+  try { _doGenerate(); } catch(e){ console.error(e); }
+  btn.disabled=false;
+  btn.innerHTML='🤖 重新生成方案';
+  const cached=Object.keys(navCache).length;
+  document.getElementById('gen-status').textContent=cached>0?`已融合 ${cached} 只基金实时净值`:'';
 }
 
 function _doGenerate(){
@@ -3905,15 +3977,15 @@ function runHealthMonitor(){
   // 6. 请求通知权限（延迟10秒，不打扰用户）
   requestNotificationPermission();
 
-  // 7. 页面加载后先拉取基金详情，再加载全市场扫描缓存，最后获取净值
+  // 7. 页面加载后先拉取基金详情，再加载全市场扫描缓存
+  //    净值获取推迟到用户点击「生成方案」时触发，避免进入即加载
   refreshFundDetails(false).then(()=>{
-    // 静默加载全市场扫描缓存（不触发新扫描，仅用已有缓存）
     return scanMarketFunds(false).catch(()=>{});
   }).then(()=>{
-    setTimeout(()=>refreshAllNav(true, false), 300);
+    // 静默刷新精选列表（不拉取净值）
+    renderMarketGrid();
   }).catch(()=>{
     updateDetailStatus('⚠️ 基金详情拉取失败，当前显示为默认数据（可能已过期）', true);
-    setTimeout(()=>refreshAllNav(true, false), 300);
   });
 
   // 8. 每5分钟自动重刷净值 + 重新生成方案（静默模式）
