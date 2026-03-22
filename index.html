@@ -33,6 +33,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue'
 .tabs{display:flex;background:#fff;border-bottom:1px solid var(--border);padding:0 14px;padding-left:calc(14px + env(safe-area-inset-left));padding-right:calc(14px + env(safe-area-inset-right));position:sticky;top:0;z-index:100;box-shadow:0 1px 4px rgba(0,0,0,.06);overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
 .tabs::-webkit-scrollbar{display:none}
 .tab{padding:13px 16px;cursor:pointer;font-size:14px;font-weight:500;color:var(--muted);white-space:nowrap;border-bottom:2px solid transparent;transition:all .2s;-webkit-tap-highlight-color:transparent}
+.tab-short{display:none}.tab-full{display:inline}
+@media(max-width:600px){.tab-short{display:inline}.tab-full{display:none}}
 .tab:hover{color:var(--primary)}.tab.active{color:var(--primary);border-bottom-color:var(--primary)}
 .content{padding:14px;padding-left:calc(14px + env(safe-area-inset-left));padding-right:calc(14px + env(safe-area-inset-right));max-width:1200px;margin:0 auto}
 .panel{display:none}.panel.active{display:block}
@@ -445,10 +447,10 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
 </div>
 
 <div class="tabs">
-  <div class="tab active" onclick="switchTab(0)">🎯 方案</div>
-  <div class="tab" onclick="switchTab(1)">🔍 探索</div>
-  <div class="tab" onclick="switchTab(2)">📈 定投</div>
-  <div class="tab" onclick="switchTab(3)">💼 资产<span class="tab-badge" id="asset-tab-badge"></span></div>
+  <div class="tab active" onclick="switchTab(0)">🎯 <span class="tab-full">智能方案</span><span class="tab-short">方案</span></div>
+  <div class="tab" onclick="switchTab(1)">🔍 <span class="tab-full">基金探索</span><span class="tab-short">探索</span></div>
+  <div class="tab" onclick="switchTab(2)">📈 <span class="tab-full">定投专区</span><span class="tab-short">定投</span></div>
+  <div class="tab" onclick="switchTab(3)">💼 <span class="tab-full">我的资产</span><span class="tab-short">资产</span><span class="tab-badge" id="asset-tab-badge"></span></div>
 </div>
 
 <div class="content">
