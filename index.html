@@ -114,6 +114,13 @@ tr:last-child td{border-bottom:none}
 
 /* ── Portfolio Module (Panel 1) ── */
 .profile-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+/* 风险偏好选择卡片 */
+.risk-option{display:flex;flex-direction:column;align-items:center;padding:12px 8px;border:2px solid var(--border);border-radius:12px;cursor:pointer;transition:all .2s;background:var(--card);-webkit-tap-highlight-color:transparent;text-align:center}
+.risk-option:hover{border-color:var(--primary);background:var(--primary-bg)}
+.risk-option.selected{border-color:var(--primary);background:var(--primary-bg);box-shadow:0 0 0 1px var(--primary)}
+.risk-icon{font-size:24px;margin-bottom:4px}
+.risk-name{font-size:14px;font-weight:600}
+.risk-desc{font-size:11px;color:var(--muted);margin-top:2px}
 .market-table{width:100%;border-collapse:collapse;font-size:13px}
 .market-table th{background:#f8f9fc;padding:10px 12px;font-weight:600;color:var(--muted);font-size:12px;text-align:left;border-bottom:2px solid var(--border)}
 .market-table td{padding:11px 12px;border-bottom:1px solid #f5f5f5;vertical-align:middle}
@@ -279,6 +286,8 @@ tr:last-child td{border-bottom:none}
   .form-item input,.form-item select{background:#2a2a2a;border-color:var(--border);color:var(--text)}
   .form-item input:focus,.form-item select:focus{background:#333;border-color:var(--primary)}
   .chip{background:#2a2a2a;border-color:var(--border);color:var(--muted)}
+  .risk-option{background:var(--card);border-color:var(--border)}
+  .risk-option.selected{background:#0a2744;border-color:var(--primary)}
   .btn-ghost{background:#2a2a2a;border-color:var(--border);color:var(--text)}
   .fund-card{border-color:var(--border)}
   .fund-card-head{border-bottom-color:var(--border)}
@@ -443,34 +452,59 @@ tr:last-child td{border-bottom:none}
     <div style="font-size:12px;color:var(--muted)">💡 方案会自动根据实时行情生成，每5分钟更新一次</div>
   </div>
 
-  <!-- 我的投资档案（从Panel1移到Panel0顶部） -->
+  <!-- 我的投资档案 -->
   <div class="card">
-    <div class="card-title"><span class="icon icon-green">📋</span>第一步：设置你的投资情况</div>
-    <div class="profile-grid">
-      <div class="form-item">
-        <label>💰 本次可投入新资金(元)</label>
-        <input id="sp-amount" type="number" value="30000" placeholder="如：30000">
+    <div class="card-title"><span class="icon icon-green">📋</span>设置你的投资情况</div>
+
+    <!-- 金额输入 -->
+    <div style="margin-bottom:18px">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:8px">💰 本次可投入新资金</div>
+      <div style="position:relative">
+        <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:18px;font-weight:700;color:var(--muted)">¥</span>
+        <input id="sp-amount" type="number" placeholder="输入金额" inputmode="numeric" style="height:52px;font-size:22px;font-weight:700;padding-left:36px;padding-right:14px;border:2px solid var(--border);border-radius:12px;width:100%;background:var(--card);color:var(--text);outline:none;transition:border-color .2s;-webkit-appearance:none;appearance:none" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
       </div>
-      <div class="form-item">
-        <label>🛡️ 风险偏好</label>
-        <select id="sp-risk">
-          <option value="conservative">保守型 · 少亏为主（年化3-5%）</option>
-          <option value="moderate" selected>稳健型 · 稳中求进（年化6-10%）</option>
-          <option value="balanced">平衡型 · 能涨能扛（年化8-15%）</option>
-          <option value="aggressive">进取型 · 追求高收益（年化12%+）</option>
-        </select>
-      </div>
-      <div class="form-item">
-        <label>📅 打算投多久</label>
-        <select id="sp-horizon">
-          <option value="1">1年以内（短期）</option>
-          <option value="2" selected>1-3年（中期）</option>
-          <option value="5">3-5年（长期）</option>
-          <option value="10">5年以上（超长期）</option>
-        </select>
+      <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+        <button class="chip" onclick="document.getElementById('sp-amount').value='5000'" style="font-size:12px;height:28px;padding:0 12px">5千</button>
+        <button class="chip" onclick="document.getElementById('sp-amount').value='10000'" style="font-size:12px;height:28px;padding:0 12px">1万</button>
+        <button class="chip" onclick="document.getElementById('sp-amount').value='30000'" style="font-size:12px;height:28px;padding:0 12px">3万</button>
+        <button class="chip" onclick="document.getElementById('sp-amount').value='50000'" style="font-size:12px;height:28px;padding:0 12px">5万</button>
+        <button class="chip" onclick="document.getElementById('sp-amount').value='100000'" style="font-size:12px;height:28px;padding:0 12px">10万</button>
       </div>
     </div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:12px">💡 此方案为一次性投资配置建议。如需定投，请前往「基金探索」Tab。</div>
+
+    <!-- 风险偏好选择 -->
+    <div style="margin-bottom:18px">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:8px">🛡️ 风险偏好</div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px" id="risk-selector">
+        <label class="risk-option" data-v="conservative" onclick="selectRisk('conservative')">
+          <div class="risk-icon">🛡️</div><div class="risk-name">保守型</div><div class="risk-desc">少亏为主 · 年化3-5%</div>
+        </label>
+        <label class="risk-option selected" data-v="moderate" onclick="selectRisk('moderate')">
+          <div class="risk-icon">⚖️</div><div class="risk-name">稳健型</div><div class="risk-desc">稳中求进 · 年化6-10%</div>
+        </label>
+        <label class="risk-option" data-v="balanced" onclick="selectRisk('balanced')">
+          <div class="risk-icon">📈</div><div class="risk-name">平衡型</div><div class="risk-desc">能涨能扛 · 年化8-15%</div>
+        </label>
+        <label class="risk-option" data-v="aggressive" onclick="selectRisk('aggressive')">
+          <div class="risk-icon">🚀</div><div class="risk-name">进取型</div><div class="risk-desc">追求高收益 · 年化12%+</div>
+        </label>
+      </div>
+      <input type="hidden" id="sp-risk" value="moderate">
+    </div>
+
+    <!-- 投资期限选择 -->
+    <div style="margin-bottom:14px">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:8px">📅 打算投多久</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap" id="horizon-selector">
+        <button class="chip horizon-chip" data-v="1" onclick="selectHorizon(1)">1年以内</button>
+        <button class="chip horizon-chip active" data-v="2" onclick="selectHorizon(2)">1-3年</button>
+        <button class="chip horizon-chip" data-v="5" onclick="selectHorizon(5)">3-5年</button>
+        <button class="chip horizon-chip" data-v="10" onclick="selectHorizon(10)">5年以上</button>
+      </div>
+      <input type="hidden" id="sp-horizon" value="2">
+    </div>
+
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px">💡 方案将根据你的设置 + 实时行情 + 已有持仓综合生成。</div>
     <div class="action-bar">
       <button class="btn btn-primary" onclick="generateSmartPortfolio()" id="gen-btn" style="height:44px;font-size:15px;padding:0 28px">
         🤖 生成我的专属方案
@@ -1194,6 +1228,20 @@ function renderMarketAnalysisMobile(catRanks){
       </div>
     </div>`;
   }).join('');
+}
+
+// ═══════════════ 风险/期限选择器 ═══════════════
+function selectRisk(val){
+  document.getElementById('sp-risk').value=val;
+  document.querySelectorAll('#risk-selector .risk-option').forEach(el=>{
+    el.classList.toggle('selected', el.getAttribute('data-v')===val);
+  });
+}
+function selectHorizon(val){
+  document.getElementById('sp-horizon').value=val;
+  document.querySelectorAll('#horizon-selector .horizon-chip').forEach(el=>{
+    el.classList.toggle('active', el.getAttribute('data-v')==String(val));
+  });
 }
 
 function switchTab(i){
