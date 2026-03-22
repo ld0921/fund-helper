@@ -295,10 +295,13 @@ tr:last-child td{border-bottom:none}
   .tabs{background:var(--card);border-bottom-color:var(--border)}
   .form-item input,.form-item select{background:#2a2a2a;border-color:var(--border);color:var(--text)}
   .form-item input:focus,.form-item select:focus{background:#333;border-color:var(--primary)}
+  .form-item select option{background:#2a2a2a;color:var(--text)}
   .chip{background:#2a2a2a;border-color:var(--border);color:var(--muted)}
   .risk-option{background:var(--card);border-color:var(--border)}
   .risk-option.selected{background:#0a2744;border-color:var(--primary)}
   .btn-ghost{background:#2a2a2a;border-color:var(--border);color:var(--text)}
+  .btn-outline{background:var(--card);color:var(--primary);border-color:var(--primary)}
+  .btn-danger{background:#2a1a1a;color:#ff6b6b;border-color:#5c2020}
   .fund-card{border-color:var(--border)}
   .fund-card-head{border-bottom-color:var(--border)}
   .fund-card-stats{background:#2a2a2a;border-bottom-color:var(--border)}
@@ -311,6 +314,8 @@ tr:last-child td{border-bottom:none}
   .warning-notice{background:#2a1f00;border-left-color:var(--warning);color:#e8b339}
   #auto-banner{background:linear-gradient(90deg,#003a8c,#0958d9)}
   .alloc-group-head{background:#2a2a2a}
+  .rebal-summary{background:#2a2a2a}
+  .market-table th{background:#2a2a2a}
   .expected-banner{background:linear-gradient(135deg,#0a2744,#0d3363);border-color:#0958d9}
   .step-item{background:#2a2a2a}
   .empty{color:var(--muted)}
@@ -327,6 +332,14 @@ tr:last-child td{border-bottom:none}
   .empty-state{color:var(--muted)}
   .empty-state .empty-icon{opacity:.3}
   .market-card{background:#2a2a2a;border-color:var(--border)}
+  /* 覆盖内联 style 中的浅色背景 */
+  [style*="background:#f8f9fc"]{background:#2a2a2a!important}
+  [style*="background:#f0f8ff"]{background:#1a2a3a!important}
+  [style*="background:#f6ffed"]{background:#1a2a1a!important}
+  [style*="background:#fffbe6"]{background:#2a2010!important}
+  [style*="background:#fff1f0"]{background:#2a1a1a!important}
+  [style*="background:#f0f5ff"]{background:#0a2744!important}
+  [style*="background:#e6f7ff"]{background:#0a2744!important}
 }
 /* 今日概览卡片 */
 .today-overview{background:linear-gradient(135deg,#e6f4ff,#f0f5ff);border:1px solid #91caff;border-radius:var(--radius);padding:16px 18px;margin-bottom:14px}
