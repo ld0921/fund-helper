@@ -49,7 +49,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue'
 .form-item{display:flex;flex-direction:column;gap:4px}
 .form-item label{font-size:12px;color:var(--muted)}
 .form-item input,.form-item select{height:40px;border:1px solid var(--border);border-radius:8px;padding:0 10px;font-size:16px;outline:none;transition:border-color .2s;background:#fafafa;-webkit-appearance:none;appearance:none;width:100%;min-width:0}
-.form-item input:focus,.form-item select:focus{border-color:var(--primary);background:#fff}
+.form-item select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='7'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238c8c8c' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:30px}
+.form-item input:focus,.form-item select:focus{border-color:var(--primary);background:#fff;box-shadow:0 0 0 2px rgba(22,119,255,.15)}
 .btn{height:40px;padding:0 16px;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:500;transition:all .15s;display:inline-flex;align-items:center;gap:5px;flex-shrink:0;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 .btn-primary{background:var(--primary);color:#fff}.btn-primary:hover{background:var(--primary-dark)}
 .btn-ghost{background:#f5f5f5;color:var(--text);border:1px solid var(--border)}
@@ -299,7 +300,46 @@ tr:last-child td{border-bottom:none}
   .alert-card{background:linear-gradient(135deg,#2a1a1a,#2a2010);border-color:#5c2020}
   .alert-green{background:linear-gradient(135deg,#1a2a1a,#162a16);border-color:#274916}
   .mobile-card-item{background:#2a2a2a}
+  .today-overview{background:linear-gradient(135deg,#0a2744,#0d3363);border-color:#0958d9}
+  .today-overview .ov-label{color:#8c8c8c}
+  .plan-summary{background:linear-gradient(135deg,#0a2744,#0d3363);border-color:#0958d9}
+  .plan-summary .ps-label{color:#8c8c8c}
+  .form-item select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='7'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238c8c8c' stroke-width='1.5' fill='none'/%3E%3C/svg%3E")}
+  .empty-state{color:var(--muted)}
+  .empty-state .empty-icon{opacity:.3}
+  .market-card{background:#2a2a2a;border-color:var(--border)}
 }
+/* 今日概览卡片 */
+.today-overview{background:linear-gradient(135deg,#e6f4ff,#f0f5ff);border:1px solid #91caff;border-radius:var(--radius);padding:16px 18px;margin-bottom:14px}
+.today-overview .ov-row{display:flex;gap:12px;flex-wrap:wrap}
+.today-overview .ov-item{flex:1;min-width:80px;text-align:center}
+.today-overview .ov-val{font-size:20px;font-weight:700}
+.today-overview .ov-label{font-size:11px;color:var(--muted);margin-top:2px}
+/* 方案结果摘要 */
+.plan-summary{background:linear-gradient(135deg,#f0f5ff,#e6f4ff);border:1px solid #91caff;border-radius:var(--radius);padding:16px 18px;margin-bottom:14px}
+.plan-summary .ps-row{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+.plan-summary .ps-item{flex:1;min-width:90px;text-align:center}
+.plan-summary .ps-val{font-size:18px;font-weight:700}
+.plan-summary .ps-label{font-size:11px;color:var(--muted);margin-top:2px}
+/* Tab角标 */
+.tab{position:relative}
+.tab-badge{position:absolute;top:6px;right:4px;width:8px;height:8px;border-radius:50%;background:var(--danger);display:none}
+.tab-badge.show{display:block}
+/* 空状态引导 */
+.empty-state{text-align:center;padding:40px 20px;color:var(--muted)}
+.empty-state .empty-icon{font-size:40px;margin-bottom:10px;opacity:.5}
+.empty-state .empty-text{font-size:13px;margin-bottom:14px;line-height:1.6}
+.empty-state .btn{margin:0 auto}
+/* 市场分析手机卡片 */
+.market-card{border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;background:var(--card)}
+.market-card-row{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.market-card-label{font-size:11px;color:var(--muted)}
+.market-card-val{font-size:14px;font-weight:600}
+/* 基金列表过渡动画 */
+.fund-grid{transition:opacity .2s}
+.fund-grid.fading{opacity:.3}
+/* 定投计划操作按钮组 */
+.dp-actions{display:flex;gap:4px;flex-shrink:0;align-items:center}
 </style>
 </head>
 <body>
@@ -340,13 +380,19 @@ tr:last-child td{border-bottom:none}
 <div class="tabs">
   <div class="tab active" onclick="switchTab(0)">🎯 智能方案</div>
   <div class="tab" onclick="switchTab(1)">🔍 基金探索</div>
-  <div class="tab" onclick="switchTab(2)">💼 我的资产</div>
+  <div class="tab" onclick="switchTab(2)">💼 我的资产<span class="tab-badge" id="asset-tab-badge"></span></div>
 </div>
 
 <div class="content">
 
 <!-- ===================== 面板0: 智能方案（合并精选+AI规划） ===================== -->
 <div class="panel active" id="panel0">
+
+  <!-- 今日概览（有持仓时自动显示） -->
+  <div class="today-overview" id="today-overview" style="display:none">
+    <div style="font-size:14px;font-weight:600;margin-bottom:10px">📊 今日概览</div>
+    <div class="ov-row" id="today-overview-content"></div>
+  </div>
 
   <!-- 快速开始引导 -->
   <div class="card" id="welcome-card" style="position:relative;background:linear-gradient(135deg,#e6f4ff,#f0f5ff);border:1px solid #91caff">
@@ -408,6 +454,9 @@ tr:last-child td{border-bottom:none}
   <!-- 结果区域（初始隐藏） -->
   <div id="portfolio-result" style="display:none">
 
+    <!-- 方案摘要（一眼看到结论） -->
+    <div class="plan-summary" id="plan-summary"></div>
+
     <!-- 数据来源与时效说明 -->
     <div class="warning-notice" id="data-source-notice">
       📋 <b>数据来源说明：</b>基金历史收益(近1年/近3年)、历史最大跌幅、基金经理任期、基金规模等核心数据通过天天基金网API实时拉取（每24小时自动更新）。当日估算净值通过天天基金实时获取。配置方案基于最新数据模型生成，<b>不代表对未来收益的保证</b>。请结合自身情况综合判断。
@@ -429,9 +478,10 @@ tr:last-child td{border-bottom:none}
         <div class="card-title" style="margin-bottom:0"><span class="icon icon-orange">📡</span>查看实时行情分析 <span style="font-size:12px;color:var(--muted);font-weight:400" id="analysis-time"></span><span style="margin-left:auto;font-size:12px;color:var(--primary)">展开 ▸</span></div>
       </summary>
     <div class="card" style="border-top-left-radius:0;border-top-right-radius:0;margin-top:-1px">
-      <div class="table-wrap">
+      <div class="table-wrap" id="market-analysis-desktop">
         <table class="market-table" id="market-analysis-table"></table>
       </div>
+      <div id="market-analysis-mobile" style="display:none"></div>
       <div id="market-summary" style="margin-top:12px;padding:12px;background:#f8f9fc;border-radius:8px;font-size:13px;line-height:1.8"></div>
     </div>
     </details>
@@ -649,7 +699,11 @@ tr:last-child td{border-bottom:none}
       <button class="btn btn-ghost btn-sm" onclick="clearExistingHoldings()">清空全部</button>
     </div>
     <div id="eh-list" style="margin-top:12px;border:1px solid var(--border);border-radius:10px;overflow:hidden;display:none"></div>
-    <div id="eh-empty" style="margin-top:10px;font-size:12px;color:var(--muted)">暂未填写已有持仓，将按全新建仓方式生成方案</div>
+    <div id="eh-empty" class="empty-state" style="margin-top:10px">
+      <div class="empty-icon">💼</div>
+      <div class="empty-text">暂未填写已有持仓<br>添加后可获得个性化调仓建议和健康诊断</div>
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('eh-code').focus()">＋ 添加第一笔持仓</button>
+    </div>
     <div id="eh-summary" style="display:none;margin-top:10px;padding:10px 14px;background:#f0f8ff;border-radius:8px;font-size:13px"></div>
   </div>
 
@@ -675,7 +729,11 @@ tr:last-child td{border-bottom:none}
       <button class="btn btn-ghost btn-sm" onclick="clearDcaPlans()">清空全部</button>
     </div>
     <div id="dp-list" style="margin-top:12px;border:1px solid var(--border);border-radius:10px;overflow:hidden;display:none"></div>
-    <div id="dp-empty" style="margin-top:8px;font-size:12px;color:var(--muted)">暂无定投计划，添加后将自动汇总到已有持仓与持仓记录统计</div>
+    <div id="dp-empty" class="empty-state" style="margin-top:8px">
+      <div class="empty-icon">📅</div>
+      <div class="empty-text">暂无定投计划<br>添加后将自动同步至持仓统计</div>
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('dp-code').focus()">＋ 创建第一个定投计划</button>
+    </div>
     <div id="dp-summary" style="display:none;margin-top:10px;padding:10px 14px;background:#f6ffed;border-radius:8px;font-size:13px"></div>
   </div>
 
@@ -746,6 +804,26 @@ window.addEventListener('scroll',function(){
   const btn=document.getElementById('back-top');
   if(btn){if(window.scrollY>600){btn.style.display='flex';}else{btn.style.display='none';}}
 },{passive:true});
+
+// ═══════════════ Tab左右滑动手势 ═══════════════
+(function(){
+  let startX=0,startY=0,swiping=false;
+  const content=document.querySelector('.content');
+  if(!content) return;
+  content.addEventListener('touchstart',function(e){
+    startX=e.touches[0].clientX; startY=e.touches[0].clientY; swiping=true;
+  },{passive:true});
+  content.addEventListener('touchend',function(e){
+    if(!swiping) return; swiping=false;
+    const dx=e.changedTouches[0].clientX-startX;
+    const dy=e.changedTouches[0].clientY-startY;
+    if(Math.abs(dx)<80||Math.abs(dy)>Math.abs(dx)*0.6) return; // 需要>80px且水平为主
+    const tabs=document.querySelectorAll('.tab');
+    const current=[...tabs].findIndex(t=>t.classList.contains('active'));
+    if(dx<0&&current<tabs.length-1) switchTab(current+1); // 左滑→下一个Tab
+    else if(dx>0&&current>0) switchTab(current-1); // 右滑→上一个Tab
+  },{passive:true});
+})();
 
 // ═══════════════ 资产Tab子导航滚动 ═══════════════
 function scrollToSection(id){
@@ -963,6 +1041,79 @@ let currentSortMode = 'score'; // 'score' or 'dca'
 let portfolioPieInst = null, sipChartInst = null, holdPieChartInst = null;
 
 // ═══════════════ 标签切换 ═══════════════
+// ═══════════════ 今日概览 ═══════════════
+function renderTodayOverview(){
+  const el=document.getElementById('today-overview');
+  const ct=document.getElementById('today-overview-content');
+  if(!el||!ct) return;
+
+  // 合并所有持仓
+  const allHeld=[];
+  holdings.forEach(h=>{ if(!allHeld.some(x=>x.code===h.code)) allHeld.push({code:h.code,value:h.shares*h.cur,cost:h.shares*h.cost}); });
+  existingHoldings.forEach(h=>{ if(!allHeld.some(x=>x.code===h.code)) allHeld.push({code:h.code,value:h.value,cost:h.cost||0}); });
+  dcaPlans.forEach(d=>{ if(!allHeld.some(x=>x.code===d.code)&&d.curval>0){
+    const months=d.start?Math.max(0,Math.floor((new Date()-new Date(d.start))/30/86400000)):0;
+    allHeld.push({code:d.code,value:d.curval,cost:d.monthly*months});
+  }});
+
+  if(!allHeld.length){ el.style.display='none'; return; }
+
+  const totalValue=allHeld.reduce((s,h)=>s+h.value,0);
+  const totalCost=allHeld.reduce((s,h)=>s+h.cost,0);
+  const totalPnl=totalCost>0?totalValue-totalCost:0;
+  const totalPnlPct=totalCost>0?(totalPnl/totalCost*100):0;
+
+  // 今日涨跌
+  let todayChg=0, navCount=0;
+  allHeld.forEach(h=>{
+    const nav=navCache[h.code];
+    if(nav){ todayChg+=h.value*(parseFloat(nav.gszzl)||0)/100; navCount++; }
+  });
+
+  // 信号数
+  const badge=document.getElementById('asset-tab-badge');
+  const signalWrap=document.getElementById('signal-panel');
+  let signalCount=0;
+  if(signalWrap){ signalCount=signalWrap.querySelectorAll('.signal-item').length; }
+
+  el.style.display='';
+  ct.innerHTML=`
+    <div class="ov-item"><div class="ov-val" style="color:var(--primary)">¥${totalValue.toLocaleString('zh-CN',{maximumFractionDigits:0})}</div><div class="ov-label">总持仓市值</div></div>
+    <div class="ov-item"><div class="ov-val ${todayChg>=0?'up':'down'}">${todayChg>=0?'+':''}¥${Math.abs(todayChg).toLocaleString('zh-CN',{maximumFractionDigits:0})}</div><div class="ov-label">今日涨跌${navCount>0?'':'(待刷新)'}</div></div>
+    <div class="ov-item"><div class="ov-val ${totalPnl>=0?'up':'down'}">${totalPnl>=0?'+':''}${totalPnlPct.toFixed(1)}%</div><div class="ov-label">累计收益率</div></div>
+    <div class="ov-item"><div class="ov-val">${allHeld.length}</div><div class="ov-label">持有基金数</div></div>`;
+}
+
+// ═══════════════ Tab角标（信号提醒） ═══════════════
+function updateTabBadge(count){
+  const badge=document.getElementById('asset-tab-badge');
+  if(!badge) return;
+  if(count>0){ badge.classList.add('show'); } else { badge.classList.remove('show'); }
+}
+
+// ═══════════════ 市场分析表手机端卡片 ═══════════════
+function renderMarketAnalysisMobile(catRanks){
+  const el=document.getElementById('market-analysis-mobile');
+  const desktop=document.getElementById('market-analysis-desktop');
+  if(!el) return;
+  const isMobile=window.innerWidth<600;
+  el.style.display=isMobile?'block':'none';
+  if(desktop) desktop.style.display=isMobile?'none':'block';
+  if(!isMobile) return;
+  const chgAvailable=Object.keys(navCache).length>0;
+  el.innerHTML=catRanks.map((c,i)=>{
+    const chgText=chgAvailable?(c.avgChg>0?`<span class="up">+${c.avgChg.toFixed(2)}% ▲</span>`:`<span class="${c.avgChg<0?'down':'neutral'}">${c.avgChg.toFixed(2)}%${c.avgChg<0?' ▼':''}</span>`):'<span class="neutral">待刷新</span>';
+    return `<div class="market-card">
+      <div class="market-card-row"><span style="font-size:15px;font-weight:700">${i+1}. ${c.name}</span>${chgText}</div>
+      <div class="market-card-row" style="margin-top:8px">
+        <div><span class="market-card-label">近1年均收益</span><div class="market-card-val ${c.avgR1>=0?'up':'down'}">${c.avgR1>=0?'+':''}${c.avgR1.toFixed(1)}%</div></div>
+        <div><span class="market-card-label">性价比</span><div class="market-card-val">${c.riskAdj.toFixed(2)}</div></div>
+        <div><span class="market-card-label">数据来源</span><div style="font-size:12px;color:var(--muted)">${chgAvailable?'实时':'参考'}</div></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
 function switchTab(i){
   document.querySelectorAll('.tab').forEach((t,j)=>t.classList.toggle('active',i===j));
   document.querySelectorAll('.panel').forEach((p,j)=>p.classList.toggle('active',i===j));
@@ -1436,7 +1587,7 @@ function updateScanStatus(text){
 // ═══════════════ 面板0: 精选基金 ═══════════════
 const CAT_TAG={'active':'tag-active','index':'tag-index','bond':'tag-bond','money':'tag-money','qdii':'tag-qdii'};
 function stars(n){ return '★'.repeat(n)+'☆'.repeat(5-n); }
-function fmtR(v){ if(v==null) return '--'; const c=v>0?'up':v<0?'down':'neutral'; return `<span class="${c}">${v>0?'+':''}${v}%</span>`; }
+function fmtR(v){ if(v==null) return '--'; const c=v>0?'up':v<0?'down':'neutral'; const arrow=v>0?' ▲':v<0?' ▼':''; return `<span class="${c}">${v>0?'+':''}${v}%${arrow}</span>`; }
 
 function buildFundCard(f,sortMode){
   const nav=navCache[f.code];
@@ -1477,7 +1628,7 @@ function buildFundCard(f,sortMode){
   return `<div class="fund-card">
     <div class="fund-card-head">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px">
-        <div class="fund-card-name">${escHtml(f.name)}${f.discovered?'<span style="background:#722ed1;color:#fff;font-size:9px;padding:1px 5px;border-radius:3px;margin-left:4px;vertical-align:middle">新发现</span>':''}</div>
+        <div class="fund-card-name">${escHtml(f.name)}${f.discovered?'<span style="background:#722ed1;color:#fff;font-size:11px;padding:1px 6px;border-radius:3px;margin-left:4px;vertical-align:middle">新发现</span>':''}</div>
         <span class="tag ${CAT_TAG[f.cat]||'tag-index'}" style="flex-shrink:0">${escHtml(f.label)}</span>
       </div>
       <div class="fund-card-meta">
@@ -1536,7 +1687,9 @@ function renderMarketGrid(){
 function setCategory(cat){
   currentCat=cat;
   document.querySelectorAll('#cat-filter .chip').forEach(c=>c.classList.toggle('active',c.getAttribute('onclick')?.includes(`'${cat}'`)));
-  renderMarketGrid();
+  const grid=document.getElementById('market-grid');
+  grid.classList.add('fading');
+  setTimeout(()=>{renderMarketGrid();grid.classList.remove('fading');},150);
 }
 function setSortMode(mode){
   currentSortMode=mode;
@@ -1544,6 +1697,9 @@ function setSortMode(mode){
   document.getElementById('sort-mode-dca').classList.toggle('active',mode==='dca');
   const dcaNotice=document.getElementById('dca-sort-notice');
   if(dcaNotice) dcaNotice.style.display=mode==='dca'?'':'none';
+  const grid=document.getElementById('market-grid');
+  grid.classList.add('fading');
+  setTimeout(()=>{renderMarketGrid();grid.classList.remove('fading');},150);
   renderMarketGrid();
 }
 function updateNavCard(code,data){
@@ -1617,6 +1773,8 @@ function refreshAllNav(autoGenerate, silent){
       runHealthMonitor();
       // 运行智能买卖信号引擎
       runSignalEngine();
+      // 更新今日概览
+      renderTodayOverview();
 
       // 自动生成投资方案
       if(autoGenerate){
@@ -2438,7 +2596,7 @@ function _doGenerate(){
       ? `当前市场动量信号为<b>${macroClock.label}</b>（基于资产相对强弱推断，非宏观经济指标），权益系数×${macroClock.equityMult}，债券系数×${macroClock.bondMult}。`
       : '市场动量信号不明确，采用中性配置。';
     stratEl.innerHTML = `
-      <div style="padding:6px 10px;background:#e6f7ff;border-radius:6px;font-size:11px;color:#0050b3;margin-bottom:10px">📡 基金收益率、最大回撤、规模、经理任期等核心数据由天天基金网API实时拉取（每24小时自动更新），确保评分和方案基于最新市场数据。</div>
+      <div class="notice" style="padding:6px 10px;border-radius:6px;font-size:11px;margin-bottom:10px;border-left:none">📡 基金收益率、最大回撤、规模、经理任期等核心数据由天天基金网API实时拉取（每24小时自动更新），确保评分和方案基于最新市场数据。</div>
       <b>一、基金评分体系（简化多因子）</b><br>
       去除冗余指标，保留4个正交维度：<br>
       · <b>Calmar Ratio</b>（40%权重）：时间窗口匹配的混合Calmar——短期Calmar=(近1年收益-2%)/近3年最大回撤(60%)，长期Calmar=(近3年年化收益-2%)/全期最大回撤(40%)，避免收益与回撤时间窗口错配<br>
@@ -2511,10 +2669,28 @@ function _doGenerate(){
     `;
   }
 
+  // 渲染方案摘要卡片
+  const riskNames={conservative:'保守型',moderate:'稳健型',balanced:'平衡型',aggressive:'进取型'};
+  const riskColors={conservative:'var(--success)',moderate:'var(--primary)',balanced:'var(--warning)',aggressive:'var(--danger)'};
+  const summaryEl=document.getElementById('plan-summary');
+  if(summaryEl){
+    summaryEl.innerHTML=`
+      <div style="font-size:14px;font-weight:600;margin-bottom:10px">📋 方案摘要</div>
+      <div class="ps-row">
+        <div class="ps-item"><div class="ps-val">${allPicks.length} 只</div><div class="ps-label">推荐基金</div></div>
+        <div class="ps-item"><div class="ps-val" style="color:${riskColors[riskP]}">${riskNames[riskP]}</div><div class="ps-label">风险类型</div></div>
+        <div class="ps-item"><div class="ps-val">${expReturnLow.toFixed(1)}%~${expReturnHigh.toFixed(1)}%</div><div class="ps-label">预期年化区间</div></div>
+        <div class="ps-item"><div class="ps-val" style="color:var(--danger)">-${blendedDD.toFixed(1)}%</div><div class="ps-label">组合最大回撤</div></div>
+      </div>
+      <div style="margin-top:10px;font-size:12px;color:var(--muted);line-height:1.6">
+        ${allPicks.map(f=>`<b>${escHtml(f.name)}</b>(${f.pct}%)`).join(' · ')}
+      </div>`;
+  }
+
   // 显示结果
   document.getElementById('analysis-time').textContent=Object.keys(navCache).length>0?`· 已融合${Object.keys(navCache).length}只基金实时净值`:'· 建议先刷新净值获取实时数据';
   document.getElementById('portfolio-result').style.display='block';
-  setTimeout(()=>document.getElementById('portfolio-result').scrollIntoView({behavior:'smooth',block:'start'}),100);
+  setTimeout(()=>document.getElementById('plan-summary').scrollIntoView({behavior:'smooth',block:'start'}),100);
 }
 
 function renderStyleExposure(exposure, allPicks){
@@ -2602,6 +2778,8 @@ function renderMarketAnalysis(catRanks, macroClock, mgrWarnings){
   }).join('')}</tbody>`;
 
   const top1=catRanks[0], top2=catRanks[1];
+  // 手机端卡片化
+  renderMarketAnalysisMobile(catRanks);
   const chgNote = Object.keys(navCache).length>0 ? '已融合实时净值数据。' : '建议点击「基金精选推荐」→「刷新净值」后重新生成，以融入当日行情。';
 
   // 宏观周期 + 经理变更预警
@@ -3014,6 +3192,24 @@ function removeDcaPlan(i){
   renderDcaPlans();
   document.getElementById('dca-ai-result').style.display='none';
 }
+function editDcaPlan(i){
+  const plan=dcaPlans[i]; if(!plan) return;
+  const newAmt=prompt(`修改「${plan.name}」的每月定投金额（当前 ¥${plan.monthly}）：`,plan.monthly);
+  if(newAmt===null) return;
+  const parsed=parseInt(newAmt);
+  if(!parsed||parsed<1){ showToast('请输入有效金额','error'); return; }
+  dcaPlans[i].monthly=parsed;
+  FundDB.set('dcaPlans',dcaPlans);
+  renderDcaPlans();
+  showToast(`已修改为 ¥${parsed}/月`,'success');
+}
+function toggleDcaPause(i){
+  const plan=dcaPlans[i]; if(!plan) return;
+  dcaPlans[i].paused=!dcaPlans[i].paused;
+  FundDB.set('dcaPlans',dcaPlans);
+  renderDcaPlans();
+  showToast(dcaPlans[i].paused?`已暂停「${plan.name}」定投`:`已恢复「${plan.name}」定投`,'info');
+}
 
 function clearDcaPlans(){
   if(!dcaPlans.length||confirm('确定清空全部定投计划？')){
@@ -3050,11 +3246,17 @@ function renderDcaPlans(){
       </div>
       <div class="dp-monthly"><div class="dp-monthly-val">¥${d.monthly.toLocaleString()}</div><div class="dp-monthly-lbl">每月定投</div></div>
       <div class="dp-total"><div class="dp-total-val">¥${d.curval>0?d.curval.toLocaleString():'--'}</div><div class="dp-total-lbl">当前市值</div></div>
-      <button class="btn btn-danger btn-sm" onclick="removeDcaPlan(${i})">删除</button>
-    </div>`;
+      <div class="dp-actions">
+        <button class="btn btn-ghost btn-sm" onclick="editDcaPlan(${i})" title="编辑金额">✏️</button>
+        <button class="btn btn-ghost btn-sm" onclick="toggleDcaPause(${i})" title="${d.paused?'恢复':'暂停'}">${d.paused?'▶️':'⏸️'}</button>
+        <button class="btn btn-danger btn-sm" onclick="removeDcaPlan(${i})">删除</button>
+      </div>
+    </div>${d.paused?'<div style="padding:4px 14px 8px;font-size:11px;color:var(--warning)">⏸️ 已暂停定投</div>':''}`;
   }).join('');
   summaryEl.style.display='block';
-  summaryEl.innerHTML=`📅 共 <b>${dcaPlans.length}</b> 项定投计划，每月合计 <b>¥${totalMonthly.toLocaleString()}</b>${totalCurval>0?`，总持仓市值约 <b>¥${totalCurval.toLocaleString()}</b>`:''}。已自动同步至已有持仓与持仓统计。`;
+  const activeCount=dcaPlans.filter(d=>!d.paused).length;
+  const pausedCount=dcaPlans.length-activeCount;
+  summaryEl.innerHTML=`📅 共 <b>${dcaPlans.length}</b> 项定投计划${pausedCount>0?`（${pausedCount}项已暂停）`:''}，每月合计 <b>¥${totalMonthly.toLocaleString()}</b>${totalCurval>0?`，总持仓市值约 <b>¥${totalCurval.toLocaleString()}</b>`:''}。已自动同步至已有持仓与持仓统计。`;
   // 同步Panel3
   renderDcaInHoldings();
 }
@@ -3267,6 +3469,9 @@ function runSignalEngine(){
 
   // 渲染信号横幅
   renderSignalBanner(uniqueSignals);
+  // 更新Tab角标
+  const highPriorityCount = uniqueSignals.filter(s=>s.priority<=1).length;
+  updateTabBadge(highPriorityCount);
 
   // 发送浏览器通知（仅对重要信号）
   const importantSignals = uniqueSignals.filter(s => s.priority <= 1);
