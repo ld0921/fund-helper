@@ -887,6 +887,8 @@ function analyzeStyleExposure(allPicks){
 // 压力测试（历史情景回测估算）
 function stressTest(allPicks){
   // 基于各类资产在不同市场情景下的历史表现估算
+  // 改进：用每只基金的 maxDD 相对于类别平均 maxDD 的比值作为个基系数
+  // 例如：类别平均 maxDD=30%，某基金 maxDD=45%，系数=1.5，压力更大
   const scenarios = [
     {name:'2015股灾', shocks:{active:-45,index:-40,bond:5,money:1.5,qdii:-15}},
     {name:'2018熊市', shocks:{active:-25,index:-22,bond:6,money:3,qdii:-10}},
@@ -895,10 +897,25 @@ function stressTest(allPicks){
     {name:'债灾(2016.12)', shocks:{active:-5,index:-8,bond:-8,money:0.5,qdii:2}},
     {name:'牛市泡沫期', shocks:{active:60,index:50,bond:-2,money:1,qdii:20}},
   ];
+  // 计算各类别平均 maxDD 作为基准
+  const catAvgDD = {};
+  const catCounts = {};
+  allPicks.forEach(f => {
+    if(!catAvgDD[f.cat]){ catAvgDD[f.cat] = 0; catCounts[f.cat] = 0; }
+    catAvgDD[f.cat] += f.maxDD || 0;
+    catCounts[f.cat]++;
+  });
+  Object.keys(catAvgDD).forEach(c => { catAvgDD[c] = catCounts[c] > 0 ? catAvgDD[c] / catCounts[c] : 1; });
+
   return scenarios.map(s=>{
     const portfolioReturn = allPicks.reduce((sum,f)=>{
-      const shock = s.shocks[f.cat]||0;
-      return sum + shock * (f.pct/100);
+      const baseShock = s.shocks[f.cat]||0;
+      // 个基系数：该基金 maxDD / 类别平均 maxDD，限制在 0.5-2.0 范围
+      const avgDD = catAvgDD[f.cat] || 1;
+      const fundCoef = Math.min(2.0, Math.max(0.5, (f.maxDD || avgDD) / avgDD));
+      // 负向冲击（下跌场景）放大/缩小；正向冲击（上涨场景）也按系数调整
+      const adjustedShock = baseShock < 0 ? baseShock * fundCoef : baseShock * (0.5 + 0.5 * fundCoef);
+      return sum + adjustedShock * (f.pct/100);
     },0);
     return {name:s.name, impact:portfolioReturn};
   });
@@ -1864,17 +1881,38 @@ function computeRebalancePlan(targetPicks, newMoney){
     const fd=CURATED_FUNDS.find(f=>f.code===h.code);
     const r1=fd?fd.r1:null;
     let action,actionAmt,actionDesc,actionColor;
-    if(r1===null||r1<0){
+
+    // 按类别区分卖出阈值，避免一刀切
+    // 权益类(active/index/qdii): r1<0 才建议卖
+    // 债券类(bond): r1 < 类别均值-1σ 才建议卖
+    // 货币类(money): 基本不建议卖
+    const cat = fd ? fd.cat : 'other';
+    const bench = _catBench[cat];
+    let sellThreshold;
+    if(cat === 'bond'){
+      sellThreshold = bench ? bench.avgR1 - bench.stdR1 : 0;
+    } else if(cat === 'money'){
+      sellThreshold = -999; // 货币基金几乎不建议卖
+    } else {
+      sellThreshold = 0; // 权益类：近1年负收益才建议卖
+    }
+
+    if(r1===null){
+      action='satellite'; actionAmt=0;
+      actionDesc='无法获取收益数据，建议人工确认后决定';
+      actionColor='act-satellite';
+    } else if(fd && fd.r3 < -20){
+      // 近3年持续低迷，无论类别都建议卖出
       action='sell'; actionAmt=h.value;
-      actionDesc=`不在推荐组合内${r1!==null?`，近1年收益${r1}%`:''}，建议赎回`;
+      actionDesc=`不在核心组合内，近3年${fd.r3}%持续低迷，建议赎回转入推荐基金`;
       actionColor='act-sell';
-    } else if(r1<5 || (fd && fd.r3 < -20)){
+    } else if(r1 < sellThreshold){
       action='sell'; actionAmt=h.value;
-      actionDesc=`不在核心组合内，${fd&&fd.r3<-20?`近3年${fd.r3}%持续低迷`:`收益偏低(${r1}%)`}，建议赎回转入推荐基金`;
+      actionDesc=`不在推荐组合内，近1年收益${r1}%低于同类阈值(${sellThreshold.toFixed(1)}%)，建议赎回`;
       actionColor='act-sell';
     } else {
       action='satellite'; actionAmt=0;
-      actionDesc=`非核心仓，近1年${r1}%，可作卫星仓继续观察`;
+      actionDesc=`非核心仓，近1年${r1}%，表现尚可，可作卫星仓继续持有观察`;
       actionColor='act-satellite';
     }
     actions.push({code:h.code,name:h.name,type:fd?.type||'--',cat:fd?.cat||'other',r1:r1??'--',currentAmt:h.value,targetAmt:0,action,actionAmt,actionDesc,actionColor,manager:fd?.manager||'--'});
@@ -2090,20 +2128,39 @@ function computeWeights(riskProfile, horizon, catRanks, macroClock){
     Object.keys(base).forEach(k => base[k] = base[k] / macroTotal * 100);
   }
 
-  // 4. 动量倾斜：基于类别行情强弱适当调整
+  // 4. 动量倾斜：基于类别行情强弱适当调整（含反转保护）
   const maxTilt = { conservative:5, moderate:8, balanced:10, aggressive:12 }[riskProfile];
   if(catRanks.length >= 2){
     const top = catRanks[0].cat;
     const bottom = catRanks[catRanks.length-1].cat;
     const scoreRange = catRanks[0].catScore - catRanks[catRanks.length-1].catScore;
     if(scoreRange > 0){
-      const tiltAmt = Math.min(Math.round(scoreRange * 0.5), maxTilt);
-      const trimAmt = Math.min(Math.round(scoreRange * 0.3), maxTilt * 0.6);
-      base[top] = Math.min(base[top] + tiltAmt, 55);
-      base[bottom] = Math.max(base[bottom] - trimAmt, 2);
-      // 第二强势类别也小幅加仓
-      const second = catRanks[1].cat;
-      if(second !== top) base[second] = Math.min(base[second] + Math.round(tiltAmt * 0.3), 45);
+      // 反转保护1：若该类别已被美林时钟调高（equityMult>1），动量倾斜减半，防止双重追涨
+      const topAlreadyBoosted = macroClock && macroClock.equityMult > 1 && ['active','index','qdii'].includes(top);
+      const tiltScale = topAlreadyBoosted ? 0.5 : 1.0;
+      // 反转保护2：若强势类别近1年涨幅>30%，说明可能过热，倾斜归零甚至反转
+      const topCatData = catRanks[0];
+      let effectiveTilt = Math.min(Math.round(scoreRange * 0.5 * tiltScale), maxTilt);
+      if(topCatData.avgR1 > 40){
+        // 涨幅极端（>40%），反转减配
+        effectiveTilt = -Math.round(maxTilt * 0.3);
+      } else if(topCatData.avgR1 > 30){
+        // 涨幅偏高（>30%），不倾斜
+        effectiveTilt = 0;
+      }
+      const trimAmt = Math.min(Math.round(scoreRange * 0.3 * tiltScale), maxTilt * 0.6);
+      // 反转保护3：弱势类别若已跌较深(avgR1<-10%)，可能是底部区域，不再减配
+      const bottomCatData = catRanks[catRanks.length-1];
+      const effectiveTrim = bottomCatData.avgR1 < -10 ? 0 : trimAmt;
+
+      if(effectiveTilt > 0) base[top] = Math.min(base[top] + effectiveTilt, 55);
+      else if(effectiveTilt < 0) base[top] = Math.max(base[top] + effectiveTilt, 5);
+      base[bottom] = Math.max(base[bottom] - effectiveTrim, 2);
+      // 第二强势类别也小幅加仓（同样受反转保护）
+      if(effectiveTilt > 0){
+        const second = catRanks[1].cat;
+        if(second !== top) base[second] = Math.min(base[second] + Math.round(effectiveTilt * 0.3), 45);
+      }
     }
   }
 
@@ -2270,19 +2327,46 @@ function _doGenerate(){
   });
   const allPicks = Object.values(selectedPicks).flat();
 
-  // 5. 收益预估（修正波动率模型 + 统计置信区间）
-  // 分类别均值回归系数（基于学术研究：权益类收益均值回归速度约3-5年半衰期）
-  const meanRevCoef = { active:0.55, index:0.55, bond:0.80, money:0.95, qdii:0.55 };
-  // 加权平均预期收益（均值回归折扣后）
+  // 5. 收益预估（长期均值中枢 + 均值回归 + 统计置信区间）
+  // 预期收益 = 类别长期年化均值（r3年化）向长期中枢回归，而非 r1 打折
+  // 长期中枢参考值（A股长期年化）
+  const longTermMu = { active:8, index:7, bond:4, money:2, qdii:6 };
+  // 均值回归：当前r3年化偏离长期中枢越远，回归力度越大
   const expReturn = allPicks.reduce((s,f) => {
-    const coef = meanRevCoef[f.cat] || 0.6;
-    return s + f.r1 * coef * (f.pct/100);
+    const r3Ann = f.r3 > -100 ? (Math.pow(1 + f.r3/100, 1/3) - 1) * 100 : 0;
+    const mu = longTermMu[f.cat] || 5;
+    // 回归系数：r3Ann 偏离 mu 越远，越向 mu 回归
+    // 当 r3Ann == mu 时，预期 = mu；偏离越大，预期越接近 mu
+    const revSpeed = { active:0.5, index:0.5, bond:0.3, money:0.1, qdii:0.5 }[f.cat] || 0.5;
+    const expected = mu + (r3Ann - mu) * (1 - revSpeed);
+    return s + expected * (f.pct/100);
   }, 0);
-  // 组合波动率估算（经验公式）
-  // 经验依据：基于国内公募基金历史数据回测，maxDD与年化波动率的比值约2-3倍
-  // 取中间值2.5作为换算系数：σ ≈ maxDD / 2.5
-  const blendedDD = allPicks.reduce((s,f)=>s+f.maxDD*(f.pct/100),0);
-  const sigma = blendedDD / 2.5; // 年化波动率 ≈ 最大回撤 / 2.5（经验换算）
+  // 组合波动率估算（考虑资产间相关性的修正公式）
+  // 经验依据：maxDD 与年化波动率比值约 2-3 倍，取 2.5
+  // 跨类别相关性折扣：纯线性加权假设完全正相关(ρ=1)，实际分散投资 ρ<1
+  // 使用简化模型：同类别内 ρ=0.8，跨类别 ρ=0.3（股债 ρ≈0.1，股股 ρ≈0.7 取保守值）
+  const catDD = {}; // 每个类别的加权 maxDD
+  allPicks.forEach(f => {
+    if(!catDD[f.cat]) catDD[f.cat] = { dd:0, pct:0 };
+    catDD[f.cat].dd += f.maxDD * f.pct;
+    catDD[f.cat].pct += f.pct;
+  });
+  // 类别内：同类基金相关性高(ρ=0.8)，近似线性加权再打9折
+  const catSigmas = {};
+  Object.keys(catDD).forEach(c => {
+    catSigmas[c] = (catDD[c].dd / catDD[c].pct) * (catDD[c].pct / 100) / 2.5 * 0.9;
+  });
+  // 跨类别：用 √(ΣΣ ρij·σi·σj) 近似，跨类别 ρ=0.3
+  const catKeys = Object.keys(catSigmas);
+  let portfolioVar = 0;
+  catKeys.forEach(ci => {
+    catKeys.forEach(cj => {
+      const rho = ci === cj ? 1.0 : 0.3;
+      portfolioVar += rho * catSigmas[ci] * catSigmas[cj];
+    });
+  });
+  const sigma = Math.sqrt(Math.max(portfolioVar, 0.01));
+  const blendedDD = sigma * 2.5; // 反推组合等效回撤，用于风险计量
   // 正态分布置信区间
   const expReturnP75 = expReturn + 0.67 * sigma; // 乐观情景（75分位）
   const expReturnP25 = expReturn - 0.67 * sigma; // 悲观情景（25分位）
@@ -2310,7 +2394,7 @@ function _doGenerate(){
     <div class="expected-item"><div class="expected-val" style="color:var(--primary)">¥${expAmt1High.toLocaleString()}</div><div class="expected-label">1年后乐观预估</div></div>
     <div class="expected-item"><div class="expected-val" style="color:#722ed1">¥${expAmt3Low.toLocaleString()}~${expAmt3High.toLocaleString()}</div><div class="expected-label">3年后预估区间</div></div>
     <div style="width:100%;font-size:11px;color:var(--muted);margin-top:4px;line-height:1.6">
-      ⚠️ <b>收益预估仅供参考，不构成收益承诺。</b>模型局限：①均值回归系数（权益×55%、债券×80%）为经验估值，未经本基金池回测验证；②波动率由最大回撤÷2.5粗略换算，精度有限；③正态分布假设会低估极端尾部风险。实际收益可能大幅偏离上述区间。P5极端情景年化可能达 ${expReturnP5.toFixed(1)}%。
+      ⚠️ <b>收益预估仅供参考，不构成收益承诺。</b>模型局限：①预期收益基于各类别长期年化中枢+均值回归模型，历史不代表未来；②波动率由最大回撤÷2.5粗略换算并加入跨类别相关性折扣(ρ=0.3)，精度有限；③正态分布假设会低估极端尾部风险。实际收益可能大幅偏离上述区间。P5极端情景年化可能达 ${expReturnP5.toFixed(1)}%。
     </div>`;
 
   // 7. 副标题
@@ -2388,9 +2472,10 @@ function _doGenerate(){
       · 新任经理的历史业绩不可参考（属于前任经理），评分中给予最低稳定性分<br>
       · ${mgrWarnings.length > 0 ? `当前有 ${mgrWarnings.length} 只基金存在经理变更预警` : '当前精选库无经理变更预警'}<br><br>
 
-      <b>五、收益预估（经验波动率模型）</b><br>
-      · 波动率：σ ≈ maxDD / 2.5（经验换算系数，基于国内公募基金历史数据中最大回撤与年化波动率的比值约2-3倍取中值）<br>
-      · 均值回归：主动权益/指数/QDII×55%，债券×80%，货币×95%（基于3-5年半衰期研究）<br>
+      <b>五、收益预估（长期均值中枢 + 均值回归模型）</b><br>
+      · 预期收益以各类别长期年化均值为中枢（主动8%/指数7%/债券4%/货币2%/QDII 6%），而非用近期收益打折<br>
+      · 均值回归：当基金r3年化偏离长期中枢越远，预期越向中枢回归（回归速度：权益50%、债券30%、货币10%）<br>
+      · 组合波动率：σ ≈ maxDD / 2.5，考虑跨类别相关性折扣（同类ρ=0.8打9折，跨类ρ=0.3用协方差矩阵合成）<br>
       · 1年区间：μ ± 0.67σ（P25-P75）<br>
       · 3年区间：(1+μ)³−1 ± 0.67σ√3（复利累计收益 ± 累计波动率）<br><br>
 
@@ -2416,7 +2501,8 @@ function _doGenerate(){
       · <b>长期趋势</b>（25%权重）：3年累计收益r3，定投需要标的长期向上<br>
       · <b>管理质量</b>（20%权重）：基金经理任期年限(满分12分，按任期×0.8计算，15年以上满分) + 星级评定(满分8分，按(星级-1)×2计算)。注：此处保留星级作为辅助参考，因定投周期长，星级反映同类长期排名<br>
       · <b>近期动量</b>（20%权重）：近1年收益r1，衡量中期上涨趋势。不使用当日涨跌，避免择时噪声<br>
-      特殊规则：货币基金波动极小、不适合定投摊成本，已从定投排名中排除；1年和3年收益双负的基金直接标为不推荐<br><br>
+      特殊规则：货币基金波动极小、不适合定投摊成本，已从定投排名中排除；1年和3年收益双负的基金直接标为不推荐<br>
+      <b>AI定投方案选基</b>：强制类别分散——每个类别(主动/指数/债券/QDII)至少选1只达标基金，再用剩余名额给全局最高评分，同类别最多2只<br><br>
 
       <b>十、持仓健康诊断</b><br>
       · 动态阈值：以同类基金标准差(σ)为单位判断跑输程度（z-score &lt; -2为显著落后）<br>
@@ -2777,9 +2863,28 @@ function generateDcaAiPlan(){
 
   const scored = pool.map(f=>({...f, dcaScore:calcDCAScore(f)})).sort((a,b)=>b.dcaScore-a.dcaScore);
 
-  // 选3-4只（分散定投）
+  // 选3-4只（强制类别分散：每个类别至少选1只，再用剩余名额给最高分）
   const count = budget>=2000 ? 4 : budget>=1000 ? 3 : 2;
-  const picks = scored.slice(0, count);
+  const picks = [];
+  const usedCats = new Set();
+  // 第一轮：每个类别选评分最高的1只（保证分散）
+  const dcaCats = ['active','index','bond','qdii']; // 定投关注的类别
+  dcaCats.forEach(cat => {
+    if(picks.length >= count) return;
+    const best = scored.find(f => f.cat === cat && !picks.some(p => p.code === f.code));
+    if(best && best.dcaScore >= 30){ // 最低门槛30分
+      picks.push(best);
+      usedCats.add(cat);
+    }
+  });
+  // 第二轮：剩余名额给全局最高分（不限类别，但避免同类别超过2只）
+  scored.forEach(f => {
+    if(picks.length >= count) return;
+    if(picks.some(p => p.code === f.code)) return;
+    const sameCatCount = picks.filter(p => p.cat === f.cat).length;
+    if(sameCatCount >= 2) return; // 同类别最多2只
+    picks.push(f);
+  });
 
   // 按风险权重分配
   const riskWeightMap = {
@@ -3030,14 +3135,40 @@ function runSignalEngine(){
     const pnlPct = h.cost > 0 ? (h.value-h.cost)/h.cost*100 : null;
 
     // 信号1：持仓基金大跌（≤-2%），可能是加仓机会或风险预警
+    // 防护：检查是否已超配 + 检查是否连续下跌趋势（r1已为负说明不只是短期波动）
     if(chg <= -3){
-      signals.push({type:'warning', priority:1, code:h.code, name:h.name,
-        title:`⚠️ ${h.name} 今日大跌 ${chg.toFixed(2)}%`,
-        desc: fd && fd.r1>5 && fd.r3>0
-          ? `长期趋势良好(1年${fd.r1}%/3年${fd.r3}%)，大跌可能是加仓机会，建议逢低分批补仓。`
-          : `建议观察是否有重大利空，必要时考虑减仓止损。`,
-        action: fd && fd.r1>5 && fd.r3>0 ? '📈 可考虑加仓' : '🛑 观察或减仓'
-      });
+      // 计算该基金在持仓中的占比
+      const totalValue = allHeld.reduce((s,x)=>s+x.value,0);
+      const fundPct = totalValue > 0 ? h.value / totalValue * 100 : 0;
+      const alreadyOverweight = fundPct > 25; // 单只>25%算超配
+      // 判断是否处于下跌趋势（r1<0 说明不只是单日波动）
+      const inDowntrend = fd && fd.r1 < 0;
+
+      if(alreadyOverweight){
+        signals.push({type:'warning', priority:1, code:h.code, name:h.name,
+          title:`⚠️ ${h.name} 今日大跌 ${chg.toFixed(2)}%`,
+          desc:`该基金已占持仓 ${fundPct.toFixed(0)}%（超配），不建议继续加仓。观察后续走势。`,
+          action:'🛑 已超配，勿加仓'
+        });
+      } else if(inDowntrend){
+        signals.push({type:'warning', priority:1, code:h.code, name:h.name,
+          title:`⚠️ ${h.name} 今日大跌 ${chg.toFixed(2)}%`,
+          desc:`近1年收益 ${fd.r1}%，处于下跌趋势中，不建议逆势加仓。等待趋势企稳后再考虑。`,
+          action:'🛑 趋势未稳，观察'
+        });
+      } else if(fd && fd.r1>5 && fd.r3>0){
+        signals.push({type:'info', priority:2, code:h.code, name:h.name,
+          title:`📉 ${h.name} 今日大跌 ${chg.toFixed(2)}%`,
+          desc:`长期趋势良好(1年${fd.r1}%/3年${fd.r3}%)且仓位不高(${fundPct.toFixed(0)}%)，可考虑小额补仓。`,
+          action:'📈 可小额补仓'
+        });
+      } else {
+        signals.push({type:'warning', priority:1, code:h.code, name:h.name,
+          title:`⚠️ ${h.name} 今日大跌 ${chg.toFixed(2)}%`,
+          desc:`建议观察是否有重大利空，必要时考虑减仓止损。`,
+          action:'🛑 观察或减仓'
+        });
+      }
     } else if(chg <= -2){
       signals.push({type:'info', priority:2, code:h.code, name:h.name,
         title:`📉 ${h.name} 今日下跌 ${chg.toFixed(2)}%`,
