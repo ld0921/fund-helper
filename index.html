@@ -172,6 +172,7 @@ tr:last-child td{border-bottom:none}
   .stat-card .stat-val{font-size:16px;word-break:break-all}
   .stat-card .stat-label{font-size:10px}
   .stat-card{padding:10px 6px}
+  .settings-grid-2col{grid-template-columns:1fr!important}
   table{font-size:12px}
   th,td{padding:7px 6px}
   .header h1{font-size:17px}
@@ -474,11 +475,11 @@ tr:last-child td{border-bottom:none}
       </div>
     </div>
 
-    <!-- 风险偏好 + 投资期限并排 -->
-    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:14px">
-      <div style="flex:1;min-width:200px">
+    <!-- 风险偏好 + 投资期限 -->
+    <div class="settings-grid-2col" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+      <div>
         <div style="font-size:12px;color:var(--muted);margin-bottom:6px">🛡️ 风险偏好</div>
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px" id="risk-selector">
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px" id="risk-selector">
           <label class="risk-option" data-v="conservative" onclick="selectRisk('conservative')">
             <div class="risk-icon">🛡️</div><div class="risk-name">保守</div><div class="risk-desc">3-5%</div>
           </label>
@@ -494,13 +495,21 @@ tr:last-child td{border-bottom:none}
         </div>
         <input type="hidden" id="sp-risk" value="moderate">
       </div>
-      <div style="min-width:160px">
+      <div>
         <div style="font-size:12px;color:var(--muted);margin-bottom:6px">📅 打算投多久</div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap" id="horizon-selector">
-          <button class="chip horizon-chip" data-v="1" onclick="selectHorizon(1)" style="font-size:12px;height:28px;padding:0 10px">1年内</button>
-          <button class="chip horizon-chip active" data-v="2" onclick="selectHorizon(2)" style="font-size:12px;height:28px;padding:0 10px">1-3年</button>
-          <button class="chip horizon-chip" data-v="5" onclick="selectHorizon(5)" style="font-size:12px;height:28px;padding:0 10px">3-5年</button>
-          <button class="chip horizon-chip" data-v="10" onclick="selectHorizon(10)" style="font-size:12px;height:28px;padding:0 10px">5年+</button>
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px" id="horizon-selector">
+          <label class="risk-option horizon-chip" data-v="1" onclick="selectHorizon(1)">
+            <div class="risk-icon">⚡</div><div class="risk-name">1年内</div><div class="risk-desc">短期</div>
+          </label>
+          <label class="risk-option horizon-chip selected" data-v="2" onclick="selectHorizon(2)">
+            <div class="risk-icon">📆</div><div class="risk-name">1-3年</div><div class="risk-desc">中期</div>
+          </label>
+          <label class="risk-option horizon-chip" data-v="5" onclick="selectHorizon(5)">
+            <div class="risk-icon">🌱</div><div class="risk-name">3-5年</div><div class="risk-desc">长期</div>
+          </label>
+          <label class="risk-option horizon-chip" data-v="10" onclick="selectHorizon(10)">
+            <div class="risk-icon">🏔️</div><div class="risk-name">5年+</div><div class="risk-desc">超长期</div>
+          </label>
         </div>
         <input type="hidden" id="sp-horizon" value="2">
       </div>
@@ -1238,7 +1247,8 @@ function selectRisk(val){
 function selectHorizon(val){
   document.getElementById('sp-horizon').value=val;
   document.querySelectorAll('#horizon-selector .horizon-chip').forEach(el=>{
-    el.classList.toggle('active', el.getAttribute('data-v')==String(val));
+    el.classList.toggle('selected', el.getAttribute('data-v')==String(val));
+    el.classList.remove('active');
   });
 }
 
