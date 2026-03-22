@@ -123,7 +123,7 @@ tr:last-child td{border-bottom:none}
 .risk-option{display:flex;flex-direction:column;align-items:center;padding:8px 4px;border:1.5px solid var(--border);border-radius:10px;cursor:pointer;transition:all .2s;background:var(--card);-webkit-tap-highlight-color:transparent;text-align:center}
 .risk-option:hover{border-color:var(--primary);background:var(--primary-bg)}
 .risk-option.selected{border-color:var(--primary);background:var(--primary-bg);box-shadow:0 0 0 1px var(--primary)}
-.risk-icon{font-size:18px;margin-bottom:2px}
+
 .risk-name{font-size:13px;font-weight:600}
 .risk-desc{font-size:10px;color:var(--muted);margin-top:1px}
 .market-table{width:100%;border-collapse:collapse;font-size:13px}
@@ -177,7 +177,7 @@ tr:last-child td{border-bottom:none}
   .stat-card .stat-val{font-size:16px;word-break:break-all}
   .stat-card .stat-label{font-size:10px}
   .stat-card{padding:10px 6px}
-  .settings-grid-2col{grid-template-columns:1fr!important}
+
   table{font-size:12px}
   th,td{padding:7px 6px}
   .header h1{font-size:17px}
@@ -442,10 +442,10 @@ tr:last-child td{border-bottom:none}
 </div>
 
 <div class="tabs">
-  <div class="tab active" onclick="switchTab(0)">🎯 智能方案</div>
-  <div class="tab" onclick="switchTab(1)">🔍 基金探索</div>
-  <div class="tab" onclick="switchTab(2)">📈 定投专区</div>
-  <div class="tab" onclick="switchTab(3);var b=document.getElementById('signal-banner');if(b&&b.style.display!=='none'){b.style.display='';window.scrollTo({top:0,behavior:'smooth'});}">💼 我的资产<span class="tab-badge" id="asset-tab-badge"></span></div>
+  <div class="tab active" onclick="switchTab(0)">🎯 方案</div>
+  <div class="tab" onclick="switchTab(1)">🔍 探索</div>
+  <div class="tab" onclick="switchTab(2)">📈 定投</div>
+  <div class="tab" onclick="switchTab(3)">💼 资产<span class="tab-badge" id="asset-tab-badge"></span></div>
 </div>
 
 <div class="content">
@@ -468,80 +468,73 @@ tr:last-child td{border-bottom:none}
       <b>① 设置你的情况</b>（下方填写金额和风险偏好）→ <b>② 点击生成方案</b>（自动拉取最新数据）→ <b>③ 按步骤执行</b>
     </div>
     <div style="font-size:12px;color:var(--muted);line-height:1.6">💡 如已有持仓，请先去
-      <button class="btn btn-sm" onclick="switchTab(3);this.closest('.card').style.display='none'" style="font-size:11px;padding:1px 8px;background:var(--primary);color:#fff;border-radius:4px">我的资产</button>
+      <a href="javascript:void(0)" onclick="switchTab(3);this.closest('.card').style.display='none'" style="color:var(--primary);font-weight:500;text-decoration:underline">我的资产</a>
       录入持仓，方案将自动融合您的已有基金。
     </div>
   </div>
 
-  <!-- 我的投资档案 -->
+  <!-- 投资设置（紧凑布局） -->
   <div class="card">
-    <div class="card-title"><span class="icon icon-green">📋</span>设置你的投资情况</div>
+    <!-- 金额：输入框 + 快捷标签一行 -->
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
+      <span style="font-size:13px;font-weight:600;white-space:nowrap">💰 投入金额</span>
+      <div style="position:relative;width:140px;flex-shrink:0">
+        <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:14px;font-weight:600;color:var(--muted)">¥</span>
+        <input id="sp-amount" type="number" placeholder="金额" inputmode="numeric" style="height:36px;font-size:15px;font-weight:600;padding-left:26px;padding-right:8px;border:1.5px solid var(--border);border-radius:8px;width:100%;background:var(--card);color:var(--text);outline:none;transition:border-color .2s" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
+      </div>
+      <div style="display:flex;gap:4px;flex-wrap:wrap">
+        <button class="chip" onclick="document.getElementById('sp-amount').value='5000'" style="font-size:11px;height:24px;padding:0 8px;border-radius:4px">5千</button>
+        <button class="chip" onclick="document.getElementById('sp-amount').value='10000'" style="font-size:11px;height:24px;padding:0 8px;border-radius:4px">1万</button>
+        <button class="chip" onclick="document.getElementById('sp-amount').value='30000'" style="font-size:11px;height:24px;padding:0 8px;border-radius:4px">3万</button>
+        <button class="chip" onclick="document.getElementById('sp-amount').value='50000'" style="font-size:11px;height:24px;padding:0 8px;border-radius:4px">5万</button>
+        <button class="chip" onclick="document.getElementById('sp-amount').value='100000'" style="font-size:11px;height:24px;padding:0 8px;border-radius:4px">10万</button>
+      </div>
+    </div>
 
-    <!-- 金额输入 -->
+    <!-- 风险偏好：一行4个 -->
+    <div style="margin-bottom:12px">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:6px">🛡️ 风险偏好</div>
+      <div style="display:flex;gap:6px" id="risk-selector">
+        <label class="risk-option" data-v="conservative" onclick="selectRisk('conservative')" style="flex:1;padding:6px 4px">
+          <div class="risk-name">🛡️ 保守</div><div class="risk-desc">3-5%</div>
+        </label>
+        <label class="risk-option selected" data-v="moderate" onclick="selectRisk('moderate')" style="flex:1;padding:6px 4px">
+          <div class="risk-name">⚖️ 稳健</div><div class="risk-desc">6-10%</div>
+        </label>
+        <label class="risk-option" data-v="balanced" onclick="selectRisk('balanced')" style="flex:1;padding:6px 4px">
+          <div class="risk-name">📈 平衡</div><div class="risk-desc">8-15%</div>
+        </label>
+        <label class="risk-option" data-v="aggressive" onclick="selectRisk('aggressive')" style="flex:1;padding:6px 4px">
+          <div class="risk-name">🚀 进取</div><div class="risk-desc">12%+</div>
+        </label>
+      </div>
+      <input type="hidden" id="sp-risk" value="moderate">
+    </div>
+
+    <!-- 投资期限：一行4个 -->
     <div style="margin-bottom:14px">
-      <div style="font-size:12px;color:var(--muted);margin-bottom:6px">💰 本次可投入新资金</div>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <div style="position:relative;flex:1;min-width:150px;max-width:240px">
-          <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:15px;font-weight:600;color:var(--muted)">¥</span>
-          <input id="sp-amount" type="number" placeholder="输入金额" inputmode="numeric" style="height:40px;font-size:16px;font-weight:600;padding-left:30px;padding-right:10px;border:1.5px solid var(--border);border-radius:8px;width:100%;background:var(--card);color:var(--text);outline:none;transition:border-color .2s;-webkit-appearance:none;appearance:none" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
-        </div>
-        <div style="display:flex;gap:4px;flex-wrap:wrap">
-          <button class="chip" onclick="document.getElementById('sp-amount').value='5000'" style="font-size:11px;height:26px;padding:0 10px">5千</button>
-          <button class="chip" onclick="document.getElementById('sp-amount').value='10000'" style="font-size:11px;height:26px;padding:0 10px">1万</button>
-          <button class="chip" onclick="document.getElementById('sp-amount').value='30000'" style="font-size:11px;height:26px;padding:0 10px">3万</button>
-          <button class="chip" onclick="document.getElementById('sp-amount').value='50000'" style="font-size:11px;height:26px;padding:0 10px">5万</button>
-          <button class="chip" onclick="document.getElementById('sp-amount').value='100000'" style="font-size:11px;height:26px;padding:0 10px">10万</button>
-        </div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:6px">📅 投资期限</div>
+      <div style="display:flex;gap:6px" id="horizon-selector">
+        <label class="risk-option horizon-chip" data-v="1" onclick="selectHorizon(1)" style="flex:1;padding:6px 4px">
+          <div class="risk-name">1年内</div><div class="risk-desc">短期</div>
+        </label>
+        <label class="risk-option horizon-chip selected" data-v="2" onclick="selectHorizon(2)" style="flex:1;padding:6px 4px">
+          <div class="risk-name">1-3年</div><div class="risk-desc">中期</div>
+        </label>
+        <label class="risk-option horizon-chip" data-v="5" onclick="selectHorizon(5)" style="flex:1;padding:6px 4px">
+          <div class="risk-name">3-5年</div><div class="risk-desc">长期</div>
+        </label>
+        <label class="risk-option horizon-chip" data-v="10" onclick="selectHorizon(10)" style="flex:1;padding:6px 4px">
+          <div class="risk-name">5年+</div><div class="risk-desc">超长</div>
+        </label>
       </div>
+      <input type="hidden" id="sp-horizon" value="2">
     </div>
 
-    <!-- 风险偏好 + 投资期限 -->
-    <div class="settings-grid-2col" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
-      <div>
-        <div style="font-size:12px;color:var(--muted);margin-bottom:6px">🛡️ 风险偏好</div>
-        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px" id="risk-selector">
-          <label class="risk-option" data-v="conservative" onclick="selectRisk('conservative')">
-            <div class="risk-icon">🛡️</div><div class="risk-name">保守</div><div class="risk-desc">3-5%</div>
-          </label>
-          <label class="risk-option selected" data-v="moderate" onclick="selectRisk('moderate')">
-            <div class="risk-icon">⚖️</div><div class="risk-name">稳健</div><div class="risk-desc">6-10%</div>
-          </label>
-          <label class="risk-option" data-v="balanced" onclick="selectRisk('balanced')">
-            <div class="risk-icon">📈</div><div class="risk-name">平衡</div><div class="risk-desc">8-15%</div>
-          </label>
-          <label class="risk-option" data-v="aggressive" onclick="selectRisk('aggressive')">
-            <div class="risk-icon">🚀</div><div class="risk-name">进取</div><div class="risk-desc">12%+</div>
-          </label>
-        </div>
-        <input type="hidden" id="sp-risk" value="moderate">
-      </div>
-      <div>
-        <div style="font-size:12px;color:var(--muted);margin-bottom:6px">📅 打算投多久</div>
-        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px" id="horizon-selector">
-          <label class="risk-option horizon-chip" data-v="1" onclick="selectHorizon(1)">
-            <div class="risk-icon">⚡</div><div class="risk-name">1年内</div><div class="risk-desc">短期</div>
-          </label>
-          <label class="risk-option horizon-chip selected" data-v="2" onclick="selectHorizon(2)">
-            <div class="risk-icon">📆</div><div class="risk-name">1-3年</div><div class="risk-desc">中期</div>
-          </label>
-          <label class="risk-option horizon-chip" data-v="5" onclick="selectHorizon(5)">
-            <div class="risk-icon">🌱</div><div class="risk-name">3-5年</div><div class="risk-desc">长期</div>
-          </label>
-          <label class="risk-option horizon-chip" data-v="10" onclick="selectHorizon(10)">
-            <div class="risk-icon">🏔️</div><div class="risk-name">5年+</div><div class="risk-desc">超长期</div>
-          </label>
-        </div>
-        <input type="hidden" id="sp-horizon" value="2">
-      </div>
-    </div>
-
-    <div style="font-size:11px;color:var(--muted);margin-bottom:10px">💡 方案将根据你的设置 + 实时行情 + 已有持仓综合生成。</div>
-    <div class="action-bar">
-      <button class="btn btn-primary" onclick="generateSmartPortfolio()" id="gen-btn" style="height:44px;font-size:15px;padding:0 28px">
-        🤖 生成我的专属方案
-      </button>
-      <span id="gen-status" style="font-size:12px;color:var(--muted);align-self:center">点击后将自动获取最新数据并生成</span>
-    </div>
+    <button class="btn btn-primary" onclick="generateSmartPortfolio()" id="gen-btn" style="width:100%;height:44px;font-size:15px;justify-content:center">
+      🤖 生成我的专属方案
+    </button>
+    <div style="text-align:center;margin-top:6px"><span id="gen-status" style="font-size:11px;color:var(--muted)">基于实时行情 + 已有持仓综合生成</span></div>
   </div>
 
   <!-- 投资策略说明（静态，随时可查） -->
@@ -606,13 +599,8 @@ tr:last-child td{border-bottom:none}
   </details>
 
   <!-- 精选基金库、自定义评分已移至「基金探索」Tab；已有持仓已移至「我的资产」Tab -->
-  <div class="card" style="background:#f6ffed;border:1px solid #b7eb8f">
-    <div style="font-size:13px;color:#389e0d;line-height:1.8">
-      💼 如需录入已有持仓获取个性化<b>调仓建议</b>，请前往
-      <button class="btn btn-sm" onclick="switchTab(3)" style="font-size:12px;padding:2px 10px;background:#52c41a;color:#fff;border-radius:4px;margin:0 4px">我的资产</button>
-      管理您的持仓。浏览精选基金请前往
-      <button class="btn btn-sm" onclick="switchTab(1)" style="font-size:12px;padding:2px 10px;background:var(--primary);color:#fff;border-radius:4px;margin:0 4px">基金探索</button>
-    </div>
+  <div style="font-size:12px;color:var(--muted);line-height:1.8;margin-bottom:4px">
+      💼 如需录入已有持仓获取个性化调仓建议，请前往 <a href="javascript:void(0)" onclick="switchTab(3)" style="color:var(--primary);font-weight:500;text-decoration:underline">我的资产</a>。浏览精选基金请前往 <a href="javascript:void(0)" onclick="switchTab(1)" style="color:var(--primary);font-weight:500;text-decoration:underline">基金探索</a>。
   </div>
 
   <!-- 结果区域（初始隐藏） -->
