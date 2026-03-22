@@ -432,7 +432,8 @@ tr:last-child td{border-bottom:none}
 <div class="tabs">
   <div class="tab active" onclick="switchTab(0)">🎯 智能方案</div>
   <div class="tab" onclick="switchTab(1)">🔍 基金探索</div>
-  <div class="tab" onclick="switchTab(2)">💼 我的资产<span class="tab-badge" id="asset-tab-badge"></span></div>
+  <div class="tab" onclick="switchTab(2)">📈 定投专区</div>
+  <div class="tab" onclick="switchTab(3)">💼 我的资产<span class="tab-badge" id="asset-tab-badge"></span></div>
 </div>
 
 <div class="content">
@@ -532,7 +533,7 @@ tr:last-child td{border-bottom:none}
   <div class="card" style="background:#f6ffed;border:1px solid #b7eb8f">
     <div style="font-size:13px;color:#389e0d;line-height:1.8">
       💼 如需录入已有持仓获取个性化<b>调仓建议</b>，请前往
-      <button class="btn btn-sm" onclick="switchTab(2)" style="font-size:12px;padding:2px 10px;background:#52c41a;color:#fff;border-radius:4px;margin:0 4px">我的资产</button>
+      <button class="btn btn-sm" onclick="switchTab(3)" style="font-size:12px;padding:2px 10px;background:#52c41a;color:#fff;border-radius:4px;margin:0 4px">我的资产</button>
       管理您的持仓。浏览精选基金请前往
       <button class="btn btn-sm" onclick="switchTab(1)" style="font-size:12px;padding:2px 10px;background:var(--primary);color:#fff;border-radius:4px;margin:0 4px">基金探索</button>
     </div>
@@ -690,9 +691,15 @@ tr:last-child td{border-bottom:none}
     </div>
   </div>
 
+</div>
+
+<!-- ===================== 面板2: 定投专区 ===================== -->
+<div class="panel" id="panel2">
+
   <!-- AI定投方案 -->
   <div class="card">
     <div class="card-title"><span class="icon icon-blue">🤖</span>AI智能定投方案推荐</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.6">根据你的预算和风险偏好，从全市场基金中智能匹配最适合定投的组合。定投适合「波动大、长期向上」的资产，市场下跌时自动摊低成本。</div>
     <div class="form-grid" style="margin-bottom:12px">
       <div class="form-item">
         <label>💰 每月定投预算(元)</label>
@@ -741,10 +748,13 @@ tr:last-child td{border-bottom:none}
     <div class="chart-wrap"><canvas id="sipChart"></canvas></div>
     <div id="sip-table-wrap" style="margin-top:14px"></div>
   </div>
+
+  <div class="warning-notice">⚠️ <b>免责声明：</b>定投不等于保本，收益率仅为模拟测算，实际收益受市场波动影响。基金投资有风险，请根据自身风险承受能力决策。</div>
+
 </div>
 
-<!-- ===================== 面板2: 我的资产 ===================== -->
-<div class="panel" id="panel2">
+<!-- ===================== 面板3: 我的资产 ===================== -->
+<div class="panel" id="panel3">
 
   <div class="chip-row" id="asset-subnav" style="position:sticky;top:46px;z-index:50;background:var(--bg);padding:8px 0">
     <button class="chip active" onclick="scrollToSection('eh-section')">持仓</button>
@@ -2707,7 +2717,7 @@ function buildSteps(weights, picks, totalAmt, monthly, riskProfile, horizon){
   if(!allPicks.some(f=>f.cat==='money')){
     steps.push({
       title:'💡 想要定投？',
-      desc:'如果你希望每月定期投入，请切换到「基金探索」Tab，那里有专门的定投推荐和方案生成。'
+      desc:'如果你希望每月定期投入，请切换到「定投专区」Tab，那里有专门的定投推荐和方案生成。'
     });
   }
   return steps;
@@ -2997,7 +3007,7 @@ function _doGenerate(){
   ).join('');
 
   // 12. 定投测算（如有月定投）
-  // 12. 定投测算已移至独立的「基金探索」Tab
+  // 12. 定投测算已移至独立的「定投专区」Tab
 
   // 13. 调仓建议（有已有持仓时）
   const rebalPlan = computeRebalancePlan(selectedPicks, totalAmt);
