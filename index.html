@@ -1775,7 +1775,6 @@ function buildFundCard(f,sortMode){
     <div class="fund-card-nav">${navHtml}</div>
     <div class="fund-card-reason" onclick="this.classList.toggle('expanded')">${escHtml(f.reason)}</div>${dcaHtml}
     <div class="fund-card-foot">
-      <button class="btn btn-ghost btn-sm" onclick="addCuratedToScore('${f.code}')">📋 加入评分</button>
       <button class="btn btn-ghost btn-sm" onclick="window.open('https://fund.eastmoney.com/${f.code}.html','_blank','noopener')">🔗 详情</button>
       <button class="btn btn-sm" style="background:var(--primary);color:#fff;font-weight:600" onclick="window.open('https://fund.eastmoney.com/${f.code}.html','_blank','noopener')">💰 购买</button>
     </div>
@@ -1917,13 +1916,6 @@ function refreshAllNav(autoGenerate, silent){
 
 // 手动触发（重新刷新 + 重新生成）
 function manualRefresh(){ refreshAllNav(true); }
-function addCuratedToScore(code){
-  const f=CURATED_FUNDS.find(x=>x.code===code); if(!f) return;
-  if(funds.some(x=>x.code===code)){showToast('已在评分列表','info');return;}
-  funds.push({name:f.name,code:f.code,type:f.type||f.label,r1:f.r1,r3:f.r3,dd:f.maxDD,maxDD:f.maxDD,maxDD3y:f.maxDD3y||f.maxDD,size:f.size,mgr:f.mgrYears,mgrYears:f.mgrYears,manager:f.manager,stars:f.stars||3});
-  FundDB.set('funds',funds); renderFundList(); switchTab(1);
-  setTimeout(()=>document.getElementById('fund-list').closest('.card').scrollIntoView({behavior:'smooth'}),200);
-}
 
 // ═══════════════ 面板0: 自定义评分 ═══════════════
 // ═══════════════ 专业评分体系（简化多因子模型） ═══════════════
