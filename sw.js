@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fund-helper-v8';
+const CACHE_NAME = 'fund-helper-v9';
 const BASE = self.registration.scope;
 const ASSETS = [
   './',
