@@ -123,12 +123,13 @@ async function fetchFundDetail(code) {
       }
     }
 
-    // 历史净值 → 最大回撤
+    // 历史净值 → 最大回撤（全期 + 近3年）
     const navMatch = body.match(/var\s+Data_netWorthTrend\s*=\s*(\[[\s\S]*?\]);/);
     if (navMatch) {
       try {
         const navData = JSON.parse(navMatch[1]);
         if (navData.length >= 10) {
+          // 全期最大回撤
           let peak = 0, maxDD = 0;
           navData.forEach(p => {
             const v = p.y || 0;
@@ -139,6 +140,22 @@ async function fetchFundDetail(code) {
             }
           });
           result.maxDD = Math.round(maxDD * 10) / 10;
+
+          // 近3年最大回撤（与r3时间窗口匹配）
+          const threeYearsAgo = Date.now() - 3 * 365.25 * 24 * 60 * 60 * 1000;
+          const nav3y = navData.filter(p => p.x >= threeYearsAgo);
+          if (nav3y.length >= 10) {
+            let peak3 = 0, maxDD3 = 0;
+            nav3y.forEach(p => {
+              const v = p.y || 0;
+              if (v > peak3) peak3 = v;
+              if (peak3 > 0) {
+                const dd = (peak3 - v) / peak3 * 100;
+                if (dd > maxDD3) maxDD3 = dd;
+              }
+            });
+            result.maxDD3y = Math.round(maxDD3 * 10) / 10;
+          }
         }
       } catch (e) {}
     }
@@ -206,17 +223,18 @@ async function main() {
 
   for (const catInfo of CATEGORIES) {
     try {
-      console.log(`  拉取 ${catInfo.label} Top 30（过滤C/E类后取前10）…`);
-      const data = await fetchRank(catInfo.ft, 30);
-      const funds = data.datas.map(item => parseFund(item, catInfo)).filter(Boolean).slice(0, 10);
+      console.log(`  拉取 ${catInfo.label} Top 50…`);
+      const data = await fetchRank(catInfo.ft, 50);
+      const allParsed = data.datas.map(item => parseFund(item, catInfo)).filter(Boolean);
 
       // 为每只基金补充详情（maxDD、经理、任期、星级）
-      console.log(`    补充 ${funds.length} 只基金详情…`);
-      for (let i = 0; i < funds.length; i++) {
-        const f = funds[i];
+      console.log(`    补充 ${allParsed.length} 只基金详情…`);
+      for (let i = 0; i < allParsed.length; i++) {
+        const f = allParsed[i];
         const detail = await fetchFundDetail(f.code);
         if (detail) {
           if (detail.maxDD > 0 && detail.maxDD <= 100) f.maxDD = detail.maxDD;
+          if (detail.maxDD3y > 0 && detail.maxDD3y <= 100) f.maxDD3y = detail.maxDD3y;
           if (detail.manager) f.manager = detail.manager;
           if (detail.mgrYears > 0) f.mgrYears = detail.mgrYears;
           if (detail.star >= 1 && detail.star <= 5) f.stars = detail.star;
@@ -225,8 +243,28 @@ async function main() {
           f.risk = inferRiskLevel(f.maxDD || 0, f.cat);
         }
         // 间隔300ms避免请求过快
-        if (i < funds.length - 1) await sleep(300);
+        if (i < allParsed.length - 1) await sleep(300);
       }
+
+      // 多维排序取并集，扩大候选池
+      const withDetail = allParsed.filter(f => f.maxDD > 0);
+      const selectedCodes = new Set();
+
+      // 维度1: 近1年收益 Top 10
+      [...withDetail].sort((a, b) => b.r1 - a.r1).slice(0, 10).forEach(f => selectedCodes.add(f.code));
+
+      // 维度2: Calmar Ratio Top 10 (r1/maxDD3y，时间窗口匹配)
+      [...withDetail].filter(f => (f.maxDD3y || f.maxDD) > 0).sort((a, b) => {
+        const calA = a.r1 / (a.maxDD3y || a.maxDD);
+        const calB = b.r1 / (b.maxDD3y || b.maxDD);
+        return calB - calA;
+      }).slice(0, 10).forEach(f => selectedCodes.add(f.code));
+
+      // 维度3: 近3年收益 Top 10
+      [...withDetail].filter(f => f.r3 > 0).sort((a, b) => b.r3 - a.r3).slice(0, 10).forEach(f => selectedCodes.add(f.code));
+
+      // 合并去重，最终每类别最多保留20只
+      const funds = allParsed.filter(f => selectedCodes.has(f.code)).slice(0, 20);
 
       result.categories[catInfo.ft] = {
         label: catInfo.label,
@@ -236,8 +274,8 @@ async function main() {
         funds
       };
       totalFunds += funds.length;
-      const withDetail = funds.filter(f => f.maxDD > 0).length;
-      console.log(`    ✓ 获取 ${funds.length} 只，${withDetail} 只含完整详情（总市场 ${data.allRecords} 只）`);
+      const withDetailCount = funds.filter(f => f.maxDD > 0).length;
+      console.log(`    ✓ 获取 ${funds.length} 只（多维排序去重），${withDetailCount} 只含完整详情（总市场 ${data.allRecords} 只）`);
     } catch (e) {
       console.error(`    ✗ ${catInfo.label} 失败:`, e.message);
       result.categories[catInfo.ft] = { label: catInfo.label, cat: catInfo.cat, type: catInfo.type, allRecords: 0, funds: [] };
@@ -266,6 +304,7 @@ async function main() {
         if (detail.r1 !== undefined && isFinite(detail.r1)) entry.r1 = detail.r1;
         if (r3 !== null) entry.r3 = r3;
         if (detail.maxDD > 0 && detail.maxDD <= 100) entry.maxDD = detail.maxDD;
+        if (detail.maxDD3y > 0 && detail.maxDD3y <= 100) entry.maxDD3y = detail.maxDD3y;
         if (detail.manager) entry.manager = detail.manager;
         if (detail.mgrYears > 0) entry.mgrYears = detail.mgrYears;
         if (detail.star >= 1 && detail.star <= 5) entry.stars = detail.star;

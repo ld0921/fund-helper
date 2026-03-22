@@ -783,27 +783,27 @@ function fundSearchFilter(prefix, val){
 }
 // ═══════════════ 精选基金数据库 ═══════════════
 const CURATED_FUNDS = [
-  {code:'005827',name:'易方达蓝筹精选混合',type:'混合型',cat:'active',label:'主动权益',manager:'张坤',mgrYears:7,stars:5,risk:'R4',size:680,r1:18.5,r3:-22.3,maxDD:28.5,tags:['消费','医药','白酒'],reason:'张坤代表作，专注消费医药龙头，价值投资体系成熟，历经多轮牛熊考验。持仓集中于白酒、医药等消费核心资产，适合认同价值投资理念的长线投资者。'},
-  {code:'110011',name:'易方达中小盘混合',type:'混合型',cat:'active',label:'主动权益',manager:'张坤',mgrYears:12,stars:5,risk:'R4',size:430,r1:15.2,r3:-18.3,maxDD:26.2,tags:['消费','白酒','医药'],reason:'张坤管理时间最长的产品，穿越多轮牛熊，超长任期积累丰富经验。持仓以消费白酒为主，风格稳定，适合长期持有。'},
-  {code:'161005',name:'富国天惠成长混合A',type:'混合型',cat:'active',label:'主动权益',manager:'朱少醒',mgrYears:20,stars:5,risk:'R4',size:310,r1:16.2,r3:-8.3,maxDD:32.1,tags:['成长','科技','消费'],reason:'朱少醒管理超20年，国内任职时间最长的基金经理之一。选股覆盖成长与消费，回撤控制能力突出，长期配置价值高。'},
-  {code:'163402',name:'兴全趋势投资混合',type:'混合型',cat:'active',label:'主动权益',manager:'谢治宇',mgrYears:8,stars:5,risk:'R4',size:408,r1:10.8,r3:-15.2,maxDD:24.6,tags:['均衡','成长','价值'],reason:'谢治宇经典产品，选股均衡多元，下行风险控制优于同类，适合作为权益基金底仓。'},
-  {code:'003095',name:'中欧医疗健康混合A',type:'混合型',cat:'active',label:'主动权益',manager:'葛兰',mgrYears:8,stars:4,risk:'R4',size:285,r1:5.3,r3:-38.2,maxDD:45.3,tags:['医疗','创新药','器械'],reason:'医疗健康专精，覆盖创新药、CXO、医疗器械。行业集中度高，波动大，仅适合看好医疗长期需求且能承受高波动的投资者。'},
-  {code:'260108',name:'景顺长城新兴成长混合',type:'混合型',cat:'active',label:'主动权益',manager:'刘彦春',mgrYears:12,stars:5,risk:'R4',size:586,r1:12.3,r3:-28.5,maxDD:36.8,tags:['消费','成长','港股'],reason:'刘彦春深度研究消费成长方向，任职超12年。持仓偏重消费与港股，选股集中度高，波动较大，适合看好消费赛道的长线投资者。'},
-  {code:'510300',name:'华泰柏瑞沪深300ETF',type:'指数型',cat:'index',label:'指数基金',manager:'柳军/田中',mgrYears:10,stars:5,risk:'R3',size:3800,r1:14.7,r3:-11.2,maxDD:33.5,tags:['沪深300','宽基','蓝筹'],reason:'国内规模最大的沪深300ETF，跟踪A股核心蓝筹，流动性极佳，费率极低(0.15%)，长期定投首选。'},
-  {code:'515180',name:'华泰柏瑞红利ETF',type:'指数型',cat:'index',label:'指数基金',manager:'柳军',mgrYears:8,stars:5,risk:'R3',size:580,r1:23.5,r3:15.8,maxDD:22.1,tags:['高股息','红利','防御'],reason:'聚焦高股息低估值标的，防御性强，每年分红。市场下跌时相对抗跌，适合追求稳定现金流的投资者。'},
-  {code:'513050',name:'易方达中概互联ETF',type:'指数型',cat:'index',label:'指数基金',manager:'成曦',mgrYears:5,stars:4,risk:'R4',size:430,r1:22.8,r3:-32.5,maxDD:58.2,tags:['互联网','港股','科技'],reason:'覆盖腾讯、阿里、美团等互联网龙头，估值处历史低位，波动较大，适合看好长期复苏。'},
-  {code:'159915',name:'易方达创业板ETF',type:'指数型',cat:'index',label:'指数基金',manager:'林伟斌',mgrYears:7,stars:4,risk:'R4',size:380,r1:-1.9,r3:-38.5,maxDD:52.3,tags:['创业板','科技','成长'],reason:'跟踪创业板指，弹性大，反弹力度强。成长股集中，波动高于宽基指数，仅适合激进型投资者少量配置或逆向布局。'},
-  {code:'510500',name:'南方中证500ETF',type:'指数型',cat:'index',label:'指数基金',manager:'赵恒',mgrYears:8,stars:4,risk:'R4',size:560,r1:8.3,r3:-22.8,maxDD:42.1,tags:['中证500','中盘','成长'],reason:'覆盖500只中等市值股票，与沪深300互补，成长性更强，适合搭配宽基分散配置。'},
-  {code:'159919',name:'嘉实沪深300ETF',type:'指数型',cat:'index',label:'指数基金',manager:'张帆',mgrYears:9,stars:4,risk:'R3',size:1200,r1:14.5,r3:-11.5,maxDD:33.8,tags:['沪深300','宽基','低费率'],reason:'老牌沪深300ETF，费率0.15%，跟踪精准，可与510300搭配增加流动性，适合长期定投。'},
-  {code:'110017',name:'易方达增强回报债券A',type:'债券型',cat:'bond',label:'债券基金',manager:'张清华',mgrYears:12,stars:5,risk:'R2',size:182,r1:7.8,r3:18.5,maxDD:4.2,tags:['信用债','增强','稳健'],reason:'张清华管理，长期业绩位居债基前列，信用债与利率债均衡，适度增强收益，风险控制优秀。'},
-  {code:'000171',name:'华夏纯债债券A',type:'债券型',cat:'bond',label:'债券基金',manager:'李俊',mgrYears:8,stars:4,risk:'R2',size:105,r1:5.2,r3:14.3,maxDD:1.8,tags:['纯债','稳定','无权益'],reason:'完全不含权益资产，纯债配置，回撤极小，适合短期理财或稳健资金债券仓，替代银行理财。'},
-  {code:'070009',name:'嘉实超短债债券A',type:'债券型',cat:'bond',label:'债券基金',manager:'刘斌',mgrYears:6,stars:4,risk:'R1',size:225,r1:3.8,r3:11.2,maxDD:0.5,tags:['超短债','流动性','保守'],reason:'持仓期限极短，流动性优异，收益高于货币基金，风险接近零，适合短期过渡资金。'},
-  {code:'000198',name:'天弘余额宝货币A',type:'货币型',cat:'money',label:'货币基金',manager:'王登峰',mgrYears:10,stars:5,risk:'R1',size:7200,r1:2.1,r3:7.5,maxDD:0.0,tags:['余额宝','支付宝','随存随取'],reason:'支付宝默认货币基金，全球规模最大，T+0取用，历史从未亏损，适合闲置资金管理。'},
-  {code:'003003',name:'工银瑞信货币A',type:'货币型',cat:'money',label:'货币基金',manager:'曾颖',mgrYears:7,stars:4,risk:'R1',size:850,r1:2.3,r3:7.8,maxDD:0.0,tags:['大行品牌','稳健','货币'],reason:'工商银行旗下货币基金，银行系品牌背书，七日年化略高于余额宝，适合资金备用仓。'},
-  {code:'161125',name:'易方达标普500指数(QDII)A',type:'QDII',cat:'qdii',label:'QDII海外',manager:'陈苏桥',mgrYears:8,stars:5,risk:'R4',size:125,r1:27.5,r3:52.3,maxDD:24.8,tags:['美股','标普500','全球配置'],reason:'跟踪标普500，投资苹果微软英伟达等美股核心资产，历史年化约10%+，全球配置首选。'},
-  {code:'270042',name:'广发纳斯达克100(QDII)A',type:'QDII',cat:'qdii',label:'QDII海外',manager:'李耀柱',mgrYears:7,stars:5,risk:'R5',size:95,r1:31.2,r3:65.8,maxDD:35.2,tags:['美股','纳斯达克','科技'],reason:'跟踪纳斯达克100，高度集中科技巨头，弹性极大，长期表现优异，适合激进型配置。'},
-  {code:'040046',name:'华安标普500指数(QDII)A',type:'QDII',cat:'qdii',label:'QDII海外',manager:'许之彦',mgrYears:10,stars:4,risk:'R4',size:88,r1:26.8,r3:50.5,maxDD:25.1,tags:['美股','标普500','稳健'],reason:'老牌标普500QDII，管理经验丰富，费率合理，适合想稳健配置美股的投资者。'},
-  {code:'006479',name:'博时标普500ETF联接(QDII)A',type:'QDII',cat:'qdii',label:'QDII海外',manager:'赵云阳',mgrYears:5,stars:4,risk:'R4',size:82,r1:27.1,r3:51.2,maxDD:24.6,tags:['美股','标普500','联接'],reason:'博时旗下标普500产品，可支付宝直接申购，跟踪误差小，适合小额定投分散市场风险。'},
+  {code:'005827',name:'易方达蓝筹精选混合',type:'混合型',cat:'active',label:'主动权益',manager:'张坤',mgrYears:7,stars:5,risk:'R4',size:680,r1:18.5,r3:-22.3,maxDD:28.5,fee:1.70,vol:0,tags:['消费','医药','白酒'],reason:'张坤代表作，专注消费医药龙头，价值投资体系成熟，历经多轮牛熊考验。持仓集中于白酒、医药等消费核心资产，适合认同价值投资理念的长线投资者。'},
+  {code:'110011',name:'易方达中小盘混合',type:'混合型',cat:'active',label:'主动权益',manager:'张坤',mgrYears:12,stars:5,risk:'R4',size:430,r1:15.2,r3:-18.3,maxDD:26.2,fee:1.70,vol:0,tags:['消费','白酒','医药'],reason:'张坤管理时间最长的产品，穿越多轮牛熊，超长任期积累丰富经验。持仓以消费白酒为主，风格稳定，适合长期持有。'},
+  {code:'161005',name:'富国天惠成长混合A',type:'混合型',cat:'active',label:'主动权益',manager:'朱少醒',mgrYears:20,stars:5,risk:'R4',size:310,r1:16.2,r3:-8.3,maxDD:32.1,fee:1.70,vol:0,tags:['成长','科技','消费'],reason:'朱少醒管理超20年，国内任职时间最长的基金经理之一。选股覆盖成长与消费，回撤控制能力突出，长期配置价值高。'},
+  {code:'163402',name:'兴全趋势投资混合',type:'混合型',cat:'active',label:'主动权益',manager:'谢治宇',mgrYears:8,stars:5,risk:'R4',size:408,r1:10.8,r3:-15.2,maxDD:24.6,fee:1.70,vol:0,tags:['均衡','成长','价值'],reason:'谢治宇经典产品，选股均衡多元，下行风险控制优于同类，适合作为权益基金底仓。'},
+  {code:'003095',name:'中欧医疗健康混合A',type:'混合型',cat:'active',label:'主动权益',manager:'葛兰',mgrYears:8,stars:4,risk:'R4',size:285,r1:5.3,r3:-38.2,maxDD:45.3,fee:1.70,vol:0,tags:['医疗','创新药','器械'],reason:'医疗健康专精，覆盖创新药、CXO、医疗器械。行业集中度高，波动大，仅适合看好医疗长期需求且能承受高波动的投资者。'},
+  {code:'260108',name:'景顺长城新兴成长混合',type:'混合型',cat:'active',label:'主动权益',manager:'刘彦春',mgrYears:12,stars:5,risk:'R4',size:586,r1:12.3,r3:-28.5,maxDD:36.8,fee:1.70,vol:0,tags:['消费','成长','港股'],reason:'刘彦春深度研究消费成长方向，任职超12年。持仓偏重消费与港股，选股集中度高，波动较大，适合看好消费赛道的长线投资者。'},
+  {code:'510300',name:'华泰柏瑞沪深300ETF',type:'指数型',cat:'index',label:'指数基金',manager:'柳军/田中',mgrYears:10,stars:5,risk:'R3',size:3800,r1:14.7,r3:-11.2,maxDD:33.5,fee:0.15,vol:0,tags:['沪深300','宽基','蓝筹'],reason:'国内规模最大的沪深300ETF，跟踪A股核心蓝筹，流动性极佳，费率极低(0.15%)，长期定投首选。'},
+  {code:'515180',name:'华泰柏瑞红利ETF',type:'指数型',cat:'index',label:'指数基金',manager:'柳军',mgrYears:8,stars:5,risk:'R3',size:580,r1:23.5,r3:15.8,maxDD:22.1,fee:0.15,vol:0,tags:['高股息','红利','防御'],reason:'聚焦高股息低估值标的，防御性强，每年分红。市场下跌时相对抗跌，适合追求稳定现金流的投资者。'},
+  {code:'513050',name:'易方达中概互联ETF',type:'指数型',cat:'index',label:'指数基金',manager:'成曦',mgrYears:5,stars:4,risk:'R4',size:430,r1:22.8,r3:-32.5,maxDD:58.2,fee:0.20,vol:0,tags:['互联网','港股','科技'],reason:'覆盖腾讯、阿里、美团等互联网龙头，估值处历史低位，波动较大，适合看好长期复苏。'},
+  {code:'159915',name:'易方达创业板ETF',type:'指数型',cat:'index',label:'指数基金',manager:'林伟斌',mgrYears:7,stars:4,risk:'R4',size:380,r1:-1.9,r3:-38.5,maxDD:52.3,fee:0.15,vol:0,tags:['创业板','科技','成长'],reason:'跟踪创业板指，弹性大，反弹力度强。成长股集中，波动高于宽基指数，仅适合激进型投资者少量配置或逆向布局。'},
+  {code:'510500',name:'南方中证500ETF',type:'指数型',cat:'index',label:'指数基金',manager:'赵恒',mgrYears:8,stars:4,risk:'R4',size:560,r1:8.3,r3:-22.8,maxDD:42.1,fee:0.15,vol:0,tags:['中证500','中盘','成长'],reason:'覆盖500只中等市值股票，与沪深300互补，成长性更强，适合搭配宽基分散配置。'},
+  {code:'159919',name:'嘉实沪深300ETF',type:'指数型',cat:'index',label:'指数基金',manager:'张帆',mgrYears:9,stars:4,risk:'R3',size:1200,r1:14.5,r3:-11.5,maxDD:33.8,fee:0.15,vol:0,tags:['沪深300','宽基','低费率'],reason:'老牌沪深300ETF，费率0.15%，跟踪精准，可与510300搭配增加流动性，适合长期定投。'},
+  {code:'110017',name:'易方达增强回报债券A',type:'债券型',cat:'bond',label:'债券基金',manager:'张清华',mgrYears:12,stars:5,risk:'R2',size:182,r1:7.8,r3:18.5,maxDD:4.2,fee:0.70,vol:0,tags:['信用债','增强','稳健'],reason:'张清华管理，长期业绩位居债基前列，信用债与利率债均衡，适度增强收益，风险控制优秀。'},
+  {code:'000171',name:'华夏纯债债券A',type:'债券型',cat:'bond',label:'债券基金',manager:'李俊',mgrYears:8,stars:4,risk:'R2',size:105,r1:5.2,r3:14.3,maxDD:1.8,fee:0.50,vol:0,tags:['纯债','稳定','无权益'],reason:'完全不含权益资产，纯债配置，回撤极小，适合短期理财或稳健资金债券仓，替代银行理财。'},
+  {code:'070009',name:'嘉实超短债债券A',type:'债券型',cat:'bond',label:'债券基金',manager:'刘斌',mgrYears:6,stars:4,risk:'R1',size:225,r1:3.8,r3:11.2,maxDD:0.5,fee:0.30,vol:0,tags:['超短债','流动性','保守'],reason:'持仓期限极短，流动性优异，收益高于货币基金，风险接近零，适合短期过渡资金。'},
+  {code:'000198',name:'天弘余额宝货币A',type:'货币型',cat:'money',label:'货币基金',manager:'王登峰',mgrYears:10,stars:5,risk:'R1',size:7200,r1:2.1,r3:7.5,maxDD:0.0,fee:0.05,vol:0,tags:['余额宝','支付宝','随存随取'],reason:'支付宝默认货币基金，全球规模最大，T+0取用，历史从未亏损，适合闲置资金管理。'},
+  {code:'003003',name:'工银瑞信货币A',type:'货币型',cat:'money',label:'货币基金',manager:'曾颖',mgrYears:7,stars:4,risk:'R1',size:850,r1:2.3,r3:7.8,maxDD:0.0,fee:0.05,vol:0,tags:['大行品牌','稳健','货币'],reason:'工商银行旗下货币基金，银行系品牌背书，七日年化略高于余额宝，适合资金备用仓。'},
+  {code:'161125',name:'易方达标普500指数(QDII)A',type:'QDII',cat:'qdii',label:'QDII海外',manager:'陈苏桥',mgrYears:8,stars:5,risk:'R4',size:125,r1:27.5,r3:52.3,maxDD:24.8,fee:0.80,vol:0,tags:['美股','标普500','全球配置'],reason:'跟踪标普500，投资苹果微软英伟达等美股核心资产，历史年化约10%+，全球配置首选。'},
+  {code:'270042',name:'广发纳斯达克100(QDII)A',type:'QDII',cat:'qdii',label:'QDII海外',manager:'李耀柱',mgrYears:7,stars:5,risk:'R5',size:95,r1:31.2,r3:65.8,maxDD:35.2,fee:0.80,vol:0,tags:['美股','纳斯达克','科技'],reason:'跟踪纳斯达克100，高度集中科技巨头，弹性极大，长期表现优异，适合激进型配置。'},
+  {code:'040046',name:'华安标普500指数(QDII)A',type:'QDII',cat:'qdii',label:'QDII海外',manager:'许之彦',mgrYears:10,stars:4,risk:'R4',size:88,r1:26.8,r3:50.5,maxDD:25.1,fee:0.80,vol:0,tags:['美股','标普500','稳健'],reason:'老牌标普500QDII，管理经验丰富，费率合理，适合想稳健配置美股的投资者。'},
+  {code:'006479',name:'博时标普500ETF联接(QDII)A',type:'QDII',cat:'qdii',label:'QDII海外',manager:'赵云阳',mgrYears:5,stars:4,risk:'R4',size:82,r1:27.1,r3:51.2,maxDD:24.6,fee:0.80,vol:0,tags:['美股','标普500','联接'],reason:'博时旗下标普500产品，可支付宝直接申购，跟踪误差小，适合小额定投分散市场风险。'},
 ];
 
 // ═══════════════ 基金元数据增强（风格/行业/流动性风险） ═══════════════
@@ -832,6 +832,21 @@ const FUND_META = {
 };
 const STYLE_LABELS = {large_value:'大盘价值',large_blend:'大盘均衡',large_growth:'大盘成长',mid_value:'中盘价值',mid_blend:'中盘均衡',mid_growth:'中盘成长',bond_credit:'信用债',bond_rate:'利率债',bond_short:'短债',money:'货币'};
 function getMeta(code){ return FUND_META[code]||{}; }
+function getDefaultFee(cat){ return {active:1.50,index:0.20,bond:0.50,money:0.05,qdii:0.80}[cat]||0.80; }
+
+// ═══════════════ 波动率估算 + 相关性矩阵 ═══════════════
+const DD_TO_VOL = { active:2.8, index:3.0, bond:1.8, money:1.2, qdii:2.5 };
+function estimateVol(f){
+  if(f.vol > 0) return f.vol;
+  return (f.maxDD||0) / (DD_TO_VOL[f.cat]||2.5);
+}
+const CORR_MATRIX = {
+  active: { active:1.0, index:0.92, bond:-0.15, money:0.0, qdii:0.55 },
+  index:  { active:0.92, index:1.0, bond:-0.10, money:0.0, qdii:0.50 },
+  bond:   { active:-0.15, index:-0.10, bond:1.0, money:0.30, qdii:-0.05 },
+  money:  { active:0.0, index:0.0, bond:0.30, money:1.0, qdii:0.0 },
+  qdii:   { active:0.55, index:0.50, bond:-0.05, money:0.0, qdii:1.0 },
+};
 
 // ═══════════════ 风格暴露分析 + 流动性风险检查 ═══════════════
 function analyzeStyleExposure(allPicks){
@@ -1029,8 +1044,14 @@ async function fetchFundDetail(code){
       const sizeMatch = (mgr.fundSize || '').match(/([\d.]+)亿/);
       if(sizeMatch) result.mgrFundSize = parseFloat(sizeMatch[1]);
     }
-    // 最大回撤（从完整历史净值计算）
-    if(window.Data_netWorthTrend) result.maxDD = calcMaxDrawdown(window.Data_netWorthTrend);
+    // 最大回撤（从完整历史净值计算：全期 + 近3年）
+    if(window.Data_netWorthTrend){
+      result.maxDD = calcMaxDrawdown(window.Data_netWorthTrend);
+      // 近3年最大回撤（与r3时间窗口匹配）
+      const threeYearsAgo = Date.now() - 3 * 365.25 * 24 * 60 * 60 * 1000;
+      const nav3y = window.Data_netWorthTrend.filter(p => p.x >= threeYearsAgo);
+      if(nav3y.length >= 10) result.maxDD3y = calcMaxDrawdown(nav3y);
+    }
     // 最新规模（取最近一期净资产）
     if(window.Data_fluctuationScale && window.Data_fluctuationScale.series){
       const series = window.Data_fluctuationScale.series;
@@ -1185,6 +1206,8 @@ function applyFundDetails(allDetails){
     if(d.r3 !== undefined && isFinite(d.r3) && d.r3 > -99 && d.r3 < 1000) f.r3 = Math.round(d.r3 * 100) / 100;
     // 最大回撤校验：0~100%
     if(d.maxDD !== undefined && isFinite(d.maxDD) && d.maxDD > 0 && d.maxDD <= 100) f.maxDD = d.maxDD;
+    // 近3年最大回撤
+    if(d.maxDD3y !== undefined && isFinite(d.maxDD3y) && d.maxDD3y > 0 && d.maxDD3y <= 100) f.maxDD3y = d.maxDD3y;
     // 规模校验：>0（亿元）
     if(d.size !== undefined && isFinite(d.size) && d.size > 0) f.size = Math.round(d.size * 100) / 100;
     if(d.manager && typeof d.manager === 'string') f.manager = d.manager;
@@ -1273,6 +1296,7 @@ async function fetchMarketRanks(){
           code: f.code, name: f.name, type: f.type, cat: f.cat, label: f.label,
           r1: f.r1, r3: f.r3, size: f.size,
           maxDD: f.maxDD || 0,
+          maxDD3y: f.maxDD3y || 0,
           manager: f.manager || '',
           mgrYears: f.mgrYears || 0,
           stars: f.stars || 3,
@@ -1628,11 +1652,17 @@ const RISK_FREE = 2.0;
 
 function scoreF(f){
   const r1=+f.r1||0, r3=+f.r3||0, dd=+(f.dd||f.maxDD)||0, sz=+f.size||0, mg=+(f.mgr||f.mgrYears)||0;
+  const dd3y=+(f.maxDD3y)||dd; // 近3年回撤，无则回退全期
 
   // 1. Calmar Ratio（唯一风险调整指标，权重 40%）
-  //    = (年化收益 - 无风险利率) / 最大回撤
-  //    优势：直接衡量「每承受1%回撤换来多少超额回报」
-  const calmar = dd > 0 ? (r1 - RISK_FREE) / dd : 0;
+  //    修正：使用匹配时间窗口的 Calmar，避免 r1 vs 全期maxDD 的错配
+  //    短期 Calmar = r1 / maxDD3y（都是近几年的窗口）
+  //    长期 Calmar = r3年化 / maxDD（长期视角）
+  //    加权：短期60% + 长期40%，侧重近期表现但兼顾长期
+  const r3Ann = r3 > -100 ? (Math.pow(1 + r3/100, 1/3) - 1) * 100 : 0; // r3累计转年化
+  const calmarShort = dd3y > 0 ? (r1 - RISK_FREE) / dd3y : 0;
+  const calmarLong  = dd > 0 ? (r3Ann - RISK_FREE) / dd : 0;
+  const calmar = calmarShort * 0.6 + calmarLong * 0.4;
   const calmarScore = Math.min(40, Math.max(0, calmar * 20)); // 0-40分
 
   // 2. 收益一致性（权重 25%）
@@ -1908,8 +1938,12 @@ function analyzeCategoryPerf(){
     const scores = funds.map(f=>{
       const nav = navCache[f.code];
       const todayChg = nav ? parseFloat(nav.gszzl)||0 : 0;
-      // Calmar Ratio（唯一风险调整指标）
-      const calmar = f.maxDD > 0 ? (f.r1 - RISK_FREE) / f.maxDD : 0;
+      // Calmar Ratio（时间窗口匹配：短期r1/maxDD3y + 长期r3Ann/maxDD）
+      const dd3y = f.maxDD3y || f.maxDD;
+      const r3Ann = f.r3 > -100 ? (Math.pow(1 + f.r3/100, 1/3) - 1) * 100 : 0;
+      const calmarShort = dd3y > 0 ? (f.r1 - RISK_FREE) / dd3y : 0;
+      const calmarLong  = f.maxDD > 0 ? (r3Ann - RISK_FREE) / f.maxDD : 0;
+      const calmar = calmarShort * 0.6 + calmarLong * 0.4;
       // 趋势一致性：短期(当日)、中期(1年)、长期(3年)
       const shortDir = todayChg > 0 ? 1 : todayChg < 0 ? -1 : 0;
       const midDir = f.r1 > 0 ? 1 : f.r1 < 0 ? -1 : 0;
@@ -1926,7 +1960,7 @@ function analyzeCategoryPerf(){
     const avgChg = scores.reduce((s,f)=>s+f.todayChg,0)/scores.length;
     const avgR3 = funds.reduce((s,f)=>s+f.r3,0)/funds.length;
     const stdR1 = Math.sqrt(funds.reduce((s,f)=>s+(f.r1-avgR1)**2,0)/funds.length)||1;
-    const avgCalmar = avgDD > 0 ? (avgR1 - RISK_FREE) / avgDD : 0;
+    const avgCalmar = scores.reduce((s,f)=>s+f.calmar,0)/scores.length;
     const catTrend = (avgChg > 0 ? 1 : avgChg < 0 ? -1 : 0) + (avgR1 > 0 ? 1 : -1) + (avgR3 > 0 ? 1 : -1);
     const avgStability = funds.reduce((s,f)=>s+Math.min(f.mgrYears,15)/15*10,0)/funds.length;
     const catScore = avgCalmar * 10 * 0.5 + catTrend * 4 * 0.25 + avgStability * 0.15 + avgChg * 5 * 0.1;
@@ -2323,7 +2357,7 @@ function _doGenerate(){
       <div style="padding:6px 10px;background:#e6f7ff;border-radius:6px;font-size:11px;color:#0050b3;margin-bottom:10px">📡 基金收益率、最大回撤、规模、经理任期等核心数据由天天基金网API实时拉取（每24小时自动更新），确保评分和方案基于最新市场数据。</div>
       <b>一、基金评分体系（简化多因子）</b><br>
       去除冗余指标，保留4个正交维度：<br>
-      · <b>Calmar Ratio</b>（40%权重）：(年化收益-无风险利率2%)/历史最大跌幅，唯一风险调整指标，避免Sortino/InfoRatio的高度共线性<br>
+      · <b>Calmar Ratio</b>（40%权重）：时间窗口匹配的混合Calmar——短期Calmar=(近1年收益-2%)/近3年最大回撤(60%)，长期Calmar=(近3年年化收益-2%)/全期最大回撤(40%)，避免收益与回撤时间窗口错配<br>
       · <b>收益一致性</b>（25%权重）：1年/3年趋势方向是否一致 + 3年收益强度，衡量收益可持续性<br>
       · <b>任期稳定性</b>（25%权重）：客观指标——基金经理连续任期年限，6档评分：<1年=3分(刚更换，高风险)，1-2年=8分(磨合期)，2-3年=13分(初步稳定)，3-5年=17分(稳定)，5-10年=21分(成熟)，>10年=25分(超稳定)。替代主观的星级评定<br>
       · <b>规模适配性</b>（10%权重）：50-500亿为最优区间（满分），<2亿有清盘风险（2分），>1000亿调仓困难（4分）<br><br>
@@ -2338,7 +2372,7 @@ function _doGenerate(){
       <b>三、资产配置方法（Risk Parity + 动量约束 + 动态倾斜）</b><br>
       执行链路：风险平价基础 → 风险偏好倾斜 → 市场动量约束 → 行情动量微调 → 期限上限 → 短期额外调整<br>
       · 基础权重：各类别历史最大跌幅均值的倒数（跌幅越小→权重越高），实现等风险贡献（Risk Parity）<br>
-      · 动量微调中的<b>类别排名</b>使用独立权重：Calmar Ratio 50% + 三维趋势一致性(短/中/长) 25% + 经理任期稳定性 15% + 实时动量 10%，与个基评分权重不同，侧重捕捉类别间相对强弱<br>
+      · 动量微调中的<b>类别排名</b>使用独立权重：混合Calmar Ratio(短期60%+长期40%) 50% + 三维趋势一致性(短/中/长) 25% + 经理任期稳定性 15% + 实时动量 10%，与个基评分权重不同，侧重捕捉类别间相对强弱<br>
       · 期限约束：1年≤30%，1-3年≤60%，3-5年≤75%，5年以上≤85%<br>
       · 短期额外调整：投资期限≤1年时，主动权益再减配5%转入债券，进一步降低短期波动暴露<br>
       当前权重推导：<br>${weightEntries}<br><br>
