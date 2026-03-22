@@ -385,11 +385,20 @@ tr:last-child td{border-bottom:none}
 /* 保存微提示 */
 .save-tick{display:inline-block;font-size:11px;color:var(--success);opacity:0;transition:opacity .3s;margin-left:6px}
 .save-tick.show{opacity:1}
+/* 持仓变化提示条 */
+.stale-hint{background:#fffbe6;border:1px solid #ffe58f;border-radius:8px;padding:10px 14px;font-size:13px;color:#ad6800;display:none;margin-bottom:14px;line-height:1.6}
+.stale-hint.show{display:block}
+/* 全局错误横幅 */
+.global-error{position:fixed;top:0;left:0;right:0;background:#ff4d4f;color:#fff;padding:10px 16px;font-size:13px;text-align:center;z-index:9997;transform:translateY(-100%);transition:transform .3s}
+.global-error.show{transform:translateY(0)}
+/* 手机端scroll-padding修正 */
+@media(max-width:600px){html{scroll-padding-top:100px}}
 </style>
 </head>
 <body>
 
 <div class="toast-container" id="toast-container"></div>
+<div class="global-error" id="global-error"></div>
 <div class="modal-mask" id="modal-mask" style="display:none" onclick="if(event.target===this)closeModal()">
   <div class="modal-box">
     <div class="modal-title" id="modal-title"></div>
@@ -436,7 +445,7 @@ tr:last-child td{border-bottom:none}
   <div class="tab active" onclick="switchTab(0)">🎯 智能方案</div>
   <div class="tab" onclick="switchTab(1)">🔍 基金探索</div>
   <div class="tab" onclick="switchTab(2)">📈 定投专区</div>
-  <div class="tab" onclick="switchTab(3)">💼 我的资产<span class="tab-badge" id="asset-tab-badge"></span></div>
+  <div class="tab" onclick="switchTab(3);var b=document.getElementById('signal-banner');if(b&&b.style.display!=='none'){b.style.display='';window.scrollTo({top:0,behavior:'smooth'});}">💼 我的资产<span class="tab-badge" id="asset-tab-badge"></span></div>
 </div>
 
 <div class="content">
@@ -456,9 +465,12 @@ tr:last-child td{border-bottom:none}
     <div style="font-size:16px;font-weight:700;color:#0958d9;margin-bottom:8px">👋 欢迎使用基金理财助手</div>
     <div style="font-size:13px;color:#595959;line-height:1.8;margin-bottom:12px">
       只需3步即可获得专属投资方案：<br>
-      <b>① 设置你的情况</b>（下方填写金额和风险偏好）→ <b>② 查看AI推荐方案</b> → <b>③ 按步骤执行</b>
+      <b>① 设置你的情况</b>（下方填写金额和风险偏好）→ <b>② 点击生成方案</b>（自动拉取最新数据）→ <b>③ 按步骤执行</b>
     </div>
-    <div style="font-size:12px;color:var(--muted)">💡 方案会自动根据实时行情生成，每5分钟更新一次</div>
+    <div style="font-size:12px;color:var(--muted);line-height:1.6">💡 如已有持仓，请先去
+      <button class="btn btn-sm" onclick="switchTab(3);this.closest('.card').style.display='none'" style="font-size:11px;padding:1px 8px;background:var(--primary);color:#fff;border-radius:4px">我的资产</button>
+      录入持仓，方案将自动融合您的已有基金。
+    </div>
   </div>
 
   <!-- 我的投资档案 -->
@@ -604,6 +616,12 @@ tr:last-child td{border-bottom:none}
   </div>
 
   <!-- 结果区域（初始隐藏） -->
+  <!-- 持仓变化提示 -->
+  <div class="stale-hint" id="holdings-changed-hint">
+    ⚠️ 您的持仓数据已变化，当前方案可能不再准确。
+    <button class="btn btn-primary btn-sm" onclick="generateSmartPortfolio();this.parentElement.classList.remove('show')" style="margin-left:8px">🔄 重新生成方案</button>
+  </div>
+
   <div id="portfolio-result" style="display:none">
 
     <!-- 生成中加载卡片（内联进度） -->
@@ -830,8 +848,8 @@ tr:last-child td{border-bottom:none}
   <!-- 已有持仓输入（从Panel0移入，用于调仓建议） -->
   <div class="card" id="eh-section">
     <div class="card-title">
-      <span class="icon icon-red">💼</span>我的已有持仓
-      <span class="card-desc" style="font-size:12px;color:var(--muted);font-weight:400;margin-left:4px">汇总您的持仓信息，用于生成调仓建议。可从下方「持仓记录」或「定投计划」一键导入，无需重复录入</span>
+      <span class="icon icon-red">💼</span>我的持仓总览
+      <span class="card-desc" style="font-size:12px;color:var(--muted);font-weight:400;margin-left:4px">汇总各账户持仓，用于智能方案的调仓建议和健康诊断</span>
       <span class="card-actions" style="margin-left:auto">
         <button class="btn btn-ghost btn-sm" onclick="importFromHoldings()">从持仓记录导入</button>
         <button class="btn btn-ghost btn-sm" onclick="importFromDcaPlans()">从定投计划导入</button>
@@ -918,7 +936,7 @@ tr:last-child td{border-bottom:none}
   <!-- 持仓健康诊断（动态渲染） -->
   <div id="health-monitor-wrap"></div>
   <div class="card" id="holdings-section">
-    <div class="card-title"><span class="icon icon-red">💼</span>添加持仓记录</div>
+    <div class="card-title"><span class="icon icon-red">📊</span>持仓记录明细 <span style="font-size:12px;color:var(--muted);font-weight:400">— 逐笔记录买卖交易，跟踪每笔盈亏</span></div>
     <div class="form-grid">
       <div class="form-item"><label>基金名称</label><input id="h-name" placeholder="如：易方达蓝筹精选"></div>
       <div class="form-item"><label>基金代码</label><input id="h-code" placeholder="如：005827"></div>
@@ -1007,6 +1025,23 @@ function copyCode(code, el){
     document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();
     showToast(`已复制 ${code}`,'success',1500);
   }
+}
+
+// ═══════════════ 持仓变化标记 ═══════════════
+let _portfolioGenerated = false; // 方案是否已生成过
+function markHoldingsChanged(){
+  if(!_portfolioGenerated) return; // 还没生成过方案就不需要提示
+  const hint = document.getElementById('holdings-changed-hint');
+  if(hint) hint.classList.add('show');
+}
+
+// ═══════════════ 全局错误提示 ═══════════════
+function showGlobalError(msg, duration){
+  const el = document.getElementById('global-error');
+  if(!el) return;
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'), duration||8000);
 }
 
 // ═══════════════ 回到顶部 ═══════════════
@@ -2256,7 +2291,7 @@ function addExistingHolding(){
   if(hasErr){showToast(searchEmpty?'请先搜索并选择一只基金':'请填写持仓市值','error');return;}
   if(existingHoldings.some(h=>h.code===code)){showToast('该基金已存在，请修改现有记录','info');return;}
   existingHoldings.push({code,name,value,cost});
-  FundDB.set('existingHoldings',existingHoldings);
+  FundDB.set('existingHoldings',existingHoldings); markHoldingsChanged();
   flashSaved('eh-section');
   renderExistingHoldings(); runHealthMonitor();
   clearFundMatch('eh');
@@ -2266,13 +2301,13 @@ function removeExistingHolding(i){
   const h=existingHoldings[i];
   if(h && !confirm(`确定删除「${h.name||h.code}」？`)) return;
   existingHoldings.splice(i,1);
-  FundDB.set('existingHoldings',existingHoldings);
+  FundDB.set('existingHoldings',existingHoldings); markHoldingsChanged();
   renderExistingHoldings(); runHealthMonitor();
 }
 function clearExistingHoldings(){
   if(!existingHoldings.length||confirm('确定清空全部已有持仓？')){
     existingHoldings=[];
-    FundDB.set('existingHoldings',existingHoldings);
+    FundDB.set('existingHoldings',existingHoldings); markHoldingsChanged();
     renderExistingHoldings(); runHealthMonitor();
   }
 }
@@ -2285,7 +2320,7 @@ function importFromHoldings(){
       added++;
     }
   });
-  FundDB.set('existingHoldings',existingHoldings);
+  FundDB.set('existingHoldings',existingHoldings); markHoldingsChanged();
   renderExistingHoldings(); runHealthMonitor();
   if(added>0) showToast(`已导入 ${added} 条持仓记录`,'success');
   else showToast('所有持仓已存在，无需重复导入','info');
@@ -2857,6 +2892,10 @@ function generateSmartPortfolio(){
 
 function _finishGenerate(btn){
   try { _doGenerate(); } catch(e){ console.error(e); }
+  _portfolioGenerated = true;
+  // 隐藏持仓变化提示（刚刚已重新生成）
+  const hint = document.getElementById('holdings-changed-hint');
+  if(hint) hint.classList.remove('show');
   btn.disabled=false;
   btn.innerHTML='🤖 重新生成方案';
   const cached=Object.keys(navCache).length;
@@ -3639,6 +3678,8 @@ function _doGenerateDca(){
   const riskNames={conservative:'保守型',moderate:'稳健型',balanced:'平衡型',aggressive:'进取型'};
   // 存入全局以供一键导入按钮使用（避免onclick内联JSON）
   window._lastDcaAiPicks = withAmt.map(f=>({code:f.code,name:f.name,monthly:f.monthly,type:f.type}));
+  // 持久化到IndexedDB，防止刷新后丢失
+  FundDB.set('lastDcaAiPicks', window._lastDcaAiPicks);
   const resultEl = document.getElementById('dca-ai-result');
   resultEl.style.display='block';
   resultEl.innerHTML=`
@@ -3680,20 +3721,27 @@ function _doGenerateDca(){
 }
 
 function importDcaAiToPlan(planArr){
-  const arr = planArr || window._lastDcaAiPicks || [];
-  if(!arr.length){ showToast('请先生成AI定投方案','error'); return; }
-  let added = 0;
-  arr.forEach(p=>{
-    if(!dcaPlans.some(d=>d.code===p.code)){
-      const today = new Date().toISOString().split('T')[0];
-      dcaPlans.push({code:p.code, name:p.name, monthly:p.monthly, start:today, curval:0, type:p.type});
-      added++;
-    }
-  });
-  FundDB.set('dcaPlans', dcaPlans);
-  renderDcaPlans();
-  if(added>0){ showToast(`已添加 ${added} 只基金到您的定投计划`,'success'); }
-  else { showToast('所有基金已在定投计划中','info'); }
+  const doImport = (arr) => {
+    if(!arr||!arr.length){ showToast('请先生成AI定投方案','error'); return; }
+    let added = 0;
+    arr.forEach(p=>{
+      if(!dcaPlans.some(d=>d.code===p.code)){
+        const today = new Date().toISOString().split('T')[0];
+        dcaPlans.push({code:p.code, name:p.name, monthly:p.monthly, start:today, curval:0, type:p.type});
+        added++;
+      }
+    });
+    FundDB.set('dcaPlans', dcaPlans);
+    renderDcaPlans();
+    if(added>0){ showToast(`已添加 ${added} 只基金到您的定投计划`,'success'); }
+    else { showToast('所有基金已在定投计划中','info'); }
+  };
+  // 优先用参数/内存，其次从IndexedDB加载
+  const arr = planArr || window._lastDcaAiPicks;
+  if(arr && arr.length){ doImport(arr); return; }
+  FundDB.get('lastDcaAiPicks').then(saved=>{
+    doImport(saved||[]);
+  }).catch(()=>{ showToast('请先生成AI定投方案','error'); });
 }
 
 function dpAutoFill(code){
@@ -3868,7 +3916,7 @@ function importFromDcaPlans(){
       added++;
     }
   });
-  FundDB.set('existingHoldings',existingHoldings);
+  FundDB.set('existingHoldings',existingHoldings); markHoldingsChanged();
   renderExistingHoldings(); runHealthMonitor();
   if(added>0) showToast(`已从定投计划导入 ${added} 条持仓`,'success');
   else showToast('定投计划中的基金已全部在已有持仓中','info');
@@ -4354,6 +4402,7 @@ function runHealthMonitor(){
     renderMarketGrid();
   }).catch(()=>{
     updateDetailStatus('⚠️ 基金详情拉取失败，当前显示为默认数据（可能已过期）', true);
+    showGlobalError('⚠️ 基金数据更新失败，当前使用缓存数据，方案可能不够准确', 10000);
   });
 
   // 8. 每5分钟自动重刷净值 + 重新生成方案（静默模式，仅页面可见时执行）
