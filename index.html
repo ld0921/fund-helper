@@ -972,11 +972,10 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
         </div>
       </div>
       <div class="form-item"><label>买入日期</label><input id="h-date" type="date"></div>
-      <div class="form-item"><label>买入份额(份)</label><input id="h-shares" type="number" placeholder="如：10000"></div>
-      <div class="form-item"><label>买入净值(元)</label><input id="h-cost" type="number" placeholder="如：2.5" step="0.0001" inputmode="decimal"></div>
-      <div class="form-item"><label>当前净值(元)</label><input id="h-cur" type="number" placeholder="如：2.8" step="0.0001" inputmode="decimal"></div>
+      <div class="form-item"><label>买入金额(元)</label><input id="h-amount" type="number" placeholder="如：10000" inputmode="numeric"></div>
       <div class="form-item"><label>基金类型</label><select id="h-type"><option>股票型</option><option>混合型</option><option>债券型</option><option>指数型</option><option>货币型</option><option>QDII</option></select></div>
     </div>
+    <div style="font-size:11px;color:var(--muted);margin:6px 0 2px;line-height:1.6" id="h-auto-hint">当前净值将在添加后自动获取，份额=买入金额÷当前净值</div>
     <div class="action-bar"><button class="btn btn-primary" onclick="addHolding()">＋ 添加持仓</button></div>
   </div>
   <div class="card">
@@ -1391,7 +1390,7 @@ function renderTodayOverview(){
 
   // 合并所有持仓
   const allHeld=[];
-  holdings.forEach(h=>{ if(!allHeld.some(x=>x.code===h.code)) allHeld.push({code:h.code,value:h.shares*h.cur,cost:h.shares*h.cost}); });
+  holdings.forEach(h=>{ if(!allHeld.some(x=>x.code===h.code)){ const s=h.amount?h.amount/h.cost:h.shares; allHeld.push({code:h.code,value:s*h.cur,cost:h.amount||(h.shares*h.cost)}); }});
   existingHoldings.forEach(h=>{ if(!allHeld.some(x=>x.code===h.code)) allHeld.push({code:h.code,value:h.value,cost:h.cost||0}); });
   dcaPlans.forEach(d=>{ if(!allHeld.some(x=>x.code===d.code)&&d.curval>0){
     const months=d.start?Math.max(0,Math.floor((new Date()-new Date(d.start))/30/86400000)):0;
@@ -2379,7 +2378,7 @@ function importFromHoldings(){
   let added=0;
   holdings.forEach(h=>{
     if(!existingHoldings.some(e=>e.code===h.code)){
-      existingHoldings.push({code:h.code,name:h.name,value:h.shares*h.cur,cost:h.shares*h.cost});
+      existingHoldings.push({code:h.code,name:h.name,value:(h.amount?h.amount/h.cost:h.shares)*h.cur,cost:h.amount||(h.shares*h.cost)});
       added++;
     }
   });
@@ -3680,20 +3679,41 @@ function calcSIP(){
 // ═══════════════ 面板3: 持仓 ═══════════════
 function addHolding(){
   const name=document.getElementById('h-name').value.trim(),code=document.getElementById('h-code').value.trim();
-  const date=document.getElementById('h-date').value,shares=parseFloat(document.getElementById('h-shares').value);
-  const cost=parseFloat(document.getElementById('h-cost').value),cur=parseFloat(document.getElementById('h-cur').value);
+  const date=document.getElementById('h-date').value;
+  const amount=parseFloat(document.getElementById('h-amount').value);
   let hasErr=false;
   const searchEmpty = !code || !name;
   document.getElementById('h-search').closest('.form-item').classList.toggle('has-error',searchEmpty);
-  [['h-shares',!shares],['h-cost',!cost],['h-cur',!cur]].forEach(([id,err])=>{
-    document.getElementById(id).closest('.form-item').classList.toggle('has-error',err);
-    if(err) hasErr=true;
-  });
-  if(searchEmpty || hasErr){showToast(searchEmpty?'请先搜索并选择一只基金':'请填写标红的必填项','error');return;}
-  holdings.push({name,code,date,shares,cost,cur,type:document.getElementById('h-type').value});
+  document.getElementById('h-amount').closest('.form-item').classList.toggle('has-error',!amount||amount<=0);
+  if(searchEmpty){showToast('请先搜索并选择一只基金','error');return;}
+  if(!amount||amount<=0){showToast('请填写买入金额','error');return;}
+
+  // 尝试从navCache获取当前净值
+  const nav = navCache[code];
+  const cur = nav ? parseFloat(nav.gsz)||1 : 1;
+  // 份额 = 买入金额 / 当前净值（近似，因为无法获取历史买入净值）
+  const shares = amount / cur;
+
+  holdings.push({name,code,date,amount,shares,cost:cur,cur,type:document.getElementById('h-type').value});
   FundDB.set('holdings',holdings); renderHoldings(); runHealthMonitor(); flashSaved('holdings-section');
   clearFundMatch('h');
-  ['h-shares','h-cost','h-cur'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('h-amount').value='';
+
+  // 如果净值还没拉取，异步获取后更新
+  if(!nav){
+    fetchNav(code, data=>{
+      if(!data) return;
+      const curNav = parseFloat(data.gsz)||1;
+      const h = holdings.find(h=>h.code===code);
+      if(h){
+        h.cur = curNav;
+        h.cost = curNav;
+        h.shares = h.amount / curNav;
+        FundDB.set('holdings',holdings);
+        renderHoldings();
+      }
+    });
+  }
 }
 function removeHolding(i){
   const h=holdings[i];
@@ -3704,7 +3724,11 @@ function updateHoldingCur(i,v){ holdings[i].cur=parseFloat(v)||holdings[i].cur; 
 function renderHoldings(){ renderHoldingStats(); renderHoldingTable(); renderHoldingPie(); }
 function renderHoldingStats(){
   if(!holdings.length){['hs-cost','hs-val','hs-pnl','hs-pct'].forEach(id=>document.getElementById(id).textContent='--');return;}
-  let tc=0,tv=0; holdings.forEach(h=>{tc+=h.shares*h.cost;tv+=h.shares*h.cur;});
+  let tc=0,tv=0; holdings.forEach(h=>{
+    const ca = h.amount || (h.shares*h.cost);
+    const cv = h.amount ? (h.amount / h.cost * h.cur) : (h.shares*h.cur);
+    tc+=ca; tv+=cv;
+  });
   const pnl=tv-tc,pct=(pnl/tc*100).toFixed(2);
   document.getElementById('hs-cost').textContent='¥'+tc.toLocaleString('zh-CN',{maximumFractionDigits:0});
   document.getElementById('hs-val').textContent='¥'+tv.toLocaleString('zh-CN',{maximumFractionDigits:0});
@@ -3717,12 +3741,19 @@ function renderHoldingTable(){
   if(!holdings.length){tb.innerHTML='<tr><td colspan="10" class="empty">暂无持仓记录</td></tr>';if(cardsEl)cardsEl.innerHTML='';return;}
   const today=new Date();
   const isMobile=window.innerWidth<=600;
+  // 兼容新旧数据：新数据有amount字段，旧数据用shares×cost
+  const calcHolding = h => {
+    const ca = h.amount || (h.shares*h.cost);
+    const shares = h.amount ? h.amount/h.cost : h.shares;
+    const cv = shares * h.cur;
+    return {ca,cv,shares,pnl:cv-ca,pct:ca>0?((cv-ca)/ca*100).toFixed(2):'0.00'};
+  };
   tb.innerHTML=holdings.map((h,i)=>{
-    const ca=h.shares*h.cost,cv=h.shares*h.cur,pnl=cv-ca,pct=(pnl/ca*100).toFixed(2);
+    const {ca,cv,pnl,pct} = calcHolding(h);
     const days=h.date?Math.floor((today-new Date(h.date))/86400000):'--';
-    return`<tr><td><b>${escHtml(h.name)}</b></td><td><code>${escHtml(h.code)}</code></td><td>${typeTag(h.type)}</td><td>${h.date||'--'}</td><td>¥${ca.toLocaleString('zh-CN',{maximumFractionDigits:2})}</td>
+    return`<tr><td><b>${escHtml(h.name)}</b></td><td><code>${escHtml(h.code)}</code></td><td>${typeTag(h.type)}</td><td>${h.date||'--'}</td><td>¥${ca.toLocaleString('zh-CN',{maximumFractionDigits:0})}</td>
       <td><input type="number" value="${h.cur}" step="0.0001" style="width:76px;height:26px;border:1px solid var(--border);border-radius:5px;padding:0 4px;font-size:12px" onchange="updateHoldingCur(${i},this.value)"><span style="font-size:11px;color:var(--muted)"> = ¥${cv.toLocaleString('zh-CN',{maximumFractionDigits:0})}</span></td>
-      <td class="${pnl>=0?'up':'down'}">${pnl>=0?'+':'-'}¥${Math.abs(pnl).toLocaleString('zh-CN',{maximumFractionDigits:2})}</td>
+      <td class="${pnl>=0?'up':'down'}">${pnl>=0?'+':'-'}¥${Math.abs(pnl).toLocaleString('zh-CN',{maximumFractionDigits:0})}</td>
       <td class="${pct>=0?'up':'down'}">${pct>=0?'+':''}${pct}%</td><td>${days}天</td>
       <td><button class="btn btn-danger btn-sm" onclick="removeHolding(${i})">删除</button></td></tr>`;
   }).join('');
@@ -3730,7 +3761,7 @@ function renderHoldingTable(){
   if(cardsEl){
     if(isMobile){
       cardsEl.innerHTML=holdings.map((h,i)=>{
-        const ca=h.shares*h.cost,cv=h.shares*h.cur,pnl=cv-ca,pct=(pnl/ca*100).toFixed(2);
+        const {ca,cv,pnl,pct} = calcHolding(h);
         const days=h.date?Math.floor((today-new Date(h.date))/86400000):'--';
         const pnlCls=pnl>=0?'up':'down';
         return`<div class="mobile-card-item">
@@ -3754,7 +3785,10 @@ function renderHoldingTable(){
 }
 function renderHoldingPie(){
   if(!holdings.length)return;
-  const m={};holdings.forEach(h=>{m[h.type]=(m[h.type]||0)+h.shares*h.cur;});
+  const m={};holdings.forEach(h=>{
+    const shares = h.amount ? h.amount/h.cost : h.shares;
+    m[h.type]=(m[h.type]||0)+shares*h.cur;
+  });
   const keys=Object.keys(m),vals=keys.map(k=>+m[k].toFixed(2));
   const colors=['#ff4d4f','#faad14','#52c41a','#1677ff','#722ed1','#13c2c2'];
   if(holdPieChartInst) { try{holdPieChartInst.destroy();}catch(e){} holdPieChartInst=null; }
@@ -4149,7 +4183,7 @@ let _lastSignalHash = ''; // 避免重复通知
 function runSignalEngine(){
   // 合并所有持仓来源
   const allHeld = [];
-  holdings.forEach(h=>{ if(!allHeld.some(x=>x.code===h.code)) allHeld.push({code:h.code,name:h.name,value:h.shares*h.cur,cost:h.shares*h.cost}); });
+  holdings.forEach(h=>{ if(!allHeld.some(x=>x.code===h.code)){ const s=h.amount?h.amount/h.cost:h.shares; allHeld.push({code:h.code,name:h.name,value:s*h.cur,cost:h.amount||(h.shares*h.cost)}); }});
   existingHoldings.forEach(h=>{ if(!allHeld.some(x=>x.code===h.code)) allHeld.push({code:h.code,name:h.name,value:h.value,cost:h.cost||0}); });
   dcaPlans.forEach(d=>{ if(!allHeld.some(x=>x.code===d.code)&&d.curval>0){
     const months=d.start?Math.max(0,Math.floor((new Date()-new Date(d.start))/30/86400000)):0;
@@ -4408,7 +4442,7 @@ function runHealthMonitor(){
   const wrap = document.getElementById('health-monitor-wrap');
   // 合并 holdings (Panel3) + existingHoldings (Panel1)
   const allHeld = [];
-  holdings.forEach(h=>{ if(!allHeld.some(x=>x.code===h.code)) allHeld.push({code:h.code,name:h.name,value:h.shares*h.cur,cost:h.shares*h.cost,source:'panel3'}); });
+  holdings.forEach(h=>{ if(!allHeld.some(x=>x.code===h.code)){ const s=h.amount?h.amount/h.cost:h.shares; allHeld.push({code:h.code,name:h.name,value:s*h.cur,cost:h.amount||(h.shares*h.cost),source:'panel3'}); }});
   existingHoldings.forEach(h=>{ if(!allHeld.some(x=>x.code===h.code)) allHeld.push({code:h.code,name:h.name,value:h.value,cost:h.cost||0,source:'panel1'}); });
   dcaPlans.forEach(d=>{ if(!allHeld.some(x=>x.code===d.code)&&d.curval>0){
     const months=d.start?Math.max(0,Math.floor((new Date()-new Date(d.start))/30/86400000)):0;
