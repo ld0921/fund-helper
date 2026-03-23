@@ -1138,7 +1138,9 @@ function smartFundSearch(prefix, val){
   const matches=CURATED_FUNDS.filter(f=>f.name.includes(val)||f.code.includes(val)).slice(0,8);
   matches.forEach(f=>{
     const opt=document.createElement('option');
+    const catLabel = {active:'主动',index:'指数',bond:'债券',money:'货币',qdii:'QDII'}[f.cat]||'';
     opt.value=f.name+' ('+f.code+')';
+    opt.label=`${f.name} [${catLabel}] (${f.code})`;
     dl.appendChild(opt);
   });
   // 精确匹配：选中 datalist 选项或输入完整6位代码
@@ -3565,7 +3567,7 @@ function renderPortfolioPie(selectedPicks){
       data.push(f.pct); colors.push(CAT_COLORS[cat]||'#999');
     });
   });
-  if(portfolioPieInst) portfolioPieInst.destroy();
+  if(portfolioPieInst) { try{portfolioPieInst.destroy();}catch(e){} portfolioPieInst=null; }
   portfolioPieInst = new Chart(document.getElementById('portfolioPie'),{
     type:'doughnut',
     data:{labels,datasets:[{data,backgroundColor:colors,borderWidth:2,borderColor:'#fff'}]},
@@ -3612,7 +3614,7 @@ function calcSIP(){
     <div class="stat-card"><div class="stat-val" style="color:var(--primary)">¥${fv.toLocaleString('zh-CN',{maximumFractionDigits:0})}</div><div class="stat-label">预期总资产</div></div>
     <div class="stat-card"><div class="stat-val up">¥${profit.toLocaleString('zh-CN',{maximumFractionDigits:0})}</div><div class="stat-label">预期收益</div></div>
     <div class="stat-card"><div class="stat-val" style="color:var(--success)">+${pct}%</div><div class="stat-label">累计收益率</div></div>`;
-  if(sipChartInst) sipChartInst.destroy();
+  if(sipChartInst) { try{sipChartInst.destroy();}catch(e){} sipChartInst=null; }
   sipChartInst=new Chart(document.getElementById('sipChart'),{type:'bar',data:{labels,datasets:[{label:'投入本金',data:costArr,backgroundColor:'#bae0ff',borderRadius:4},{label:'预期市值',data:valArr,backgroundColor:'#1677ff',borderRadius:4}]},options:{plugins:{legend:{position:'bottom'}},scales:{y:{ticks:{callback:v=>'¥'+(v/10000).toFixed(0)+'万'}}},responsive:true,maintainAspectRatio:true}});
   document.getElementById('sip-table-wrap').innerHTML=`<details><summary style="cursor:pointer;font-size:13px;color:var(--primary);margin-bottom:8px">查看逐年明细 <span class="toggle-arrow" style="font-size:12px"></span></summary><div class="table-wrap"><table><thead><tr><th>年份</th><th>累计投入</th><th>预期市值</th><th>累计收益</th><th>收益率</th></tr></thead><tbody>${sipData.map(d=>{const p=d.value-d.cost,pc=(p/d.cost*100).toFixed(1);return`<tr><td>第${d.year}年</td><td>¥${d.cost.toLocaleString('zh-CN',{maximumFractionDigits:0})}</td><td style="color:var(--primary)">¥${d.value.toLocaleString('zh-CN',{maximumFractionDigits:0})}</td><td class="up">+¥${p.toLocaleString('zh-CN',{maximumFractionDigits:0})}</td><td class="up">+${pc}%</td></tr>`;}).join('')}</tbody></table></div></details>`;
   document.getElementById('sip-result').style.display='block';
@@ -3634,7 +3636,7 @@ function addHolding(){
   ['h-name','h-code','h-shares','h-cost','h-cur'].forEach(id=>document.getElementById(id).value='');
 }
 function removeHolding(i){ holdings.splice(i,1); FundDB.set('holdings',holdings); renderHoldings(); runHealthMonitor(); }
-function updateHoldingCur(i,v){ holdings[i].cur=parseFloat(v)||holdings[i].cur; FundDB.set('holdings',holdings); renderHoldingStats(); renderHoldingTable(); runHealthMonitor(); }
+function updateHoldingCur(i,v){ holdings[i].cur=parseFloat(v)||holdings[i].cur; FundDB.set('holdings',holdings); markHoldingsChanged(); renderHoldingStats(); renderHoldingTable(); runHealthMonitor(); }
 function renderHoldings(){ renderHoldingStats(); renderHoldingTable(); renderHoldingPie(); }
 function renderHoldingStats(){
   if(!holdings.length){['hs-cost','hs-val','hs-pnl','hs-pct'].forEach(id=>document.getElementById(id).textContent='--');return;}
@@ -3691,7 +3693,7 @@ function renderHoldingPie(){
   const m={};holdings.forEach(h=>{m[h.type]=(m[h.type]||0)+h.shares*h.cur;});
   const keys=Object.keys(m),vals=keys.map(k=>+m[k].toFixed(2));
   const colors=['#ff4d4f','#faad14','#52c41a','#1677ff','#722ed1','#13c2c2'];
-  if(holdPieChartInst)holdPieChartInst.destroy();
+  if(holdPieChartInst) { try{holdPieChartInst.destroy();}catch(e){} holdPieChartInst=null; }
   holdPieChartInst=new Chart(document.getElementById('holdPieChart'),{type:'doughnut',data:{labels:keys,datasets:[{data:vals,backgroundColor:colors.slice(0,keys.length),borderWidth:2}]},options:{plugins:{legend:{position:'bottom'}},cutout:'55%'}});
 }
 
@@ -3962,7 +3964,8 @@ function editDcaPlan(i){
   const plan=dcaPlans[i]; if(!plan) return;
   openModal(`修改「${plan.name}」每月定投金额`,plan.monthly,function(val){
     const parsed=parseInt(val);
-    if(!parsed||parsed<1){ showToast('请输入有效金额','error'); return; }
+    if(!parsed||parsed<1){ showToast('请输入有效金额（≥1元）','error'); return; }
+    if(parsed>100000){ showToast('单只基金月定投金额建议不超过10万元','error'); return; }
     dcaPlans[i].monthly=parsed;
     FundDB.set('dcaPlans',dcaPlans);
     renderDcaPlans();
@@ -4042,9 +4045,9 @@ function renderDcaInHoldings(){
       const months=d.start?Math.max(0,Math.floor((new Date()-new Date(d.start))/30/86400000)):0;
       const invested=d.monthly*months;
       const pnl=d.curval>0&&invested>0?d.curval-invested:null;
-      return `<div class="dp-item">
+      return `<div class="dp-item"${d.paused?' style="opacity:0.6"':''}>
         <div class="dp-fund">
-          <div class="dp-name">${escHtml(d.name)} <code class="code-copy" onclick="copyCode('${escHtml(d.code)}',this)" title="点击复制" style="font-size:11px;color:var(--muted)">${escHtml(d.code)}</code>${chg!==null?`<span style="margin-left:6px;font-size:11px;color:${chg>=0?'var(--danger)':'var(--success)'}">${chg>=0?'+':''}${chg}%</span>`:''}  </div>
+          <div class="dp-name">${d.paused?'<span style="color:var(--warning);font-size:11px;margin-right:4px">⏸已暂停</span>':''}${escHtml(d.name)} <code class="code-copy" onclick="copyCode('${escHtml(d.code)}',this)" title="点击复制" style="font-size:11px;color:var(--muted)">${escHtml(d.code)}</code>${chg!==null?`<span style="margin-left:6px;font-size:11px;color:${chg>=0?'var(--danger)':'var(--success)'}">${chg>=0?'+':''}${chg}%</span>`:''}  </div>
           <div class="dp-meta">${escHtml(d.type)}${d.start?` · 始于 ${fmtDateCN(d.start)}`:''} · 已约 ${months} 期 · 累计约 ¥${invested.toLocaleString()}${pnl!=null?` · <span class="${pnl>=0?'up':'down'}">${pnl>=0?'+':'-'}¥${Math.abs(pnl).toLocaleString()}</span>`:''}</div>
         </div>
         <div class="dp-monthly"><div class="dp-monthly-val">¥${d.monthly.toLocaleString()}</div><div class="dp-monthly-lbl">每月</div></div>
@@ -4573,6 +4576,12 @@ function runHealthMonitor(){
     if(!document.hidden) refreshAllNav(true, true);
   });
 })();
+
+// 表单输入时自动清除校验红框（事件委托，一次性覆盖所有 .form-item）
+document.addEventListener('input', function(e){
+  const item = e.target.closest('.form-item');
+  if(item && item.classList.contains('has-error')) item.classList.remove('has-error');
+});
 
 // ═══════════════ Service Worker 注册 ═══════════════
 if('serviceWorker' in navigator){
