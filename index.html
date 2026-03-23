@@ -2849,11 +2849,24 @@ function generateSmartPortfolio(){
   // 滚动到加载卡片
   setTimeout(()=>loadCard.scrollIntoView({behavior:'smooth',block:'center'}),100);
 
-  // 如果已有足够净值缓存（>10只），直接生成
+  // 如果已有足够净值缓存（>10只），显示简短加载动画后生成
   if(Object.keys(navCache).length >= 10){
-    loadCard.style.display='none';
-    resultSections.forEach(el=>{el.style.display='';});
-    _finishGenerate(btn);
+    const bar=document.getElementById('gen-loading-bar');
+    const countEl=document.getElementById('gen-loading-count');
+    const textEl=document.getElementById('gen-loading-text');
+    const cached=Object.keys(navCache).length;
+    textEl.textContent='正在分析缓存数据…';
+    countEl.textContent=`已缓存 ${cached} 只基金`;
+    bar.style.width='30%';
+    setTimeout(()=>{ bar.style.width='70%'; textEl.textContent='正在生成专属方案…'; },300);
+    setTimeout(()=>{
+      bar.style.width='100%';
+      setTimeout(()=>{
+        loadCard.style.display='none';
+        resultSections.forEach(el=>{el.style.display='';});
+        _finishGenerate(btn, true);
+      },200);
+    },700);
     return;
   }
 
@@ -2889,8 +2902,7 @@ function generateSmartPortfolio(){
       setTimeout(()=>{
         loadCard.style.display='none';
         resultSections.forEach(el=>{el.style.display='';});
-        _finishGenerate(btn);
-        // 刷新其他模块
+        _finishGenerate(btn, true);        // 刷新其他模块
         renderDcaRanking();
         runHealthMonitor();
         runSignalEngine();
@@ -2900,8 +2912,8 @@ function generateSmartPortfolio(){
   }));
 }
 
-function _finishGenerate(btn){
-  try { _doGenerate(); } catch(e){ console.error(e); }
+function _finishGenerate(btn, shouldScroll){
+  try { _doGenerate(shouldScroll); } catch(e){ console.error(e); }
   _portfolioGenerated = true;
   // 隐藏持仓变化提示（刚刚已重新生成）
   const hint = document.getElementById('holdings-changed-hint');
@@ -2912,7 +2924,7 @@ function _finishGenerate(btn){
   document.getElementById('gen-status').textContent=cached>0?`已融合 ${cached} 只基金实时净值`:'';
 }
 
-function _doGenerate(){
+function _doGenerate(shouldScroll){
   // 数据新鲜度守卫：检测 CURATED_FUNDS 是否已被 API 数据覆盖
   const origFunds = CURATED_FUNDS.filter(f => !f.discovered);
   const apiUpdatedCount = origFunds.filter(f => f._apiUpdated).length;
@@ -3258,7 +3270,7 @@ function _doGenerate(){
   // 显示结果
   document.getElementById('analysis-time').textContent=Object.keys(navCache).length>0?`· 已融合${Object.keys(navCache).length}只基金实时净值`:'· 建议先刷新净值获取实时数据';
   document.getElementById('portfolio-result').style.display='block';
-  setTimeout(()=>document.getElementById('plan-summary').scrollIntoView({behavior:'smooth',block:'start'}),100);
+  if(shouldScroll) setTimeout(()=>document.getElementById('plan-summary').scrollIntoView({behavior:'smooth',block:'start'}),100);
 }
 
 function renderStyleExposure(exposure, allPicks){
