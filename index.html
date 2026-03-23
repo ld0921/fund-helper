@@ -597,6 +597,7 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
       · 偏好倾斜：保守型超配货币/债券，进取型超配主动/QDII<br>
       · 期限约束：1年≤30%权益，1-3年≤60%，3-5年≤75%，5年+≤85%；短期(≤1年)额外降低主动权益5%转入债券<br>
       · 最低配置约束：任何类别权重不低于2%，确保分散化<br>
+      · 选基排名感知风险偏好：保守型侧重低回撤+高稳定性，进取型侧重收益动量+高弹性，同一类别内不同偏好可能推荐不同基金<br>
       · 核心卫星分配：按评分差距自适应（核心仓40-60%/55-80%，评分接近趋向均分）<br><br>
 
       <b>四、持仓融合（有持仓时）</b><br>
@@ -2803,6 +2804,18 @@ function selectFunds(cat, catData, riskProfile, pct, totalAmt){
   });
   if(!pool.length) return [];
 
+  // 风险偏好感知排名：不同偏好对同一基金的评价侧重不同
+  // 保守型：重稳定性和低回撤（高maxDD扣分）
+  // 进取型：重收益动量（高r1/r3加分）
+  const riskAdjust = {
+    conservative: f => f.composite - (f.maxDD||0) * 0.3 + Math.min(f.mgrYears||0, 10) * 0.5,
+    moderate:     f => f.composite,
+    balanced:     f => f.composite + (f.r1||0) * 0.1,
+    aggressive:   f => f.composite + (f.r1||0) * 0.2 + ((f.maxDD||20) > 25 ? 2 : 0),
+  };
+  const adjustFn = riskAdjust[riskProfile] || riskAdjust.moderate;
+  pool = pool.map(f => ({...f, adjustedScore: adjustFn(f)})).sort((a,b) => b.adjustedScore - a.adjustedScore);
+
   // 相关性去重：同一基金经理最多选1只
   const usedManagers = new Set();
   const deduped = [];
@@ -3384,6 +3397,7 @@ function _doGenerate(shouldScroll){
       <b>三(续)、类别内基金选择（核心-卫星架构）</b><br>
       · 每个类别按评分排序后，去除同经理重复和标签重叠>50%的基金<br>
       · 选择数量：该类别权重≥35%选3只，≥25%选2只，其他选1只<br>
+      · 选基排名感知风险偏好：保守型侧重低回撤+高稳定性（maxDD扣分+经理年限加分），进取型侧重收益动量+高弹性（r1加分+高波动加分），同一类别内不同偏好可能推荐不同基金<br>
       · 核心-卫星分配：按评分差距自适应——3只时核心仓40-60%（评分差距越大越集中）+卫星仓分配剩余；2只时核心仓55-80%；1只时100%<br>
       · 核心仓采用分批买入降低择时风险，卫星仓一次性建仓<br><br>
 
