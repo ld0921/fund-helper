@@ -2575,18 +2575,20 @@ function inferMomentumPhase(catRanks){
 
   let phase, label, equityMult, bondMult, desc;
 
-  if(equityR1 > 5 && bondR1 > 0 && equityR1 > bondR1){
-    phase = 'recovery';
-    label = '权益强势期';
-    equityMult = 1.15;
-    bondMult = 0.9;
-    desc = '权益类资产相对强势，动量信号偏多。债券仍有正收益。建议适度超配权益类资产。';
-  } else if(equityR1 > 10 && bondR1 < 3){
+  // 条件判断顺序：更具体的条件优先，避免宽泛条件"吞噬"具体条件
+  // 例如 equityR1=12, bondR1=1 同时满足"强势期"和"极端强势"，应判为后者
+  if(equityR1 > 10 && bondR1 < 3){
     phase = 'overheat';
     label = '权益极端强势';
     equityMult = 1.0;
     bondMult = 0.8;
     desc = '权益涨幅较大但债券走弱，可能存在过热风险。建议控制仓位，警惕回调。';
+  } else if(equityR1 > 5 && bondR1 > 0 && equityR1 > bondR1){
+    phase = 'recovery';
+    label = '权益强势期';
+    equityMult = 1.15;
+    bondMult = 0.9;
+    desc = '权益类资产相对强势，动量信号偏多。债券仍有正收益。建议适度超配权益类资产。';
   } else if(equityR1 < 0 && bondR1 < 2){
     phase = 'stagflation';
     label = '全面弱势期';
@@ -2631,7 +2633,9 @@ function detectManagerChanges(){
 function computeWeights(riskProfile, horizon, catRanks, macroClock){
   // 1. 风险平价基础权重：各类别权重与其年化波动率成反比
   const catVol = {}; // 用平均最大回撤 / DD_TO_VOL 转为估算年化波动率
-  catRanks.forEach(c => { catVol[c.cat] = Math.max(c.avgDD / (DD_TO_VOL[c.cat]||2.5), 0.5); });
+  // 波动率下限按类别差异化：货币基金波动率极低，下限设低以避免过度超配
+  const volFloor = {active:1.0, index:1.0, bond:0.5, money:0.2, qdii:1.0};
+  catRanks.forEach(c => { catVol[c.cat] = Math.max(c.avgDD / (DD_TO_VOL[c.cat]||2.5), volFloor[c.cat]||0.5); });
   const invVols = {};
   let invVolSum = 0;
   catRanks.forEach(c => {
@@ -3176,8 +3180,9 @@ function _doGenerate(shouldScroll){
   });
 
   // 跨类别协方差：使用 CORR_MATRIX
-  // 正确公式：cov(cat_i, cat_j) = ρ_cross × σ_cat_i × σ_cat_j
-  // 其中 σ_cat = sqrt(catVariance)，即类别组合的实际波动率（已含类别内相关性）
+  // 数学推导：Cov(cat_a, cat_b) = ρ_cross(a,b) × Σ(wi_a·σi_a) × Σ(wj_b·σj_b)
+  // 即 ρ_cross × catWeightedSigma[a] × catWeightedSigma[b]
+  // 双重循环遍历所有有序对(a,b)和(b,a)，与 Var=ΣΣ wi·wj·ρij·σi·σj 等价，无需÷2
   let portfolioVar = 0;
   const catKeys = Object.keys(catVariance);
   catKeys.forEach(ci => {
@@ -3187,7 +3192,7 @@ function _doGenerate(shouldScroll){
       } else {
         const rho = (CORR_MATRIX[ci] && CORR_MATRIX[ci][cj] !== undefined)
           ? CORR_MATRIX[ci][cj] : 0.3;
-        portfolioVar += rho * Math.sqrt(catVariance[ci]) * Math.sqrt(catVariance[cj]);
+        portfolioVar += rho * catWeightedSigma[ci] * catWeightedSigma[cj];
       }
     });
   });
