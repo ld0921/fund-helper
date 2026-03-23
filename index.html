@@ -124,9 +124,14 @@ tr:last-child td{border-bottom:none}
 /* ── Portfolio Module (Panel 1) ── */
 .profile-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
 /* 风险偏好选择卡片 */
-.risk-option{display:flex;flex-direction:column;align-items:center;padding:8px 4px;border:1.5px solid var(--border);border-radius:10px;cursor:pointer;transition:all .2s;background:var(--card);-webkit-tap-highlight-color:transparent;text-align:center}
-.risk-option:hover{border-color:var(--primary);background:var(--primary-bg)}
-.risk-option.selected{border-color:var(--primary);background:var(--primary-bg);box-shadow:0 0 0 1px var(--primary)}
+.risk-option{display:flex;flex-direction:column;align-items:center;padding:8px 4px;border:1.5px solid var(--border);border-radius:10px;cursor:pointer;transition:all .2s;background:var(--card);-webkit-tap-highlight-color:transparent;text-align:center;position:relative}
+.risk-option:hover{border-color:var(--primary)}
+.risk-option.selected{border-color:var(--primary);background:var(--primary);color:#fff;box-shadow:0 2px 8px rgba(22,119,255,.3)}
+.risk-option.selected .risk-name{color:#fff}
+.risk-option.selected .risk-desc{color:rgba(255,255,255,.8)}
+.risk-option.selected::after{content:'✓';position:absolute;top:3px;right:5px;font-size:10px;font-weight:700;color:#fff;background:rgba(255,255,255,.3);width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;line-height:1}
+.risk-name{font-size:13px;font-weight:600;transition:color .2s}
+.risk-desc{font-size:10px;color:var(--muted);margin-top:1px;transition:color .2s}
 
 .risk-name{font-size:13px;font-weight:600}
 .risk-desc{font-size:10px;color:var(--muted);margin-top:1px}
@@ -302,7 +307,7 @@ tr:last-child td{border-bottom:none}
   .form-item select option{background:#2a2a2a;color:var(--text)}
   .chip{background:#2a2a2a;border-color:var(--border);color:var(--muted)}
   .risk-option{background:var(--card);border-color:var(--border)}
-  .risk-option.selected{background:#0a2744;border-color:var(--primary)}
+  .risk-option.selected{background:var(--primary);border-color:var(--primary);color:#fff}
   .btn-ghost{background:#2a2a2a;border-color:var(--border);color:var(--text)}
   .btn-outline{background:var(--card);color:var(--primary);border-color:var(--primary)}
   .btn-danger{background:#2a1a1a;color:#ff6b6b;border-color:#5c2020}
