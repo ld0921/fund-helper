@@ -525,7 +525,7 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
         <label class="risk-option" data-v="conservative" onclick="selectRisk('conservative')" style="flex:1;padding:6px 4px">
           <div class="risk-name">🛡️ 保守</div><div class="risk-desc">3-5%</div>
         </label>
-        <label class="risk-option selected" data-v="moderate" onclick="selectRisk('moderate')" style="flex:1;padding:6px 4px">
+        <label class="risk-option" data-v="moderate" onclick="selectRisk('moderate')" style="flex:1;padding:6px 4px">
           <div class="risk-name">⚖️ 稳健</div><div class="risk-desc">6-10%</div>
         </label>
         <label class="risk-option" data-v="balanced" onclick="selectRisk('balanced')" style="flex:1;padding:6px 4px">
@@ -535,7 +535,7 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
           <div class="risk-name">🚀 进取</div><div class="risk-desc">12%+</div>
         </label>
       </div>
-      <input type="hidden" id="sp-risk" value="moderate">
+      <input type="hidden" id="sp-risk" value="">
     </div>
 
     <!-- 投资期限：一行4个 -->
@@ -545,7 +545,7 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
         <label class="risk-option horizon-chip" data-v="1" onclick="selectHorizon(1)" style="flex:1;padding:6px 4px">
           <div class="risk-name">1年内</div><div class="risk-desc">短期</div>
         </label>
-        <label class="risk-option horizon-chip selected" data-v="2" onclick="selectHorizon(2)" style="flex:1;padding:6px 4px">
+        <label class="risk-option horizon-chip" data-v="2" onclick="selectHorizon(2)" style="flex:1;padding:6px 4px">
           <div class="risk-name">1-3年</div><div class="risk-desc">中期</div>
         </label>
         <label class="risk-option horizon-chip" data-v="5" onclick="selectHorizon(5)" style="flex:1;padding:6px 4px">
@@ -555,7 +555,7 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
           <div class="risk-name">5年+</div><div class="risk-desc">超长</div>
         </label>
       </div>
-      <input type="hidden" id="sp-horizon" value="2">
+      <input type="hidden" id="sp-horizon" value="">
     </div>
 
     <button class="btn btn-primary" onclick="generateSmartPortfolio()" id="gen-btn" style="width:100%;height:44px;font-size:15px;justify-content:center">
@@ -1462,6 +1462,7 @@ function selectRisk(val){
   document.querySelectorAll('#risk-selector .risk-option').forEach(el=>{
     el.classList.toggle('selected', el.getAttribute('data-v')===val);
   });
+  document.getElementById('risk-selector').style.outline='';
 }
 function selectHorizon(val){
   document.getElementById('sp-horizon').value=val;
@@ -1469,6 +1470,7 @@ function selectHorizon(val){
     el.classList.toggle('selected', el.getAttribute('data-v')==String(val));
     el.classList.remove('active');
   });
+  document.getElementById('horizon-selector').style.outline='';
 }
 
 function switchTab(i){
@@ -2897,6 +2899,18 @@ function buildSteps(weights, picks, totalAmt, monthly, riskProfile, horizon){
 
 // 主函数
 function generateSmartPortfolio(){
+  // 校验：风险偏好和投资期限必须选择
+  const riskVal = document.getElementById('sp-risk').value;
+  const horizonVal = document.getElementById('sp-horizon').value;
+  const riskSel = document.getElementById('risk-selector');
+  const horizonSel = document.getElementById('horizon-selector');
+  let missing = [];
+  if(!riskVal){ missing.push('风险偏好'); riskSel.style.outline='2px solid var(--danger)'; riskSel.style.borderRadius='8px'; }
+  else { riskSel.style.outline=''; }
+  if(!horizonVal){ missing.push('投资期限'); horizonSel.style.outline='2px solid var(--danger)'; horizonSel.style.borderRadius='8px'; }
+  else { horizonSel.style.outline=''; }
+  if(missing.length){ showToast(`请先选择${missing.join('和')}`, 'error'); return; }
+
   const btn=document.getElementById('gen-btn');
   btn.disabled=true; btn.innerHTML='<span class="loading-dot"></span> 加载数据中…';
   document.getElementById('gen-status').textContent='';
