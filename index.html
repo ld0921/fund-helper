@@ -573,49 +573,52 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
 
       <b>一、基金评分体系（4维正交模型）</b><br>
       去除冗余指标，保留4个正交维度，总分100分：<br>
-      · <b>Calmar Ratio（40%）</b>：时间窗口匹配的混合Calmar——短期=(近1年收益−2%无风险利率)/近3年最大回撤 × 60% + 长期=(近3年年化收益−2%)/全期最大回撤 × 40%<br>
-      · <b>收益一致性（25%）</b>：1年与3年收益方向是否一致（同向+10，反向+5，双负0）+ 3年收益强度分<br>
+      · <b>Calmar Ratio（40%）</b>：时间窗口匹配的混合Calmar——短期=(近1年收益−无风险利率)/近3年最大回撤 × 60% + 长期=(近3年年化收益−无风险利率)/全期最大回撤 × 40%。无风险利率默认1.7%（可自定义）<br>
+      · <b>收益一致性（25%）</b>：1年与3年收益方向+幅度匹配度（双正且幅度匹配4-10分，反向5分，双负0-2分）+ 3年收益强度分<br>
       · <b>任期稳定性（25%）</b>：基金经理连续任期年限，6档：&lt;1年=3分，1-2年=8分，2-3年=13分，3-5年=17分，5-10年=21分，≥10年=25分<br>
       · <b>规模适配性（10%）</b>：50-500亿满分10分，500-1000亿7分，10-50亿7分，2-10亿5分，&lt;2亿清盘风险2分，&gt;1000亿调仓困难4分<br>
       评分色标：≥80🟢强烈推荐，65-79🔵推荐，50-64🟡可关注，&lt;50🔴谨慎<br><br>
 
-      <b>二、市场动量信号（资产相对强弱）</b><br>
-      通过各类资产近1年相对收益推断市场状态（非宏观经济指标）：<br>
-      · 复苏期：权益>5%且债券>0%且权益>债券，权益×1.15，债券×0.9 / 过热期：权益>10%且债券<3%，债券×0.8<br>
-      · 滞胀期：权益<0%且债券<2%，权益×0.7，债券×0.9，货币≥15% / 衰退期：权益<5%且债券>3%，债券×1.2<br>
-      · 过渡期：不满足以上条件，中性配置（系数均1.0）<br>
+      <b>二、市场动量信号（资产相对强弱，非宏观周期）</b><br>
+      通过各类资产近1年相对收益推断动量状态（<b>非宏观经济指标</b>，不预测GDP/CPI）：<br>
+      · 权益强势期：权益>5%且债券>0%且权益>债券，权益×1.15，债券×0.9 / 权益极端强势：权益>10%且债券<3%，债券×0.8<br>
+      · 全面弱势期：权益<0%且债券<2%，权益×0.7，债券×0.9，货币≥15% / 债券强势期：权益<5%且债券>3%，债券×1.2<br>
+      · 信号模糊期：不满足以上条件，中性配置（系数均1.0）<br>
       <b>反转保护</b>：板块涨>30%停止追涨，>40%反转减配；板块跌>10%（可能底部）不再减配<br><br>
 
       <b>三、资产配置（Risk Parity + 多层约束）</b><br>
-      执行链路：风险平价基础 → 风险偏好倾斜 → 市场动量约束 → 行情动量微调（含反转保护）→ 期限上限 → 短期额外调整<br>
-      · 风险平价：各类别权重与其平均最大回撤成反比（等风险贡献）<br>
+      执行链路：风险平价基础 → 风险偏好倾斜 → 动量信号约束 → 行情动量微调（含反转保护）→ 期限上限 → 短期额外调整<br>
+      · 风险平价：各类别权重与其估算年化波动率成反比（波动率=平均maxDD/类别DD-Vol系数，等风险贡献）<br>
       · 偏好倾斜：保守型超配货币/债券，进取型超配主动/QDII<br>
       · 期限约束：1年≤30%权益，1-3年≤60%，3-5年≤75%，5年+≤85%；短期(≤1年)额外降低主动权益5%转入债券<br>
-      · 最低配置约束：任何类别权重不低于2%，确保分散化<br><br>
+      · 最低配置约束：任何类别权重不低于2%，确保分散化<br>
+      · 核心卫星分配：按评分差距自适应（核心仓40-60%/55-80%，评分接近趋向均分）<br><br>
 
       <b>四、持仓融合（有持仓时）</b><br>
       · 已有基金用评分体系评估，≥50分保留，&lt;50分建议替换并推荐同类最优<br>
       · 计算每个类别缺口=目标金额−已有达标金额，新资金按缺口比例分配<br>
       · 已超配类别不再新买，最终输出=保留持仓+新买入<br><br>
 
-      <b>五、收益预估（长期均值中枢 + 均值回归）</b><br>
-      · 预期收益以各类别长期年化均值为中枢（主动8%/指数7%/债券4%/货币2%/QDII 6%），回归速度：权益50%、债券30%、货币10%、QDII 50%<br>
-      · 组合波动率：σ≈maxDD/2.5，类别内同类基金ρ=0.8（近似线性加权后打0.9折），跨类别ρ=0.3协方差合成<br>
-      · 1年区间：μ±0.67σ（P25-P75） / 3年区间：复利累计±0.67σ√3<br><br>
+      <b>五、收益预估（长期均值中枢 + 均值回归 + 多资产协方差）</b><br>
+      · 预期收益以各类别长期年化均值为中枢（主动8%/指数7%/债券4%/货币2%/QDII 6%），回归速度：权益35%（~5年半衰期）、债券60%（~2年半衰期）、货币10%、QDII 35%<br>
+      · 组合波动率：σ=maxDD/类别DD-Vol系数（active:2.8/index:3.0/bond:1.8/money:1.2/qdii:2.5），类别内ρ=0.8正确协方差计算，跨类别使用5×5相关性矩阵（含股债负相关ρ=-0.15）<br>
+      · 1年区间：μ±0.67σ（P25-P75） / 3年区间：复利累计±0.67σ√(3×自相关修正因子)<br><br>
 
       <b>六、压力测试</b><br>
-      · 模拟6种历史危机（2015股灾/2018熊市/2020疫情/2022风格切换/债灾/泡沫）<br>
-      · 每只基金按自身maxDD/类别均值maxDD作为个基系数（限制0.5-2.0），高风险基金压力更大；上涨情景使用非对称系数（衰减50%）避免高估收益<br><br>
+      · 模拟9种历史危机（2015股灾/2018熊市/2020疫情/2022风格切换/债灾/泡沫/2023利率上行/2024小盘暴跌/全球流动性危机），每个场景附概率估计<br>
+      · 每只基金按自身maxDD/类别均值maxDD作为个基系数（限制0.5-2.0），高风险基金压力更大；上涨情景使用非对称系数（衰减50%）避免高估收益<br>
+      · 输出概率加权期望损失 = Σ(概率 × 下行冲击)<br><br>
 
       <b>七、定投评分体系（独立于基金评分）</b><br>
-      · 波动收益比（35%）：回撤15-30%为定投最优区间（钟形曲线，中心22.5%，σ=12），叠加3年收益修正<br>
+      · 波动收益比（35%）：最优DD按类别差异化（权益25%/QDII 20%/债券5%），钟形曲线评分，叠加3年收益修正<br>
       · 长期趋势（25%）：3年累计收益分档评分 / 管理质量（20%）：经理年限(上限12分)+星级(上限8分) / 近期动量（20%）：近1年收益（正收益×0.6，负收益×0.3+5，非对称处理）<br>
       · 选基强制类别分散：每类别≥1只，同类≤2只；同经理基金去重、持仓标签重叠>50%去重<br><br>
 
       <b>八、健康诊断与信号</b><br>
       · z-score动态阈值：&lt;−2σ红色预警，&lt;−1σ黄色关注<br>
       · 集中度：单基金>40%、单类别>60%预警 / 结构性下行：r1&lt;0且r3&lt;0红色预警<br>
-      · 大跌加仓三重防护：检查超配(>25%)、下跌趋势(r1<0)、仓位占比后再建议<br>
+      · 大跌加仓防护：阈值按类别差异化（权益-3.5%/债券-1.0%），超配阈值差异化（债券35%/权益25%/QDII 20%），检查下跌趋势后再建议<br>
+      · 类别机会信号：需同时满足日跌≥2%且近期趋势不佳，过滤单日噪音<br>
       · 再平衡：按类别区分卖出阈值（权益r1<0、债券r1<均值−1σ才建议卖）
     </div>
   </details>
@@ -1269,12 +1272,15 @@ function stressTest(allPicks){
   // 改进：用每只基金的 maxDD 相对于类别平均 maxDD 的比值作为个基系数
   // 例如：类别平均 maxDD=30%，某基金 maxDD=45%，系数=1.5，压力更大
   const scenarios = [
-    {name:'2015股灾', shocks:{active:-45,index:-40,bond:5,money:1.5,qdii:-15}},
-    {name:'2018熊市', shocks:{active:-25,index:-22,bond:6,money:3,qdii:-10}},
-    {name:'2020疫情冲击', shocks:{active:-15,index:-12,bond:3,money:1,qdii:-30}},
-    {name:'2022风格切换', shocks:{active:-20,index:-18,bond:2,money:2,qdii:-25}},
-    {name:'债灾(2016.12)', shocks:{active:-5,index:-8,bond:-8,money:0.5,qdii:2}},
-    {name:'牛市泡沫期', shocks:{active:60,index:50,bond:-2,money:1,qdii:20}},
+    {name:'2015股灾', shocks:{active:-45,index:-40,bond:5,money:1.5,qdii:-15}, prob:0.05},
+    {name:'2018熊市', shocks:{active:-25,index:-22,bond:6,money:3,qdii:-10}, prob:0.10},
+    {name:'2020疫情冲击', shocks:{active:-15,index:-12,bond:3,money:1,qdii:-30}, prob:0.08},
+    {name:'2022风格切换', shocks:{active:-20,index:-18,bond:2,money:2,qdii:-25}, prob:0.10},
+    {name:'债灾(2016.12)', shocks:{active:-5,index:-8,bond:-8,money:0.5,qdii:2}, prob:0.07},
+    {name:'牛市泡沫期', shocks:{active:60,index:50,bond:-2,money:1,qdii:20}, prob:0.05},
+    {name:'2023利率上行', shocks:{active:5,index:3,bond:-5,money:2.5,qdii:-8}, prob:0.12},
+    {name:'2024小盘暴跌', shocks:{active:-30,index:-10,bond:4,money:2,qdii:-5}, prob:0.08},
+    {name:'全球流动性危机', shocks:{active:-35,index:-30,bond:-3,money:1,qdii:-40}, prob:0.03},
   ];
   // 计算各类别平均 maxDD 作为基准
   const catAvgDD = {};
@@ -1296,7 +1302,7 @@ function stressTest(allPicks){
       const adjustedShock = baseShock < 0 ? baseShock * fundCoef : baseShock * (0.5 + 0.5 * fundCoef);
       return sum + adjustedShock * (f.pct/100);
     },0);
-    return {name:s.name, impact:portfolioReturn};
+    return {name:s.name, impact:portfolioReturn, prob:s.prob||0};
   });
 }
 
@@ -2132,7 +2138,8 @@ function getCatBenchmarks(){
 const _catBench = getCatBenchmarks();
 
 // 无风险利率（1年期国债收益率近似）
-const RISK_FREE = 2.0;
+// 无风险利率（1年期国债收益率近似）：支持用户自定义，默认1.7%
+const RISK_FREE = (() => { try { const v = localStorage.getItem('riskFreeRate'); if(v !== null) return parseFloat(v); } catch(e){} return 1.7; })();
 
 function scoreF(f){
   const r1=+f.r1||0, r3=+f.r3||0, dd=+(f.dd||f.maxDD)||0, sz=+f.size||0, mg=+(f.mgr||f.mgrYears)||0;
@@ -2150,9 +2157,16 @@ function scoreF(f){
   const calmarScore = Math.min(40, Math.max(0, calmar * 20)); // 0-40分
 
   // 2. 收益一致性（权重 25%）
-  //    中期(r1)与长期(r3)方向是否一致 + r3趋势强度
-  //    替代冗余的 Sortino/InfoRatio，直接衡量收益可持续性
-  const dirConsistency = (r1 > 0 && r3 > 0) ? 10 : (r1 < 0 && r3 < 0) ? 0 : 5;
+  //    中期(r1)与长期(r3)方向是否一致 + 幅度匹配度 + r3趋势强度
+  //    同方向且幅度匹配 → 收益可持续性强
+  let dirConsistency;
+  if((r1 > 0 && r3 > 0) || (r1 < 0 && r3 < 0)){
+    const absR1 = Math.abs(r1), absR3A = Math.abs(r3Ann);
+    const ratio = Math.max(absR1, absR3A) > 0 ? Math.min(absR1, absR3A) / Math.max(absR1, absR3A) : 0;
+    dirConsistency = r1 > 0 ? (4 + 6 * ratio) : (0 + 2 * ratio); // 双正4-10分，双负0-2分
+  } else {
+    dirConsistency = 5; // 方向不一致
+  }
   const r3Strength = r3 > 50 ? 15 : r3 > 20 ? 12 : r3 > 0 ? Math.max(5, r3 * 0.3) : Math.max(0, 3 + r3 * 0.05);
   const consistencyScore = Math.min(25, dirConsistency + r3Strength); // 0-25分
 
@@ -2539,10 +2553,9 @@ function analyzeCategoryPerf(){
 }
 
 // ═══════════════ 市场动量信号（基于资产相对强弱） ═══════════════
-// 注意：此模块基于各类资产近1年相对表现推断市场状态，本质是动量/相对强弱信号，
-// 而非真正的宏观经济周期判断（后者需要GDP/CPI/PMI等外部宏观数据）。
-// 分类命名借鉴美林时钟框架便于理解，但推断依据为资产回报而非宏观指标。
-function inferMerrilClock(catRanks){
+// 注意：此模块基于各类资产近1年相对表现推断动量状态，本质是动量/相对强弱信号，
+// 而非宏观经济周期判断（后者需要GDP/CPI/PMI等外部宏观数据）。
+function inferMomentumPhase(catRanks){
   if(!catRanks || catRanks.length < 3) return { phase:'unknown', label:'数据不足', equityMult:1.0, bondMult:1.0 };
 
   const getAvgR1 = cat => { const c = catRanks.find(x=>x.cat===cat); return c ? c.avgR1 : 0; };
@@ -2553,44 +2566,44 @@ function inferMerrilClock(catRanks){
   const qdiiR1 = getAvgR1('qdii');
   const moneyR1 = getAvgR1('money');
 
-  // 推断逻辑：
-  // 复苏期：权益上涨 > 债券，债券仍正收益 → 经济回暖，通胀低
-  // 过热期：权益强涨，债券走弱/下跌 → 经济过热，通胀上升
-  // 滞胀期：权益下跌，债券下跌 → 增长放缓但通胀高
-  // 衰退期：权益下跌，债券上涨 → 经济收缩，降息预期
+  // 推断逻辑（基于资产回报强弱，非宏观指标）：
+  // 权益强势期：权益上涨>债券，债券仍正 → 权益动量占优
+  // 权益极端强势：权益强涨，债券走弱 → 权益动量过热
+  // 全面弱势期：权益下跌，债券也弱 → 各类资产缺乏趋势
+  // 债券强势期：权益弱，债券涨 → 避险/降息预期驱动债券动量
 
   let phase, label, equityMult, bondMult, desc;
 
   if(equityR1 > 5 && bondR1 > 0 && equityR1 > bondR1){
     phase = 'recovery';
-    label = '复苏期';
-    equityMult = 1.15; // 权益类风险平价系数上调15%
+    label = '权益强势期';
+    equityMult = 1.15;
     bondMult = 0.9;
-    desc = '经济回暖，通胀温和。权益资产优选，债券仍有配置价值。建议超配权益。';
+    desc = '权益类资产相对强势，动量信号偏多。债券仍有正收益。建议适度超配权益类资产。';
   } else if(equityR1 > 10 && bondR1 < 3){
     phase = 'overheat';
-    label = '过热期';
-    equityMult = 1.0; // 权益维持但不加码
-    bondMult = 0.8;   // 债券减配
-    desc = '经济过热，通胀抬头。权益尚可但需警惕回调，债券承压。建议控制仓位。';
+    label = '权益极端强势';
+    equityMult = 1.0;
+    bondMult = 0.8;
+    desc = '权益涨幅较大但债券走弱，可能存在过热风险。建议控制仓位，警惕回调。';
   } else if(equityR1 < 0 && bondR1 < 2){
     phase = 'stagflation';
-    label = '滞胀期';
-    equityMult = 0.7; // 权益大幅减配
+    label = '全面弱势期';
+    equityMult = 0.7;
     bondMult = 0.9;
-    desc = '增长放缓叠加通胀。最困难阶段，现金为王，防御为主。建议超配货币和短债。';
+    desc = '权益和债券均表现不佳，市场缺乏明确趋势。防御为主，建议超配货币和短债。';
   } else if(equityR1 < 5 && bondR1 > 3){
     phase = 'recession';
-    label = '衰退期';
+    label = '债券强势期';
     equityMult = 0.85;
-    bondMult = 1.2; // 债券受益于降息预期
-    desc = '经济放缓，降息预期。债券受益明显，权益需精选。建议超配债券。';
+    bondMult = 1.2;
+    desc = '债券相对强势，权益动量偏弱。避险情绪或降息预期驱动。建议超配债券类资产。';
   } else {
     phase = 'transition';
-    label = '过渡期';
+    label = '信号模糊期';
     equityMult = 1.0;
     bondMult = 1.0;
-    desc = '市场处于周期过渡阶段，信号不明确。建议均衡配置，不做极端倾斜。';
+    desc = '各类资产动量信号不明确，无明显趋势方向。建议均衡配置，不做极端倾斜。';
   }
 
   return { phase, label, equityMult, bondMult, desc, equityR1, bondR1 };
@@ -2615,9 +2628,9 @@ function detectManagerChanges(){
 
 // 根据档案 & 行情 & 市场动量 生成配置权重（风险平价 + 动量约束 + 动态倾斜 + 期限约束）
 function computeWeights(riskProfile, horizon, catRanks, macroClock){
-  // 1. 风险平价基础权重：各类别权重与其波动率成反比
-  const catVol = {}; // 用平均最大回撤近似波动率
-  catRanks.forEach(c => { catVol[c.cat] = Math.max(c.avgDD, 1); });
+  // 1. 风险平价基础权重：各类别权重与其年化波动率成反比
+  const catVol = {}; // 用平均最大回撤 / DD_TO_VOL 转为估算年化波动率
+  catRanks.forEach(c => { catVol[c.cat] = Math.max(c.avgDD / (DD_TO_VOL[c.cat]||2.5), 0.5); });
   const invVols = {};
   let invVolSum = 0;
   catRanks.forEach(c => {
@@ -2666,7 +2679,7 @@ function computeWeights(riskProfile, horizon, catRanks, macroClock){
     const bottom = catRanks[catRanks.length-1].cat;
     const scoreRange = catRanks[0].catScore - catRanks[catRanks.length-1].catScore;
     if(scoreRange > 0){
-      // 反转保护1：若该类别已被美林时钟调高（equityMult>1），动量倾斜减半，防止双重追涨
+      // 反转保护1：若该类别已被动量信号调高（equityMult>1），动量倾斜减半，防止双重追涨
       const topAlreadyBoosted = macroClock && macroClock.equityMult > 1 && ['active','index','qdii'].includes(top);
       const tiltScale = topAlreadyBoosted ? 0.5 : 1.0;
       // 反转保护2：若强势类别近1年涨幅>30%，说明可能过热，倾斜归零甚至反转
@@ -2765,11 +2778,20 @@ function selectFunds(cat, catData, riskProfile, pct, totalAmt){
   const pickCount = pct >= 35 && deduped.length >= 3 ? 3 : pct >= 25 && deduped.length >= 2 ? 2 : 1;
   const picks = deduped.slice(0, pickCount);
 
-  // 核心-卫星分配：核心仓70%，卫星仓30%（3只时50/25/25）
+  // 核心-卫星分配：按评分差距自适应（评分接近→趋向均分，差距大→集中核心仓）
   let perPick;
-  if(pickCount === 3) perPick = [Math.round(pct*0.5), Math.round(pct*0.25), pct - Math.round(pct*0.5) - Math.round(pct*0.25)];
-  else if(pickCount === 2) perPick = [Math.round(pct*0.7), pct - Math.round(pct*0.7)];
-  else perPick = [pct];
+  if(pickCount === 3){
+    const spread = picks[0].composite - picks[2].composite;
+    const coreRatio = Math.min(0.60, Math.max(0.40, 0.40 + spread * 0.004));
+    const spread12 = picks[0].composite - picks[1].composite;
+    const satRatio2 = (1 - coreRatio) * (spread12 < 5 ? 0.5 : 0.6);
+    const satRatio3 = 1 - coreRatio - satRatio2;
+    perPick = [Math.round(pct*coreRatio), Math.round(pct*satRatio2), pct - Math.round(pct*coreRatio) - Math.round(pct*satRatio2)];
+  } else if(pickCount === 2){
+    const spread = picks[0].composite - picks[1].composite;
+    const coreRatio = Math.min(0.80, Math.max(0.55, 0.55 + spread * 0.005));
+    perPick = [Math.round(pct*coreRatio), pct - Math.round(pct*coreRatio)];
+  } else perPick = [pct];
 
   return picks.map((f,i)=>({
     ...f,
@@ -3024,7 +3046,7 @@ function _doGenerate(shouldScroll){
   const catRanks = analyzeCategoryPerf();
 
   // 2. 市场动量信号
-  const macroClock = inferMerrilClock(catRanks);
+  const macroClock = inferMomentumPhase(catRanks);
   const mgrWarnings = detectManagerChanges();
 
   // 3. 渲染行情分析表
@@ -3114,36 +3136,62 @@ function _doGenerate(shouldScroll){
     const mu = longTermMu[f.cat] || 5;
     // 回归系数：r3Ann 偏离 mu 越远，越向 mu 回归
     // 当 r3Ann == mu 时，预期 = mu；偏离越大，预期越接近 mu
-    const revSpeed = { active:0.5, index:0.5, bond:0.3, money:0.1, qdii:0.5 }[f.cat] || 0.5;
+    // 均值回归速度校准（基于学术研究的半衰期估算）
+    // 权益: ~5年半衰期 → 3年窗口回归约35% / 债券: ~2年半衰期 → 3年窗口回归约60%
+    const revSpeed = { active:0.35, index:0.35, bond:0.6, money:0.1, qdii:0.35 }[f.cat] || 0.35;
     const expected = mu + (r3Ann - mu) * (1 - revSpeed);
     return s + expected * (f.pct/100);
   }, 0);
-  // 组合波动率估算（考虑资产间相关性的修正公式）
-  // 经验依据：maxDD 与年化波动率比值约 2-3 倍，取 2.5
-  // 跨类别相关性折扣：纯线性加权假设完全正相关(ρ=1)，实际分散投资 ρ<1
-  // 使用简化模型：同类别内 ρ=0.8，跨类别 ρ=0.3（股债 ρ≈0.1，股股 ρ≈0.7 取保守值）
-  const catDD = {}; // 每个类别的加权 maxDD
+  // 组合波动率估算（正确的多资产协方差模型）
+  // 1. 用 estimateVol() 将每只基金 maxDD 转为年化波动率σ（使用各类别 DD_TO_VOL 系数）
+  // 2. 类别内：同类基金相关性高(ρ_intra=0.8)，按 Var = ΣΣ wi·wj·ρij·σi·σj 计算
+  // 3. 跨类别：使用 CORR_MATRIX 5×5 相关性矩阵（含股债负相关 ρ=-0.15）
+  const RHO_INTRA = 0.8;
+  const catFundsMap = {};
   allPicks.forEach(f => {
-    if(!catDD[f.cat]) catDD[f.cat] = { dd:0, pct:0 };
-    catDD[f.cat].dd += f.maxDD * f.pct;
-    catDD[f.cat].pct += f.pct;
+    if(!catFundsMap[f.cat]) catFundsMap[f.cat] = [];
+    catFundsMap[f.cat].push(f);
   });
-  // 类别内：同类基金相关性高(ρ=0.8)，近似线性加权再打9折
-  const catSigmas = {};
-  Object.keys(catDD).forEach(c => {
-    catSigmas[c] = (catDD[c].dd / catDD[c].pct) * (catDD[c].pct / 100) / 2.5 * 0.9;
+
+  // 类别内方差 + 各类别加权波动率（用于跨类别协方差）
+  const catVariance = {};
+  const catWeightedSigma = {};
+  Object.keys(catFundsMap).forEach(cat => {
+    const funds = catFundsMap[cat];
+    let intraVar = 0;
+    let wSigma = 0;
+    for(let i = 0; i < funds.length; i++){
+      const wi = funds[i].pct / 100;
+      const si = estimateVol(funds[i]);
+      wSigma += wi * si;
+      for(let j = 0; j < funds.length; j++){
+        const wj = funds[j].pct / 100;
+        const sj = estimateVol(funds[j]);
+        intraVar += wi * wj * (i === j ? 1.0 : RHO_INTRA) * si * sj;
+      }
+    }
+    catVariance[cat] = intraVar;
+    catWeightedSigma[cat] = wSigma;
   });
-  // 跨类别：用 √(ΣΣ ρij·σi·σj) 近似，跨类别 ρ=0.3
-  const catKeys = Object.keys(catSigmas);
+
+  // 跨类别协方差：使用 CORR_MATRIX
   let portfolioVar = 0;
+  const catKeys = Object.keys(catVariance);
   catKeys.forEach(ci => {
     catKeys.forEach(cj => {
-      const rho = ci === cj ? 1.0 : 0.3;
-      portfolioVar += rho * catSigmas[ci] * catSigmas[cj];
+      if(ci === cj){
+        portfolioVar += catVariance[ci];
+      } else {
+        const rho = (CORR_MATRIX[ci] && CORR_MATRIX[ci][cj] !== undefined)
+          ? CORR_MATRIX[ci][cj] : 0.3;
+        portfolioVar += rho * catWeightedSigma[ci] * catWeightedSigma[cj];
+      }
     });
   });
   const sigma = Math.sqrt(Math.max(portfolioVar, 0.01));
-  const blendedDD = sigma * 2.5; // 反推组合等效回撤，用于风险计量
+  // 反推组合等效回撤（加权 DD_TO_VOL）
+  const avgDDtoVol = allPicks.reduce((s,f) => s + (DD_TO_VOL[f.cat]||2.5) * f.pct, 0) / 100;
+  const blendedDD = sigma * avgDDtoVol;
   // 正态分布置信区间
   const expReturnP75 = expReturn + 0.67 * sigma; // 乐观情景（75分位）
   const expReturnP25 = expReturn - 0.67 * sigma; // 悲观情景（25分位）
@@ -3154,11 +3202,14 @@ function _doGenerate(shouldScroll){
   // 1年预测
   const expAmt1Low  = Math.round(totalAmt*(1+expReturnLow/100));
   const expAmt1High = Math.round(totalAmt*(1+expReturnHigh/100));
-  // 3年预测（复利 + 波动率扩展）
-  // 3年累计复利收益 = (1+μ)^3 - 1
-  // 3年累计波动率 = σ_annual × √3（独立同分布假设）
+  // 3年预测（复利 + 考虑收益自相关的波动率扩展）
+  // 权益类存在弱负自相关(ρ≈-0.05，均值回归)，债券类正自相关(ρ≈+0.08，利率趋势)
+  // σ_T = σ × √(T × (1 + 2×Σ(1-k/T)×ρ_k))，简化为首阶自相关修正
   const cumReturn3Mid = (Math.pow(1 + expReturn/100, 3) - 1) * 100;
-  const cumSigma3 = sigma * Math.sqrt(3);
+  const equityPctTotal = allPicks.filter(f=>['active','index','qdii'].includes(f.cat)).reduce((s,f)=>s+f.pct,0)/100;
+  const autoCorr1 = equityPctTotal * (-0.05) + (1 - equityPctTotal) * 0.08;
+  const acFactor = 1 + 2 * (2/3 * autoCorr1 + 1/3 * autoCorr1 * 0.6);
+  const cumSigma3 = sigma * Math.sqrt(3 * Math.max(acFactor, 0.5));
   const cumReturn3Low = cumReturn3Mid - 0.67 * cumSigma3;
   const cumReturn3High = cumReturn3Mid + 0.67 * cumSigma3;
   const expAmt3Low  = Math.round(totalAmt * (1 + Math.max(cumReturn3Low, -50)/100));
@@ -3171,7 +3222,7 @@ function _doGenerate(shouldScroll){
     <div class="expected-item"><div class="expected-val" style="color:var(--primary)">¥${expAmt1High.toLocaleString()}</div><div class="expected-label">1年后乐观预估</div></div>
     <div class="expected-item"><div class="expected-val" style="color:#722ed1">¥${expAmt3Low.toLocaleString()}~${expAmt3High.toLocaleString()}</div><div class="expected-label">3年后预估区间</div></div>
     <div style="width:100%;font-size:11px;color:var(--muted);margin-top:4px;line-height:1.6">
-      ⚠️ <b>收益预估仅供参考，不构成收益承诺。</b>模型局限：①预期收益基于各类别长期年化中枢+均值回归模型，历史不代表未来；②波动率由最大回撤÷2.5粗略换算并加入跨类别相关性折扣(ρ=0.3)，精度有限；③正态分布假设会低估极端尾部风险。实际收益可能大幅偏离上述区间。P5极端情景年化可能达 ${expReturnP5.toFixed(1)}%。
+      ⚠️ <b>收益预估仅供参考，不构成收益承诺。</b>模型局限：①预期收益基于各类别长期年化中枢+均值回归模型，历史不代表未来；②波动率由maxDD按类别系数(DD_TO_VOL)转换，使用5×5相关性矩阵(含股债负相关)计算组合方差；③正态分布假设会低估极端尾部风险；④3年投影考虑了收益自相关修正。实际收益可能大幅偏离上述区间。P5极端情景年化可能达 ${expReturnP5.toFixed(1)}%。
     </div>`;
 
   // 7. 副标题
@@ -3378,16 +3429,18 @@ function renderStressTest(results, stressAmt){
   const sec = document.getElementById('stress-test-section');
   if(!sec) return;
   sec.style.display='block';
+  // 计算概率加权期望损失
+  const expectedLoss = results.reduce((s,r) => s + (r.prob||0) * Math.min(r.impact, 0), 0);
   sec.innerHTML=`
-    <div style="font-size:13px;font-weight:600;margin-bottom:8px">🧪 压力测试（历史情景回测）</div>
-    <div style="font-size:11px;color:var(--muted);margin-bottom:8px">模拟组合在历史极端行情中的预估表现，帮助理解最坏情况</div>
+    <div style="font-size:13px;font-weight:600;margin-bottom:8px">🧪 压力测试（${results.length}种历史情景回测）</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:8px">模拟组合在历史极端行情中的预估表现，帮助理解最坏情况。<b>概率加权期望损失：${expectedLoss.toFixed(2)}%</b>（约¥${Math.abs(Math.round(stressAmt*expectedLoss/100)).toLocaleString()}）</div>
     <div class="table-wrap"><table style="font-size:12px">
-      <thead><tr><th>历史情景</th><th>组合预估涨跌</th><th>预估盈亏</th><th>风险等级</th></tr></thead>
+      <thead><tr><th>历史情景</th><th>概率</th><th>组合预估涨跌</th><th>预估盈亏</th><th>风险等级</th></tr></thead>
       <tbody>${results.map(r=>{
         const cls = r.impact >= 0 ? 'up' : 'down';
         const risk = r.impact < -20 ? '🔴 极端' : r.impact < -10 ? '🟡 较高' : r.impact < 0 ? '🟢 可控' : '✅ 正收益';
         const amt = Math.round(stressAmt * r.impact / 100);
-        return `<tr><td>${r.name}</td><td class="${cls}">${r.impact>=0?'+':''}${r.impact.toFixed(1)}%</td><td class="${cls}">${amt>=0?'+':''}¥${Math.abs(amt).toLocaleString()}</td><td>${risk}</td></tr>`;
+        return `<tr><td>${r.name}</td><td>${((r.prob||0)*100).toFixed(0)}%</td><td class="${cls}">${r.impact>=0?'+':''}${r.impact.toFixed(1)}%</td><td class="${cls}">${amt>=0?'+':''}¥${Math.abs(amt).toLocaleString()}</td><td>${risk}</td></tr>`;
       }).join('')}</tbody>
     </table></div>
     <div style="margin-top:8px;padding:8px 12px;background:#f8f9fc;border-radius:6px;font-size:11px;color:var(--muted);line-height:1.6">
@@ -3645,12 +3698,14 @@ function calcDCAScore(f){
 
   // 1. 波动适度性（定投核心指标，35%）
   // 定投受益于波动，但超高波动（>35%）时散户大概率放弃定投，实际效果反降
-  // 使用钟形曲线：15-30%回撤区间为最优（满分），过低/过高都扣分
+  // 使用钟形曲线，最优DD按类别差异化（权益25%，QDII 20%，债券5%）
   let volScore = 0;
   if(f.r3 > 0 && f.maxDD > 0){
     const dd = Math.min(f.maxDD, 80);
-    // 钟形适度性：以22.5%为峰值，标准差12
-    volScore = 35 * Math.exp(-Math.pow(dd - 22.5, 2) / (2 * 12 * 12));
+    // 各类别最优定投波动率区间不同
+    const optimalDD = {active:25, index:25, bond:5, qdii:20}[f.cat] || 22.5;
+    const ddSigma = {active:12, index:12, bond:3, qdii:10}[f.cat] || 12;
+    volScore = 35 * Math.exp(-Math.pow(dd - optimalDD, 2) / (2 * ddSigma * ddSigma));
     // 长期正收益加成：r3越高，波动越有价值
     const r3Bonus = Math.min(1.0, f.r3 / 30); // r3>=30%时加成满额
     volScore = volScore * (0.6 + 0.4 * r3Bonus); // 基础60% + r3加成40%
@@ -4039,13 +4094,17 @@ function runSignalEngine(){
     const chg = parseFloat(nav.gszzl)||0;
     const pnlPct = h.cost > 0 ? (h.value-h.cost)/h.cost*100 : null;
 
-    // 信号1：持仓基金大跌（≤-2%），可能是加仓机会或风险预警
-    // 防护：检查是否已超配 + 检查是否连续下跌趋势（r1已为负说明不只是短期波动）
-    if(chg <= -3){
+    // 信号1：持仓基金大跌，可能是加仓机会或风险预警
+    // 阈值按类别差异化：债券-1%即显著，权益需-3.5%
+    const dropThreshold = {active:-3.5, index:-3.0, bond:-1.0, money:-0.3, qdii:-3.5}[fd?.cat] || -3;
+    const minorDropThreshold = dropThreshold * 0.6;
+    if(chg <= dropThreshold){
       // 计算该基金在持仓中的占比
       const totalValue = allHeld.reduce((s,x)=>s+x.value,0);
       const fundPct = totalValue > 0 ? h.value / totalValue * 100 : 0;
-      const alreadyOverweight = fundPct > 25; // 单只>25%算超配
+      // 超配阈值按类别差异化：低波动类别容忍度更高
+      const owThreshold = {money:40, bond:35, active:25, index:25, qdii:20}[fd?.cat] || 25;
+      const alreadyOverweight = fundPct > owThreshold;
       // 判断是否处于下跌趋势（r1<0 说明不只是单日波动）
       const inDowntrend = fd && fd.r1 < 0;
 
@@ -4074,7 +4133,7 @@ function runSignalEngine(){
           action:'🛑 观察或减仓'
         });
       }
-    } else if(chg <= -2){
+    } else if(chg <= minorDropThreshold){
       signals.push({type:'info', priority:2, code:h.code, name:h.name,
         title:`📉 ${h.name} 今日下跌 ${chg.toFixed(2)}%`,
         desc:'显著下跌，建议关注原因。若为短期市场波动，可持有观察。',
@@ -4119,7 +4178,7 @@ function runSignalEngine(){
   if(catRanks){
     // 信号5：某类别整体大跌（定投加仓机会）
     catRanks.forEach(c=>{
-      if(c.avgChg <= -1.5 && c.avgR1 > 0 && ['active','index','qdii'].includes(c.cat)){
+      if(c.avgChg <= -2.0 && c.avgR1 > 0 && c.catTrend <= 0 && ['active','index','qdii'].includes(c.cat)){
         const isHeld = allHeld.some(h=>{
           const fd=CURATED_FUNDS.find(f=>f.code===h.code);
           return fd && fd.cat === c.cat;
