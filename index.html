@@ -1018,6 +1018,12 @@ document.addEventListener('input',function(e){
   const fi=e.target.closest('.form-item');
   if(fi) fi.classList.remove('has-error');
 },{passive:true});
+// 全局：标红后3秒自动消失（防止用户不操作输入框时红框永驻）
+function autoFadeErrors(){
+  setTimeout(()=>{
+    document.querySelectorAll('.form-item.has-error').forEach(fi=>fi.classList.remove('has-error'));
+  },3000);
+}
 
 function showToast(msg, type='info', duration=2500){
   const c=document.getElementById('toast-container');
@@ -2350,7 +2356,7 @@ function addExistingHolding(){
   document.getElementById('eh-search').closest('.form-item').classList.toggle('has-error',searchEmpty);
   document.getElementById('eh-value').closest('.form-item').classList.toggle('has-error',!value);
   if(searchEmpty || !value) hasErr=true;
-  if(hasErr){showToast(searchEmpty?'请先搜索并选择一只基金':'请填写持仓市值','error');return;}
+  if(hasErr){showToast(searchEmpty?'请先搜索并选择一只基金':'请填写持仓市值','error');autoFadeErrors();return;}
   if(existingHoldings.some(h=>h.code===code)){showToast('该基金已存在，请修改现有记录','info');return;}
   existingHoldings.push({code,name,value,cost});
   FundDB.set('existingHoldings',existingHoldings); markHoldingsChanged();
@@ -3685,8 +3691,8 @@ function addHolding(){
   const searchEmpty = !code || !name;
   document.getElementById('h-search').closest('.form-item').classList.toggle('has-error',searchEmpty);
   document.getElementById('h-amount').closest('.form-item').classList.toggle('has-error',!amount||amount<=0);
-  if(searchEmpty){showToast('请先搜索并选择一只基金','error');return;}
-  if(!amount||amount<=0){showToast('请填写买入金额','error');return;}
+  if(searchEmpty){showToast('请先搜索并选择一只基金','error');autoFadeErrors();return;}
+  if(!amount||amount<=0){showToast('请填写买入金额','error');autoFadeErrors();return;}
 
   // 尝试从navCache获取当前净值
   const nav = navCache[code];
@@ -4017,7 +4023,7 @@ function addDcaPlan(){
   document.getElementById('dp-search').closest('.form-item').classList.toggle('has-error',searchEmpty);
   document.getElementById('dp-monthly').closest('.form-item').classList.toggle('has-error',!monthly);
   if(searchEmpty || !monthly) hasErr=true;
-  if(hasErr){showToast(searchEmpty?'请先搜索并选择一只基金':'请填写每月定投金额','error');return;}
+  if(hasErr){showToast(searchEmpty?'请先搜索并选择一只基金':'请填写每月定投金额','error');autoFadeErrors();return;}
   if(dcaPlans.some(d=>d.code===code)){showToast('该基金已在定投计划中','info');return;}
   dcaPlans.push({code,name,monthly,start,curval,type});
   FundDB.set('dcaPlans',dcaPlans);
@@ -4676,10 +4682,6 @@ function runHealthMonitor(){
 })();
 
 // 表单输入时自动清除校验红框（事件委托，一次性覆盖所有 .form-item）
-document.addEventListener('input', function(e){
-  const item = e.target.closest('.form-item');
-  if(item && item.classList.contains('has-error')) item.classList.remove('has-error');
-});
 
 // ═══════════════ Service Worker 注册 ═══════════════
 if('serviceWorker' in navigator){
