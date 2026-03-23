@@ -1281,6 +1281,7 @@ function stressTest(allPicks){
     {name:'2023利率上行', shocks:{active:5,index:3,bond:-5,money:2.5,qdii:-8}, prob:0.12},
     {name:'2024小盘暴跌', shocks:{active:-30,index:-10,bond:4,money:2,qdii:-5}, prob:0.08},
     {name:'全球流动性危机', shocks:{active:-35,index:-30,bond:-3,money:1,qdii:-40}, prob:0.03},
+    {name:'温和市场（基准）', shocks:{active:8,index:7,bond:4,money:2,qdii:6}, prob:0.32},
   ];
   // 计算各类别平均 maxDD 作为基准
   const catAvgDD = {};
@@ -3175,6 +3176,8 @@ function _doGenerate(shouldScroll){
   });
 
   // 跨类别协方差：使用 CORR_MATRIX
+  // 正确公式：cov(cat_i, cat_j) = ρ_cross × σ_cat_i × σ_cat_j
+  // 其中 σ_cat = sqrt(catVariance)，即类别组合的实际波动率（已含类别内相关性）
   let portfolioVar = 0;
   const catKeys = Object.keys(catVariance);
   catKeys.forEach(ci => {
@@ -3184,7 +3187,7 @@ function _doGenerate(shouldScroll){
       } else {
         const rho = (CORR_MATRIX[ci] && CORR_MATRIX[ci][cj] !== undefined)
           ? CORR_MATRIX[ci][cj] : 0.3;
-        portfolioVar += rho * catWeightedSigma[ci] * catWeightedSigma[cj];
+        portfolioVar += rho * Math.sqrt(catVariance[ci]) * Math.sqrt(catVariance[cj]);
       }
     });
   });
