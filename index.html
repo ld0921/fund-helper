@@ -596,7 +596,7 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
       · 风险平价：各类别权重与其估算年化波动率成反比（波动率=平均maxDD/类别DD-Vol系数，等风险贡献）<br>
       · 偏好倾斜：保守型超配货币/债券，进取型超配主动/QDII<br>
       · 期限约束：1年≤30%权益，1-3年≤60%，3-5年≤75%，5年+≤85%；短期(≤1年)额外降低主动权益5%转入债券<br>
-      · 最低配置约束：任何类别权重不低于2%，确保分散化<br>
+      · 最低配置约束：仅对风险偏好的核心类别保底≥2%（保守=货币+债券，进取=权益+QDII），非核心类别可清零，避免保守型被迫配权益<br>
       · 选基排名感知风险偏好：保守型侧重低回撤+高稳定性，进取型侧重收益动量+高弹性，同一类别内不同偏好可能推荐不同基金<br>
       · 核心卫星分配：按评分差距自适应（核心仓40-60%/55-80%，评分接近趋向均分）<br><br>
 
@@ -2783,8 +2783,18 @@ function computeWeights(riskProfile, horizon, catRanks, macroClock){
     base[k] += diff;
   }
 
-  // 确保最小权重 >= 2%
-  Object.keys(base).forEach(k => { if(base[k] < 2) base[k] = 2; });
+  // 最低权重：仅对该偏好的核心类别保底，非核心类别允许为0
+  // 保守型核心=货币+债券，进取型核心=主动+指数+QDII
+  const coreCats = {
+    conservative: ['money','bond'],
+    moderate:     ['money','bond','index'],
+    balanced:     ['bond','index','active'],
+    aggressive:   ['active','index','qdii'],
+  }[riskProfile] || Object.keys(base);
+  Object.keys(base).forEach(k => {
+    if(coreCats.includes(k) && base[k] < 2) base[k] = 2;
+    else if(!coreCats.includes(k) && base[k] < 1) base[k] = 0; // 非核心类别可清零
+  });
   const total2 = Object.values(base).reduce((s,v)=>s+v,0);
   if(total2 !== 100){
     const k = Object.keys(base).sort((a,b) => base[b] - base[a])[0];
@@ -3206,6 +3216,10 @@ function _doGenerate(shouldScroll){
     selectedPicks[cd.cat] = [...keptPicks, ...newPicks];
   });
   const allPicks = Object.values(selectedPicks).flat();
+  if(!allPicks.length){
+    document.getElementById('plan-summary').innerHTML='<div style="padding:20px;text-align:center;color:var(--muted)">⚠️ 未能生成方案，请检查基金数据是否加载完成后重试。</div>';
+    return;
+  }
 
   // 5. 收益预估（长期均值中枢 + 均值回归 + 统计置信区间）
   // 预期收益 = 类别长期年化均值（r3年化）向长期中枢回归，而非 r1 打折
@@ -3615,7 +3629,8 @@ function renderAllocGroups(selectedPicks, weights){
       </div>
       <div class="alloc-group-body">${picks.map(f=>{
         const nav=navCache[f.code];
-        const todayStr=nav?`<span style="margin-left:6px;font-size:11px;color:${parseFloat(nav.gszzl)>=0?'var(--danger)':'var(--success)'}">今日 ${parseFloat(nav.gszzl)>=0?'+':''}${nav.gszzl}%</span>`:'';
+        const chgVal=nav?parseFloat(nav.gszzl)||0:0;
+        const todayStr=nav&&nav.gszzl?`<span style="margin-left:6px;font-size:11px;color:${chgVal>=0?'var(--danger)':'var(--success)'}">今日 ${chgVal>=0?'+':''}${chgVal.toFixed(2)}%</span>`:'';
         return `<div class="alloc-item">
           <div style="width:36px;height:36px;border-radius:8px;background:${g.color}22;display:flex;align-items:center;justify-content:center;flex-shrink:0">
             <span style="font-size:16px">${f.cat==='money'?'🏦':f.cat==='bond'?'📑':f.cat==='qdii'?'🌍':f.cat==='index'?'📊':'🎯'}</span>
