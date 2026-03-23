@@ -1024,8 +1024,12 @@ function flashSaved(sectionId){
     const title=sec.querySelector('.card-title');
     if(title) title.appendChild(tick);
   }
+  // 连续触发时先移除再重新添加，强制重置动画
+  tick.classList.remove('show');
+  void tick.offsetWidth; // 触发 reflow，确保浏览器识别为两次状态变化
   tick.classList.add('show');
-  setTimeout(()=>tick.classList.remove('show'),2000);
+  clearTimeout(tick._fadeTimer);
+  tick._fadeTimer = setTimeout(()=>tick.classList.remove('show'),2000);
 }
 // 日期格式化为中文
 function fmtDateCN(dateStr){
@@ -3957,7 +3961,7 @@ function openModal(title,defaultVal,cb){
 function closeModal(){
   const mask=document.getElementById('modal-mask');
   mask.classList.remove('show');
-  setTimeout(()=>{mask.style.display='none';},200);
+  setTimeout(()=>{mask.style.display='none'; document.getElementById('modal-input').value='';},200);
   _modalCb=null;
 }
 function confirmModal(){
