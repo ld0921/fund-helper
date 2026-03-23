@@ -576,13 +576,13 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
       · <b>Calmar Ratio（40%）</b>：时间窗口匹配的混合Calmar——短期=(近1年收益−2%无风险利率)/近3年最大回撤 × 60% + 长期=(近3年年化收益−2%)/全期最大回撤 × 40%<br>
       · <b>收益一致性（25%）</b>：1年与3年收益方向是否一致（同向+10，反向+5，双负0）+ 3年收益强度分<br>
       · <b>任期稳定性（25%）</b>：基金经理连续任期年限，6档：&lt;1年=3分，1-2年=8分，2-3年=13分，3-5年=17分，5-10年=21分，≥10年=25分<br>
-      · <b>规模适配性（10%）</b>：50-500亿满分10分，&lt;2亿清盘风险2分，&gt;1000亿调仓困难4分<br>
+      · <b>规模适配性（10%）</b>：50-500亿满分10分，500-1000亿7分，10-50亿7分，2-10亿5分，&lt;2亿清盘风险2分，&gt;1000亿调仓困难4分<br>
       评分色标：≥80🟢强烈推荐，65-79🔵推荐，50-64🟡可关注，&lt;50🔴谨慎<br><br>
 
       <b>二、市场动量信号（资产相对强弱）</b><br>
       通过各类资产近1年相对收益推断市场状态（非宏观经济指标）：<br>
-      · 复苏期：权益>5%且>债券，权益×1.15 / 过热期：权益>10%且债券<3%，债券×0.8<br>
-      · 滞胀期：权益<0%且债券<2%，权益×0.7，货币≥15% / 衰退期：权益<5%且债券>3%，债券×1.2<br>
+      · 复苏期：权益>5%且债券>0%且权益>债券，权益×1.15，债券×0.9 / 过热期：权益>10%且债券<3%，债券×0.8<br>
+      · 滞胀期：权益<0%且债券<2%，权益×0.7，债券×0.9，货币≥15% / 衰退期：权益<5%且债券>3%，债券×1.2<br>
       · 过渡期：不满足以上条件，中性配置（系数均1.0）<br>
       <b>反转保护</b>：板块涨>30%停止追涨，>40%反转减配；板块跌>10%（可能底部）不再减配<br><br>
 
@@ -590,7 +590,8 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
       执行链路：风险平价基础 → 风险偏好倾斜 → 市场动量约束 → 行情动量微调（含反转保护）→ 期限上限 → 短期额外调整<br>
       · 风险平价：各类别权重与其平均最大回撤成反比（等风险贡献）<br>
       · 偏好倾斜：保守型超配货币/债券，进取型超配主动/QDII<br>
-      · 期限约束：1年≤30%权益，1-3年≤60%，3-5年≤75%，5年+≤85%<br><br>
+      · 期限约束：1年≤30%权益，1-3年≤60%，3-5年≤75%，5年+≤85%；短期(≤1年)额外降低主动权益5%转入债券<br>
+      · 最低配置约束：任何类别权重不低于2%，确保分散化<br><br>
 
       <b>四、持仓融合（有持仓时）</b><br>
       · 已有基金用评分体系评估，≥50分保留，&lt;50分建议替换并推荐同类最优<br>
@@ -598,19 +599,18 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
       · 已超配类别不再新买，最终输出=保留持仓+新买入<br><br>
 
       <b>五、收益预估（长期均值中枢 + 均值回归）</b><br>
-      · 预期收益以各类别长期年化均值为中枢（主动8%/指数7%/债券4%/货币2%/QDII 6%）<br>
-      · 当基金r3年化偏离中枢越远，预期越向中枢回归（回归速度：权益50%、债券30%、货币10%）<br>
-      · 组合波动率：σ≈maxDD/2.5，考虑跨类别相关性折扣（同类ρ=0.8，跨类ρ=0.3协方差合成）<br>
+      · 预期收益以各类别长期年化均值为中枢（主动8%/指数7%/债券4%/货币2%/QDII 6%），回归速度：权益50%、债券30%、货币10%、QDII 50%<br>
+      · 组合波动率：σ≈maxDD/2.5，类别内同类基金ρ=0.8（近似线性加权后打0.9折），跨类别ρ=0.3协方差合成<br>
       · 1年区间：μ±0.67σ（P25-P75） / 3年区间：复利累计±0.67σ√3<br><br>
 
       <b>六、压力测试</b><br>
       · 模拟6种历史危机（2015股灾/2018熊市/2020疫情/2022风格切换/债灾/泡沫）<br>
-      · 每只基金按自身maxDD/类别均值maxDD作为个基系数，高风险基金压力更大<br><br>
+      · 每只基金按自身maxDD/类别均值maxDD作为个基系数（限制0.5-2.0），高风险基金压力更大；上涨情景使用非对称系数（衰减50%）避免高估收益<br><br>
 
       <b>七、定投评分体系（独立于基金评分）</b><br>
-      · 波动收益比（35%）：回撤15-30%为定投最优区间（钟形曲线，22.5%中心）<br>
-      · 长期趋势（25%）：3年累计收益 / 管理质量（20%）：经理年限+星级 / 近期动量（20%）：近1年收益<br>
-      · 选基强制类别分散：每类别≥1只，同类≤2只<br><br>
+      · 波动收益比（35%）：回撤15-30%为定投最优区间（钟形曲线，中心22.5%，σ=12），叠加3年收益修正<br>
+      · 长期趋势（25%）：3年累计收益分档评分 / 管理质量（20%）：经理年限(上限12分)+星级(上限8分) / 近期动量（20%）：近1年收益（正收益×0.6，负收益×0.3+5，非对称处理）<br>
+      · 选基强制类别分散：每类别≥1只，同类≤2只；同经理基金去重、持仓标签重叠>50%去重<br><br>
 
       <b>八、健康诊断与信号</b><br>
       · z-score动态阈值：&lt;−2σ红色预警，&lt;−1σ黄色关注<br>
@@ -636,12 +636,14 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
 
     <!-- 生成中加载卡片（内联进度） -->
     <div class="card" id="gen-loading-card" style="display:none;text-align:center;padding:40px 20px">
-      <div style="font-size:36px;margin-bottom:14px;animation:pulse 1.2s infinite">📡</div>
+      <div style="font-size:36px;margin-bottom:14px;animation:pulse 1.2s infinite" id="gen-loading-icon">📡</div>
       <div style="font-size:15px;font-weight:600;margin-bottom:8px" id="gen-loading-text">正在获取实时数据…</div>
       <div style="max-width:280px;margin:0 auto 10px;height:6px;background:var(--border);border-radius:3px;overflow:hidden">
         <div id="gen-loading-bar" style="height:100%;background:var(--primary);border-radius:3px;transition:width .3s;width:0%"></div>
       </div>
       <div style="font-size:12px;color:var(--muted)" id="gen-loading-count">0 / 0</div>
+      <div id="gen-steps" style="display:none;max-width:320px;margin:16px auto 0;text-align:left">
+      </div>
     </div>
 
     <!-- 方案摘要（一眼看到结论） -->
@@ -2849,24 +2851,54 @@ function generateSmartPortfolio(){
   // 滚动到加载卡片
   setTimeout(()=>loadCard.scrollIntoView({behavior:'smooth',block:'center'}),100);
 
-  // 如果已有足够净值缓存（>10只），显示简短加载动画后生成
+  // 如果已有足够净值缓存（>10只），显示策略步骤动画后生成
   if(Object.keys(navCache).length >= 10){
     const bar=document.getElementById('gen-loading-bar');
     const countEl=document.getElementById('gen-loading-count');
     const textEl=document.getElementById('gen-loading-text');
+    const iconEl=document.getElementById('gen-loading-icon');
+    const stepsEl=document.getElementById('gen-steps');
     const cached=Object.keys(navCache).length;
-    textEl.textContent='正在分析缓存数据…';
-    countEl.textContent=`已缓存 ${cached} 只基金`;
-    bar.style.width='30%';
-    setTimeout(()=>{ bar.style.width='70%'; textEl.textContent='正在生成专属方案…'; },300);
-    setTimeout(()=>{
-      bar.style.width='100%';
-      setTimeout(()=>{
-        loadCard.style.display='none';
-        resultSections.forEach(el=>{el.style.display='';});
-        _finishGenerate(btn, true);
-      },200);
-    },700);
+    countEl.textContent=`已缓存 ${cached} 只基金实时数据`;
+
+    const steps=[
+      {icon:'📊',text:'4维正交模型评分（Calmar+一致性+任期+规模）',pct:15},
+      {icon:'📡',text:'分析市场动量信号，推断经济周期阶段',pct:30},
+      {icon:'⚖️',text:'Risk Parity风险平价基础配置',pct:45},
+      {icon:'🎚️',text:'风险偏好倾斜 + 期限约束叠加',pct:60},
+      {icon:'🔍',text:'智能选基（去重+核心卫星分配）',pct:75},
+      {icon:'🧪',text:'6大历史危机压力测试',pct:88},
+      {icon:'✅',text:'生成专属投资方案',pct:100}
+    ];
+
+    stepsEl.style.display='block';
+    stepsEl.innerHTML='';
+
+    let i=0;
+    function showStep(){
+      if(i>=steps.length){ return; }
+      const s=steps[i];
+      iconEl.textContent=s.icon;
+      textEl.textContent=s.text;
+      bar.style.width=s.pct+'%';
+      const stepDiv=document.createElement('div');
+      stepDiv.style.cssText='font-size:12px;line-height:1.8;color:var(--muted);opacity:0;transition:opacity .3s';
+      stepDiv.innerHTML=`<span style="color:var(--success)">✓</span> ${s.text}`;
+      stepsEl.appendChild(stepDiv);
+      requestAnimationFrame(()=>stepDiv.style.opacity='1');
+      i++;
+      if(i<steps.length){
+        setTimeout(showStep, 350);
+      } else {
+        setTimeout(()=>{
+          loadCard.style.display='none';
+          stepsEl.style.display='none';
+          resultSections.forEach(el=>{el.style.display='';});
+          _finishGenerate(btn, true);
+        },500);
+      }
+    }
+    showStep();
     return;
   }
 
@@ -2898,16 +2930,53 @@ function generateSmartPortfolio(){
       const now=new Date();
       document.getElementById('nav-update-time').textContent=`净值更新于 ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
 
-      // 隐藏加载卡片，显示方案内容
-      setTimeout(()=>{
-        loadCard.style.display='none';
-        resultSections.forEach(el=>{el.style.display='';});
-        _finishGenerate(btn, true);        // 刷新其他模块
-        renderDcaRanking();
-        runHealthMonitor();
-        runSignalEngine();
-        renderTodayOverview();
-      },400);
+      // 数据加载完成，展示策略执行步骤
+      const iconEl=document.getElementById('gen-loading-icon');
+      const stepsEl=document.getElementById('gen-steps');
+      countEl.textContent='数据加载完成，开始策略计算';
+      stepsEl.style.display='block';
+      stepsEl.innerHTML='';
+
+      const algoSteps=[
+        {icon:'📊',text:'4维正交模型评分（Calmar+一致性+任期+规模）'},
+        {icon:'📡',text:'分析市场动量信号，推断经济周期阶段'},
+        {icon:'⚖️',text:'Risk Parity风险平价基础配置'},
+        {icon:'🎚️',text:'风险偏好倾斜 + 期限约束叠加'},
+        {icon:'🔍',text:'智能选基（去重+核心卫星分配）'},
+        {icon:'🧪',text:'6大历史危机压力测试'},
+        {icon:'✅',text:'生成专属投资方案'}
+      ];
+
+      let si=0;
+      function showAlgoStep(){
+        if(si>=algoSteps.length) return;
+        const s=algoSteps[si];
+        iconEl.textContent=s.icon;
+        textEl.textContent=s.text;
+        bar.style.width=(60+si*40/algoSteps.length)+'%';
+        const stepDiv=document.createElement('div');
+        stepDiv.style.cssText='font-size:12px;line-height:1.8;color:var(--muted);opacity:0;transition:opacity .3s';
+        stepDiv.innerHTML=`<span style="color:var(--success)">✓</span> ${s.text}`;
+        stepsEl.appendChild(stepDiv);
+        requestAnimationFrame(()=>stepDiv.style.opacity='1');
+        si++;
+        if(si<algoSteps.length){
+          setTimeout(showAlgoStep, 350);
+        } else {
+          bar.style.width='100%';
+          setTimeout(()=>{
+            loadCard.style.display='none';
+            stepsEl.style.display='none';
+            resultSections.forEach(el=>{el.style.display='';});
+            _finishGenerate(btn, true);
+            renderDcaRanking();
+            runHealthMonitor();
+            runSignalEngine();
+            renderTodayOverview();
+          },500);
+        }
+      }
+      showAlgoStep();
     }
   }));
 }
