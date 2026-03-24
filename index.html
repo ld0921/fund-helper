@@ -522,11 +522,11 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
   <button onclick="document.getElementById('ios-install-banner').style.display='none';localStorage.setItem('_iosInstallDismissed','1')" style="margin-left:8px;background:none;border:none;color:#0958d9;cursor:pointer;font-size:16px;line-height:1">&times;</button>
 </div>
 <!-- 智能信号弹窗（右上角点击触发） -->
-<div class="modal-mask" id="signal-modal" style="display:none" onclick="if(event.target===this)document.getElementById('signal-modal').style.display='none'">
+<div class="modal-mask" id="signal-modal" style="display:none" onclick="if(event.target===this)closeSignalModal()">
   <div class="modal-box" style="max-width:480px;max-height:80vh;overflow:hidden;display:flex;flex-direction:column;padding:0">
     <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
       <span style="font-size:15px;font-weight:700" id="signal-modal-title">📡 智能监控信号</span>
-      <button onclick="document.getElementById('signal-modal').style.display='none'" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;line-height:1">&times;</button>
+      <button onclick="closeSignalModal()" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;line-height:1">&times;</button>
     </div>
     <div id="signal-modal-list" style="overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1"></div>
   </div>
@@ -1266,6 +1266,12 @@ document.addEventListener('click',function(e){
 function openSignalModal(){
   const modal=document.getElementById('signal-modal');
   if(modal){ modal.style.display='flex'; requestAnimationFrame(()=>modal.classList.add('show')); }
+}
+function closeSignalModal(){
+  const modal=document.getElementById('signal-modal');
+  if(!modal) return;
+  modal.classList.remove('show');
+  setTimeout(()=>{ modal.style.display='none'; }, 200);
 }
 
 async function pushToCloud(){
@@ -4729,6 +4735,7 @@ function importFromDcaPlans(){
 
 // ═══════════════ 智能买卖信号引擎（均衡型灵敏度） ═══════════════
 let _lastSignalHash = ''; // 避免重复通知
+let _lastDangerHash = ''; // 避免重复弹出危险信号弹窗
 
 function runSignalEngine(){
   // 合并所有持仓来源
@@ -4955,8 +4962,14 @@ function renderSignalBanner(signals){
     </div>`;
   }).join('');
 
-  // 有危险信号时自动弹出
-  if(dangerCount > 0) openSignalModal();
+  // 有危险信号且内容变化时才自动弹出（避免切Tab重复打扰）
+  if(dangerCount > 0){
+    const dangerHash = signals.filter(s=>s.type==='danger'||s.type==='warning').map(s=>s.code+s.title).join('|');
+    if(dangerHash !== _lastDangerHash){
+      _lastDangerHash = dangerHash;
+      openSignalModal();
+    }
+  }
 }
 
 function sendBrowserNotification(signals){
