@@ -705,6 +705,7 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
       <div id="rebal-summary" class="rebal-summary"></div>
       <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden" id="rebal-list"></div>
       <div style="margin-top:12px;padding:10px 14px;background:#fffbe6;border-radius:8px;font-size:12px;color:#7c5800;line-height:1.7">
+        ⏰ <b>调仓顺序：</b>建议先执行卖出/减仓操作，等资金到账（股票/混合型T+1，QDII T+3-7）后再执行买入，避免资金不足。<br>
         ⚠️ <b>支付宝操作提示：</b><br>
         · <b>赎回费梯度：</b>持有&lt;7天收1.5%（惩罚性），7天-1年约0.5%，1-2年约0.25%，2年以上通常0%。建议优先加仓而非频繁卖出<br>
         · <b>QDII基金限购：</b>标普500/纳斯达克100等海外基金常有单日限额（1000-5000元），大额买入需分多日完成<br>
@@ -955,6 +956,9 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
       <button class="btn btn-ghost btn-sm" onclick="document.getElementById('eh-search').focus()">＋ 添加第一笔持仓</button>
     </div>
     <div id="eh-summary" style="display:none;margin-top:10px;padding:10px 14px;background:#f0f8ff;border-radius:8px;font-size:13px"></div>
+    <div style="margin-top:8px;padding:8px 12px;background:#fffbe6;border-radius:6px;font-size:11px;color:#ad6800;line-height:1.6">
+      💡 <b>分红提示：</b>基金分红分为「现金分红」和「红利再投资」两种方式，可在支付宝基金详情页设置。红利再投资会增加持有份额，现金分红会发放到余额。分红后基金净值会相应下调，属于正常现象。
+    </div>
   </div>
 
   <!-- 我的定投计划（从Panel1移入） -->
@@ -979,6 +983,18 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
       </div>
       <div class="form-item"><label>每月定投金额(元)</label><input id="dp-monthly" type="number" placeholder="如：500"></div>
       <div class="form-item"><label>开始定投日期</label><input id="dp-start" type="date"></div>
+      <div class="form-item">
+        <label>每月扣款日</label>
+        <select id="dp-deduct-day">
+          <option value="1">每月1号</option>
+          <option value="5">每月5号</option>
+          <option value="10" selected>每月10号</option>
+          <option value="15">每月15号</option>
+          <option value="20">每月20号</option>
+          <option value="25">每月25号</option>
+          <option value="28">每月28号</option>
+        </select>
+      </div>
       <div class="form-item"><label>当前持仓市值(元)</label><input id="dp-curval" type="number" placeholder="最新估值，可不填"></div>
       <div class="form-item"><label>基金类型</label>
         <select id="dp-type"><option>股票型</option><option>混合型</option><option>债券型</option><option>指数型</option><option>货币型</option><option>QDII</option></select>
@@ -2705,13 +2721,16 @@ function addExistingHolding(){
 function confirmHolding(i){
   const h = existingHoldings[i];
   if(!h) return;
-  h.status = 'confirmed';
-  // 确认时用当前净值作为买入净值（更准确）
-  const nav = navCache[h.code];
-  if(nav && nav.dwjz) h.cost = parseFloat(nav.dwjz) || h.cost; // dwjz是昨日确认净值
-  FundDB.set('existingHoldings', existingHoldings);
-  renderExistingHoldings(); runHealthMonitor(); renderTodayOverview();
-  showToast(`${h.name} 已确认份额`,'success');
+  openModal(`请输入「${h.name}」在支付宝确认的份额数`, '', function(val){
+    const shares = parseFloat(val);
+    if(!shares || shares <= 0){ showToast('请输入有效份额数（可在支付宝持仓中查看）','error'); return; }
+    h.status = 'confirmed';
+    h.shares = shares;
+    h.cost = h.amount / shares; // 确认净值 = 买入金额 / 确认份额
+    FundDB.set('existingHoldings', existingHoldings);
+    renderExistingHoldings(); runHealthMonitor(); renderTodayOverview();
+    showToast(`${h.name} 已确认：${shares}份，确认净值${h.cost.toFixed(4)}`, 'success');
+  });
 }
 function removeExistingHolding(i){
   const h=existingHoldings[i];
@@ -2754,7 +2773,13 @@ function renderExistingHoldings(){
     const nav=navCache[h.code];
     const curNav=nav?parseFloat(nav.gsz)||1:1;
     const cost=h.cost||curNav;
-    h.value=h.amount?(h.amount/cost*curNav):(h.value||0);
+    if(h.shares && h.shares > 0){
+      // Confirmed: use exact shares × current nav
+      const navVal = nav ? parseFloat(nav.gsz)||1 : (h.cost||1);
+      h.value = h.shares * navVal;
+    } else {
+      h.value=h.amount?(h.amount/cost*curNav):(h.value||0);
+    }
   });
   FundDB.set('existingHoldings',existingHoldings);
   const totalCost=existingHoldings.reduce((s,h)=>s+(h.amount||0),0);
@@ -2777,7 +2802,7 @@ function renderExistingHoldings(){
     return `<div class="eh-row">
       <div class="eh-fund">
         <div class="eh-fund-name">${escHtml(h.name)} <code style="font-size:11px;color:var(--muted)">${escHtml(h.code)}</code> ${sourceTag} ${statusBadge}</div>
-        <div class="eh-fund-meta">买入 ¥${(h.amount||0).toLocaleString('zh-CN',{maximumFractionDigits:0})} · ${h.date||'--'}${fd?` · ${escHtml(h.type||fd.type)}`:''}</div>
+        <div class="eh-fund-meta">买入 ¥${(h.amount||0).toLocaleString('zh-CN',{maximumFractionDigits:0})}${h.shares ? ` · ${h.shares.toFixed(2)}份` : ''} · ${h.date||'--'}${fd?` · ${escHtml(h.type||fd.type)}`:''}</div>
       </div>
       <div class="eh-value">¥${h.value.toLocaleString('zh-CN',{maximumFractionDigits:0})}</div>
       <div class="eh-pnl">${pnlHtml}</div>
@@ -3263,7 +3288,7 @@ function buildSteps(weights, picks, totalAmt, monthly, riskProfile, horizon){
     const stepN = (keptFunds.length?1:0)+(immediateFunds.length?1:0)+1;
     steps.push({
       title:`第${stepN===1?'一':stepN===2?'二':'三'}步：分批买入权益基金 ¥${equityAmt.toLocaleString()}`,
-      desc:`在支付宝搜索基金代码购买：${equityFunds.map(f=>`「${f.name}」(${f.code}, ¥${f.amt.toLocaleString()})`).join('、')}。建议分2-3次买入，间隔1-2周。注意：QDII基金可能有单日限购额度，大额需分多日买入。`
+      desc:`在支付宝搜索基金代码购买：${equityFunds.map(f=>`「${f.name}」(${f.code}, ¥${f.amt.toLocaleString()})`).join('、')}。建议分2-3次买入，间隔1-2周。注意：QDII基金有单日限购额度（各基金不同，请在支付宝基金详情页查看具体限额），大额需分多日买入。<br>⏰ 注意：卖出的资金T+1到账后才能用于购买，请先操作赎回，到账后再执行买入。`
     });
   }
   if(!newFunds.length && keptFunds.length){
@@ -4033,13 +4058,19 @@ function renderAllocGroups(selectedPicks, weights){
         const nav=navCache[f.code];
         const chgVal=nav?parseFloat(nav.gszzl)||0:0;
         const todayStr=nav&&nav.gszzl?`<span style="margin-left:6px;font-size:11px;color:${chgVal>=0?'var(--danger)':'var(--success)'}">今日 ${chgVal>=0?'+':''}${chgVal.toFixed(2)}%</span>`:'';
+        const shareClass = f.name.includes('A') ? 'A类' : f.name.includes('C') ? 'C类' : '';
+        const shareClassHtml = shareClass ? `<span style="font-size:10px;padding:1px 4px;border-radius:3px;background:#e6f7ff;color:#0958d9">${shareClass}</span> ` : '';
+        const riskBadge = `<span style="font-size:10px;padding:1px 4px;border-radius:3px;background:${f.risk>='R4'?'#fff1f0':f.risk>='R3'?'#fffbe6':'#f6ffed'};color:${f.risk>='R4'?'#cf1322':f.risk>='R3'?'#ad6800':'#389e0d'}">${f.risk||'R3'}</span>`;
+        const navDisplay = nav&&nav.gsz ? ` · 净值${nav.gsz}` : '';
+        const feeHtml = f.fee ? `<div style="font-size:10px;color:var(--muted)">费率≈${f.fee}%/年${f.name.includes('C')?'（C类免申购费）':''}</div>` : '';
         return `<div class="alloc-item">
           <div style="width:36px;height:36px;border-radius:8px;background:${g.color}22;display:flex;align-items:center;justify-content:center;flex-shrink:0">
             <span style="font-size:16px">${f.cat==='money'?'🏦':f.cat==='bond'?'📑':f.cat==='qdii'?'🌍':f.cat==='index'?'📊':'🎯'}</span>
           </div>
           <div class="alloc-item-name">
             <div class="alloc-item-fund">${f.name} ${todayStr}</div>
-            <div class="alloc-item-meta">代码 ${f.code} · ${f.type} · ${f.manager} · 近1年 <span class="${f.r1>=0?'up':'down'}">${f.r1>=0?'+':''}${f.r1}%</span></div>
+            <div class="alloc-item-meta">${shareClassHtml}${riskBadge} 代码 ${f.code} · ${f.type} · ${f.manager} · 近1年 <span class="${f.r1>=0?'up':'down'}">${f.r1>=0?'+':''}${f.r1}%</span>${navDisplay}</div>
+            ${feeHtml}
           </div>
           <div class="alloc-item-pct" style="color:${g.color}">${f.pct}%</div>
           <div class="alloc-item-amt">¥${f.amt.toLocaleString()}</div>
@@ -4329,6 +4360,7 @@ function addDcaPlan(){
   const start=document.getElementById('dp-start').value;
   const curval=parseFloat(document.getElementById('dp-curval').value)||0;
   const type=document.getElementById('dp-type').value;
+  const deductDay = parseInt(document.getElementById('dp-deduct-day').value) || 10;
   // 内联校验
   let hasErr=false;
   const searchEmpty = !code || !name;
@@ -4337,7 +4369,7 @@ function addDcaPlan(){
   if(searchEmpty || !monthly) hasErr=true;
   if(hasErr){showToast(searchEmpty?'请先搜索并选择一只基金':'请填写每月定投金额','error');autoFadeErrors();return;}
   if(dcaPlans.some(d=>d.code===code)){showToast('该基金已在定投计划中','info');return;}
-  dcaPlans.push({code,name,monthly,start,curval,type});
+  dcaPlans.push({code,name,monthly,start,curval,type,deductDay});
   FundDB.set('dcaPlans',dcaPlans);
   renderDcaPlans(); flashSaved('dp-section');
   clearFundMatch('dp');
@@ -4427,7 +4459,7 @@ function renderDcaPlans(){
     return `<div class="dp-item">
       <div class="dp-fund">
         <div class="dp-name">${escHtml(d.name)} <code class="code-copy" onclick="copyCode('${escHtml(d.code)}',this)" title="点击复制" style="font-size:11px;color:var(--muted)">${escHtml(d.code)}</code>${chg!==null?`<span style="margin-left:6px;font-size:11px;color:${chg>=0?'var(--danger)':'var(--success)'}">${chg>=0?'+':''}${chg}%</span>`:''}</div>
-        <div class="dp-meta">${escHtml(d.type)}${d.start?` · 始于 ${fmtDateCN(d.start)}`:''} · 已定投约 ${months} 期 · 累计约 ¥${invested.toLocaleString()}</div>
+        <div class="dp-meta">${escHtml(d.type)}${d.start?` · 始于 ${fmtDateCN(d.start)}`:''} · 已定投约 ${months} 期 · 累计约 ¥${invested.toLocaleString()}${d.deductDay ? ` · 每月${d.deductDay}号扣款` : ''}</div>
       </div>
       <div class="dp-monthly"><div class="dp-monthly-val">¥${d.monthly.toLocaleString()}</div><div class="dp-monthly-lbl">每月定投</div></div>
       <div class="dp-total"><div class="dp-total-val">¥${d.curval>0?d.curval.toLocaleString():'--'}</div><div class="dp-total-lbl">当前市值</div></div>
