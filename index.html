@@ -4956,16 +4956,22 @@ function runHealthMonitor(){
     <div class="health-action" style="color:${a.level==='red'?'var(--danger)':a.level==='yellow'?'var(--warning)':'var(--success)'}">${escHtml(a.action)}</div>
   </div>`;
 
-  wrap.innerHTML=`<div class="card ${headerClass} alert-card" style="padding:0;overflow:hidden">
-    <div style="padding:14px 16px;border-bottom:1px solid #f0f0f0">
-      <div class="alert-card-title">${headerIcon} 持仓健康诊断 · ${allHeld.length} 只基金</div>
-      <div style="font-size:13px;color:var(--muted)">${headerMsg}</div>
-    </div>
+  const hasIssues = alerts.length > 0;
+  wrap.innerHTML=`<details class="card ${headerClass} alert-card" style="padding:0;overflow:hidden;cursor:pointer" ${hasIssues?'open':''}>
+    <summary style="padding:14px 16px;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:8px">
+      <div style="flex:1">
+        <div class="alert-card-title" style="margin-bottom:2px">${headerIcon} 持仓健康诊断 · ${allHeld.length} 只基金</div>
+        <div style="font-size:12px;color:var(--muted)">${headerMsg}</div>
+      </div>
+      <span class="toggle-arrow" style="font-size:12px;color:var(--primary);flex-shrink:0"></span>
+    </summary>
+    <div style="border-top:1px solid #f0f0f0">
     ${[...alerts,...okList].map(renderItem).join('')}
     <div style="padding:8px 14px;font-size:11px;color:var(--muted);background:#fafafa">
       💡 诊断基于同类基金对比 + 持仓集中度分析。${Object.keys(navCache).length>0?'已融合实时行情数据':'建议等待净值加载后刷新'}。
     </div>
-  </div>`;
+    </div>
+  </details>`;
 }
 
 // ═══════════════ 初始化（异步：IndexedDB → 渲染） ═══════════════
