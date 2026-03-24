@@ -1082,6 +1082,7 @@ function skipAuth(){
 function toggleAuthMode(){
   _authMode = _authMode==='login' ? 'register' : 'login';
   _updateAuthModalUI();
+  document.getElementById('auth-error').style.display='none';
 }
 function _updateAuthModalUI(){
   document.getElementById('auth-modal-title').textContent = _authMode==='login' ? '登录账号' : '注册账号';
@@ -1327,15 +1328,18 @@ async function applyCloudData(cloudData, version){
 }
 
 // ── 网络状态监听 ──
+window.addEventListener('offline', ()=>{
+  if(_currentUser) updateSyncStatus('offline');
+  showToast('网络已断开，数据暂存本地，联网后自动同步','error',4000);
+});
 window.addEventListener('online', ()=>{
+  showToast('网络已恢复，正在同步…','success',2000);
   if(_currentUser){
     if(localStorage.getItem('_syncPending')){ pushToCloud(); }
     pullFromCloud();
     updateSyncStatus('synced');
   }
 });
-window.addEventListener('offline', ()=>{
-  if(_currentUser) updateSyncStatus('offline');
 });
 
 // ═══════════════ Toast 通知系统 ═══════════════
