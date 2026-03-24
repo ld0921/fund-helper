@@ -478,11 +478,7 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
   <button class="banner-action" onclick="manualRefresh()">⟳ 重新加载</button>
 </div>
 <!-- 备份提醒横幅 -->
-<div id="backup-reminder" style="display:none;background:linear-gradient(135deg,#fff7e6,#fffbe6);border-bottom:1px solid #ffe58f;padding:10px 16px;font-size:13px;color:#ad6800;text-align:center">
-  <span>已超过 7 天未备份数据，建议导出备份以防丢失</span>
-  <button onclick="FundDB.exportAll().then(()=>{document.getElementById('backup-reminder').style.display='none'})" style="margin-left:8px;background:#faad14;color:#fff;border:none;border-radius:6px;padding:4px 12px;font-size:12px;cursor:pointer">立即备份</button>
-  <button onclick="document.getElementById('backup-reminder').style.display='none'" style="margin-left:4px;background:none;border:none;color:#ad6800;cursor:pointer;font-size:16px;line-height:1">&times;</button>
-</div>
+<!-- 备份提醒已由云端同步替代 -->
 <!-- iOS 安装引导 -->
 <div id="ios-install-banner" style="display:none;background:linear-gradient(135deg,#e6f4ff,#f0f5ff);border-bottom:1px solid #91caff;padding:12px 16px;font-size:13px;color:#0958d9;text-align:center">
   <span>在 Safari 中点击 <b>分享按钮</b> → <b>添加到主屏幕</b>，即可像 App 一样使用</span>
@@ -892,7 +888,6 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
     <button class="chip active" onclick="scrollToSection('eh-section')">持仓</button>
     <button class="chip" onclick="scrollToSection('dp-section')">定投</button>
     <button class="chip" onclick="scrollToSection('holdings-section')">记录</button>
-    <button class="chip" onclick="scrollToSection('backup-section')">备份</button>
   </div>
 
   <!-- 已有持仓输入（从Panel0移入，用于调仓建议） -->
@@ -1024,10 +1019,14 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
     </div>
   </div>
 
-  <!-- 数据备份管理（从页面底部移入） -->
+  <!-- 数据备份管理（仅未登录时显示，已登录数据自动同步到云端） -->
   <div class="card" id="backup-section" style="margin-bottom:calc(14px + env(safe-area-inset-bottom))">
-    <div class="card-title">💾 数据备份管理</div>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:14px">数据存储在本地浏览器中，建议定期导出备份。导出的文件可在任意设备导入恢复。</p>
+    <div class="card-title">💾 数据管理</div>
+    <div id="backup-logged-in" style="display:none">
+      <p style="font-size:13px;color:var(--success);margin-bottom:8px">✅ 已登录，数据自动同步到云端，无需手动备份。</p>
+      <div style="font-size:12px;color:var(--muted)">如需导出本地数据副本，仍可使用下方按钮。</div>
+    </div>
+    <p id="backup-offline-tip" style="font-size:13px;color:var(--muted);margin-bottom:14px">数据存储在本地浏览器中，登录账号可自动云端同步。也可手动导出备份。</p>
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
       <button class="btn btn-primary" onclick="doExportBackup()">📤 导出备份文件</button>
       <label class="btn btn-outline" style="cursor:pointer;margin:0">
@@ -1177,6 +1176,11 @@ function updateAuthUI(){
   } else {
     area.innerHTML = `<button class="btn btn-sm" onclick="showAuthModal()" style="background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.3);font-size:12px;padding:4px 12px;border-radius:6px">登录</button>`;
   }
+  // 备份区域：已登录时显示云端提示，隐藏离线提示
+  const loggedInTip = document.getElementById('backup-logged-in');
+  const offlineTip = document.getElementById('backup-offline-tip');
+  if(loggedInTip) loggedInTip.style.display = _currentUser ? '' : 'none';
+  if(offlineTip) offlineTip.style.display = _currentUser ? 'none' : '';
 }
 
 function updateSyncStatus(status){
@@ -1410,7 +1414,7 @@ window.addEventListener('scroll',function(){
 })();
 
 // ═══════════════ 资产Tab子导航滚动 ═══════════════
-const _subnavSections = ['eh-section','dp-section','holdings-section','backup-section'];
+const _subnavSections = ['eh-section','dp-section','holdings-section'];
 let _subnavScrolling = false; // 防止点击触发滚动时 observer 回调覆盖
 
 function scrollToSection(id){
@@ -2660,10 +2664,20 @@ function addExistingHolding(){
 }
 function removeExistingHolding(i){
   const h=existingHoldings[i];
-  if(h && !confirm(`确定删除「${h.name||h.code}」？`)) return;
+  if(h && !confirm(`确定删除「${h.name||h.code}」？\n将同时删除该基金的定投计划和持仓记录。`)) return;
+  const code = h ? h.code : null;
   existingHoldings.splice(i,1);
   FundDB.set('existingHoldings',existingHoldings); markHoldingsChanged();
-  renderExistingHoldings(); runHealthMonitor();
+  // 联动删除同code的定投计划和持仓记录
+  if(code){
+    const dcaBefore = dcaPlans.length;
+    dcaPlans = dcaPlans.filter(d => d.code !== code);
+    if(dcaPlans.length !== dcaBefore) FundDB.set('dcaPlans', dcaPlans);
+    const hBefore = holdings.length;
+    holdings = holdings.filter(h => h.code !== code);
+    if(holdings.length !== hBefore) FundDB.set('holdings', holdings);
+  }
+  renderExistingHoldings(); renderDcaPlans(); renderHoldings(); runHealthMonitor();
 }
 function clearExistingHoldings(){
   if(!existingHoldings.length||confirm('确定清空全部已有持仓？')){
@@ -5002,10 +5016,8 @@ function runHealthMonitor(){
     if(wc) wc.style.display='none';
   }
 
-  // 4. 检查备份提醒（已登录且同步正常时跳过）
-  FundDB.checkBackupReminder().then(needRemind => {
-    if(needRemind && !_currentUser) document.getElementById('backup-reminder').style.display='';
-  });
+  // 4. 备份提醒和登录状态恢复统一在 Supabase session 检查后处理
+  // （避免 session 异步恢复前 _currentUser 还是 null 导致误弹备份提醒）
 
   // 4.5 Supabase 登录状态恢复（未登录则强制弹出登录框）
   if(_supa){
