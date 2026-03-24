@@ -446,7 +446,7 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
 </div>
 
 <!-- 登录/注册弹窗 -->
-<div class="modal-mask" id="auth-modal" style="display:none" onclick="if(event.target===this)hideAuthModal()">
+<div class="modal-mask" id="auth-modal" style="display:none" onclick="if(event.target===this && _currentUser)hideAuthModal()">
   <div class="modal-box" style="max-width:340px">
     <div class="modal-title" id="auth-modal-title">登录账号</div>
     <div style="font-size:12px;color:var(--muted);margin-bottom:12px">登录后数据将自动同步到云端，支持多设备共享</div>
@@ -1067,6 +1067,7 @@ function showAuthModal(){
   setTimeout(()=>document.getElementById('auth-email').focus(),200);
 }
 function hideAuthModal(){
+  if(!_currentUser){ showToast('请先登录后使用','error'); return; } // 未登录不允许关闭
   const mask=document.getElementById('auth-modal');
   mask.classList.remove('show');
   setTimeout(()=>{mask.style.display='none';},200);
@@ -1140,9 +1141,11 @@ async function authLogout(){
   await _supa.auth.signOut();
   _currentUser = null;
   _cloudVersion = 0;
-  FundDB.onSync(null); // 取消同步回调
+  FundDB.onSync(null);
   updateAuthUI();
-  showToast('已退出登录，数据仍保留在本地','info');
+  showToast('已退出登录','info');
+  // 退出后重新弹出登录框
+  showAuthModal();
 }
 
 function updateAuthUI(){
@@ -4959,21 +4962,21 @@ function runHealthMonitor(){
     if(needRemind && !_currentUser) document.getElementById('backup-reminder').style.display='';
   });
 
-  // 4.5 Supabase 登录状态恢复
+  // 4.5 Supabase 登录状态恢复（未登录则强制弹出登录框）
   if(_supa){
     _supa.auth.getSession().then(({data:{session}}) => {
       if(session && session.user){
         _currentUser = session.user;
         updateAuthUI();
-        // 注册同步回调
         FundDB.onSync(_debounce(pushToCloud, 2000));
-        // 拉取云端数据
         pullFromCloud().then(()=>{
-          // 处理离线期间的待同步数据
           if(localStorage.getItem('_syncPending')) pushToCloud();
         });
+      } else {
+        // 未登录：强制弹出登录框
+        showAuthModal();
       }
-    }).catch(e => console.warn('auth session check failed:', e));
+    }).catch(e => { console.warn('auth session check failed:', e); showAuthModal(); });
     // 监听登录状态变化（如 token 刷新、其他 tab 登出等）
     _supa.auth.onAuthStateChange((event, session) => {
       if(event === 'SIGNED_OUT'){ _currentUser = null; updateAuthUI(); }
