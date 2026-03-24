@@ -902,17 +902,15 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
   <div class="chip-row" id="asset-subnav" style="position:sticky;top:46px;z-index:50;background:var(--bg);padding:8px 0">
     <button class="chip active" onclick="scrollToSection('eh-section')">持仓</button>
     <button class="chip" onclick="scrollToSection('dp-section')">定投</button>
-    <button class="chip" onclick="scrollToSection('holdings-section')">记录</button>
   </div>
 
-  <!-- 已有持仓输入（从Panel0移入，用于调仓建议） -->
+  <!-- 统一持仓管理 -->
   <div class="card" id="eh-section">
     <div class="card-title">
-      <span class="icon icon-red">💼</span>我的持仓总览
-      <span class="card-desc" style="font-size:12px;color:var(--muted);font-weight:400;margin-left:4px">汇总各账户持仓，用于智能方案的调仓建议和健康诊断</span>
+      <span class="icon icon-red">💼</span>我的持仓
+      <span class="card-desc" style="font-size:12px;color:var(--muted);font-weight:400;margin-left:4px">记录在支付宝购买的基金，自动跟踪市值和盈亏</span>
       <span class="card-actions" style="margin-left:auto">
-        <button class="btn btn-ghost btn-sm" onclick="importFromHoldings()">从持仓记录导入</button>
-        <button class="btn btn-ghost btn-sm" onclick="importFromDcaPlans()">从定投计划导入</button>
+        <button class="btn btn-ghost btn-sm" onclick="importFromDcaPlans()">从定投导入</button>
       </span>
     </div>
     <div class="form-grid" style="margin-bottom:10px">
@@ -930,16 +928,17 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
         </div>
       </div>
       <div class="form-item">
-        <label>当前持仓市值 (元)</label>
-        <input id="eh-value" type="number" placeholder="如：8000">
+        <label>买入金额 (元)</label>
+        <input id="eh-amount" type="number" placeholder="在支付宝买入的金额" inputmode="numeric">
       </div>
       <div class="form-item">
-        <label>买入总成本 (元，选填)</label>
-        <input id="eh-cost" type="number" placeholder="用于计算盈亏">
+        <label>买入日期</label>
+        <input id="eh-date" type="date">
       </div>
     </div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:8px;line-height:1.6">当前市值根据实时净值自动计算，交易状态按T+1自动确认（实际以支付宝为准）</div>
     <div class="action-bar" style="margin-top:0">
-      <button class="btn btn-primary btn-sm" onclick="addExistingHolding()">＋ 添加</button>
+      <button class="btn btn-primary btn-sm" onclick="addExistingHolding()">＋ 添加持仓</button>
       <button class="btn btn-danger btn-sm" onclick="clearExistingHoldings()">清空全部</button>
     </div>
     <div id="eh-list" style="margin-top:12px;border:1px solid var(--border);border-radius:10px;overflow:hidden;display:none"></div>
@@ -995,44 +994,6 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
   <div class="card" id="dca-holdings-section" style="display:none"></div>
   <!-- 持仓健康诊断（动态渲染） -->
   <div id="health-monitor-wrap"></div>
-  <div class="card" id="holdings-section">
-    <div class="card-title"><span class="icon icon-red">📊</span>持仓记录明细 <span style="font-size:12px;color:var(--muted);font-weight:400">— 逐笔记录买卖交易，跟踪每笔盈亏</span></div>
-    <div class="form-grid">
-      <div class="form-item" style="grid-column:1/-1">
-        <label>搜索基金（输入名称或6位代码）</label>
-        <input id="h-search" placeholder="如：易方达蓝筹 或 005827" oninput="smartFundSearch('h',this.value)" list="h-datalist" autocomplete="off">
-        <datalist id="h-datalist"></datalist>
-        <input type="hidden" id="h-code"><input type="hidden" id="h-name">
-      </div>
-      <div class="form-item" id="h-matched" style="display:none;grid-column:1/-1">
-        <div style="font-size:13px;padding:8px 12px;background:var(--primary-bg);border-radius:6px;display:flex;align-items:center;gap:8px">
-          <span style="font-weight:600" id="h-matched-name"></span>
-          <code style="font-size:11px;color:var(--muted)" id="h-matched-code"></code>
-          <button onclick="clearFundMatch('h')" style="margin-left:auto;background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px">&times;</button>
-        </div>
-      </div>
-      <div class="form-item"><label>买入日期</label><input id="h-date" type="date"></div>
-      <div class="form-item"><label>买入金额(元)</label><input id="h-amount" type="number" placeholder="如：10000" inputmode="numeric"></div>
-      <div class="form-item"><label>基金类型</label><select id="h-type"><option>股票型</option><option>混合型</option><option>债券型</option><option>指数型</option><option>货币型</option><option>QDII</option></select></div>
-    </div>
-    <div style="font-size:11px;color:var(--muted);margin:6px 0 2px;line-height:1.6" id="h-auto-hint">当前净值将在添加后自动获取，份额=买入金额÷当前净值</div>
-    <div class="action-bar"><button class="btn btn-primary" onclick="addHolding()">＋ 添加持仓</button></div>
-  </div>
-  <div class="card">
-    <div class="card-title"><span class="icon icon-red">📊</span>持仓概览</div>
-    <div class="stat-row">
-      <div class="stat-card"><div class="stat-val" id="hs-cost">--</div><div class="stat-label">总成本(元)</div></div>
-      <div class="stat-card"><div class="stat-val" id="hs-val">--</div><div class="stat-label">当前市值(元)</div></div>
-      <div class="stat-card"><div class="stat-val" id="hs-pnl">--</div><div class="stat-label">总盈亏(元)</div></div>
-      <div class="stat-card"><div class="stat-val" id="hs-pct">--</div><div class="stat-label">总收益率</div></div>
-    </div>
-    <div class="chart-wrap" style="max-width:300px;margin:0 auto 14px"><canvas id="holdPieChart"></canvas></div>
-    <div class="table-wrap mobile-cards">
-      <table><thead><tr><th>基金名称</th><th>代码</th><th>类型</th><th>买入日</th><th>成本金额</th><th>当前市值</th><th>盈亏金额</th><th>收益率</th><th>持有天数</th><th>操作</th></tr></thead>
-      <tbody id="holding-list"><tr><td colspan="10" class="empty">暂无持仓记录</td></tr></tbody></table>
-      <div id="holding-cards" class="mobile-card-list"></div>
-    </div>
-  </div>
 
   <!-- 数据备份管理（仅未登录时显示，已登录数据自动同步到云端） -->
   <div class="card" id="backup-section" style="margin-bottom:calc(14px + env(safe-area-inset-bottom))">
@@ -1456,7 +1417,7 @@ window.addEventListener('scroll',function(){
 })();
 
 // ═══════════════ 资产Tab子导航滚动 ═══════════════
-const _subnavSections = ['eh-section','dp-section','holdings-section'];
+const _subnavSections = ['eh-section','dp-section'];
 let _subnavScrolling = false; // 防止点击触发滚动时 observer 回调覆盖
 
 function scrollToSection(id){
@@ -1721,11 +1682,11 @@ function doImportBackup(e){
   e.target.value='';
 }
 function renderAll(){
-  renderFundList(); renderExistingHoldings(); renderHoldings(); renderDcaPlans(); renderDcaRanking(); runHealthMonitor();
+  renderFundList(); renderExistingHoldings(); renderDcaPlans(); renderDcaRanking(); runHealthMonitor();
 }
 let currentCat = 'all';
 let currentSortMode = 'score'; // 'score' or 'dca'
-let portfolioPieInst = null, sipChartInst = null, holdPieChartInst = null;
+let portfolioPieInst = null, sipChartInst = null;
 
 // ═══════════════ 标签切换 ═══════════════
 // ═══════════════ 今日概览 ═══════════════
@@ -1736,8 +1697,15 @@ function renderTodayOverview(){
 
   // 合并所有持仓
   const allHeld=[];
-  holdings.forEach(h=>{ if(!allHeld.some(x=>x.code===h.code)){ const s=h.amount?h.amount/h.cost:h.shares; allHeld.push({code:h.code,value:s*h.cur,cost:h.amount||(h.shares*h.cost)}); }});
-  existingHoldings.forEach(h=>{ if(!allHeld.some(x=>x.code===h.code)) allHeld.push({code:h.code,value:h.value,cost:h.cost||0}); });
+  existingHoldings.forEach(h=>{
+    if(!allHeld.some(x=>x.code===h.code)){
+      const nav = navCache[h.code];
+      const curNav = nav ? parseFloat(nav.gsz)||1 : 1;
+      const cost = h.amount || h.value || 0;
+      const value = h.amount ? (h.amount / (h.cost||curNav) * curNav) : (h.value||0);
+      allHeld.push({code:h.code, name:h.name, value, cost});
+    }
+  });
   dcaPlans.forEach(d=>{ if(!allHeld.some(x=>x.code===d.code)&&d.curval>0){
     const months=d.start?Math.max(0,Math.floor((new Date()-new Date(d.start))/30/86400000)):0;
     allHeld.push({code:d.code,value:d.curval,cost:d.monthly*months});
@@ -2688,65 +2656,58 @@ function ehAutoFill(code){
 function addExistingHolding(){
   const code=document.getElementById('eh-code').value.trim();
   const name=document.getElementById('eh-name').value.trim();
-  const value=parseFloat(document.getElementById('eh-value').value)||0;
-  const cost=parseFloat(document.getElementById('eh-cost').value)||0;
+  const amount=parseFloat(document.getElementById('eh-amount').value)||0;
+  const date=document.getElementById('eh-date').value||'';
   // 内联校验
   let hasErr=false;
   const searchEmpty = !code || !name;
   document.getElementById('eh-search').closest('.form-item').classList.toggle('has-error',searchEmpty);
-  document.getElementById('eh-value').closest('.form-item').classList.toggle('has-error',!value);
-  if(searchEmpty || !value) hasErr=true;
-  if(hasErr){showToast(searchEmpty?'请先搜索并选择一只基金':'请填写持仓市值','error');autoFadeErrors();return;}
+  document.getElementById('eh-amount').closest('.form-item').classList.toggle('has-error',!amount||amount<=0);
+  if(searchEmpty){showToast('请先搜索并选择一只基金','error');autoFadeErrors();return;}
+  if(!amount||amount<=0){showToast('请填写买入金额','error');autoFadeErrors();return;}
   if(existingHoldings.some(h=>h.code===code)){showToast('该基金已存在，请修改现有记录','info');return;}
-  existingHoldings.push({code,name,value,cost});
+  // T+1 确认日期
+  const buyDate = date ? new Date(date) : new Date();
+  const confirmDate = new Date(buyDate);
+  confirmDate.setDate(confirmDate.getDate()+1);
+  const confirmDateStr = confirmDate.toISOString().slice(0,10);
+  // 自动检测基金类型
+  const fd = CURATED_FUNDS.find(f=>f.code===code);
+  const type = fd ? fd.type : '股票型';
+  // 从navCache获取当前净值作为买入成本
+  const nav = navCache[code];
+  const curNav = nav ? parseFloat(nav.gsz)||1 : 1;
+  existingHoldings.push({code,name,amount,date:date||new Date().toISOString().slice(0,10),status:'pending',confirmDate:confirmDateStr,type,cost:curNav,value:amount});
   FundDB.set('existingHoldings',existingHoldings); markHoldingsChanged();
   flashSaved('eh-section');
-  renderExistingHoldings(); runHealthMonitor();
+  renderExistingHoldings(); runHealthMonitor(); renderTodayOverview(); runSignalEngine();
   clearFundMatch('eh');
-  ['eh-value','eh-cost'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('eh-amount').value='';
+  document.getElementById('eh-date').valueAsDate=new Date();
 }
 function removeExistingHolding(i){
   const h=existingHoldings[i];
-  if(h && !confirm(`确定删除「${h.name||h.code}」？\n将同时删除该基金的定投计划和持仓记录。`)) return;
+  if(h && !confirm(`确定删除「${h.name||h.code}」？\n将同时删除该基金的定投计划。`)) return;
   const code = h ? h.code : null;
   existingHoldings.splice(i,1);
   FundDB.set('existingHoldings',existingHoldings); markHoldingsChanged();
-  // 联动删除同code的定投计划和持仓记录
+  // 联动删除同code的定投计划
   if(code){
     const dcaBefore = dcaPlans.length;
     dcaPlans = dcaPlans.filter(d => d.code !== code);
     if(dcaPlans.length !== dcaBefore) FundDB.set('dcaPlans', dcaPlans);
-    const hBefore = holdings.length;
-    holdings = holdings.filter(h => h.code !== code);
-    if(holdings.length !== hBefore) FundDB.set('holdings', holdings);
   }
-  renderExistingHoldings(); renderDcaPlans(); renderHoldings(); runHealthMonitor(); renderTodayOverview(); runSignalEngine();
+  renderExistingHoldings(); renderDcaPlans(); runHealthMonitor(); renderTodayOverview(); runSignalEngine();
 }
 function clearExistingHoldings(){
-  if(!existingHoldings.length||confirm('确定清空全部已有持仓？\n将同时清空所有定投计划和持仓记录。')){
+  if(!existingHoldings.length||confirm('确定清空全部已有持仓？\n将同时清空所有定投计划。')){
     existingHoldings=[];
     dcaPlans=[];
-    holdings=[];
     FundDB.set('existingHoldings',existingHoldings);
     FundDB.set('dcaPlans',dcaPlans);
-    FundDB.set('holdings',holdings);
     markHoldingsChanged();
-    renderExistingHoldings(); renderDcaPlans(); renderHoldings(); runHealthMonitor(); renderTodayOverview(); runSignalEngine();
+    renderExistingHoldings(); renderDcaPlans(); runHealthMonitor(); renderTodayOverview(); runSignalEngine();
   }
-}
-function importFromHoldings(){
-  if(!holdings.length){showToast('持仓记录为空，请先在「我的资产」页添加','error');return;}
-  let added=0;
-  holdings.forEach(h=>{
-    if(!existingHoldings.some(e=>e.code===h.code)){
-      existingHoldings.push({code:h.code,name:h.name,value:(h.amount?h.amount/h.cost:h.shares)*h.cur,cost:h.amount||(h.shares*h.cost)});
-      added++;
-    }
-  });
-  FundDB.set('existingHoldings',existingHoldings); markHoldingsChanged();
-  renderExistingHoldings(); runHealthMonitor();
-  if(added>0) showToast(`已导入 ${added} 条持仓记录`,'success');
-  else showToast('所有持仓已存在，无需重复导入','info');
 }
 function renderExistingHoldings(){
   const list=document.getElementById('eh-list');
@@ -2756,18 +2717,33 @@ function renderExistingHoldings(){
     list.style.display='none'; empty.style.display='block'; summary.style.display='none'; return;
   }
   empty.style.display='none'; list.style.display='block';
+  const today=new Date();
+  const todayStr=today.toISOString().slice(0,10);
+  // Auto-update status + calculate values
+  existingHoldings.forEach(h=>{
+    if(h.status==='pending' && h.confirmDate && todayStr>=h.confirmDate) h.status='confirmed';
+    const nav=navCache[h.code];
+    const curNav=nav?parseFloat(nav.gsz)||1:1;
+    const cost=h.cost||curNav;
+    h.value=h.amount?(h.amount/cost*curNav):(h.value||0);
+  });
+  FundDB.set('existingHoldings',existingHoldings);
+  const totalCost=existingHoldings.reduce((s,h)=>s+(h.amount||0),0);
   const totalVal=existingHoldings.reduce((s,h)=>s+h.value,0);
-  const totalCost=existingHoldings.reduce((s,h)=>s+h.cost,0);
-  const pnl=totalCost>0?totalVal-totalCost:null;
+  const totalPnl=totalCost>0?totalVal-totalCost:0;
+  const totalPnlPct=totalCost>0?(totalPnl/totalCost*100):0;
+  const isMobile=window.innerWidth<=600;
   list.innerHTML=existingHoldings.map((h,i)=>{
     const fd=CURATED_FUNDS.find(f=>f.code===h.code);
-    const pnlAmt=h.cost>0?h.value-h.cost:null;
-    const pnlPct=h.cost>0?((h.value-h.cost)/h.cost*100).toFixed(1):null;
+    const cost=h.amount||0;
+    const pnlAmt=cost>0?h.value-cost:null;
+    const pnlPct=cost>0?((h.value-cost)/cost*100).toFixed(1):null;
     const pnlHtml=pnlAmt!=null?`<span class="${pnlAmt>=0?'up':'down'}">${pnlAmt>=0?'+':'-'}¥${Math.abs(pnlAmt).toLocaleString('zh-CN',{maximumFractionDigits:0})} (${pnlAmt>=0?'+':''}${pnlPct}%)</span>`:'<span style="color:var(--muted)">--</span>';
+    const statusBadge=h.status==='confirmed'?'<span style="font-size:11px;color:var(--success)">✅已确认</span>':'<span style="font-size:11px;color:var(--warning)">⏳交易中</span>';
     return `<div class="eh-row">
       <div class="eh-fund">
-        <div class="eh-fund-name">${escHtml(h.name)} <code style="font-size:11px;color:var(--muted)">${escHtml(h.code)}</code></div>
-        <div class="eh-fund-meta">${fd?`${escHtml(fd.type)} · ${escHtml(fd.manager)} · 近1年 <span class="${fd.r1>=0?'up':'down'}">${fd.r1>=0?'+':''}${fd.r1}%</span>`:'持仓基金'}</div>
+        <div class="eh-fund-name">${escHtml(h.name)} <code style="font-size:11px;color:var(--muted)">${escHtml(h.code)}</code> ${statusBadge}</div>
+        <div class="eh-fund-meta">买入 ¥${(h.amount||0).toLocaleString('zh-CN',{maximumFractionDigits:0})} · ${h.date||'--'}${fd?` · ${escHtml(h.type||fd.type)}`:''}</div>
       </div>
       <div class="eh-value">¥${h.value.toLocaleString('zh-CN',{maximumFractionDigits:0})}</div>
       <div class="eh-pnl">${pnlHtml}</div>
@@ -2775,9 +2751,9 @@ function renderExistingHoldings(){
     </div>`;
   }).join('');
   // summary
-  const pnlHtml2=pnl!=null&&totalCost>0?`&nbsp;·&nbsp;盈亏 <b class="${pnl>=0?'up':'down'}">${pnl>=0?'+':'-'}¥${Math.abs(pnl).toLocaleString('zh-CN',{maximumFractionDigits:0})}</b>`:'';
+  const pnlHtml2=totalCost>0?`&nbsp;·&nbsp;盈亏 <b class="${totalPnl>=0?'up':'down'}">${totalPnl>=0?'+':'-'}¥${Math.abs(totalPnl).toLocaleString('zh-CN',{maximumFractionDigits:0})} (${totalPnl>=0?'+':''}${totalPnlPct.toFixed(1)}%)</b>`:'';
   summary.style.display='block';
-  summary.innerHTML=`💼 已录入 <b>${existingHoldings.length}</b> 只基金，持仓总市值 <b>¥${totalVal.toLocaleString('zh-CN',{maximumFractionDigits:0})}</b>${pnlHtml2}。生成方案时将自动计算调仓建议。`;
+  summary.innerHTML=`💼 <b>${existingHoldings.length}</b> 只基金 · 总成本 <b>¥${totalCost.toLocaleString('zh-CN',{maximumFractionDigits:0})}</b> · 总市值 <b>¥${totalVal.toLocaleString('zh-CN',{maximumFractionDigits:0})}</b>${pnlHtml2}`;
 }
 
 // ═══════════════ 调仓算法 ═══════════════
@@ -4103,125 +4079,6 @@ function calcSIP(){
   document.getElementById('sip-result').style.display='block';
 }
 
-// ═══════════════ 面板3: 持仓 ═══════════════
-function addHolding(){
-  const name=document.getElementById('h-name').value.trim(),code=document.getElementById('h-code').value.trim();
-  const date=document.getElementById('h-date').value;
-  const amount=parseFloat(document.getElementById('h-amount').value);
-  let hasErr=false;
-  const searchEmpty = !code || !name;
-  document.getElementById('h-search').closest('.form-item').classList.toggle('has-error',searchEmpty);
-  document.getElementById('h-amount').closest('.form-item').classList.toggle('has-error',!amount||amount<=0);
-  if(searchEmpty){showToast('请先搜索并选择一只基金','error');autoFadeErrors();return;}
-  if(!amount||amount<=0){showToast('请填写买入金额','error');autoFadeErrors();return;}
-
-  // 尝试从navCache获取当前净值
-  const nav = navCache[code];
-  const cur = nav ? parseFloat(nav.gsz)||1 : 1;
-  // 份额 = 买入金额 / 当前净值（近似，因为无法获取历史买入净值）
-  const shares = amount / cur;
-
-  holdings.push({name,code,date,amount,shares,cost:cur,cur,type:document.getElementById('h-type').value});
-  FundDB.set('holdings',holdings); renderHoldings(); runHealthMonitor(); flashSaved('holdings-section');
-  clearFundMatch('h');
-  document.getElementById('h-amount').value='';
-
-  // 如果净值还没拉取，异步获取后更新
-  if(!nav){
-    fetchNav(code, data=>{
-      if(!data) return;
-      const curNav = parseFloat(data.gsz)||1;
-      const h = holdings.find(h=>h.code===code);
-      if(h){
-        h.cur = curNav;
-        h.cost = curNav;
-        h.shares = h.amount / curNav;
-        FundDB.set('holdings',holdings);
-        renderHoldings();
-      }
-    });
-  }
-}
-function removeHolding(i){
-  const h=holdings[i];
-  if(h && !confirm(`确定删除「${h.name||h.code}」的持仓记录？`)) return;
-  holdings.splice(i,1); FundDB.set('holdings',holdings); renderHoldings(); renderDcaInHoldings(); runHealthMonitor(); renderTodayOverview(); runSignalEngine();
-}
-function updateHoldingCur(i,v){ holdings[i].cur=parseFloat(v)||holdings[i].cur; FundDB.set('holdings',holdings); markHoldingsChanged(); renderHoldingStats(); renderHoldingTable(); runHealthMonitor(); }
-function renderHoldings(){ renderHoldingStats(); renderHoldingTable(); renderHoldingPie(); }
-function renderHoldingStats(){
-  if(!holdings.length){['hs-cost','hs-val','hs-pnl','hs-pct'].forEach(id=>document.getElementById(id).textContent='--');return;}
-  let tc=0,tv=0; holdings.forEach(h=>{
-    const ca = h.amount || (h.shares*h.cost);
-    const cv = h.amount ? (h.amount / h.cost * h.cur) : (h.shares*h.cur);
-    tc+=ca; tv+=cv;
-  });
-  const pnl=tv-tc,pct=(pnl/tc*100).toFixed(2);
-  document.getElementById('hs-cost').textContent='¥'+tc.toLocaleString('zh-CN',{maximumFractionDigits:0});
-  document.getElementById('hs-val').textContent='¥'+tv.toLocaleString('zh-CN',{maximumFractionDigits:0});
-  const pnlEl=document.getElementById('hs-pnl');pnlEl.textContent=(pnl>=0?'+¥':'-¥')+Math.abs(pnl).toLocaleString('zh-CN',{maximumFractionDigits:0});pnlEl.className='stat-val '+(pnl>=0?'up':'down');
-  const pctEl=document.getElementById('hs-pct');pctEl.textContent=(pct>=0?'+':'')+pct+'%';pctEl.className='stat-val '+(pct>=0?'up':'down');
-}
-function renderHoldingTable(){
-  const tb=document.getElementById('holding-list');
-  const cardsEl=document.getElementById('holding-cards');
-  if(!holdings.length){tb.innerHTML='<tr><td colspan="10" class="empty">暂无持仓记录</td></tr>';if(cardsEl)cardsEl.innerHTML='';return;}
-  const today=new Date();
-  const isMobile=window.innerWidth<=600;
-  // 兼容新旧数据：新数据有amount字段，旧数据用shares×cost
-  const calcHolding = h => {
-    const ca = h.amount || (h.shares*h.cost);
-    const shares = h.amount ? h.amount/h.cost : h.shares;
-    const cv = shares * h.cur;
-    return {ca,cv,shares,pnl:cv-ca,pct:ca>0?((cv-ca)/ca*100).toFixed(2):'0.00'};
-  };
-  tb.innerHTML=holdings.map((h,i)=>{
-    const {ca,cv,pnl,pct} = calcHolding(h);
-    const days=h.date?Math.floor((today-new Date(h.date))/86400000):'--';
-    return`<tr><td><b>${escHtml(h.name)}</b></td><td><code>${escHtml(h.code)}</code></td><td>${typeTag(h.type)}</td><td>${h.date||'--'}</td><td>¥${ca.toLocaleString('zh-CN',{maximumFractionDigits:0})}</td>
-      <td><input type="number" value="${h.cur}" step="0.0001" style="width:76px;height:26px;border:1px solid var(--border);border-radius:5px;padding:0 4px;font-size:12px" onchange="updateHoldingCur(${i},this.value)"><span style="font-size:11px;color:var(--muted)"> = ¥${cv.toLocaleString('zh-CN',{maximumFractionDigits:0})}</span></td>
-      <td class="${pnl>=0?'up':'down'}">${pnl>=0?'+':'-'}¥${Math.abs(pnl).toLocaleString('zh-CN',{maximumFractionDigits:0})}</td>
-      <td class="${pct>=0?'up':'down'}">${pct>=0?'+':''}${pct}%</td><td>${days}天</td>
-      <td><button class="btn btn-danger btn-sm" onclick="removeHolding(${i})">删除</button></td></tr>`;
-  }).join('');
-  // 移动端卡片渲染
-  if(cardsEl){
-    if(isMobile){
-      cardsEl.innerHTML=holdings.map((h,i)=>{
-        const {ca,cv,pnl,pct} = calcHolding(h);
-        const days=h.date?Math.floor((today-new Date(h.date))/86400000):'--';
-        const pnlCls=pnl>=0?'up':'down';
-        return`<div class="mobile-card-item">
-          <div class="mc-head"><span class="mc-name">${escHtml(h.name)}</span>${typeTag(h.type)}</div>
-          <div class="mc-grid">
-            <span>代码</span><span class="mc-val">${escHtml(h.code)}</span>
-            <span>买入日</span><span class="mc-val">${h.date||'--'}</span>
-            <span>成本</span><span class="mc-val">¥${ca.toLocaleString('zh-CN',{maximumFractionDigits:0})}</span>
-            <span>市值</span><span class="mc-val">¥${cv.toLocaleString('zh-CN',{maximumFractionDigits:0})}</span>
-            <span>盈亏</span><span class="mc-val ${pnlCls}">${pnl>=0?'+':''}¥${pnl.toLocaleString('zh-CN',{maximumFractionDigits:0})}</span>
-            <span>收益率</span><span class="mc-val ${pnlCls}">${pct>=0?'+':''}${pct}%</span>
-            <span>天数</span><span class="mc-val">${days}天</span>
-          </div>
-          <div class="mc-foot"><button class="btn btn-danger btn-sm" onclick="removeHolding(${i})">删除</button></div>
-        </div>`;
-      }).join('');
-    } else {
-      cardsEl.innerHTML='';
-    }
-  }
-}
-function renderHoldingPie(){
-  if(!holdings.length)return;
-  const m={};holdings.forEach(h=>{
-    const shares = h.amount ? h.amount/h.cost : h.shares;
-    m[h.type]=(m[h.type]||0)+shares*h.cur;
-  });
-  const keys=Object.keys(m),vals=keys.map(k=>+m[k].toFixed(2));
-  const colors=['#ff4d4f','#faad14','#52c41a','#1677ff','#722ed1','#13c2c2'];
-  if(holdPieChartInst) { try{holdPieChartInst.destroy();}catch(e){} holdPieChartInst=null; }
-  holdPieChartInst=new Chart(document.getElementById('holdPieChart'),{type:'doughnut',data:{labels:keys,datasets:[{data:vals,backgroundColor:colors.slice(0,keys.length),borderWidth:2}]},options:{plugins:{legend:{position:'bottom'}},cutout:'55%'}});
-}
-
 // ═══════════════ 面板2: 定投推荐榜 ═══════════════
 let currentDcaCat = 'all';
 
@@ -4594,7 +4451,7 @@ function importFromDcaPlans(){
     if(!existingHoldings.some(e=>e.code===d.code)){
       const months=d.start?Math.max(0,Math.floor((new Date()-new Date(d.start))/30/86400000)):0;
       const invested=d.monthly*months;
-      existingHoldings.push({code:d.code,name:d.name,value:d.curval||invested,cost:invested});
+      existingHoldings.push({code:d.code,name:d.name,amount:invested,date:d.start||new Date().toISOString().slice(0,10),status:'confirmed',type:d.type||'股票型',cost:0,value:d.curval||invested});
       added++;
     }
   });
@@ -4610,8 +4467,15 @@ let _lastSignalHash = ''; // 避免重复通知
 function runSignalEngine(){
   // 合并所有持仓来源
   const allHeld = [];
-  holdings.forEach(h=>{ if(!allHeld.some(x=>x.code===h.code)){ const s=h.amount?h.amount/h.cost:h.shares; allHeld.push({code:h.code,name:h.name,value:s*h.cur,cost:h.amount||(h.shares*h.cost)}); }});
-  existingHoldings.forEach(h=>{ if(!allHeld.some(x=>x.code===h.code)) allHeld.push({code:h.code,name:h.name,value:h.value,cost:h.cost||0}); });
+  existingHoldings.forEach(h=>{
+    if(!allHeld.some(x=>x.code===h.code)){
+      const nav = navCache[h.code];
+      const curNav = nav ? parseFloat(nav.gsz)||1 : 1;
+      const cost = h.amount || h.value || 0;
+      const value = h.amount ? (h.amount / (h.cost||curNav) * curNav) : (h.value||0);
+      allHeld.push({code:h.code, name:h.name, value, cost});
+    }
+  });
   dcaPlans.forEach(d=>{ if(!allHeld.some(x=>x.code===d.code)&&d.curval>0){
     const months=d.start?Math.max(0,Math.floor((new Date()-new Date(d.start))/30/86400000)):0;
     allHeld.push({code:d.code,name:d.name,value:d.curval,cost:d.monthly*months});
@@ -4867,10 +4731,17 @@ function requestNotificationPermission(){
 // ═══════════════ 持仓健康诊断（动态阈值 + 集中度分析） ═══════════════
 function runHealthMonitor(){
   const wrap = document.getElementById('health-monitor-wrap');
-  // 合并 holdings (Panel3) + existingHoldings (Panel1)
+  // 合并 existingHoldings + dcaPlans
   const allHeld = [];
-  holdings.forEach(h=>{ if(!allHeld.some(x=>x.code===h.code)){ const s=h.amount?h.amount/h.cost:h.shares; allHeld.push({code:h.code,name:h.name,value:s*h.cur,cost:h.amount||(h.shares*h.cost),source:'panel3'}); }});
-  existingHoldings.forEach(h=>{ if(!allHeld.some(x=>x.code===h.code)) allHeld.push({code:h.code,name:h.name,value:h.value,cost:h.cost||0,source:'panel1'}); });
+  existingHoldings.forEach(h=>{
+    if(!allHeld.some(x=>x.code===h.code)){
+      const nav = navCache[h.code];
+      const curNav = nav ? parseFloat(nav.gsz)||1 : 1;
+      const cost = h.amount || h.value || 0;
+      const value = h.amount ? (h.amount / (h.cost||curNav) * curNav) : (h.value||0);
+      allHeld.push({code:h.code, name:h.name, value, cost, source:'existing'});
+    }
+  });
   dcaPlans.forEach(d=>{ if(!allHeld.some(x=>x.code===d.code)&&d.curval>0){
     const months=d.start?Math.max(0,Math.floor((new Date()-new Date(d.start))/30/86400000)):0;
     allHeld.push({code:d.code,name:d.name,value:d.curval,cost:d.monthly*months,source:'dca'});
@@ -5055,8 +4926,26 @@ function runHealthMonitor(){
   // 3. 渲染
   renderMarketGrid();
   renderAll();
-  document.getElementById('h-date').valueAsDate=new Date();
+  document.getElementById('eh-date').valueAsDate=new Date();
   document.getElementById('dp-start').valueAsDate=new Date();
+
+  // 3.2 数据迁移：如果旧 holdings 数组有数据，合并到 existingHoldings
+  if(holdings && holdings.length){
+    let migrated=0;
+    holdings.forEach(h=>{
+      if(!existingHoldings.some(e=>e.code===h.code)){
+        const cost = h.amount || (h.shares*h.cost) || 0;
+        const value = h.amount ? (h.amount/h.cost*h.cur) : (h.shares*h.cur) || 0;
+        existingHoldings.push({code:h.code,name:h.name,amount:cost,date:h.date||'',status:'confirmed',type:h.type||'股票型',cost:h.cost||1,value:value});
+        migrated++;
+      }
+    });
+    if(migrated>0){
+      FundDB.set('existingHoldings',existingHoldings);
+      console.log(`已迁移 ${migrated} 条持仓记录到 existingHoldings`);
+    }
+    renderExistingHoldings();
+  }
 
   // 3.5 欢迎卡片初始化检查
   if(localStorage.getItem('_welcomeDismissed')){
