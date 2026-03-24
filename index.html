@@ -4102,7 +4102,7 @@ function addHolding(){
 function removeHolding(i){
   const h=holdings[i];
   if(h && !confirm(`确定删除「${h.name||h.code}」的持仓记录？`)) return;
-  holdings.splice(i,1); FundDB.set('holdings',holdings); renderHoldings(); runHealthMonitor(); renderTodayOverview(); runSignalEngine();
+  holdings.splice(i,1); FundDB.set('holdings',holdings); renderHoldings(); renderDcaInHoldings(); runHealthMonitor(); renderTodayOverview(); runSignalEngine();
 }
 function updateHoldingCur(i,v){ holdings[i].cur=parseFloat(v)||holdings[i].cur; FundDB.set('holdings',holdings); markHoldingsChanged(); renderHoldingStats(); renderHoldingTable(); runHealthMonitor(); }
 function renderHoldings(){ renderHoldingStats(); renderHoldingTable(); renderHoldingPie(); }
@@ -4466,7 +4466,7 @@ function clearDcaPlans(){
   if(!dcaPlans.length||confirm('确定清空全部定投计划？')){
     dcaPlans=[];
     FundDB.set('dcaPlans',dcaPlans);
-    renderDcaPlans();
+    renderDcaPlans(); renderExistingHoldings(); runHealthMonitor(); renderTodayOverview(); runSignalEngine();
     document.getElementById('dca-ai-result').style.display='none';
   }
 }
