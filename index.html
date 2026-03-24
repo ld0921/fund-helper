@@ -935,8 +935,15 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
         <label>买入日期</label>
         <input id="eh-date" type="date">
       </div>
+      <div class="form-item">
+        <label>买入时间</label>
+        <select id="eh-buytime">
+          <option value="before15">15:00前（当日净值确认）</option>
+          <option value="after15">15:00后（下一交易日确认）</option>
+        </select>
+      </div>
     </div>
-    <div style="font-size:11px;color:var(--muted);margin-bottom:8px;line-height:1.6">当前市值根据实时净值自动计算，交易状态按T+1自动确认（实际以支付宝为准）</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:8px;line-height:1.6">15:00前买入按当日净值确认（T+1到账），15:00后按下一交易日净值确认（T+2到账）。实际以支付宝为准。</div>
     <div class="action-bar" style="margin-top:0">
       <button class="btn btn-primary btn-sm" onclick="addExistingHolding()">＋ 添加持仓</button>
       <button class="btn btn-danger btn-sm" onclick="clearExistingHoldings()">清空全部</button>
@@ -2666,10 +2673,13 @@ function addExistingHolding(){
   if(searchEmpty){showToast('请先搜索并选择一只基金','error');autoFadeErrors();return;}
   if(!amount||amount<=0){showToast('请填写买入金额','error');autoFadeErrors();return;}
   if(existingHoldings.some(h=>h.code===code)){showToast('该基金已存在，请修改现有记录','info');return;}
-  // T+1 确认日期
+  // 确认日期：15:00前→T+1（买入日+1天确认），15:00后→T+2（买入日+2天确认）
+  const buyTime = document.getElementById('eh-buytime').value;
   const buyDate = date ? new Date(date) : new Date();
   const confirmDate = new Date(buyDate);
-  confirmDate.setDate(confirmDate.getDate()+1);
+  confirmDate.setDate(confirmDate.getDate() + (buyTime==='after15' ? 2 : 1));
+  // 跳过周末：如果确认日落在周六→推到周一，周日→推到周一
+  while(confirmDate.getDay()===0 || confirmDate.getDay()===6) confirmDate.setDate(confirmDate.getDate()+1);
   const confirmDateStr = confirmDate.toISOString().slice(0,10);
   // 自动检测基金类型
   const fd = CURATED_FUNDS.find(f=>f.code===code);
@@ -2677,13 +2687,25 @@ function addExistingHolding(){
   // 从navCache获取当前净值作为买入成本
   const nav = navCache[code];
   const curNav = nav ? parseFloat(nav.gsz)||1 : 1;
-  existingHoldings.push({code,name,amount,date:date||new Date().toISOString().slice(0,10),status:'pending',confirmDate:confirmDateStr,type,cost:curNav,value:amount});
+  existingHoldings.push({code,name,amount,date:date||new Date().toISOString().slice(0,10),buyTime,status:'pending',confirmDate:confirmDateStr,type,cost:curNav,value:amount});
   FundDB.set('existingHoldings',existingHoldings); markHoldingsChanged();
   flashSaved('eh-section');
   renderExistingHoldings(); runHealthMonitor(); renderTodayOverview(); runSignalEngine();
   clearFundMatch('eh');
   document.getElementById('eh-amount').value='';
   document.getElementById('eh-date').valueAsDate=new Date();
+}
+// 手动确认持仓份额（支付宝已确认后点击更新）
+function confirmHolding(i){
+  const h = existingHoldings[i];
+  if(!h) return;
+  h.status = 'confirmed';
+  // 确认时用当前净值作为买入净值（更准确）
+  const nav = navCache[h.code];
+  if(nav && nav.dwjz) h.cost = parseFloat(nav.dwjz) || h.cost; // dwjz是昨日确认净值
+  FundDB.set('existingHoldings', existingHoldings);
+  renderExistingHoldings(); runHealthMonitor(); renderTodayOverview();
+  showToast(`${h.name} 已确认份额`,'success');
 }
 function removeExistingHolding(i){
   const h=existingHoldings[i];
@@ -2721,7 +2743,8 @@ function renderExistingHoldings(){
   const todayStr=today.toISOString().slice(0,10);
   // Auto-update status + calculate values
   existingHoldings.forEach(h=>{
-    if(h.status==='pending' && h.confirmDate && todayStr>=h.confirmDate) h.status='confirmed';
+    // 状态不自动变更：到了确认日期时显示"待确认"提示用户手动确认
+    // （因为实际确认时间以支付宝为准，工具无法自动获知）
     const nav=navCache[h.code];
     const curNav=nav?parseFloat(nav.gsz)||1:1;
     const cost=h.cost||curNav;
@@ -2739,7 +2762,11 @@ function renderExistingHoldings(){
     const pnlAmt=cost>0?h.value-cost:null;
     const pnlPct=cost>0?((h.value-cost)/cost*100).toFixed(1):null;
     const pnlHtml=pnlAmt!=null?`<span class="${pnlAmt>=0?'up':'down'}">${pnlAmt>=0?'+':'-'}¥${Math.abs(pnlAmt).toLocaleString('zh-CN',{maximumFractionDigits:0})} (${pnlAmt>=0?'+':''}${pnlPct}%)</span>`:'<span style="color:var(--muted)">--</span>';
-    const statusBadge=h.status==='confirmed'?'<span style="font-size:11px;color:var(--success)">✅已确认</span>':'<span style="font-size:11px;color:var(--warning)">⏳交易中</span>';
+    const statusBadge = h.status==='confirmed'
+      ? '<span style="font-size:11px;color:var(--success)">✅已确认</span>'
+      : (todayStr >= (h.confirmDate||'')
+        ? `<span style="font-size:11px;color:var(--primary);cursor:pointer" onclick="confirmHolding(${i})" title="点击确认份额">📌 待确认(点击更新)</span>`
+        : `<span style="font-size:11px;color:var(--warning)">⏳交易中 预计${h.confirmDate||'--'}确认</span>`);
     return `<div class="eh-row">
       <div class="eh-fund">
         <div class="eh-fund-name">${escHtml(h.name)} <code style="font-size:11px;color:var(--muted)">${escHtml(h.code)}</code> ${statusBadge}</div>
