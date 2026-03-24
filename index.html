@@ -3418,17 +3418,36 @@ function buildSteps(weights, picks, totalAmt, monthly, riskProfile, horizon){
 
 // 主函数
 function generateSmartPortfolio(){
-  // 校验：风险偏好和投资期限必须选择
+  // 校验：金额、风险偏好、投资期限
+  const spAmountEl = document.getElementById('sp-amount');
+  const amountRaw = spAmountEl.value.trim();
+  const amountVal = parseFloat(amountRaw)||0;
   const riskVal = document.getElementById('sp-risk').value;
   const horizonVal = document.getElementById('sp-horizon').value;
   const riskSel = document.getElementById('risk-selector');
   const horizonSel = document.getElementById('horizon-selector');
+
   let missing = [];
+  // 金额校验：非空、非负、非特殊符号、合理范围
+  if(!amountRaw || amountVal <= 0 || !isFinite(amountVal)){
+    missing.push('投入金额');
+    spAmountEl.style.borderColor='var(--danger)';
+    setTimeout(()=>{spAmountEl.style.borderColor='var(--border)';},3000);
+  } else if(amountVal > 100000000){
+    showToast('金额超出合理范围（上限1亿）','error');
+    spAmountEl.focus();
+    return;
+  }
   if(!riskVal){ missing.push('风险偏好'); riskSel.style.outline='2px solid var(--danger)'; riskSel.style.borderRadius='8px'; }
   else { riskSel.style.outline=''; }
   if(!horizonVal){ missing.push('投资期限'); horizonSel.style.outline='2px solid var(--danger)'; horizonSel.style.borderRadius='8px'; }
   else { horizonSel.style.outline=''; }
-  if(missing.length){ showToast(`请先选择${missing.join('和')}`, 'error'); return; }
+  if(missing.length){
+    showToast(`请先${missing.length===1?'填写':'完成'}${missing.join('、')}`, 'error');
+    if(missing.includes('投入金额')) spAmountEl.focus();
+    autoFadeErrors();
+    return;
+  }
 
   const btn=document.getElementById('gen-btn');
   btn.disabled=true; btn.innerHTML='<span class="loading-dot"></span> 加载数据中…';
@@ -3608,15 +3627,7 @@ function _doGenerate(shouldScroll){
     if(staleNotice) staleNotice.style.display = 'none';
   }
 
-  const spAmountEl = document.getElementById('sp-amount');
-  const totalAmt  = parseFloat(spAmountEl.value)||0;
-  if(!totalAmt || totalAmt <= 0){
-    showToast('请先填写投入金额','error');
-    spAmountEl.focus();
-    spAmountEl.style.borderColor='var(--danger)';
-    setTimeout(()=>{spAmountEl.style.borderColor='var(--border)';},2000);
-    return false;
-  }
+  const totalAmt  = parseFloat(document.getElementById('sp-amount').value)||0;
   const riskP     = document.getElementById('sp-risk').value;
   const horizon   = parseInt(document.getElementById('sp-horizon').value);
   const monthly   = 0; // 智能方案为一次性配置，定投在独立Tab
