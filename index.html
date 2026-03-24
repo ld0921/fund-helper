@@ -1181,20 +1181,40 @@ async function pushToCloud(){
   updateSyncStatus('syncing');
   try {
     const data = await FundDB.getSyncData();
-    const { error } = await _supa.from('user_data').upsert({
+    const newVersion = _cloudVersion + 1;
+    const payload = {
       user_id: _currentUser.id,
       data: data,
       updated_at: new Date().toISOString(),
-      version: _cloudVersion + 1
-    });
+      version: newVersion
+    };
+
+    // 先尝试查询是否已有行
+    const { data: existing } = await _supa.from('user_data')
+      .select('user_id')
+      .eq('user_id', _currentUser.id)
+      .single();
+
+    let error;
+    if(existing){
+      // 已有行，用 update
+      ({ error } = await _supa.from('user_data')
+        .update({ data: data, updated_at: payload.updated_at, version: newVersion })
+        .eq('user_id', _currentUser.id));
+    } else {
+      // 无行，用 insert
+      ({ error } = await _supa.from('user_data').insert(payload));
+    }
+
     if(error) throw error;
-    _cloudVersion++;
+    _cloudVersion = newVersion;
     localStorage.removeItem('_syncPending');
     updateSyncStatus('synced');
   } catch(e){
-    console.warn('pushToCloud failed:', e);
+    console.error('pushToCloud failed:', e);
     localStorage.setItem('_syncPending','1');
     updateSyncStatus('error');
+    showToast('云端同步失败: ' + (e.message||e.code||'未知错误'), 'error', 5000);
   }
 }
 
