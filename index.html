@@ -110,12 +110,11 @@ tr:last-child td{border-bottom:none}
 .nav-change.down{background:#f6ffed;color:var(--success)}
 .nav-change.neutral{background:#f5f5f5;color:var(--muted)}
 .fund-card-reason{padding:8px 14px;font-size:12px;color:#595959;line-height:1.6;border-bottom:1px solid #f5f5f5}
-.fund-card-foot{padding:8px 14px;display:flex;gap:0;border-top:1px solid #f0f0f0}
-.fund-card-foot .fc-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:4px;padding:10px 0;font-size:13px;font-weight:500;cursor:pointer;border:none;background:none;color:var(--muted);transition:all .15s;-webkit-tap-highlight-color:transparent}
+.fund-card-foot{padding:0;display:flex;gap:0;border-top:1px solid #f0f0f0}
+.fund-card-foot .fc-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:4px;padding:10px 0;font-size:13px;font-weight:500;cursor:pointer;border:none;background:none;color:var(--primary);transition:all .15s;-webkit-tap-highlight-color:transparent}
 .fund-card-foot .fc-btn:first-child{border-right:1px solid #f0f0f0}
-.fund-card-foot .fc-btn:hover{color:var(--primary);background:#f0f8ff}
+.fund-card-foot .fc-btn:hover{background:#f0f8ff}
 .fund-card-foot .fc-btn:active{background:#e6f4ff}
-.fund-card-foot .fc-btn.fc-primary{color:var(--primary);font-weight:600}
 .loading-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--primary);animation:pulse 1.2s infinite}
 @keyframes pulse{0%,100%{opacity:.3}50%{opacity:1}}
 /* ── Auto-load banner ── */
@@ -286,9 +285,9 @@ tr:last-child td{border-bottom:none}
 .back-top{position:fixed;right:18px;bottom:calc(24px + env(safe-area-inset-bottom));width:42px;height:42px;border-radius:50%;background:var(--primary);color:#fff;font-size:20px;border:none;box-shadow:0 2px 8px rgba(22,119,255,.4);cursor:pointer;display:none;align-items:center;justify-content:center;z-index:99;-webkit-tap-highlight-color:transparent;transition:opacity .2s}
 /* ── Reason 文字截断 ── */
 .fund-card-reason{-webkit-line-clamp:2;display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden;cursor:pointer;position:relative}
-.fund-card-reason::after{content:'… 查看更多';color:var(--primary);font-size:11px;font-weight:500}
+.fund-card-reason-more{font-size:11px;color:var(--primary);font-weight:500;padding:4px 14px 0;cursor:pointer;display:block}
 .fund-card-reason.expanded{-webkit-line-clamp:unset}
-.fund-card-reason.expanded::after{content:' 收起';color:var(--muted)}
+.fund-card-reason.expanded+.fund-card-reason-more{color:var(--muted)}
 /* ── 手机端表格卡片化 ── */
 @media(max-width:600px){
   .mobile-cards table,.mobile-cards thead{display:none}
@@ -2326,10 +2325,11 @@ function buildFundCard(f,sortMode){
       <div class="stat-item"><div class="val" style="color:var(--danger);text-align:center">${f.maxDD > 0 ? `-${f.maxDD}%` : '0%'}</div><div class="lbl">历史最大跌幅</div></div>
     </div>
     <div class="fund-card-nav">${navHtml}</div>
-    <div class="fund-card-reason" onclick="this.classList.toggle('expanded')">${escHtml(f.reason)}</div>${dcaHtml}
+    <div class="fund-card-reason" id="reason-${f.code}">${escHtml(f.reason)}</div>
+    <span class="fund-card-reason-more" onclick="var r=document.getElementById('reason-${f.code}');r.classList.toggle('expanded');this.textContent=r.classList.contains('expanded')?'收起 ▴':'查看更多 ▾'"">查看更多 ▾</span>${dcaHtml}
     <div class="fund-card-foot">
       <button class="fc-btn" onclick="window.open('https://fund.eastmoney.com/${f.code}.html','_blank','noopener')">🔗 查看详情</button>
-      <button class="fc-btn fc-primary" onclick="copyCode('${f.code}');showToast('已复制 ${f.code}，打开支付宝搜索即可购买','success',3000)">📋 复制代码购买</button>
+      <button class="fc-btn" onclick="copyCode('${f.code}');showToast('已复制 ${f.code}，打开支付宝搜索即可购买','success',3000)">📋 复制代码购买</button>
     </div>
   </div>`;
 }
