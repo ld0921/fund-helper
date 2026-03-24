@@ -4859,59 +4859,47 @@ function runHealthMonitor(){
     catConcentration[cat] = (catConcentration[cat]||0) + h.value;
   });
 
-  // 单只基金集中度预警
-  allHeld.forEach(h=>{
-    const pct = totalPortValue > 0 ? h.value / totalPortValue * 100 : 0;
-    if(pct > 40){
-      alerts.push({code:h.code,name:h.name,level:'yellow',
-        desc:`单只基金占总持仓 ${pct.toFixed(1)}%，超过40%集中度警戒线。建议分散配置降低个基风险。`,
-        action:'🟡 需分散'});
-    }
-  });
-
-  // 类别集中度预警
-  Object.keys(catConcentration).forEach(cat=>{
-    if(cat === 'other') return;
-    const catPct = totalPortValue > 0 ? catConcentration[cat] / totalPortValue * 100 : 0;
-    if(catPct > 60){
-      const catName = CAT_NAMES[cat] || cat;
-      alerts.push({code:'_cat_'+cat,name:`${catName}类别`,level:'yellow',
-        desc:`${catName}类别占总持仓 ${catPct.toFixed(1)}%，超过60%集中度警戒线。过度集中于单一资产类别会放大系统性风险。`,
-        action:'🟡 需分散'});
-    }
-  });
-
+  // 单只基金集中度 + 表现综合诊断（合并为一条，避免同一基金出现多行）
   allHeld.forEach(h=>{
     const fd = CURATED_FUNDS.find(f=>f.code===h.code);
     const nav = navCache[h.code];
     const todayChg = nav ? parseFloat(nav.gszzl)||0 : null;
     const pnlPct = h.cost>0 ? (h.value-h.cost)/h.cost*100 : null;
+    const pct = totalPortValue > 0 ? h.value / totalPortValue * 100 : 0;
+    const issues = [];
+    let level = 'green';
+
+    // 集中度检查
+    if(pct > 40){
+      issues.push(`单只基金占总持仓 ${pct.toFixed(1)}%，超过40%集中度警戒线，建议分散配置`);
+      level = 'yellow';
+    }
 
     if(!fd){
       if(pnlPct!==null && pnlPct < -15){
-        alerts.push({code:h.code,name:h.name,level:'red',
-          desc:`持仓亏损 ${pnlPct.toFixed(1)}%，已超过-15%预警线。该基金不在精选库，缺乏参考数据。`,
-          action:'⚠️ 建议检视'});
+        issues.push(`持仓亏损 ${pnlPct.toFixed(1)}%，已超过-15%预警线。该基金不在精选库`);
+        level = 'red';
+      }
+      if(issues.length){
+        alerts.push({code:h.code,name:h.name,level, desc:issues.join('；')+'。', action:level==='red'?'🔴 建议减仓':'🟡 需分散'});
       }
       return;
     }
 
     const stats = catStats[fd.cat];
     if(!stats) return;
-    const issues = [];
-    let level = 'green';
 
-    // 1. 动态阈值：以同类标准差(σ)为单位判断跑输程度
+    // 动态阈值
     const zScore = (fd.r1 - stats.avgR1) / stats.stdR1;
     if(zScore < -2){
-      issues.push(`近1年收益 ${fd.r1>0?'+':''}${fd.r1}%，大幅落后同类均值 ${stats.avgR1.toFixed(1)}%，差距是同类正常波动的 ${Math.abs(zScore).toFixed(1)} 倍，属显著落后`);
+      issues.push(`近1年收益 ${fd.r1>0?'+':''}${fd.r1}%，大幅落后同类均值 ${stats.avgR1.toFixed(1)}%（${Math.abs(zScore).toFixed(1)}σ）`);
       level = 'red';
     } else if(zScore < -1){
-      issues.push(`近1年收益 ${fd.r1>0?'+':''}${fd.r1}%，落后同类均值 ${stats.avgR1.toFixed(1)}%，偏离幅度较大`);
-      level = 'yellow';
+      issues.push(`近1年收益 ${fd.r1>0?'+':''}${fd.r1}%，落后同类均值 ${stats.avgR1.toFixed(1)}%`);
+      if(level!=='red') level = 'yellow';
     }
 
-    // 2. 1年和3年均为负（结构性亏损）
+    // 结构性亏损
     if(fd.r1 < 0 && fd.r3 < 0){
       issues.push(`近1年(${fd.r1}%)和近3年(${fd.r3}%)均为负收益，呈结构性下行趋势`);
       level = 'red';
@@ -4961,6 +4949,18 @@ function runHealthMonitor(){
       okList.push({code:h.code,name:h.name,level:'green',
         desc:`表现正常。近1年 ${fd.r1>0?'+':''}${fd.r1}%，同类均值 ${stats.avgR1.toFixed(1)}%。${todayChg!==null?`今日 ${todayChg>0?'+':''}${todayChg.toFixed(2)}%。`:''}继续持有。`,
         action:'🟢 持有'});
+    }
+  });
+
+  // 类别集中度预警（独立条目）
+  Object.keys(catConcentration).forEach(cat=>{
+    if(cat === 'other') return;
+    const catPct = totalPortValue > 0 ? catConcentration[cat] / totalPortValue * 100 : 0;
+    if(catPct > 60){
+      const catName = CAT_NAMES[cat] || cat;
+      alerts.push({code:'_cat_'+cat,name:`${catName}类别`,level:'yellow',
+        desc:`${catName}类别占总持仓 ${catPct.toFixed(1)}%，超过60%警戒线。建议分散到其他类别。`,
+        action:'🟡 需分散'});
     }
   });
 
