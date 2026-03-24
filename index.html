@@ -2677,13 +2677,18 @@ function removeExistingHolding(i){
     holdings = holdings.filter(h => h.code !== code);
     if(holdings.length !== hBefore) FundDB.set('holdings', holdings);
   }
-  renderExistingHoldings(); renderDcaPlans(); renderHoldings(); runHealthMonitor();
+  renderExistingHoldings(); renderDcaPlans(); renderHoldings(); runHealthMonitor(); renderTodayOverview(); runSignalEngine();
 }
 function clearExistingHoldings(){
-  if(!existingHoldings.length||confirm('确定清空全部已有持仓？')){
+  if(!existingHoldings.length||confirm('确定清空全部已有持仓？\n将同时清空所有定投计划和持仓记录。')){
     existingHoldings=[];
-    FundDB.set('existingHoldings',existingHoldings); markHoldingsChanged();
-    renderExistingHoldings(); runHealthMonitor();
+    dcaPlans=[];
+    holdings=[];
+    FundDB.set('existingHoldings',existingHoldings);
+    FundDB.set('dcaPlans',dcaPlans);
+    FundDB.set('holdings',holdings);
+    markHoldingsChanged();
+    renderExistingHoldings(); renderDcaPlans(); renderHoldings(); runHealthMonitor(); renderTodayOverview(); runSignalEngine();
   }
 }
 function importFromHoldings(){
@@ -4097,7 +4102,7 @@ function addHolding(){
 function removeHolding(i){
   const h=holdings[i];
   if(h && !confirm(`确定删除「${h.name||h.code}」的持仓记录？`)) return;
-  holdings.splice(i,1); FundDB.set('holdings',holdings); renderHoldings(); runHealthMonitor();
+  holdings.splice(i,1); FundDB.set('holdings',holdings); renderHoldings(); runHealthMonitor(); renderTodayOverview(); runSignalEngine();
 }
 function updateHoldingCur(i,v){ holdings[i].cur=parseFloat(v)||holdings[i].cur; FundDB.set('holdings',holdings); markHoldingsChanged(); renderHoldingStats(); renderHoldingTable(); runHealthMonitor(); }
 function renderHoldings(){ renderHoldingStats(); renderHoldingTable(); renderHoldingPie(); }
@@ -4411,7 +4416,7 @@ function removeDcaPlan(i){
   if(!confirm(`确定删除「${plan.name}」的定投计划？`)) return;
   dcaPlans.splice(i,1);
   FundDB.set('dcaPlans',dcaPlans);
-  renderDcaPlans();
+  renderDcaPlans(); renderExistingHoldings(); runHealthMonitor(); renderTodayOverview(); runSignalEngine();
   document.getElementById('dca-ai-result').style.display='none';
 }
 // 自定义弹窗系统
