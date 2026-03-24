@@ -446,17 +446,22 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
 </div>
 
 <!-- 登录/注册弹窗 -->
-<div class="modal-mask" id="auth-modal" style="display:none" onclick="if(event.target===this && _currentUser)hideAuthModal()">
-  <div class="modal-box" style="max-width:340px">
+<div class="modal-mask" id="auth-modal" style="display:none" onclick="if(event.target===this)hideAuthModal()">
+  <div class="modal-box" style="max-width:340px;position:relative">
+    <button onclick="hideAuthModal()" style="position:absolute;right:10px;top:10px;background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;line-height:1">&times;</button>
     <div class="modal-title" id="auth-modal-title">登录账号</div>
     <div style="font-size:12px;color:var(--muted);margin-bottom:12px">登录后数据将自动同步到云端，支持多设备共享</div>
     <div id="auth-error" style="display:none;font-size:12px;color:var(--danger);background:#fff1f0;padding:6px 10px;border-radius:6px;margin-bottom:10px"></div>
-    <div class="form-item" style="margin-bottom:10px"><label>邮箱</label><input id="auth-email" type="email" placeholder="your@email.com" autocomplete="email"></div>
-    <div class="form-item" style="margin-bottom:14px"><label>密码</label><input id="auth-password" type="password" placeholder="至少6位" autocomplete="current-password"></div>
+    <div class="form-item" style="margin-bottom:10px"><label>邮箱</label><input id="auth-email" type="email" placeholder="your@email.com" autocomplete="email" onkeydown="if(event.key==='Enter')document.getElementById('auth-password').focus()"></div>
+    <div class="form-item" style="margin-bottom:8px"><label>密码</label><input id="auth-password" type="password" placeholder="至少6位" autocomplete="current-password" onkeydown="if(event.key==='Enter')submitAuth()"></div>
+    <div style="text-align:right;margin-bottom:10px"><a href="javascript:void(0)" onclick="resetPassword()" style="font-size:11px;color:var(--muted)">忘记密码？</a></div>
     <button class="btn btn-primary" id="auth-submit-btn" onclick="submitAuth()" style="width:100%;height:40px;font-size:14px;justify-content:center">登录</button>
     <div style="text-align:center;margin-top:10px;font-size:12px">
       <span id="auth-toggle-text">没有账号？</span>
       <a href="javascript:void(0)" onclick="toggleAuthMode()" id="auth-toggle-link" style="color:var(--primary)">注册</a>
+    </div>
+    <div style="text-align:center;margin-top:8px">
+      <a href="javascript:void(0)" onclick="skipAuth()" style="font-size:11px;color:var(--muted)">暂不登录，离线使用 →</a>
     </div>
   </div>
 </div>
@@ -471,7 +476,7 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
   </div>
 </div>
 <!-- 全局自动加载进度条（默认隐藏，仅手动刷新时显示） -->
-<div id="auto-banner" class="hidden">>
+<div id="auto-banner" class="hidden">
   <span id="banner-text">⏳ 正在更新实时净值…</span>
   <div class="progress-wrap"><div class="progress-bar" id="progress-bar"></div></div>
   <span id="banner-count" style="white-space:nowrap;font-size:12px;opacity:.85">0 / 21</span>
@@ -1066,10 +1071,13 @@ function showAuthModal(){
   setTimeout(()=>document.getElementById('auth-email').focus(),200);
 }
 function hideAuthModal(){
-  if(!_currentUser){ showToast('请先登录后使用','error'); return; } // 未登录不允许关闭
   const mask=document.getElementById('auth-modal');
   mask.classList.remove('show');
   setTimeout(()=>{mask.style.display='none';},200);
+}
+function skipAuth(){
+  hideAuthModal();
+  showToast('离线模式：数据仅保存在本地，不会同步到云端','info',4000);
 }
 function toggleAuthMode(){
   _authMode = _authMode==='login' ? 'register' : 'login';
@@ -1141,11 +1149,32 @@ async function submitAuth(){
     // 注册同步回调
     FundDB.onSync(_debounce(pushToCloud, 2000));
   } catch(e){
-    const errMsg = e.message || '操作失败，请重试';
+    let errMsg = e.message || '操作失败，请重试';
+    // 友好化常见英文错误
+    if(errMsg.includes('fetch')) errMsg = '网络连接失败，请检查网络后重试';
+    else if(errMsg.includes('timeout') || errMsg.includes('Timeout')) errMsg = '请求超时，请稍后重试';
+    else if(errMsg.includes('rate limit') || errMsg.includes('429')) errMsg = '操作太频繁，请稍后再试';
+    else if(errMsg.includes('User already registered')) errMsg = '该邮箱已注册，请切换到登录';
+    else if(errMsg.includes('Network')) errMsg = '网络异常，请检查网络连接';
     _showAuthError(errMsg);
   } finally {
     btn.disabled=false;
     btn.textContent = _authMode==='login' ? '登录' : '注册';
+  }
+}
+
+async function resetPassword(){
+  if(!_supa){ _showAuthError('云端服务未加载'); return; }
+  const email=document.getElementById('auth-email').value.trim();
+  if(!email){ _showAuthError('请先在邮箱框填写你的注册邮箱'); return; }
+  try {
+    const {error} = await _supa.auth.resetPasswordForEmail(email);
+    if(error) throw error;
+    _showAuthError(''); // clear
+    document.getElementById('auth-error').style.display='none';
+    showToast('密码重置邮件已发送，请查收邮箱','success',5000);
+  } catch(e){
+    _showAuthError('发送失败: '+(e.message||'请稍后重试'));
   }
 }
 
