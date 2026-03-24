@@ -2345,7 +2345,7 @@ function buildFundCard(f,sortMode){
     <span class="fund-card-reason-more" onclick="var r=document.getElementById('reason-${f.code}');r.classList.toggle('expanded');this.textContent=r.classList.contains('expanded')?'收起 ▴':'查看更多 ▾'"">查看更多 ▾</span>${dcaHtml}
     <div class="fund-card-foot">
       <button class="fc-btn" onclick="window.open('https://fund.eastmoney.com/${f.code}.html','_blank','noopener')">🔗 查看详情</button>
-      <button class="fc-btn" onclick="copyCode('${f.code}');showToast('已复制 ${f.code}，打开支付宝搜索即可购买','success',3000)">📋 复制代码购买</button>
+      <button class="fc-btn" onclick="copyCode('${f.code}');showToast('已复制 ${f.code}，打开支付宝搜索购买。买入后回到「资产」页录入','success',4000)">📋 复制代码购买</button>
     </div>
   </div>`;
 }
@@ -2688,7 +2688,30 @@ function addExistingHolding(){
   document.getElementById('eh-amount').closest('.form-item').classList.toggle('has-error',!amount||amount<=0);
   if(searchEmpty){showToast('请先搜索并选择一只基金','error');autoFadeErrors();return;}
   if(!amount||amount<=0){showToast('请填写买入金额','error');autoFadeErrors();return;}
-  if(existingHoldings.some(h=>h.code===code)){showToast('该基金已存在，请修改现有记录','info');return;}
+  // 从navCache获取当前净值作为买入成本
+  const nav = navCache[code];
+  const curNav = nav ? parseFloat(nav.gsz)||1 : 1;
+  const existing = existingHoldings.find(h=>h.code===code);
+  if(existing){
+    // 加仓：合并到已有持仓
+    const oldAmount = existing.amount || 0;
+    existing.amount = oldAmount + amount;
+    // 加权平均成本：(旧金额×旧净值 + 新金额×新净值) / 总金额... simplified: just update total amount
+    // If confirmed with shares, add estimated new shares
+    if(existing.shares && existing.shares > 0){
+      const newShares = curNav > 0 ? amount / curNav : 0;
+      existing.shares += newShares;
+      existing.cost = existing.amount / existing.shares; // weighted average cost
+    }
+    existing.value = existing.amount; // will be recalculated on next render
+    FundDB.set('existingHoldings',existingHoldings); markHoldingsChanged();
+    flashSaved('eh-section');
+    renderExistingHoldings(); runHealthMonitor(); renderTodayOverview(); runSignalEngine();
+    clearFundMatch('eh');
+    document.getElementById('eh-amount').value='';
+    showToast(`已加仓 ¥${amount.toLocaleString()} 到「${name}」，总买入 ¥${existing.amount.toLocaleString()}`,'success');
+    return;
+  }
   // 确认日期：15:00前→T+1（买入日+1天确认），15:00后→T+2（买入日+2天确认）
   const buyTime = (document.querySelector('input[name="eh-buytime"]:checked')||{}).value || 'before15';
   const buyDate = date ? new Date(date) : new Date();
@@ -2700,9 +2723,6 @@ function addExistingHolding(){
   // 自动检测基金类型
   const fd = CURATED_FUNDS.find(f=>f.code===code);
   const type = fd ? fd.type : '股票型';
-  // 从navCache获取当前净值作为买入成本
-  const nav = navCache[code];
-  const curNav = nav ? parseFloat(nav.gsz)||1 : 1;
   existingHoldings.push({code,name,amount,date:date||new Date().toISOString().slice(0,10),buyTime,status:'pending',confirmDate:confirmDateStr,type,cost:curNav,value:amount});
   FundDB.set('existingHoldings',existingHoldings); markHoldingsChanged();
   flashSaved('eh-section');
@@ -2724,6 +2744,59 @@ function confirmHolding(i){
     FundDB.set('existingHoldings', existingHoldings);
     renderExistingHoldings(); runHealthMonitor(); renderTodayOverview();
     showToast(`${h.name} 已确认：${shares}份，确认净值${h.cost.toFixed(4)}`, 'success');
+  });
+}
+function updateDividendShares(i){
+  const h = existingHoldings[i];
+  if(!h || !h.shares) { showToast('请先确认初始份额','error'); return; }
+  openModal(`「${h.name}」当前${h.shares.toFixed(2)}份，请输入分红后的新总份额`, h.shares.toFixed(2), function(val){
+    const newShares = parseFloat(val);
+    if(!newShares || newShares <= 0){ showToast('请输入有效份额数','error'); return; }
+    if(newShares <= h.shares){ showToast('分红再投资后份额应增加，新份额应大于当前份额','error'); return; }
+    // 分红份额的成本为0，不改变原始买入金额，只更新份额数
+    // 成本保持不变（h.amount不变），份额增加 → 等效成本下降
+    h.shares = newShares;
+    // 注意：不修改h.cost和h.amount，因为分红份额是"免费"获得的
+    FundDB.set('existingHoldings', existingHoldings);
+    renderExistingHoldings(); runHealthMonitor(); renderTodayOverview();
+    showToast(`已更新份额为${newShares.toFixed(2)}份（分红再投资）`,'success');
+  });
+}
+function redeemHolding(i){
+  const h = existingHoldings[i];
+  if(!h) return;
+  const label = h.shares ? `当前${h.shares.toFixed(2)}份，输入要赎回的份额数` : `当前市值约¥${(h.value||0).toLocaleString()}，输入要赎回的金额`;
+  openModal(`赎回「${h.name}」— ${label}`, '', function(val){
+    const redeemVal = parseFloat(val);
+    if(!redeemVal || redeemVal <= 0){ showToast('请输入有效的赎回数量','error'); return; }
+    if(h.shares && h.shares > 0){
+      // 按份额赎回
+      if(redeemVal >= h.shares){
+        // 全部赎回 → 删除持仓
+        existingHoldings.splice(i, 1);
+        showToast(`已全部赎回「${h.name}」，预计T+1到账`,'success');
+      } else {
+        // 部分赎回
+        const ratio = redeemVal / h.shares;
+        h.shares -= redeemVal;
+        h.amount = h.amount ? h.amount * (1 - ratio) : 0;
+        h.value = h.value * (1 - ratio);
+        showToast(`已赎回${redeemVal.toFixed(2)}份「${h.name}」，剩余${h.shares.toFixed(2)}份，预计T+1到账`,'success');
+      }
+    } else {
+      // 按金额赎回（未确认份额时）
+      if(redeemVal >= (h.amount||h.value||0)){
+        existingHoldings.splice(i, 1);
+        showToast(`已全部赎回「${h.name}」，预计T+1到账`,'success');
+      } else {
+        const ratio = redeemVal / (h.amount||h.value||1);
+        h.amount = h.amount ? h.amount * (1 - ratio) : 0;
+        h.value = (h.value||0) * (1 - ratio);
+        showToast(`已赎回¥${redeemVal.toLocaleString()}「${h.name}」，预计T+1到账`,'success');
+      }
+    }
+    FundDB.set('existingHoldings', existingHoldings); markHoldingsChanged();
+    renderExistingHoldings(); renderDcaPlans(); runHealthMonitor(); renderTodayOverview(); runSignalEngine();
   });
 }
 function removeExistingHolding(i){
@@ -2800,7 +2873,7 @@ function renderExistingHoldings(){
       </div>
       <div class="eh-value">¥${h.value.toLocaleString('zh-CN',{maximumFractionDigits:0})}</div>
       <div class="eh-pnl">${pnlHtml}</div>
-      <button class="btn btn-danger btn-sm" onclick="removeExistingHolding(${i})">删除</button>
+      <button class="btn btn-ghost btn-sm" onclick="redeemHolding(${i})" style="font-size:11px">赎回</button>${h.status==='confirmed'&&h.shares?`<button class="btn btn-ghost btn-sm" onclick="updateDividendShares(${i})" style="font-size:11px">分红</button>`:''}<button class="btn btn-danger btn-sm" onclick="removeExistingHolding(${i})">删除</button>
     </div>`;
   }).join('');
   // summary
@@ -4069,7 +4142,7 @@ function renderAllocGroups(selectedPicks, weights){
           <div class="alloc-item-pct" style="color:${g.color}">${f.pct}%</div>
           <div class="alloc-item-amt">¥${f.amt.toLocaleString()}</div>
           <div class="alloc-item-method">${methodLabel(f.method)}</div>
-          <button class="btn btn-sm" style="background:var(--primary);color:#fff;font-size:11px;padding:2px 8px" onclick="copyCode('${f.code}');showToast('已复制 ${f.code}，请打开支付宝搜索购买','success',3000)">复制代码</button>
+          <button class="btn btn-sm" style="background:var(--primary);color:#fff;font-size:11px;padding:2px 8px" onclick="copyCode('${f.code}');showToast('已复制 ${f.code}，请打开支付宝搜索购买。买入后回到「资产」页录入持仓','success',4000)">复制代码</button>
         </div>`;
       }).join('')}</div>
     </div>`;
@@ -4467,7 +4540,7 @@ function renderDcaPlans(){
   summaryEl.style.display='block';
   const activeCount=dcaPlans.filter(d=>!d.paused).length;
   const pausedCount=dcaPlans.length-activeCount;
-  summaryEl.innerHTML=`📅 共 <b>${dcaPlans.length}</b> 项定投计划${pausedCount>0?`（${pausedCount}项已暂停）`:''}，每月合计 <b>¥${totalMonthly.toLocaleString()}</b>${totalCurval>0?`，总持仓市值约 <b>¥${totalCurval.toLocaleString()}</b>`:''}。已自动同步至已有持仓与持仓统计。`;
+  summaryEl.innerHTML=`📅 共 <b>${dcaPlans.length}</b> 项定投计划${pausedCount>0?`（${pausedCount}项已暂停）`:''}，每月合计 <b>¥${totalMonthly.toLocaleString()}</b>${totalCurval>0?`，总持仓市值约 <b>¥${totalCurval.toLocaleString()}</b>`:''}。已自动同步至已有持仓与持仓统计。<div style="font-size:11px;color:var(--muted);margin-top:6px">💡 每月扣款后，工具会自动按期数估算累计投入。如需精确跟踪，可在持仓中更新确认份额。</div>`;
   // 同步Panel3
   renderDcaInHoldings();
 }
