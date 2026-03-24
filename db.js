@@ -4,8 +4,11 @@ const FundDB = (function(){
   const DB_VERSION = 1;
   const STORE_NAME = 'appData';
   const DATA_KEYS = ['funds','holdings','existingHoldings','dcaPlans','navCache'];
+  // 需要同步到云端的 key（用户创建的数据，排除可重新拉取的缓存）
+  const SYNC_KEYS = ['funds','holdings','existingHoldings','dcaPlans'];
 
   let _db = null;
+  let _syncCallback = null; // 云端同步回调
 
   function open(){
     if(_db) return Promise.resolve(_db);
@@ -40,10 +43,17 @@ const FundDB = (function(){
         const tx2 = db.transaction(STORE_NAME, 'readwrite');
         tx2.objectStore(STORE_NAME).put(Date.now(), '_lastDataChange');
         resolve();
+        // 触发云端同步回调（仅对需要同步的 key）
+        if(_syncCallback && SYNC_KEYS.includes(key)){
+          try { _syncCallback(key, value); } catch(e){ console.warn('sync callback error:', e); }
+        }
       };
       req.onerror = e => reject(e.target.error);
     }));
   }
+
+  // 注册云端同步回调
+  function onSync(cb){ _syncCallback = cb; }
 
   function getAll(){
     return open().then(db => new Promise((resolve, reject) => {
@@ -54,6 +64,21 @@ const FundDB = (function(){
         const req = store.get(key);
         req.onsuccess = () => { result[key] = req.result || (key==='navCache'?{}:[]); res(); };
         req.onerror = () => { result[key] = key==='navCache'?{}:[]; res(); };
+      }));
+      Promise.all(pending).then(() => resolve(result));
+    }));
+  }
+
+  // 获取需要同步的数据（排除缓存）
+  function getSyncData(){
+    return open().then(db => new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, 'readonly');
+      const store = tx.objectStore(STORE_NAME);
+      const result = {};
+      const pending = SYNC_KEYS.map(key => new Promise(res => {
+        const req = store.get(key);
+        req.onsuccess = () => { result[key] = req.result || []; res(); };
+        req.onerror = () => { result[key] = []; res(); };
       }));
       Promise.all(pending).then(() => resolve(result));
     }));
@@ -145,5 +170,5 @@ const FundDB = (function(){
     });
   }
 
-  return { open, get, set, getAll, exportAll, importAll, migrateFromLocalStorage, checkBackupReminder, DATA_KEYS };
+  return { open, get, set, getAll, getSyncData, exportAll, importAll, migrateFromLocalStorage, checkBackupReminder, onSync, DATA_KEYS, SYNC_KEYS };
 })();

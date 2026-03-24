@@ -15,6 +15,7 @@
 <meta name="apple-mobile-web-app-title" content="基金助手">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="db.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -444,9 +445,30 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
   </div>
 </div>
 
-<div class="header">
-  <h1>📈 基金理财辅助工具</h1>
-  <p>智能配置方案 · 实时行情监控 · 定投计划 · 持仓管理</p>
+<!-- 登录/注册弹窗 -->
+<div class="modal-mask" id="auth-modal" style="display:none" onclick="if(event.target===this)hideAuthModal()">
+  <div class="modal-box" style="max-width:340px">
+    <div class="modal-title" id="auth-modal-title">登录账号</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px">登录后数据将自动同步到云端，支持多设备共享</div>
+    <div id="auth-error" style="display:none;font-size:12px;color:var(--danger);background:#fff1f0;padding:6px 10px;border-radius:6px;margin-bottom:10px"></div>
+    <div class="form-item" style="margin-bottom:10px"><label>邮箱</label><input id="auth-email" type="email" placeholder="your@email.com" autocomplete="email"></div>
+    <div class="form-item" style="margin-bottom:14px"><label>密码</label><input id="auth-password" type="password" placeholder="至少6位" autocomplete="current-password"></div>
+    <button class="btn btn-primary" id="auth-submit-btn" onclick="submitAuth()" style="width:100%;height:40px;font-size:14px;justify-content:center">登录</button>
+    <div style="text-align:center;margin-top:10px;font-size:12px">
+      <span id="auth-toggle-text">没有账号？</span>
+      <a href="javascript:void(0)" onclick="toggleAuthMode()" id="auth-toggle-link" style="color:var(--primary)">注册</a>
+    </div>
+  </div>
+</div>
+
+<div class="header" style="display:flex;justify-content:space-between;align-items:center">
+  <div>
+    <h1>📈 基金理财辅助工具</h1>
+    <p>智能配置方案 · 实时行情监控 · 定投计划 · 持仓管理</p>
+  </div>
+  <div id="auth-area" style="flex-shrink:0;text-align:right">
+    <button class="btn btn-sm" onclick="showAuthModal()" style="background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.3);font-size:12px;padding:4px 12px;border-radius:6px">登录</button>
+  </div>
 </div>
 <!-- 全局自动加载进度条（默认隐藏，仅手动刷新时显示） -->
 <div id="auto-banner" class="hidden">>
@@ -1020,6 +1042,221 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
 </div>
 
 <script>
+// ═══════════════ Supabase 云端同步 ═══════════════
+const _supabaseUrl = 'https://ajkjvknycovlltlawqac.supabase.co';
+const _supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqa2p2a255Y292bGx0bGF3cWFjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyOTY0NDYsImV4cCI6MjA4OTg3MjQ0Nn0.aU6EI3uy3-ghsZVDnbRQcnlsK3eN409hK4ykdXJax6s';
+const _supa = window.supabase ? window.supabase.createClient(_supabaseUrl, _supabaseKey) : null;
+let _currentUser = null;
+let _cloudVersion = 0;
+let _authMode = 'login'; // 'login' or 'register'
+let _syncTimer = null;
+
+// Debounce 工具
+function _debounce(fn, ms){ let t; return function(){ clearTimeout(t); t=setTimeout(()=>fn.apply(this,arguments), ms); }; }
+
+// ── Auth UI ──
+function showAuthModal(){
+  _authMode='login';
+  _updateAuthModalUI();
+  document.getElementById('auth-error').style.display='none';
+  document.getElementById('auth-email').value='';
+  document.getElementById('auth-password').value='';
+  const mask=document.getElementById('auth-modal');
+  mask.style.display='flex';
+  requestAnimationFrame(()=>mask.classList.add('show'));
+  setTimeout(()=>document.getElementById('auth-email').focus(),200);
+}
+function hideAuthModal(){
+  const mask=document.getElementById('auth-modal');
+  mask.classList.remove('show');
+  setTimeout(()=>{mask.style.display='none';},200);
+}
+function toggleAuthMode(){
+  _authMode = _authMode==='login' ? 'register' : 'login';
+  _updateAuthModalUI();
+}
+function _updateAuthModalUI(){
+  document.getElementById('auth-modal-title').textContent = _authMode==='login' ? '登录账号' : '注册账号';
+  document.getElementById('auth-submit-btn').textContent = _authMode==='login' ? '登录' : '注册';
+  document.getElementById('auth-toggle-text').textContent = _authMode==='login' ? '没有账号？' : '已有账号？';
+  document.getElementById('auth-toggle-link').textContent = _authMode==='login' ? '注册' : '登录';
+}
+function _showAuthError(msg){
+  const el=document.getElementById('auth-error');
+  el.textContent=msg; el.style.display='block';
+}
+
+async function submitAuth(){
+  if(!_supa){ _showAuthError('云端服务未加载，请刷新页面'); return; }
+  const email=document.getElementById('auth-email').value.trim();
+  const password=document.getElementById('auth-password').value;
+  if(!email||!password){ _showAuthError('请输入邮箱和密码'); return; }
+  if(password.length<6){ _showAuthError('密码至少6位'); return; }
+
+  const btn=document.getElementById('auth-submit-btn');
+  btn.disabled=true; btn.textContent='处理中…';
+  document.getElementById('auth-error').style.display='none';
+
+  try {
+    let result;
+    if(_authMode==='register'){
+      result = await _supa.auth.signUp({ email, password });
+      if(result.error) throw result.error;
+      if(result.data?.user?.identities?.length===0){
+        _showAuthError('该邮箱已注册，请直接登录');
+        btn.disabled=false; btn.textContent='注册';
+        return;
+      }
+      showToast('注册成功！请查看邮箱确认链接（如无需确认则已自动登录）','success',4000);
+    } else {
+      result = await _supa.auth.signInWithPassword({ email, password });
+      if(result.error) throw result.error;
+    }
+    _currentUser = result.data.user;
+    hideAuthModal();
+    updateAuthUI();
+    // 登录后拉取云端数据
+    await pullFromCloud();
+    // 如果本地有数据但云端没有，提示迁移
+    const localData = await FundDB.getSyncData();
+    const hasLocalData = localData.funds?.length || localData.holdings?.length || localData.existingHoldings?.length || localData.dcaPlans?.length;
+    if(hasLocalData && _cloudVersion === 0){
+      if(confirm('检测到本地已有数据，是否将数据同步到云端账号？')){
+        await pushToCloud();
+      }
+    }
+    // 注册同步回调
+    FundDB.onSync(_debounce(pushToCloud, 2000));
+  } catch(e){
+    _showAuthError(e.message || '操作失败，请重试');
+  } finally {
+    btn.disabled=false;
+    btn.textContent = _authMode==='login' ? '登录' : '注册';
+  }
+}
+
+async function authLogout(){
+  if(!_supa) return;
+  await _supa.auth.signOut();
+  _currentUser = null;
+  _cloudVersion = 0;
+  FundDB.onSync(null); // 取消同步回调
+  updateAuthUI();
+  showToast('已退出登录，数据仍保留在本地','info');
+}
+
+function updateAuthUI(){
+  const area = document.getElementById('auth-area');
+  if(!area) return;
+  if(_currentUser){
+    const email = _currentUser.email || '';
+    const short = email.length > 16 ? email.slice(0,14)+'…' : email;
+    area.innerHTML = `
+      <div style="display:flex;align-items:center;gap:6px">
+        <span id="sync-status-dot" style="width:8px;height:8px;border-radius:50%;background:#52c41a;flex-shrink:0" title="已同步"></span>
+        <span style="font-size:11px;color:rgba(255,255,255,.85);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${email}">${short}</span>
+        <button onclick="authLogout()" style="background:none;border:none;color:rgba(255,255,255,.6);font-size:11px;cursor:pointer;padding:2px 4px">退出</button>
+      </div>`;
+  } else {
+    area.innerHTML = `<button class="btn btn-sm" onclick="showAuthModal()" style="background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.3);font-size:12px;padding:4px 12px;border-radius:6px">登录</button>`;
+  }
+}
+
+function updateSyncStatus(status){
+  const dot = document.getElementById('sync-status-dot');
+  if(!dot) return;
+  const colors = {synced:'#52c41a', syncing:'#faad14', error:'#ff4d4f', offline:'#8c8c8c'};
+  const titles = {synced:'已同步', syncing:'同步中…', error:'同步失败', offline:'离线'};
+  dot.style.background = colors[status] || '#8c8c8c';
+  dot.title = titles[status] || '';
+}
+
+// ── 云端同步 ──
+async function pushToCloud(){
+  if(!_currentUser || !_supa) return;
+  if(!navigator.onLine){ localStorage.setItem('_syncPending','1'); updateSyncStatus('offline'); return; }
+  updateSyncStatus('syncing');
+  try {
+    const data = await FundDB.getSyncData();
+    const { error } = await _supa.from('user_data').upsert({
+      user_id: _currentUser.id,
+      data: data,
+      updated_at: new Date().toISOString(),
+      version: _cloudVersion + 1
+    });
+    if(error) throw error;
+    _cloudVersion++;
+    localStorage.removeItem('_syncPending');
+    updateSyncStatus('synced');
+  } catch(e){
+    console.warn('pushToCloud failed:', e);
+    localStorage.setItem('_syncPending','1');
+    updateSyncStatus('error');
+  }
+}
+
+async function pullFromCloud(){
+  if(!_currentUser || !_supa || !navigator.onLine) return;
+  try {
+    const { data: row, error } = await _supa.from('user_data')
+      .select('data, version, updated_at')
+      .eq('user_id', _currentUser.id)
+      .single();
+    if(error && error.code !== 'PGRST116') throw error; // PGRST116 = no rows
+    if(!row){ _cloudVersion = 0; return; } // 云端无数据
+
+    if(row.version > _cloudVersion){
+      const localTs = await FundDB.get('_lastDataChange');
+      const cloudTs = new Date(row.updated_at).getTime();
+      if(localTs && localTs > cloudTs){
+        // 本地和云端都有更新，让用户选择
+        const useCloud = confirm('检测到本地数据和云端数据都有更新。\n点击「确定」使用云端数据，点击「取消」保留本地数据并覆盖云端。');
+        if(useCloud){
+          await applyCloudData(row.data, row.version);
+        } else {
+          await pushToCloud();
+        }
+      } else {
+        // 仅云端有更新
+        await applyCloudData(row.data, row.version);
+      }
+    }
+  } catch(e){
+    console.warn('pullFromCloud failed:', e);
+  }
+}
+
+async function applyCloudData(cloudData, version){
+  if(!cloudData) return;
+  for(const key of FundDB.SYNC_KEYS){
+    if(cloudData[key] !== undefined){
+      await FundDB.set(key, cloudData[key]);
+    }
+  }
+  // 重新加载内存状态
+  const data = await FundDB.getAll();
+  funds = data.funds || [];
+  holdings = data.holdings || [];
+  existingHoldings = data.existingHoldings || [];
+  dcaPlans = data.dcaPlans || [];
+  navCache = data.navCache || {};
+  _cloudVersion = version;
+  renderAll();
+  showToast('已从云端同步最新数据','success');
+}
+
+// ── 网络状态监听 ──
+window.addEventListener('online', ()=>{
+  if(_currentUser){
+    if(localStorage.getItem('_syncPending')){ pushToCloud(); }
+    pullFromCloud();
+    updateSyncStatus('synced');
+  }
+});
+window.addEventListener('offline', ()=>{
+  if(_currentUser) updateSyncStatus('offline');
+});
+
 // ═══════════════ Toast 通知系统 ═══════════════
 // 全局：输入时自动清除校验红框
 document.addEventListener('input',function(e){
@@ -4717,10 +4954,32 @@ function runHealthMonitor(){
     if(wc) wc.style.display='none';
   }
 
-  // 4. 检查备份提醒
+  // 4. 检查备份提醒（已登录且同步正常时跳过）
   FundDB.checkBackupReminder().then(needRemind => {
-    if(needRemind) document.getElementById('backup-reminder').style.display='';
+    if(needRemind && !_currentUser) document.getElementById('backup-reminder').style.display='';
   });
+
+  // 4.5 Supabase 登录状态恢复
+  if(_supa){
+    _supa.auth.getSession().then(({data:{session}}) => {
+      if(session && session.user){
+        _currentUser = session.user;
+        updateAuthUI();
+        // 注册同步回调
+        FundDB.onSync(_debounce(pushToCloud, 2000));
+        // 拉取云端数据
+        pullFromCloud().then(()=>{
+          // 处理离线期间的待同步数据
+          if(localStorage.getItem('_syncPending')) pushToCloud();
+        });
+      }
+    }).catch(e => console.warn('auth session check failed:', e));
+    // 监听登录状态变化（如 token 刷新、其他 tab 登出等）
+    _supa.auth.onAuthStateChange((event, session) => {
+      if(event === 'SIGNED_OUT'){ _currentUser = null; updateAuthUI(); }
+      else if(session?.user){ _currentUser = session.user; updateAuthUI(); }
+    });
+  }
 
   // 5. iOS 安装引导
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;

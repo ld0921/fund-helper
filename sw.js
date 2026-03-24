@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fund-helper-v17';
+const CACHE_NAME = 'fund-helper-v18';
 const BASE = self.registration.scope;
 const ASSETS = [
   './',
@@ -9,7 +9,8 @@ const ASSETS = [
   './icons/icon-512.png'
 ];
 const CDN_URLS = [
-  'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js'
+  'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js',
+  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js'
 ];
 
 // Install: cache core assets
@@ -37,8 +38,8 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
 
-  // API calls (fund NAV & detail data) - network only, don't cache
-  if(url.hostname.includes('fundgz.1234567.com.cn') || url.hostname.includes('fund.eastmoney.com') || url.hostname.includes('fundf10.eastmoney.com')){
+  // API calls (fund NAV & detail data) + Supabase API - network only, don't cache
+  if(url.hostname.includes('fundgz.1234567.com.cn') || url.hostname.includes('fund.eastmoney.com') || url.hostname.includes('fundf10.eastmoney.com') || url.hostname.includes('supabase.co')){
     return; // let browser handle normally
   }
 
