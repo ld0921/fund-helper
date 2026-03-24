@@ -921,6 +921,9 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
     <button class="chip" onclick="scrollToSection('dp-section')">定投</button>
   </div>
 
+  <!-- 收益总览（有持仓时显示） -->
+  <div id="portfolio-overview" style="display:none"></div>
+
   <!-- 统一持仓管理 -->
   <div class="card" id="eh-section">
     <div class="card-title">
@@ -2915,6 +2918,60 @@ function renderExistingHoldings(){
   const pnlHtml2=totalCost>0?`&nbsp;·&nbsp;盈亏 <b class="${totalPnl>=0?'up':'down'}">${totalPnl>=0?'+':'-'}¥${Math.abs(totalPnl).toLocaleString('zh-CN',{maximumFractionDigits:0})} (${totalPnl>=0?'+':''}${totalPnlPct.toFixed(1)}%)</b>`:'';
   summary.style.display='block';
   summary.innerHTML=`💼 <b>${existingHoldings.length}</b> 只基金 · 总成本 <b>¥${totalCost.toLocaleString('zh-CN',{maximumFractionDigits:0})}</b> · 总市值 <b>¥${totalVal.toLocaleString('zh-CN',{maximumFractionDigits:0})}</b>${pnlHtml2}`;
+
+  // 渲染收益总览卡片
+  renderPortfolioOverview(existingHoldings, totalCost, totalVal, totalPnl, totalPnlPct);
+}
+
+function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, totalPnlPct){
+  const el = document.getElementById('portfolio-overview');
+  if(!el) return;
+  if(!holdings.length){ el.style.display='none'; return; }
+
+  // 今日涨跌
+  let todayPnl=0, navCount=0;
+  holdings.forEach(h=>{
+    const nav=navCache[h.code];
+    if(nav){ todayPnl+=h.value*(parseFloat(nav.gszzl)||0)/100; navCount++; }
+  });
+
+  // 各基金盈亏明细
+  const details = holdings.map(h=>{
+    const cost=h.amount||0;
+    const pnl=cost>0?h.value-cost:0;
+    const pct=cost>0?(pnl/cost*100):0;
+    const nav=navCache[h.code];
+    const todayChg=nav?parseFloat(nav.gszzl)||0:null;
+    return {name:h.name, code:h.code, cost, value:h.value, pnl, pct, todayChg, source:h.source};
+  }).sort((a,b)=>b.value-a.value); // 按市值降序
+
+  el.style.display='';
+  el.innerHTML=`
+    <div class="today-overview" style="margin-bottom:14px">
+      <div style="font-size:14px;font-weight:600;margin-bottom:12px">💰 收益总览</div>
+      <div class="ov-row" style="margin-bottom:12px">
+        <div class="ov-item"><div class="ov-val" style="color:var(--primary)">¥${totalVal.toLocaleString('zh-CN',{maximumFractionDigits:0})}</div><div class="ov-label">总市值</div></div>
+        <div class="ov-item"><div class="ov-val ${totalPnl>=0?'up':'down'}">${totalPnl>=0?'+':''}¥${Math.abs(totalPnl).toLocaleString('zh-CN',{maximumFractionDigits:0})}</div><div class="ov-label">累计盈亏</div></div>
+        <div class="ov-item"><div class="ov-val ${totalPnl>=0?'up':'down'}">${totalPnl>=0?'+':''}${totalPnlPct.toFixed(1)}%</div><div class="ov-label">收益率</div></div>
+        <div class="ov-item"><div class="ov-val ${todayPnl>=0?'up':'down'}">${todayPnl>=0?'+':''}¥${Math.abs(todayPnl).toLocaleString('zh-CN',{maximumFractionDigits:0})}</div><div class="ov-label">今日${navCount>0?'':'(待刷新)'}</div></div>
+      </div>
+      <div style="border-top:1px solid rgba(0,0,0,.06);padding-top:10px">
+        <div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px">各基金收益明细</div>
+        ${details.map(d=>{
+          const pctStr=d.cost>0?`${d.pct>=0?'+':''}${d.pct.toFixed(1)}%`:'--';
+          const pnlStr=d.cost>0?`${d.pnl>=0?'+':''}¥${Math.abs(d.pnl).toLocaleString('zh-CN',{maximumFractionDigits:0})}`:'--';
+          const todayStr=d.todayChg!==null?`<span style="font-size:11px;color:${d.todayChg>=0?'var(--danger)':'var(--success)'}">${d.todayChg>=0?'+':''}${d.todayChg}%</span>`:'';
+          const srcTag=d.source==='dca'?'<span style="font-size:9px;padding:0 4px;border-radius:2px;background:#f9f0ff;color:#722ed1;margin-left:3px">定投</span>':'';
+          return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(0,0,0,.04)">
+            <div style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:500">${escHtml(d.name)}${srcTag} ${todayStr}</div>
+            <div style="text-align:right;flex-shrink:0">
+              <div style="font-size:13px;font-weight:600" class="${d.pnl>=0?'up':'down'}">${pctStr}</div>
+              <div style="font-size:11px;color:var(--muted)">${pnlStr}</div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
 }
 
 // ═══════════════ 调仓算法 ═══════════════
