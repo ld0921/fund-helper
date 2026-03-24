@@ -699,7 +699,10 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
       <div id="rebal-summary" class="rebal-summary"></div>
       <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden" id="rebal-list"></div>
       <div style="margin-top:12px;padding:10px 14px;background:#fffbe6;border-radius:8px;font-size:12px;color:#7c5800;line-height:1.7">
-        ⚠️ 调仓建议基于算法模型，仅供参考。卖出基金请注意：持有不足7天可能产生惩罚性赎回费；部分基金有锁定期。建议优先加仓而非频繁卖出。
+        ⚠️ <b>支付宝操作提示：</b><br>
+        · <b>赎回费梯度：</b>持有&lt;7天收1.5%（惩罚性），7天-1年约0.5%，1-2年约0.25%，2年以上通常0%。建议优先加仓而非频繁卖出<br>
+        · <b>QDII基金限购：</b>标普500/纳斯达克100等海外基金常有单日限额（1000-5000元），大额买入需分多日完成<br>
+        · <b>A类 vs C类：</b>A类有申购费（支付宝1折约0.08-0.15%）适合持有>1年，C类免申购费但收年化0.4%销售服务费适合持有&lt;1年
       </div>
     </div>
 
@@ -1340,7 +1343,6 @@ window.addEventListener('online', ()=>{
     updateSyncStatus('synced');
   }
 });
-});
 
 // ═══════════════ Toast 通知系统 ═══════════════
 // 全局：输入时自动清除校验红框
@@ -1531,27 +1533,27 @@ function fundSearchFilter(prefix, val){ smartFundSearch(prefix, val); }
 // ═══════════════ 精选基金数据库 ═══════════════
 // 初始值基于 2026-03-19 API 数据，运行时会被实时 API 覆盖
 const CURATED_FUNDS = [
-  {code:'005827',name:'易方达蓝筹精选混合',type:'混合型',cat:'active',label:'主动权益',manager:'张坤',mgrYears:13.5,stars:4,risk:'R4',size:310.21,r1:-6.75,r3:-11.51,maxDD:57.9,fee:1.70,vol:0,tags:['消费','医药','白酒'],reason:'张坤代表作，专注消费医药龙头，价值投资体系成熟，历经多轮牛熊考验。持仓集中于白酒、医药等消费核心资产，适合认同价值投资理念的长线投资者。'},
-  {code:'110011',name:'易方达优质精选混合(QDII)',type:'混合型',cat:'active',label:'主动权益',manager:'张坤',mgrYears:13.5,stars:4,risk:'R4',size:113.85,r1:-7.76,r3:-11.28,maxDD:61.2,fee:1.70,vol:0,tags:['消费','白酒','医药'],reason:'张坤管理时间最长的产品（原名易方达中小盘），穿越多轮牛熊，超长任期积累丰富经验。持仓以消费白酒为主，风格稳定，适合长期持有。'},
-  {code:'161005',name:'富国天惠成长混合(LOF)A',type:'混合型',cat:'active',label:'主动权益',manager:'朱少醒',mgrYears:20.4,stars:4,risk:'R4',size:211.02,r1:17.93,r3:10.81,maxDD:65.2,fee:1.70,vol:0,tags:['成长','科技','消费'],reason:'朱少醒管理超20年，国内任职时间最长的基金经理之一。选股覆盖成长与消费，回撤控制能力突出，长期配置价值高。'},
-  {code:'163402',name:'兴全趋势投资混合(LOF)',type:'混合型',cat:'active',label:'主动权益',manager:'杨世进',mgrYears:5.3,stars:5,risk:'R4',size:140.12,r1:33.25,r3:20.83,maxDD:87.7,fee:1.70,vol:0,tags:['均衡','成长','价值'],reason:'经典趋势产品，选股均衡多元，下行风险控制优于同类，适合作为权益基金底仓。'},
-  {code:'003095',name:'中欧医疗健康混合A',type:'混合型',cat:'active',label:'主动权益',manager:'葛兰',mgrYears:10.7,stars:4,risk:'R4',size:138.43,r1:6.86,r3:-22.69,maxDD:68.5,fee:1.70,vol:0,tags:['医疗','创新药','器械'],reason:'医疗健康专精，覆盖创新药、CXO、医疗器械。行业集中度高，波动大，仅适合看好医疗长期需求且能承受高波动的投资者。'},
-  {code:'260108',name:'景顺长城新兴成长混合A',type:'混合型',cat:'active',label:'主动权益',manager:'刘彦春',mgrYears:16.9,stars:4,risk:'R4',size:158.8,r1:-10.97,r3:-30.49,maxDD:77.9,fee:1.70,vol:0,tags:['消费','成长','港股'],reason:'刘彦春深度研究消费成长方向，任职超16年。持仓偏重消费与港股，选股集中度高，波动较大，适合看好消费赛道的长线投资者。'},
-  {code:'460300',name:'华泰柏瑞沪深300ETF联接A',type:'指数型',cat:'index',label:'指数基金',manager:'柳军',mgrYears:16.8,stars:5,risk:'R4',size:4222.58,r1:19.27,r3:26.4,maxDD:46.5,fee:0.15,vol:0,tags:['沪深300','宽基','蓝筹'],reason:'跟踪沪深300ETF(510300)的联接基金A类份额，支持场外申购（支付宝等），跟踪A股核心蓝筹，费率极低，长期定投首选。'},
-  {code:'009051',name:'易方达中证红利ETF联接A',type:'指数型',cat:'index',label:'指数基金',manager:'林伟斌',mgrYears:11.9,stars:5,risk:'R3',size:118.05,r1:12.25,r3:29.45,maxDD:22.5,fee:0.15,vol:0,tags:['高股息','红利','防御'],reason:'跟踪中证红利ETF(515180)的联接基金A类份额，支持场外申购。聚焦高股息低估值标的，防御性强，适合追求稳定现金流的投资者。'},
-  {code:'006327',name:'易方达中证海外互联网50ETF联接A',type:'QDII',cat:'qdii',label:'QDII海外',manager:'余海燕',mgrYears:14.3,stars:5,risk:'R4',size:398.59,r1:-15.1,r3:33.73,maxDD:73.4,fee:0.20,vol:0,tags:['互联网','港股','科技'],reason:'跟踪中概互联ETF(513050)的联接基金A类份额，支持场外申购。覆盖腾讯、阿里、美团等互联网龙头，适合看好中概长期复苏。'},
-  {code:'110026',name:'易方达创业板ETF联接A',type:'指数型',cat:'index',label:'指数基金',manager:'成曦',mgrYears:9.9,stars:5,risk:'R4',size:1004.46,r1:52.72,r3:50.01,maxDD:69.7,fee:0.15,vol:0,tags:['创业板','科技','成长'],reason:'跟踪创业板ETF(159915)的联接基金A类份额，支持场外申购。弹性大，成长股集中，仅适合激进型投资者少量配置。'},
-  {code:'160119',name:'南方中证500ETF联接A',type:'指数型',cat:'index',label:'指数基金',manager:'罗文杰',mgrYears:12.9,stars:5,risk:'R4',size:1446.9,r1:34.17,r3:36.88,maxDD:63.2,fee:0.15,vol:0,tags:['中证500','中盘','成长'],reason:'跟踪中证500ETF(510500)的联接基金A类份额，支持场外申购。覆盖500只中等市值股票，与沪深300互补，成长性更强。'},
-  {code:'160706',name:'嘉实沪深300ETF联接(LOF)A',type:'指数型',cat:'index',label:'指数基金',manager:'刘珈吟',mgrYears:10,stars:5,risk:'R4',size:1971.24,r1:19.24,r3:26.4,maxDD:45.9,fee:0.15,vol:0,tags:['沪深300','宽基','低费率'],reason:'跟踪嘉实沪深300ETF(159919)的联接基金A类份额，支持场外申购。老牌沪深300联接，跟踪精准，适合长期定投。'},
-  {code:'110017',name:'易方达增强回报债券A',type:'债券型',cat:'bond',label:'债券基金',manager:'王晓晨',mgrYears:14.6,stars:5,risk:'R3',size:316.96,r1:5.55,r3:17.39,maxDD:21.1,fee:0.70,vol:0,tags:['信用债','增强','稳健'],reason:'长期业绩位居债基前列，信用债与利率债均衡，适度增强收益，风险控制优秀。'},
-  {code:'000171',name:'易方达裕丰回报债券A',type:'债券型',cat:'bond',label:'债券基金',manager:'张清华',mgrYears:12.2,stars:4,risk:'R3',size:152.65,r1:7.09,r3:16.01,maxDD:26,fee:0.50,vol:0,tags:['债券','增强','稳健'],reason:'债券增强型产品，适合追求稳健收益的投资者，替代银行理财。'},
-  {code:'070009',name:'嘉实超短债债券C',type:'债券型',cat:'bond',label:'债券基金',manager:'王亚洲',mgrYears:10.7,stars:5,risk:'R1',size:63.48,r1:1.54,r3:6.55,maxDD:2.3,fee:0.30,vol:0,tags:['超短债','流动性','保守'],reason:'持仓期限极短，流动性优异，收益高于货币基金，风险接近零，适合短期过渡资金。'},
-  {code:'000198',name:'天弘余额宝货币',type:'货币型',cat:'money',label:'货币基金',manager:'刘莹',mgrYears:8,stars:3,risk:'R1',size:7646.28,r1:1.11,r3:4.47,maxDD:0.0,fee:0.05,vol:0,tags:['余额宝','支付宝','随存随取'],reason:'支付宝默认货币基金，全球规模最大，T+0取用，历史从未亏损，适合闲置资金管理。'},
-  {code:'003003',name:'华夏现金增利货币A/E',type:'货币型',cat:'money',label:'货币基金',manager:'曲波',mgrYears:18.2,stars:3,risk:'R1',size:593.88,r1:1.13,r3:4.57,maxDD:0.0,fee:0.05,vol:0,tags:['货币','稳健','现金管理'],reason:'华夏基金旗下货币基金，规模较大，收益稳定，适合资金备用仓。'},
-  {code:'161125',name:'易方达标普500指数人民币A',type:'QDII',cat:'qdii',label:'QDII海外',manager:'刘依姗',mgrYears:1.3,stars:4,risk:'R4',size:14.75,r1:13.32,r3:66.24,maxDD:32.9,fee:0.80,vol:0,tags:['美股','标普500','全球配置'],reason:'跟踪标普500，投资苹果微软英伟达等美股核心资产，历史年化约10%+，全球配置首选。'},
-  {code:'270042',name:'广发纳斯达克100ETF联接人民币(QDII)A',type:'QDII',cat:'qdii',label:'QDII海外',manager:'刘杰',mgrYears:12,stars:5,risk:'R5',size:108.44,r1:18.61,r3:88.66,maxDD:31.2,fee:0.80,vol:0,tags:['美股','纳斯达克','科技'],reason:'跟踪纳斯达克100，高度集中科技巨头，弹性极大，长期表现优异，适合激进型配置。'},
-  {code:'040046',name:'华安纳斯达克100ETF联接(QDII)A',type:'QDII',cat:'qdii',label:'QDII海外',manager:'倪斌',mgrYears:7.5,stars:4,risk:'R4',size:55.2,r1:17.03,r3:85.36,maxDD:31.2,fee:0.80,vol:0,tags:['美股','纳斯达克','科技'],reason:'华安旗下纳斯达克100联接基金，管理经验丰富，费率合理，适合配置美股科技赛道的投资者。'},
-  {code:'006479',name:'广发纳斯达克100ETF联接人民币(QDII)C',type:'QDII',cat:'qdii',label:'QDII海外',manager:'刘杰',mgrYears:12,stars:5,risk:'R4',size:65.44,r1:18.38,r3:87.53,maxDD:31.4,fee:0.80,vol:0,tags:['美股','纳斯达克','联接'],reason:'广发纳斯达克100的C类份额，免申购费收销售服务费，适合短期持有或小额定投。'},
+  {code:'005827',name:'易方达蓝筹精选混合',type:'混合型',cat:'active',label:'主动权益',manager:'张坤',mgrYears:13.5,stars:4,risk:'R4',size:310.21,r1:-6.75,r3:-11.51,maxDD:57.9,fee:0.15,vol:0,tags:['消费','医药','白酒'],reason:'张坤代表作，专注消费医药龙头，价值投资体系成熟，历经多轮牛熊考验。持仓集中于白酒、医药等消费核心资产，适合认同价值投资理念的长线投资者。'},
+  {code:'110011',name:'易方达优质精选混合(QDII)',type:'混合型',cat:'active',label:'主动权益',manager:'张坤',mgrYears:13.5,stars:4,risk:'R4',size:113.85,r1:-7.76,r3:-11.28,maxDD:61.2,fee:0.15,vol:0,tags:['消费','白酒','医药'],reason:'张坤管理时间最长的产品（原名易方达中小盘），穿越多轮牛熊，超长任期积累丰富经验。持仓以消费白酒为主，风格稳定，适合长期持有。'},
+  {code:'161005',name:'富国天惠成长混合(LOF)A',type:'混合型',cat:'active',label:'主动权益',manager:'朱少醒',mgrYears:20.4,stars:4,risk:'R4',size:211.02,r1:17.93,r3:10.81,maxDD:65.2,fee:0.15,vol:0,tags:['成长','科技','消费'],reason:'朱少醒管理超20年，国内任职时间最长的基金经理之一。选股覆盖成长与消费，回撤控制能力突出，长期配置价值高。'},
+  {code:'163402',name:'兴全趋势投资混合(LOF)',type:'混合型',cat:'active',label:'主动权益',manager:'杨世进',mgrYears:5.3,stars:5,risk:'R4',size:140.12,r1:33.25,r3:20.83,maxDD:87.7,fee:0.15,vol:0,tags:['均衡','成长','价值'],reason:'经典趋势产品，选股均衡多元，下行风险控制优于同类，适合作为权益基金底仓。'},
+  {code:'003095',name:'中欧医疗健康混合A',type:'混合型',cat:'active',label:'主动权益',manager:'葛兰',mgrYears:10.7,stars:4,risk:'R4',size:138.43,r1:6.86,r3:-22.69,maxDD:68.5,fee:0.15,vol:0,tags:['医疗','创新药','器械'],reason:'医疗健康专精，覆盖创新药、CXO、医疗器械。行业集中度高，波动大，仅适合看好医疗长期需求且能承受高波动的投资者。'},
+  {code:'260108',name:'景顺长城新兴成长混合A',type:'混合型',cat:'active',label:'主动权益',manager:'刘彦春',mgrYears:16.9,stars:4,risk:'R4',size:158.8,r1:-10.97,r3:-30.49,maxDD:77.9,fee:0.15,vol:0,tags:['消费','成长','港股'],reason:'刘彦春深度研究消费成长方向，任职超16年。持仓偏重消费与港股，选股集中度高，波动较大，适合看好消费赛道的长线投资者。'},
+  {code:'460300',name:'华泰柏瑞沪深300ETF联接A',type:'指数型',cat:'index',label:'指数基金',manager:'柳军',mgrYears:16.8,stars:5,risk:'R4',size:4222.58,r1:19.27,r3:26.4,maxDD:46.5,fee:0.12,vol:0,tags:['沪深300','宽基','蓝筹'],reason:'跟踪沪深300ETF(510300)的联接基金A类份额，支持场外申购（支付宝等），跟踪A股核心蓝筹，费率极低，长期定投首选。'},
+  {code:'009051',name:'易方达中证红利ETF联接A',type:'指数型',cat:'index',label:'指数基金',manager:'林伟斌',mgrYears:11.9,stars:5,risk:'R3',size:118.05,r1:12.25,r3:29.45,maxDD:22.5,fee:0.12,vol:0,tags:['高股息','红利','防御'],reason:'跟踪中证红利ETF(515180)的联接基金A类份额，支持场外申购。聚焦高股息低估值标的，防御性强，适合追求稳定现金流的投资者。'},
+  {code:'006327',name:'易方达中证海外互联网50ETF联接A',type:'QDII',cat:'qdii',label:'QDII海外',manager:'余海燕',mgrYears:14.3,stars:5,risk:'R4',size:398.59,r1:-15.1,r3:33.73,maxDD:73.4,fee:0.02,vol:0,tags:['互联网','港股','科技'],reason:'跟踪中概互联ETF(513050)的联接基金A类份额，支持场外申购。覆盖腾讯、阿里、美团等互联网龙头，适合看好中概长期复苏。'},
+  {code:'110026',name:'易方达创业板ETF联接A',type:'指数型',cat:'index',label:'指数基金',manager:'成曦',mgrYears:9.9,stars:5,risk:'R4',size:1004.46,r1:52.72,r3:50.01,maxDD:69.7,fee:0.12,vol:0,tags:['创业板','科技','成长'],reason:'跟踪创业板ETF(159915)的联接基金A类份额，支持场外申购。弹性大，成长股集中，仅适合激进型投资者少量配置。'},
+  {code:'160119',name:'南方中证500ETF联接A',type:'指数型',cat:'index',label:'指数基金',manager:'罗文杰',mgrYears:12.9,stars:5,risk:'R4',size:1446.9,r1:34.17,r3:36.88,maxDD:63.2,fee:0.12,vol:0,tags:['中证500','中盘','成长'],reason:'跟踪中证500ETF(510500)的联接基金A类份额，支持场外申购。覆盖500只中等市值股票，与沪深300互补，成长性更强。'},
+  {code:'160706',name:'嘉实沪深300ETF联接(LOF)A',type:'指数型',cat:'index',label:'指数基金',manager:'刘珈吟',mgrYears:10,stars:5,risk:'R4',size:1971.24,r1:19.24,r3:26.4,maxDD:45.9,fee:0.12,vol:0,tags:['沪深300','宽基','低费率'],reason:'跟踪嘉实沪深300ETF(159919)的联接基金A类份额，支持场外申购。老牌沪深300联接，跟踪精准，适合长期定投。'},
+  {code:'110017',name:'易方达增强回报债券A',type:'债券型',cat:'bond',label:'债券基金',manager:'王晓晨',mgrYears:14.6,stars:5,risk:'R3',size:316.96,r1:5.55,r3:17.39,maxDD:21.1,fee:0.07,vol:0,tags:['信用债','增强','稳健'],reason:'长期业绩位居债基前列，信用债与利率债均衡，适度增强收益，风险控制优秀。'},
+  {code:'000171',name:'易方达裕丰回报债券A',type:'债券型',cat:'bond',label:'债券基金',manager:'张清华',mgrYears:12.2,stars:4,risk:'R3',size:152.65,r1:7.09,r3:16.01,maxDD:26,fee:0.05,vol:0,tags:['债券','增强','稳健'],reason:'债券增强型产品，适合追求稳健收益的投资者，替代银行理财。'},
+  {code:'070009',name:'嘉实超短债债券C',type:'债券型',cat:'bond',label:'债券基金',manager:'王亚洲',mgrYears:10.7,stars:5,risk:'R1',size:63.48,r1:1.54,r3:6.55,maxDD:2.3,fee:0,vol:0,tags:['超短债','流动性','保守'],reason:'持仓期限极短，流动性优异，收益高于货币基金，风险接近零，适合短期过渡资金。'},
+  {code:'000198',name:'天弘余额宝货币',type:'货币型',cat:'money',label:'货币基金',manager:'刘莹',mgrYears:8,stars:3,risk:'R1',size:7646.28,r1:1.11,r3:4.47,maxDD:0.0,fee:0,vol:0,tags:['余额宝','支付宝','随存随取'],reason:'支付宝默认货币基金，全球规模最大，T+0取用，历史从未亏损，适合闲置资金管理。'},
+  {code:'003003',name:'华夏现金增利货币A/E',type:'货币型',cat:'money',label:'货币基金',manager:'曲波',mgrYears:18.2,stars:3,risk:'R1',size:593.88,r1:1.13,r3:4.57,maxDD:0.0,fee:0,vol:0,tags:['货币','稳健','现金管理'],reason:'华夏基金旗下货币基金，规模较大，收益稳定，适合资金备用仓。'},
+  {code:'161125',name:'易方达标普500指数人民币A',type:'QDII',cat:'qdii',label:'QDII海外',manager:'刘依姗',mgrYears:1.3,stars:4,risk:'R4',size:14.75,r1:13.32,r3:66.24,maxDD:32.9,fee:0.08,vol:0,tags:['美股','标普500','全球配置'],reason:'跟踪标普500，投资苹果微软英伟达等美股核心资产，历史年化约10%+，全球配置首选。'},
+  {code:'270042',name:'广发纳斯达克100ETF联接人民币(QDII)A',type:'QDII',cat:'qdii',label:'QDII海外',manager:'刘杰',mgrYears:12,stars:5,risk:'R5',size:108.44,r1:18.61,r3:88.66,maxDD:31.2,fee:0.08,vol:0,tags:['美股','纳斯达克','科技'],reason:'跟踪纳斯达克100，高度集中科技巨头，弹性极大，长期表现优异，适合激进型配置。'},
+  {code:'040046',name:'华安纳斯达克100ETF联接(QDII)A',type:'QDII',cat:'qdii',label:'QDII海外',manager:'倪斌',mgrYears:7.5,stars:4,risk:'R4',size:55.2,r1:17.03,r3:85.36,maxDD:31.2,fee:0.08,vol:0,tags:['美股','纳斯达克','科技'],reason:'华安旗下纳斯达克100联接基金，管理经验丰富，费率合理，适合配置美股科技赛道的投资者。'},
+  {code:'006479',name:'广发纳斯达克100ETF联接人民币(QDII)C',type:'QDII',cat:'qdii',label:'QDII海外',manager:'刘杰',mgrYears:12,stars:5,risk:'R4',size:65.44,r1:18.38,r3:87.53,maxDD:31.4,fee:0,vol:0,tags:['美股','纳斯达克','联接'],reason:'广发纳斯达克100的C类份额，免申购费收销售服务费，适合短期持有或小额定投。'},
 ];
 
 // ═══════════════ 基金元数据增强（风格/行业/流动性风险） ═══════════════
@@ -1580,7 +1582,8 @@ const FUND_META = {
 };
 const STYLE_LABELS = {large_value:'大盘价值',large_blend:'大盘均衡',large_growth:'大盘成长',mid_value:'中盘价值',mid_blend:'中盘均衡',mid_growth:'中盘成长',bond_credit:'信用债',bond_rate:'利率债',bond_short:'短债',money:'货币'};
 function getMeta(code){ return FUND_META[code]||{}; }
-function getDefaultFee(cat){ return {active:1.50,index:0.20,bond:0.50,money:0.05,qdii:0.80}[cat]||0.80; }
+// 支付宝1折申购费率（第三方平台通常1折优惠，C类份额免申购费）
+function getDefaultFee(cat){ return {active:0.15,index:0.012,bond:0.05,money:0,qdii:0.08}[cat]||0.10; }
 
 // ═══════════════ 波动率估算 + 相关性矩阵 ═══════════════
 const DD_TO_VOL = { active:2.8, index:3.0, bond:1.8, money:1.2, qdii:2.5 };
@@ -2344,7 +2347,7 @@ function buildFundCard(f,sortMode){
     <div class="fund-card-reason" onclick="this.classList.toggle('expanded')">${escHtml(f.reason)}</div>${dcaHtml}
     <div class="fund-card-foot">
       <button class="btn btn-ghost btn-sm" onclick="window.open('https://fund.eastmoney.com/${f.code}.html','_blank','noopener')">🔗 详情</button>
-      <button class="btn btn-sm" style="background:var(--primary);color:#fff;font-weight:600" onclick="window.open('https://fund.eastmoney.com/${f.code}.html','_blank','noopener')">💰 购买</button>
+      <button class="btn btn-sm" style="background:var(--primary);color:#fff;font-weight:600" onclick="copyCode('${f.code}');showToast('已复制基金代码 ${f.code}，请打开支付宝搜索购买','success',3000)">📋 复制代码去购买</button>
     </div>
   </div>`;
 }
@@ -3236,14 +3239,14 @@ function buildSteps(weights, picks, totalAmt, monthly, riskProfile, horizon){
   if(immediateFunds.length){
     steps.push({
       title:`第${keptFunds.length?'二':'一'}步：买入稳健底仓 ¥${immediateAmt.toLocaleString()}`,
-      desc:`在支付宝搜索 ${immediateFunds.map(f=>`「${f.name}」`).join('、')} 直接购买。这部分资金安全稳定，作为组合的基础保障。`
+      desc:`在支付宝搜索基金代码直接购买：${immediateFunds.map(f=>`「${f.name}」(${f.code})`).join('、')}。这部分资金安全稳定，作为组合的基础保障。`
     });
   }
   if(equityFunds.length){
     const stepN = (keptFunds.length?1:0)+(immediateFunds.length?1:0)+1;
     steps.push({
       title:`第${stepN===1?'一':stepN===2?'二':'三'}步：分批买入权益基金 ¥${equityAmt.toLocaleString()}`,
-      desc:`${equityFunds.map(f=>`「${f.name}」(¥${f.amt.toLocaleString()})`).join('、')}。建议分2-3次买入，间隔1-2周，避免一次性买在高点。`
+      desc:`在支付宝搜索基金代码购买：${equityFunds.map(f=>`「${f.name}」(${f.code}, ¥${f.amt.toLocaleString()})`).join('、')}。建议分2-3次买入，间隔1-2周。注意：QDII基金可能有单日限购额度，大额需分多日买入。`
     });
   }
   if(!newFunds.length && keptFunds.length){
@@ -3752,7 +3755,7 @@ function _doGenerate(shouldScroll){
             ${bestInCat?`建议换入 <b style="color:var(--primary)">${escHtml(bestInCat.name)}</b>（评分 ${scoreF(bestInCat)}）`:'同类中暂无更优选择'}
           </div>`;
         }).join('')}
-        <div style="font-size:11px;color:var(--muted);margin-top:6px">注：先赎回低分基金，到账后买入推荐基金。注意赎回费（持有<7天可能有惩罚性费率）。</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px">注：在支付宝中赎回低分基金（到账约1-3个工作日），到账后买入推荐基金。赎回费：&lt;7天=1.5%，7天-1年≈0.5%，&gt;2年=0%。</div>
       </div>`;
       rebalCard.insertAdjacentHTML('beforeend', replaceHtml);
       rebalCard.style.display = '';
@@ -3822,7 +3825,7 @@ function _doGenerate(shouldScroll){
 
       <b>八、策略鲁棒性（新增）</b><br>
       · 再平衡规则：季度检视，阈值触发(偏离>15%相对偏离)<br>
-      · 交易成本：ETF申购0.1-0.15%，混合型0.6-1.5%(1折后)，赎回0-0.5%<br>
+      · 交易成本（支付宝1折费率）：混合型A类申购约0.15%，指数联接A类约0.10-0.12%，QDII A类约0.08%，C类免申购费；赎回费7天-1年约0.5%，1-2年0.25%，2年+免赎回费<br>
       · 压力测试：模拟10种历史情景（2015股灾/2018熊市/2020疫情/2022风格切换/债灾/泡沫/2023利率上行/2024小盘暴跌/全球流动性危机/温和市场基准），每个场景附概率估计，输出概率加权期望损失<br><br>
 
       <b>九、定投评分体系</b><br>
@@ -3927,7 +3930,7 @@ function renderStressTest(results, stressAmt){
     </table></div>
     <div style="margin-top:8px;padding:8px 12px;background:#f8f9fc;border-radius:6px;font-size:11px;color:var(--muted);line-height:1.6">
       📐 <b>再平衡规则：</b>建议每季度检视，当任一类别偏离目标权重>15%(相对偏离)时触发再平衡。<br>
-      💰 <b>交易成本估算：</b>申购费率约0.1-0.15%(ETF)或0.6-1.5%(混合型，第三方平台多1折)；赎回费持有>7天约0.5%，>1年多为0%。每次再平衡成本约0.3-0.8%。<br>
+      💰 <b>交易成本（支付宝1折费率）：</b>混合型A类申购约0.15%，指数联接A类约0.10-0.12%，QDII A类约0.08%，C类/货币基金免申购费。赎回费：&lt;7天=1.5%（惩罚性），7天-1年≈0.5%，1-2年≈0.25%，&gt;2年=0%。QDII基金可能有单日限购（1000-5000元）。每次再平衡综合成本约0.1-0.3%。<br>
       ⏰ <b>再平衡频率：</b>季度为宜。过频(月度)增加成本，过疏(年度)偏离积累。阈值触发优于固定日历。
     </div>`;
 }
@@ -4024,7 +4027,7 @@ function renderAllocGroups(selectedPicks, weights){
           <div class="alloc-item-pct" style="color:${g.color}">${f.pct}%</div>
           <div class="alloc-item-amt">¥${f.amt.toLocaleString()}</div>
           <div class="alloc-item-method">${methodLabel(f.method)}</div>
-          <button class="btn btn-sm" style="background:var(--primary);color:#fff;font-size:11px;padding:2px 8px" onclick="window.open('https://fund.eastmoney.com/${f.code}.html','_blank','noopener')">购买</button>
+          <button class="btn btn-sm" style="background:var(--primary);color:#fff;font-size:11px;padding:2px 8px" onclick="copyCode('${f.code}');showToast('已复制 ${f.code}，请打开支付宝搜索购买','success',3000)">复制代码</button>
         </div>`;
       }).join('')}</div>
     </div>`;
