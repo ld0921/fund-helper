@@ -496,8 +496,15 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
     <h1>📈 基金理财辅助工具</h1>
     <p>智能配置方案 · 实时行情监控 · 定投计划 · 持仓管理</p>
   </div>
-  <div id="auth-area" style="flex-shrink:0;text-align:right">
-    <button class="btn btn-sm" onclick="showAuthModal()" style="background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.3);font-size:12px;padding:4px 12px;border-radius:6px">登录</button>
+  <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
+    <!-- 信号通知铃铛 -->
+    <button id="signal-bell" onclick="openSignalModal()" style="position:relative;background:none;border:none;color:#fff;font-size:20px;cursor:pointer;padding:4px;-webkit-tap-highlight-color:transparent;display:none">
+      🔔<span id="signal-badge" style="display:none;position:absolute;top:-2px;right:-4px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:#ff4d4f;color:#fff;font-size:10px;font-weight:700;line-height:16px;text-align:center"></span>
+    </button>
+    <!-- 用户头像 -->
+    <div id="auth-area">
+      <button class="btn btn-sm" onclick="showAuthModal()" style="background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.3);font-size:12px;padding:4px 12px;border-radius:6px">登录</button>
+    </div>
   </div>
 </div>
 <!-- 全局自动加载进度条（默认隐藏，仅手动刷新时显示） -->
@@ -514,13 +521,15 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
   <span>在 Safari 中点击 <b>分享按钮</b> → <b>添加到主屏幕</b>，即可像 App 一样使用</span>
   <button onclick="document.getElementById('ios-install-banner').style.display='none';localStorage.setItem('_iosInstallDismissed','1')" style="margin-left:8px;background:none;border:none;color:#0958d9;cursor:pointer;font-size:16px;line-height:1">&times;</button>
 </div>
-<!-- 智能信号通知横幅 -->
-<div id="signal-banner" class="signal-scroll-wrap" style="display:none;background:linear-gradient(135deg,#fff1f0,#fff7e6);border-bottom:1px solid #ffa39e;padding:0;max-height:300px;overflow-y:auto;-webkit-overflow-scrolling:touch">
-  <div style="padding:10px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #ffe0de">
-    <span style="font-size:14px;font-weight:600;color:#cf1322" id="signal-banner-title">📡 智能监控信号</span>
-    <button onclick="document.getElementById('signal-banner').style.display='none'" style="background:none;border:none;color:#cf1322;cursor:pointer;font-size:18px;line-height:1">&times;</button>
+<!-- 智能信号弹窗（右上角点击触发） -->
+<div class="modal-mask" id="signal-modal" style="display:none" onclick="if(event.target===this)document.getElementById('signal-modal').style.display='none'">
+  <div class="modal-box" style="max-width:480px;max-height:80vh;overflow:hidden;display:flex;flex-direction:column;padding:0">
+    <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+      <span style="font-size:15px;font-weight:700" id="signal-modal-title">📡 智能监控信号</span>
+      <button onclick="document.getElementById('signal-modal').style.display='none'" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;line-height:1">&times;</button>
+    </div>
+    <div id="signal-modal-list" style="overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1"></div>
   </div>
-  <div id="signal-banner-list" style="padding:0"></div>
 </div>
 
 <div class="tabs">
@@ -1210,12 +1219,17 @@ function updateAuthUI(){
   if(!area) return;
   if(_currentUser){
     const email = _currentUser.email || '';
-    const short = email.length > 16 ? email.slice(0,14)+'…' : email;
     area.innerHTML = `
-      <div style="display:flex;align-items:center;gap:6px">
-        <span id="sync-status-dot" style="width:8px;height:8px;border-radius:50%;background:#52c41a;flex-shrink:0" title="已同步"></span>
-        <span style="font-size:11px;color:rgba(255,255,255,.85);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${email}">${short}</span>
-        <button onclick="authLogout()" style="background:none;border:none;color:rgba(255,255,255,.6);font-size:11px;cursor:pointer;padding:2px 4px">退出</button>
+      <div style="position:relative;cursor:pointer;-webkit-tap-highlight-color:transparent" onclick="toggleUserMenu()">
+        <div style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-size:16px;border:2px solid rgba(255,255,255,.5)">👤</div>
+        <span id="sync-status-dot" style="position:absolute;bottom:0;right:0;width:8px;height:8px;border-radius:50%;background:#52c41a;border:1.5px solid #0050d0" title="已同步"></span>
+      </div>
+      <div id="user-menu" style="display:none;position:absolute;right:0;top:100%;margin-top:6px;background:var(--card);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.15);padding:12px 16px;min-width:200px;z-index:200">
+        <div style="font-size:13px;font-weight:600;margin-bottom:4px">👤 账号信息</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:10px;word-break:break-all">${escHtml(email)}</div>
+        <div style="border-top:1px solid var(--border);padding-top:8px;display:flex;gap:8px">
+          <button class="btn btn-ghost btn-sm" onclick="authLogout()" style="flex:1;font-size:12px">退出登录</button>
+        </div>
       </div>`;
   } else {
     area.innerHTML = `<button class="btn btn-sm" onclick="showAuthModal()" style="background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.3);font-size:12px;padding:4px 12px;border-radius:6px">登录</button>`;
@@ -1237,6 +1251,23 @@ function updateSyncStatus(status){
 }
 
 // ── 云端同步 ──
+function toggleUserMenu(){
+  const menu=document.getElementById('user-menu');
+  if(menu) menu.style.display=menu.style.display==='none'?'block':'none';
+}
+// 点击外部关闭用户菜单
+document.addEventListener('click',function(e){
+  const menu=document.getElementById('user-menu');
+  if(menu && menu.style.display!=='none' && !e.target.closest('#auth-area')){
+    menu.style.display='none';
+  }
+});
+
+function openSignalModal(){
+  const modal=document.getElementById('signal-modal');
+  if(modal){ modal.style.display='flex'; requestAnimationFrame(()=>modal.classList.add('show')); }
+}
+
 async function pushToCloud(){
   if(!_currentUser || !_supa) return;
   if(!navigator.onLine){ localStorage.setItem('_syncPending','1'); updateSyncStatus('offline'); return; }
@@ -4887,32 +4918,23 @@ function runSignalEngine(){
 }
 
 function renderSignalBanner(signals){
-  const banner = document.getElementById('signal-banner');
-  const titleEl = document.getElementById('signal-banner-title');
-  const listEl = document.getElementById('signal-banner-list');
+  const bell = document.getElementById('signal-bell');
+  const badge = document.getElementById('signal-badge');
+  const titleEl = document.getElementById('signal-modal-title');
+  const listEl = document.getElementById('signal-modal-list');
 
   if(!signals.length){
-    banner.style.display = 'none';
+    if(bell) bell.style.display = 'none';
     return;
   }
 
+  // 显示铃铛 + 角标
+  if(bell) bell.style.display = '';
+  if(badge){ badge.style.display = ''; badge.textContent = signals.length > 99 ? '99+' : signals.length; }
+
   const dangerCount = signals.filter(s=>s.type==='danger'||s.type==='warning').length;
-  const oppCount = signals.filter(s=>s.type==='opportunity'||s.type==='success').length;
 
-  // 根据信号类型设置横幅颜色
-  if(dangerCount > 0){
-    banner.style.background = 'linear-gradient(135deg,#fff1f0,#fff7e6)';
-    banner.style.borderColor = '#ffa39e';
-  } else if(oppCount > 0){
-    banner.style.background = 'linear-gradient(135deg,#f6ffed,#e6f4ff)';
-    banner.style.borderColor = '#b7eb8f';
-  } else {
-    banner.style.background = 'linear-gradient(135deg,#e6f4ff,#f0f5ff)';
-    banner.style.borderColor = '#91caff';
-  }
-
-  titleEl.textContent = `📡 智能监控 · ${signals.length} 条信号`;
-  titleEl.style.color = dangerCount > 0 ? '#cf1322' : '#0958d9';
+  if(titleEl) titleEl.textContent = `📡 智能监控 · ${signals.length} 条信号`;
 
   const typeColors = {
     danger: {bg:'#fff1f0', border:'#ffa39e', color:'#cf1322'},
@@ -4922,18 +4944,19 @@ function renderSignalBanner(signals){
     info: {bg:'#e6f4ff', border:'#91caff', color:'#0958d9'},
   };
 
-  listEl.innerHTML = signals.map(s => {
+  if(listEl) listEl.innerHTML = signals.map(s => {
     const tc = typeColors[s.type] || typeColors.info;
-    return `<div style="padding:10px 16px;border-bottom:1px solid #f5f5f5;display:flex;align-items:flex-start;gap:10px">
+    return `<div style="padding:12px 18px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:10px">
       <div style="flex:1;min-width:0">
         <div style="font-size:13px;font-weight:600;color:${tc.color};margin-bottom:3px">${escHtml(s.title)}</div>
-        <div style="font-size:12px;color:#595959;line-height:1.6">${escHtml(s.desc)}</div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.6">${escHtml(s.desc)}</div>
       </div>
       <div style="flex-shrink:0;font-size:12px;font-weight:600;color:${tc.color};padding:3px 8px;background:${tc.bg};border-radius:6px;white-space:nowrap">${escHtml(s.action)}</div>
     </div>`;
   }).join('');
 
-  banner.style.display = 'block';
+  // 有危险信号时自动弹出
+  if(dangerCount > 0) openSignalModal();
 }
 
 function sendBrowserNotification(signals){
