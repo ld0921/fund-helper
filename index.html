@@ -1812,6 +1812,8 @@ function switchTab(i){
   document.querySelectorAll('.tab').forEach((t,j)=>t.classList.toggle('active',i===j));
   document.querySelectorAll('.panel').forEach((p,j)=>p.classList.toggle('active',i===j));
   window.scrollTo({top:0});
+  // 切换到资产Tab时刷新持仓相关模块
+  if(i===3){ renderExistingHoldings(); renderDcaPlans(); runHealthMonitor(); renderTodayOverview(); runSignalEngine(); }
 }
 
 // ═══════════════ JSONP净值队列 ═══════════════
@@ -3529,9 +3531,6 @@ function generateSmartPortfolio(){
             resultSections.forEach(el=>{el.style.display='';});
             _finishGenerate(btn, true);
             renderDcaRanking();
-            runHealthMonitor();
-            runSignalEngine();
-            renderTodayOverview();
           },500);
         }
       }
