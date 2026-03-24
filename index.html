@@ -935,14 +935,13 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
         <label>买入日期</label>
         <input id="eh-date" type="date">
       </div>
-      <div class="form-item">
-        <label>买入时间</label>
-        <div style="display:flex;gap:6px" id="eh-buytime-selector">
-          <button class="chip active" data-v="before15" onclick="selectBuytime('before15')" style="flex:1;font-size:12px;height:32px;padding:0 6px">15:00前（当日确认）</button>
-          <button class="chip" data-v="after15" onclick="selectBuytime('after15')" style="flex:1;font-size:12px;height:32px;padding:0 6px">15:00后（次日确认）</button>
-        </div>
-        <input type="hidden" id="eh-buytime" value="before15">
-      </div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+      <span style="font-size:12px;color:var(--muted);white-space:nowrap">⏰ 买入时间</span>
+      <label style="display:flex;align-items:center;gap:3px;font-size:12px;cursor:pointer;color:var(--text)"><input type="radio" name="eh-buytime" value="before15" checked style="accent-color:var(--primary)"> 15:00前</label>
+      <label style="display:flex;align-items:center;gap:3px;font-size:12px;cursor:pointer;color:var(--text)"><input type="radio" name="eh-buytime" value="after15" style="accent-color:var(--primary)"> 15:00后</label>
+      <span style="font-size:11px;color:var(--muted)">（影响净值确认日）</span>
+    </div>
     </div>
     <div style="font-size:11px;color:var(--muted);margin-bottom:8px;line-height:1.6">15:00前买入按当日净值确认（T+1到账），15:00后按下一交易日净值确认（T+2到账）。实际以支付宝为准。</div>
     <div class="action-bar" style="margin-top:0">
@@ -1807,11 +1806,6 @@ function selectHorizon(val){
     el.classList.remove('active');
   });
   document.getElementById('horizon-selector').style.outline='';
-}
-
-function selectBuytime(val){
-  document.getElementById('eh-buytime').value=val;
-  document.querySelectorAll('#eh-buytime-selector .chip').forEach(c=>c.classList.toggle('active',c.getAttribute('data-v')===val));
 }
 
 function switchTab(i){
@@ -2696,7 +2690,7 @@ function addExistingHolding(){
   if(!amount||amount<=0){showToast('请填写买入金额','error');autoFadeErrors();return;}
   if(existingHoldings.some(h=>h.code===code)){showToast('该基金已存在，请修改现有记录','info');return;}
   // 确认日期：15:00前→T+1（买入日+1天确认），15:00后→T+2（买入日+2天确认）
-  const buyTime = document.getElementById('eh-buytime').value;
+  const buyTime = (document.querySelector('input[name="eh-buytime"]:checked')||{}).value || 'before15';
   const buyDate = date ? new Date(date) : new Date();
   const confirmDate = new Date(buyDate);
   confirmDate.setDate(confirmDate.getDate() + (buyTime==='after15' ? 2 : 1));
