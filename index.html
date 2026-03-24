@@ -1239,14 +1239,19 @@ async function pullFromCloud(){
       .select('data, version, updated_at')
       .eq('user_id', _currentUser.id)
       .single();
-    if(error && error.code !== 'PGRST116') throw error; // PGRST116 = no rows
-    if(!row){ _cloudVersion = 0; return; } // 云端无数据
+    if(error && error.code !== 'PGRST116') throw error;
+    if(!row){ _cloudVersion = 0; return; }
 
     if(row.version > _cloudVersion){
+      // 首次登录（_cloudVersion===0）：无条件使用云端数据，不做冲突判断
+      if(_cloudVersion === 0){
+        await applyCloudData(row.data, row.version);
+        return;
+      }
+      // 非首次：检查冲突
       const localTs = await FundDB.get('_lastDataChange');
       const cloudTs = new Date(row.updated_at).getTime();
       if(localTs && localTs > cloudTs){
-        // 本地和云端都有更新，让用户选择
         const useCloud = confirm('检测到本地数据和云端数据都有更新。\n点击「确定」使用云端数据，点击「取消」保留本地数据并覆盖云端。');
         if(useCloud){
           await applyCloudData(row.data, row.version);
@@ -1254,22 +1259,28 @@ async function pullFromCloud(){
           await pushToCloud();
         }
       } else {
-        // 仅云端有更新
         await applyCloudData(row.data, row.version);
       }
+    } else {
+      _cloudVersion = row.version; // 同步version即使不需要拉取数据
     }
   } catch(e){
-    console.warn('pullFromCloud failed:', e);
+    console.error('pullFromCloud failed:', e);
+    showToast('云端数据拉取失败: '+(e.message||''), 'error', 3000);
   }
 }
 
 async function applyCloudData(cloudData, version){
   if(!cloudData) return;
+  // 临时禁用同步回调，避免"拉取→写本地→触发推送"的循环
+  const savedCb = FundDB._syncCallback;
+  FundDB.onSync(null);
   for(const key of FundDB.SYNC_KEYS){
     if(cloudData[key] !== undefined){
       await FundDB.set(key, cloudData[key]);
     }
   }
+  FundDB.onSync(savedCb); // 恢复回调
   // 重新加载内存状态
   const data = await FundDB.getAll();
   funds = data.funds || [];

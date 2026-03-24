@@ -170,5 +170,5 @@ const FundDB = (function(){
     });
   }
 
-  return { open, get, set, getAll, getSyncData, exportAll, importAll, migrateFromLocalStorage, checkBackupReminder, onSync, DATA_KEYS, SYNC_KEYS };
+  return { open, get, set, getAll, getSyncData, exportAll, importAll, migrateFromLocalStorage, checkBackupReminder, onSync, get _syncCallback(){ return _syncCallback; }, DATA_KEYS, SYNC_KEYS };
 })();
