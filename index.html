@@ -110,7 +110,12 @@ tr:last-child td{border-bottom:none}
 .nav-change.down{background:#f6ffed;color:var(--success)}
 .nav-change.neutral{background:#f5f5f5;color:var(--muted)}
 .fund-card-reason{padding:8px 14px;font-size:12px;color:#595959;line-height:1.6;border-bottom:1px solid #f5f5f5}
-.fund-card-foot{padding:8px 14px;display:flex;gap:8px}
+.fund-card-foot{padding:8px 14px;display:flex;gap:0;border-top:1px solid #f0f0f0}
+.fund-card-foot .fc-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:4px;padding:10px 0;font-size:13px;font-weight:500;cursor:pointer;border:none;background:none;color:var(--muted);transition:all .15s;-webkit-tap-highlight-color:transparent}
+.fund-card-foot .fc-btn:first-child{border-right:1px solid #f0f0f0}
+.fund-card-foot .fc-btn:hover{color:var(--primary);background:#f0f8ff}
+.fund-card-foot .fc-btn:active{background:#e6f4ff}
+.fund-card-foot .fc-btn.fc-primary{color:var(--primary);font-weight:600}
 .loading-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--primary);animation:pulse 1.2s infinite}
 @keyframes pulse{0%,100%{opacity:.3}50%{opacity:1}}
 /* ── Auto-load banner ── */
@@ -323,6 +328,8 @@ tr:last-child td{border-bottom:none}
   .fund-card-head{border-bottom-color:var(--border)}
   .fund-card-stats{background:#2a2a2a;border-bottom-color:var(--border)}
   .fund-card-nav,.fund-card-reason{border-bottom-color:var(--border)}
+  .fund-card-foot,.fund-card-foot .fc-btn:first-child{border-color:var(--border)}
+  .fund-card-foot .fc-btn:hover{background:#1a2a3a}
   .fund-card-reason{color:#b0b0b0}
   .stat-card{background:#2a2a2a}
   table th{background:#2a2a2a}
@@ -2346,8 +2353,8 @@ function buildFundCard(f,sortMode){
     <div class="fund-card-nav">${navHtml}</div>
     <div class="fund-card-reason" onclick="this.classList.toggle('expanded')">${escHtml(f.reason)}</div>${dcaHtml}
     <div class="fund-card-foot">
-      <button class="btn btn-ghost btn-sm" onclick="window.open('https://fund.eastmoney.com/${f.code}.html','_blank','noopener')">🔗 详情</button>
-      <button class="btn btn-sm" style="background:var(--primary);color:#fff;font-weight:600" onclick="copyCode('${f.code}');showToast('已复制基金代码 ${f.code}，请打开支付宝搜索购买','success',3000)">📋 复制代码去购买</button>
+      <button class="fc-btn" onclick="window.open('https://fund.eastmoney.com/${f.code}.html','_blank','noopener')">🔗 查看详情</button>
+      <button class="fc-btn fc-primary" onclick="copyCode('${f.code}');showToast('已复制 ${f.code}，打开支付宝搜索即可购买','success',3000)">📋 复制代码购买</button>
     </div>
   </div>`;
 }
