@@ -1808,11 +1808,8 @@ function renderTodayOverview(){
   const allHeld=[];
   existingHoldings.filter(h=>h.status==='confirmed').forEach(h=>{
     if(!allHeld.some(x=>x.code===h.code)){
-      const nav = navCache[h.code];
-      const curNav = nav ? parseFloat(nav.gsz)||1 : 1;
-      const cost = h.amount || h.value || 0;
-      const value = h.amount ? (h.amount / (h.cost||curNav) * curNav) : (h.value||0);
-      allHeld.push({code:h.code, name:h.name, value, cost});
+      // 使用h.value（已在renderExistingHoldings中用dwjz计算），保持与收益总览一致
+      allHeld.push({code:h.code, name:h.name, value:(h.value||0), cost:(h.amount||0)});
     }
   });
   dcaPlans.forEach(d=>{ if(!allHeld.some(x=>x.code===d.code)&&d.curval>0){
@@ -3220,7 +3217,8 @@ function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, totalP
     const pct=cost>0?(pnl/cost*100):0;
     const nav=navCache[h.code];
     const todayChg=nav?parseFloat(nav.gszzl)||0:null;
-    return {name:h.name, code:h.code, cost, value:(h.value||0), pnl, pct, todayChg, source:h.source};
+    const todayPnl=todayChg!==null&&h.value?(h.value||0)*todayChg/100:null;
+    return {name:h.name, code:h.code, cost, value:(h.value||0), pnl, pct, todayChg, todayPnl, source:h.source};
   }).sort((a,b)=>(b.value||0)-(a.value||0)); // 按市值降序
 
   el.style.display='';
@@ -3277,7 +3275,7 @@ function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, totalP
             ${details.map((d,idx)=>{
               const pctStr=d.cost>0?`${d.pct>=0?'+':''}${d.pct.toFixed(1)}%`:'--';
               const pnlStr=d.cost>0?`${d.pnl>=0?'+':''}¥${Math.abs(d.pnl).toLocaleString('zh-CN',{maximumFractionDigits:0})}`:'--';
-              const todayStr=d.todayChg!==null?`${d.todayChg>=0?'+':''}${d.todayChg}%`:'--';
+              const todayStr=d.todayChg!==null?`<div>${d.todayChg>=0?'+':''}${d.todayChg}%</div>${d.todayPnl!==null?`<div style="font-size:10px">${d.todayPnl>=0?'+':''}¥${Math.abs(d.todayPnl).toFixed(2)}</div>`:''}`:'--';
               const todayClass=d.todayChg!==null?(d.todayChg>=0?'up':'down'):'';
               const srcTag=d.source==='dca'?'<span style="font-size:9px;padding:1px 4px;border-radius:2px;background:#f9f0ff;color:#722ed1;margin-left:3px">定投</span>':'';
               return `<tr style="${idx===details.length-1?'':'border-bottom:1px solid var(--border)'}">
