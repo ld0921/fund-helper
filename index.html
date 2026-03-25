@@ -1920,10 +1920,24 @@ function drainQ(){
 // 从东方财富网获取最新确认净值（补充fundgz数据）
 async function fetchLatestNavFromEastmoney(code){
   try {
+    // 保存旧的全局变量，避免被覆盖
+    const savedData = {
+      netWorthTrend: window.Data_netWorthTrend,
+      currentFundManager: window.Data_currentFundManager
+    };
+
     await loadScript(`https://fund.eastmoney.com/pingzhongdata/${code}.js?v=${Date.now()}`, 10000);
-    if(window.Data_netWorthTrend && window.Data_netWorthTrend.length > 1){
-      const latest = window.Data_netWorthTrend[window.Data_netWorthTrend.length - 1];
-      const previous = window.Data_netWorthTrend[window.Data_netWorthTrend.length - 2];
+
+    // 立即复制数据到局部变量，避免被下一个脚本覆盖
+    const localData = window.Data_netWorthTrend ? [...window.Data_netWorthTrend] : null;
+
+    // 恢复旧的全局变量
+    window.Data_netWorthTrend = savedData.netWorthTrend;
+    window.Data_currentFundManager = savedData.currentFundManager;
+
+    if(localData && localData.length > 1){
+      const latest = localData[localData.length - 1];
+      const previous = localData[localData.length - 2];
       const latestNav = latest.y;
       const previousNav = previous.y;
       const latestDate = new Date(latest.x).toISOString().slice(0,10);
