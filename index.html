@@ -2440,20 +2440,29 @@ function renderMarketGrid(){
   }
   const gridEl=document.getElementById('market-grid');
   const isMobile = window.innerWidth <= 600;
-  const FOLD_LIMIT = isMobile ? 3 : 6; // 手机3只，网页6只（填满2行）
 
   if(!list.length){
     gridEl.innerHTML='<div class="empty">暂无该类别基金</div>';
   } else if(currentCat==='all' && currentSortMode==='score'){
-    // 全部+综合评分模式：按类别分组折叠
+    // 全部+综合评分模式：按类别分组显示
     const CAT_ORDER=['active','index','bond','money','qdii'];
     const CAT_LABELS={active:'主动权益',index:'指数基金',bond:'债券基金',money:'货币基金',qdii:'QDII海外'};
     const groups={};
     list.forEach(f=>{ if(!groups[f.cat]) groups[f.cat]=[]; groups[f.cat].push(f); });
     gridEl.innerHTML=CAT_ORDER.filter(c=>groups[c]&&groups[c].length).map(cat=>{
       const funds=groups[cat];
-      const visible=funds.slice(0,FOLD_LIMIT);
-      const hidden=funds.slice(FOLD_LIMIT);
+      if(!isMobile){
+        // 网页端：分组标题+全部展示，不折叠
+        return `<div style="margin-bottom:20px">
+          <div style="font-size:14px;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:6px">
+            ${CAT_LABELS[cat]||cat} <span style="font-size:12px;color:var(--muted);font-weight:400">(${funds.length}只)</span>
+          </div>
+          <div class="fund-grid">${funds.map(f=>buildFundCard(f,currentSortMode)).join('')}</div>
+        </div>`;
+      }
+      // 手机端：默认3只+折叠
+      const visible=funds.slice(0,3);
+      const hidden=funds.slice(3);
       return `<div style="margin-bottom:16px">
         <div style="font-size:14px;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:6px">
           ${CAT_LABELS[cat]||cat} <span style="font-size:12px;color:var(--muted);font-weight:400">(${funds.length}只)</span>
@@ -2466,14 +2475,20 @@ function renderMarketGrid(){
       </div>`;
     }).join('');
   } else {
-    // 筛选了具体类别或定投模式：直接显示，超过6只也折叠
-    const visible=list.slice(0,FOLD_LIMIT*2);
-    const hidden=list.slice(FOLD_LIMIT*2);
-    gridEl.innerHTML=`<div class="fund-grid">${visible.map(f=>buildFundCard(f,currentSortMode)).join('')}</div>
-    ${hidden.length?`<div class="fund-grid" id="fold-cat-list" style="display:none">${hidden.map(f=>buildFundCard(f,currentSortMode)).join('')}</div>
-    <div style="text-align:center;margin-top:8px" id="fold-btn-cat-list">
-      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('fold-cat-list').style.display='';this.parentElement.style.display='none'" style="font-size:12px">展开更多 ${hidden.length} 只 ▼</button>
-    </div>`:''}`;
+    // 筛选具体类别或定投模式
+    if(!isMobile){
+      // 网页端不折叠
+      gridEl.innerHTML=`<div class="fund-grid">${list.map(f=>buildFundCard(f,currentSortMode)).join('')}</div>`;
+    } else {
+      // 手机端：默认6只+折叠
+      const visible=list.slice(0,6);
+      const hidden=list.slice(6);
+      gridEl.innerHTML=`<div class="fund-grid">${visible.map(f=>buildFundCard(f,currentSortMode)).join('')}</div>
+      ${hidden.length?`<div class="fund-grid" id="fold-cat-list" style="display:none">${hidden.map(f=>buildFundCard(f,currentSortMode)).join('')}</div>
+      <div style="text-align:center;margin-top:8px" id="fold-btn-cat-list">
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('fold-cat-list').style.display='';this.parentElement.style.display='none'" style="font-size:12px">展开更多 ${hidden.length} 只 ▼</button>
+      </div>`:''}`;
+    }
   }
   // 更新标题中的基金数量
   const titleEl=document.getElementById('curated-title');
