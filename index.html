@@ -3111,6 +3111,16 @@ async function refreshHoldingsNav(){
   for(const h of existingHoldings){
     // 2. 从fundgz获取实时估算数据
     fetchNav(h.code, async data => {
+      const today = new Date().toISOString().slice(0,10);
+
+      // 验证fundgz数据日期
+      if(data && data.gztime){
+        const gztimeDate = data.gztime.slice(0,10);
+        if(gztimeDate !== today){
+          console.log(`[${h.code}] fundgz数据非今日(${gztimeDate})，清空gszzl`);
+          data.gszzl = '0';
+        }
+      }
       if(data) navCache[h.code] = data;
 
       // 3. 从东方财富网获取最新确认净值（补充）
@@ -3123,12 +3133,16 @@ async function refreshHoldingsNav(){
             console.log(`[${h.code}] fundgz无数据，使用东方财富网数据`);
             navCache[h.code] = {fundcode: h.code, name: h.name, ...eastmoneyNav};
           } else {
-            // 东方财富网数据更可靠，直接使用（不比较日期）
-            console.log(`[${h.code}] 合并东方财富网数据，gszzl: ${navCache[h.code].gszzl} -> ${eastmoneyNav.gszzl}`);
-            navCache[h.code].dwjz = eastmoneyNav.dwjz;
-            navCache[h.code].gsz = eastmoneyNav.gsz;
-            navCache[h.code].gszzl = eastmoneyNav.gszzl;
-            navCache[h.code].jzrq = eastmoneyNav.jzrq;
+            // 验证东方财富网数据日期
+            if(eastmoneyNav.jzrq !== today){
+              console.log(`[${h.code}] 东方财富网数据非今日(${eastmoneyNav.jzrq})，保留fundgz估算`);
+            } else {
+              console.log(`[${h.code}] 合并东方财富网数据，gszzl: ${navCache[h.code].gszzl} -> ${eastmoneyNav.gszzl}`);
+              navCache[h.code].dwjz = eastmoneyNav.dwjz;
+              navCache[h.code].gsz = eastmoneyNav.gsz;
+              navCache[h.code].gszzl = eastmoneyNav.gszzl;
+              navCache[h.code].jzrq = eastmoneyNav.jzrq;
+            }
           }
         } else {
           console.log(`[${h.code}] 东方财富网数据获取失败`);
@@ -3341,7 +3355,7 @@ function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, totalP
     const pnl=cost>0?((h.value||0)+cashDiv-cost):0;
     const pct=cost>0?(pnl/cost*100):0;
     const nav=navCache[h.code];
-    const todayChg=nav?parseFloat(nav.gszzl)||0:null;
+    const todayChg=navRefreshed&&nav?parseFloat(nav.gszzl)||0:null;
     const todayPnl=todayChg!==null&&h.value?(h.value||0)*todayChg/(100+todayChg):null;
     return {name:h.name, code:h.code, cost, value:(h.value||0), pnl, pct, todayChg, todayPnl, source:h.source};
   }).sort((a,b)=>(b.value||0)-(a.value||0)); // 按市值降序
