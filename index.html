@@ -2215,6 +2215,7 @@ function parseRankData(datasArray, catInfo){
       code, name, type: catInfo.type, cat: catInfo.cat, label: catInfo.label,
       r1, r3, size, maxDD: 0,
       manager:'', mgrYears:0, stars:3, risk:'R3',
+      purchaseFee: f[20]||'', discountFee: f[21]||'',
       tags:[], reason:`近1年收益${r1}%，规模${size}亿，全市场扫描发现`, discovered:true,
       established
     };
@@ -2367,14 +2368,23 @@ function fmtR(v){ if(v==null) return '--'; const c=v>0?'up':v<0?'down':'neutral'
 
 function buildFundCard(f,sortMode){
   const nav=navCache[f.code];
+  const isMoney = f.cat==='money';
   let navHtml;
   if(nav){
     const chg=parseFloat(nav.gszzl), cls=chg>0?'up':chg<0?'down':'neutral';
-    navHtml=`<div><span class="nav-label">估算净值 </span><span class="nav-val" id="nav-${f.code}">${nav.gsz||nav.dwjz}</span></div>
-      <span class="nav-change ${cls}" id="chg-${f.code}">${chg>0?'+':''}${chg}%</span>
-      <span style="font-size:10px;color:var(--muted)">${nav.gztime||nav.jzrq||''}</span>`;
+    if(isMoney){
+      // 货币基金：显示万份收益和七日年化，与支付宝一致
+      const wfsy = nav.dwjz ? (parseFloat(nav.dwjz)*10000/10000).toFixed(4) : '--';
+      navHtml=`<div><span class="nav-label">万份收益 </span><span class="nav-val" id="nav-${f.code}">${wfsy}</span></div>
+        <span style="font-size:12px;font-weight:600;color:var(--primary)" id="chg-${f.code}">七日年化 ${!isNaN(chg)?chg.toFixed(3)+'%':'--'}</span>
+        <span style="font-size:10px;color:var(--muted)">${nav.gztime||nav.jzrq||''}</span>`;
+    } else {
+      navHtml=`<div><span class="nav-label">估算净值 </span><span class="nav-val" id="nav-${f.code}">${nav.gsz||nav.dwjz}</span></div>
+        <span class="nav-change ${cls}" id="chg-${f.code}">${chg>0?'+':''}${chg}%</span>
+        <span style="font-size:10px;color:var(--muted)">${nav.gztime||nav.jzrq||''}</span>`;
+    }
   } else {
-    navHtml=`<div><span class="nav-label">估算净值 </span><span class="nav-val" id="nav-${f.code}" style="color:var(--muted)">加载中…</span></div>
+    navHtml=`<div><span class="nav-label">${isMoney?'万份收益':'估算净值'} </span><span class="nav-val" id="nav-${f.code}" style="color:var(--muted)">加载中…</span></div>
       <span class="nav-change neutral" id="chg-${f.code}">--</span><span id="time-${f.code}" style="font-size:10px;color:var(--muted)"></span>`;
   }
   // DCA排序模式额外显示定投评分
@@ -2411,6 +2421,7 @@ function buildFundCard(f,sortMode){
         <span>代码: <b class="code-copy" onclick="copyCode('${escHtml(f.code)}',this)" title="点击复制">${escHtml(f.code)}</b></span><span>${escHtml(f.manager)} · ${f.mgrYears}年</span>
         <span class="stars">${stars(f.stars)}</span>
         <span class="tag tag-${f.risk.toLowerCase()}">${f.risk}</span>
+        <span style="font-size:10px;color:var(--muted)">${f.discountFee?`费率${f.discountFee}%`:(f.fee!=null?`费率≈${f.fee}%`:f.name.includes('C')?'C类免申购费':`费率≈${getDefaultFee(f.cat)}%`)}</span>
       </div>
       <div style="margin-top:6px;display:flex;gap:4px;flex-wrap:wrap">
         ${f.tags.map(t=>`<span style="background:#f5f5f5;color:#595959;padding:1px 7px;border-radius:4px;font-size:11px;display:inline-block">${escHtml(t)}</span>`).join('')}
@@ -2523,10 +2534,16 @@ function updateNavCard(code,data){
   const chgEl=document.getElementById(`chg-${code}`);
   const timeEl=document.getElementById(`time-${code}`);
   if(!el) return;
-  el.textContent=data.gsz||data.dwjz||'--'; el.style.color='';
+  // 判断是否为盘中估算：交易日9:30-15:00之间为估算，其余为确认净值
+  const now=new Date();
+  const h=now.getHours(), m=now.getMinutes(), day=now.getDay();
+  const isTrading=day>=1&&day<=5&&((h===9&&m>=30)||h===10||h===11||(h>=13&&h<15));
+  const navLabel=isTrading?'估':'实';
+  const navStyle=isTrading?'border-bottom:1px dashed var(--muted)':'';
+  el.textContent=data.gsz||data.dwjz||'--'; el.style.color=''; el.style.cssText=navStyle; el.title=isTrading?'盘中估算值，收盘后更新为实际净值':'已确认净值';
   const chg=parseFloat(data.gszzl), cls=chg>0?'up':chg<0?'down':'neutral';
   if(chgEl){ chgEl.textContent=isNaN(chg)?'--':`${chg>0?'+':''}${chg}%`; chgEl.className=`nav-change ${cls}`; }
-  if(timeEl) timeEl.textContent=data.gztime||data.jzrq||'';
+  if(timeEl) timeEl.textContent=(isTrading?'⏳估 ':'✅实 ')+(data.gztime||data.jzrq||'');
 }
 
 // 核心：自动加载净值 → 自动生成方案
@@ -2868,24 +2885,49 @@ function confirmHolding(i){
 function updateDividendShares(i){
   const h = existingHoldings[i];
   if(!h || !h.shares) { showToast('请先确认初始份额','error'); return; }
-  openModal(`「${h.name}」当前${h.shares.toFixed(2)}份，请输入分红后的新总份额`, h.shares.toFixed(2), function(val){
-    const newShares = parseFloat(val);
-    if(!newShares || newShares <= 0){ showToast('请输入有效份额数','error'); return; }
-    if(newShares <= h.shares){ showToast('分红再投资后份额应增加，新份额应大于当前份额','error'); return; }
-    // 分红份额的成本为0，不改变原始买入金额，只更新份额数
-    // 成本保持不变（h.amount不变），份额增加 → 等效成本下降
-    h.shares = newShares;
-    // 注意：不修改h.cost和h.amount，因为分红份额是"免费"获得的
-    FundDB.set('existingHoldings', existingHoldings);
-    renderExistingHoldings(); runHealthMonitor(); renderTodayOverview();
-    showToast(`已更新份额为${newShares.toFixed(2)}份（分红再投资）`,'success');
-  });
+  // 先让用户选择分红方式
+  const divType = confirm('请选择分红方式：\n\n点击「确定」= 红利再投资（份额增加）\n点击「取消」= 现金分红（记录分红金额）');
+  if(divType){
+    // 红利再投资：份额增加，成本不变
+    openModal(`「${h.name}」红利再投资\n当前${h.shares.toFixed(2)}份，请输入分红后的新总份额\n\n📋 查看路径：支付宝→基金→持仓→查看"持有份额"`, h.shares.toFixed(2), function(val){
+      const newShares = parseFloat(val);
+      if(!newShares || newShares <= 0){ showToast('请输入有效份额数','error'); return; }
+      if(newShares <= h.shares){ showToast('红利再投资后份额应增加，新份额应大于当前份额','error'); return; }
+      const addedShares = newShares - h.shares;
+      h.shares = newShares;
+      FundDB.set('existingHoldings', existingHoldings);
+      renderExistingHoldings(); runHealthMonitor(); renderTodayOverview();
+      showToast(`红利再投资成功：新增${addedShares.toFixed(2)}份，当前共${newShares.toFixed(2)}份`,'success');
+    });
+  } else {
+    // 现金分红：份额不变，记录分红金额（不影响持仓计算）
+    openModal(`「${h.name}」现金分红\n请输入本次收到的分红金额(元)\n\n💡 现金分红不影响份额，分红金额已发放到余额宝`, '', function(val){
+      const divAmt = parseFloat(val);
+      if(!divAmt || divAmt <= 0){ showToast('请输入有效的分红金额','error'); return; }
+      // 记录分红历史（不改变份额和成本）
+      if(!h.dividendHistory) h.dividendHistory = [];
+      h.dividendHistory.push({type:'cash', amount:divAmt, date:new Date().toISOString().slice(0,10)});
+      h.totalCashDividend = (h.totalCashDividend||0) + divAmt;
+      FundDB.set('existingHoldings', existingHoldings);
+      renderExistingHoldings(); runHealthMonitor(); renderTodayOverview();
+      showToast(`已记录现金分红 ¥${divAmt.toFixed(2)}，累计分红 ¥${h.totalCashDividend.toFixed(2)}`,'success');
+    });
+  }
 }
 function redeemHolding(i){
   const h = existingHoldings[i];
   if(!h) return;
+  // 根据基金类型估算到账时间
+  const fd=CURATED_FUNDS.find(f=>f.code===h.code);
+  const cat=fd?fd.cat:(h.type||'');
+  let arrivalTime='T+1确认，T+3-4到账';
+  if(cat==='money') arrivalTime='快速赎回T+0(≤1万)，普通赎回T+1到账';
+  else if(cat==='qdii') arrivalTime='T+2-3确认，T+7-10到账';
+  else if(cat==='bond') arrivalTime='T+1确认，T+2-3到账';
+  const holdInfo=getHoldingDaysInfo(h.date);
+  const feeNote=holdInfo.fee!=='0%'?`\n⚠️ 当前赎回费率：${holdInfo.fee}（已持有${holdInfo.days}天）${holdInfo.nextTier?'\n💡 '+holdInfo.nextTier:''}`:'';
   const label = h.shares ? `当前${h.shares.toFixed(2)}份，输入要赎回的份额数` : `当前市值约¥${(h.value||0).toLocaleString()}，输入要赎回的金额`;
-  openModal(`赎回「${h.name}」— ${label}`, '', function(val){
+  openModal(`赎回「${h.name}」— ${label}\n\n⏱ 预计${arrivalTime}${feeNote}`, '', function(val){
     const redeemVal = parseFloat(val);
     if(!redeemVal || redeemVal <= 0){ showToast('请输入有效的赎回数量','error'); return; }
     if(h.shares && h.shares > 0){
@@ -2893,25 +2935,25 @@ function redeemHolding(i){
       if(redeemVal >= h.shares){
         // 全部赎回 → 删除持仓
         existingHoldings.splice(i, 1);
-        showToast(`已全部赎回「${h.name}」，预计T+1到账`,'success');
+        showToast(`已全部赎回「${h.name}」，${arrivalTime}`,'success');
       } else {
         // 部分赎回
         const ratio = redeemVal / h.shares;
         h.shares -= redeemVal;
         h.amount = h.amount ? h.amount * (1 - ratio) : 0;
         h.value = h.value * (1 - ratio);
-        showToast(`已赎回${redeemVal.toFixed(2)}份「${h.name}」，剩余${h.shares.toFixed(2)}份，预计T+1到账`,'success');
+        showToast(`已赎回${redeemVal.toFixed(2)}份「${h.name}」，剩余${h.shares.toFixed(2)}份，${arrivalTime}`,'success');
       }
     } else {
       // 按金额赎回（未确认份额时）
       if(redeemVal >= (h.amount||h.value||0)){
         existingHoldings.splice(i, 1);
-        showToast(`已全部赎回「${h.name}」，预计T+1到账`,'success');
+        showToast(`已全部赎回「${h.name}」，${arrivalTime}`,'success');
       } else {
         const ratio = redeemVal / (h.amount||h.value||1);
         h.amount = h.amount ? h.amount * (1 - ratio) : 0;
         h.value = (h.value||0) * (1 - ratio);
-        showToast(`已赎回¥${redeemVal.toLocaleString()}「${h.name}」，预计T+1到账`,'success');
+        showToast(`已赎回¥${redeemVal.toLocaleString()}「${h.name}」，${arrivalTime}`,'success');
       }
     }
     FundDB.set('existingHoldings', existingHoldings); markHoldingsChanged();
@@ -2941,6 +2983,17 @@ function clearExistingHoldings(){
     markHoldingsChanged();
     renderExistingHoldings(); renderDcaPlans(); runHealthMonitor(); renderTodayOverview(); runSignalEngine();
   }
+}
+// 持有天数 & 赎回费率提示
+function getHoldingDaysInfo(dateStr){
+  if(!dateStr) return {days:0,feeHint:'',nextTier:''};
+  const days=Math.floor((new Date()-new Date(dateStr))/86400000);
+  let fee,tier,nextTier='';
+  if(days<7){ fee='1.50%'; tier='<7天'; nextTier=`再持${7-days}天降至0.50%`; }
+  else if(days<365){ fee='0.50%'; tier='7天-1年'; nextTier=`再持${365-days}天降至0.25%`; }
+  else if(days<730){ fee='0.25%'; tier='1-2年'; nextTier=`再持${730-days}天降至0%`; }
+  else { fee='0%'; tier='>2年'; }
+  return {days,fee,tier,nextTier};
 }
 function renderExistingHoldings(){
   const list=document.getElementById('eh-list');
@@ -2991,7 +3044,10 @@ function renderExistingHoldings(){
     const sourceTag = h.source==='dca' ? '<span style="font-size:10px;padding:1px 5px;border-radius:3px;background:#f9f0ff;color:#722ed1">定投</span>' : '';
     const nav = navCache[h.code];
     const todayChg = nav ? parseFloat(nav.gszzl)||0 : null;
-    const chgHtml = todayChg!==null ? `<span style="font-size:12px;font-weight:600;color:${todayChg>=0?'var(--danger)':'var(--success)'}">${todayChg>=0?'+':''}${todayChg}%</span>` : '';
+    const _now=new Date(),_h=_now.getHours(),_m=_now.getMinutes(),_d=_now.getDay();
+    const _isEst=_d>=1&&_d<=5&&((_h===9&&_m>=30)||_h===10||_h===11||(_h>=13&&_h<15));
+    const estTag=_isEst?'<span style="font-size:9px;color:var(--muted);margin-left:2px" title="盘中估算">估</span>':'';
+    const chgHtml = todayChg!==null ? `<span style="font-size:12px;font-weight:600;color:${todayChg>=0?'var(--danger)':'var(--success)'}">${todayChg>=0?'+':''}${todayChg}%${estTag}</span>` : '';
     const isPending = h.status!=='confirmed';
     return `<div class="eh-row" ${isPending?'style="opacity:.65;background:#fafafa"':''}>
       <div class="eh-top">
@@ -3009,7 +3065,7 @@ function renderExistingHoldings(){
         <div class="eh-stat"><div class="eh-stat-val ${pnlAmt!=null?(pnlAmt>=0?'up':'down'):''}">
           ${pnlAmt!=null?`${pnlAmt>=0?'+':''}${pnlPct}%`:'--'}</div><div class="eh-stat-lbl">盈亏</div></div>
       </div>
-      <div class="eh-meta">${h.shares?`${h.shares.toFixed(2)}份 · `:''}${h.date||'--'} 买入${pnlAmt!=null?` · ${pnlAmt>=0?'盈利':'亏损'} ¥${Math.abs(pnlAmt).toLocaleString('zh-CN',{maximumFractionDigits:0})}`:''}</div>
+      <div class="eh-meta">${h.shares?`${h.shares.toFixed(2)}份 · `:''}${h.date||'--'} 买入${(()=>{const hi=getHoldingDaysInfo(h.date);return h.date?` · 已持有<b>${hi.days}</b>天 · 赎回费<b>${hi.fee}</b>${hi.nextTier?` <span style="color:var(--primary);font-size:10px">💡${hi.nextTier}</span>`:''}`:'';})()}${pnlAmt!=null?` · ${pnlAmt>=0?'盈利':'亏损'} ¥${Math.abs(pnlAmt).toLocaleString('zh-CN',{maximumFractionDigits:0})}`:''}${h.totalCashDividend?` · 累计分红 ¥${h.totalCashDividend.toFixed(2)}`:''}</div>
       <div class="eh-actions">
         <button class="fc-btn" onclick="redeemHolding(${i})">💰 赎回</button>
         ${h.status==='confirmed'&&h.shares?`<button class="fc-btn" onclick="updateDividendShares(${i})">📊 分红</button>`:''}
