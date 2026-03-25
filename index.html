@@ -3172,7 +3172,7 @@ function renderExistingHoldings(){
       </div>
       <div class="eh-stats">
         <div class="eh-stat"><div class="eh-stat-val">¥${(h.amount||0).toLocaleString('zh-CN',{maximumFractionDigits:0})}</div><div class="eh-stat-lbl">买入成本</div></div>
-        <div class="eh-stat"><div class="eh-stat-val" style="color:var(--primary)">¥${h.value.toLocaleString('zh-CN',{maximumFractionDigits:0})}</div><div class="eh-stat-lbl">当前市值</div></div>
+        <div class="eh-stat"><div class="eh-stat-val" style="color:var(--primary)">¥${(h.value||0).toLocaleString('zh-CN',{maximumFractionDigits:0})}</div><div class="eh-stat-lbl">当前市值</div></div>
         <div class="eh-stat"><div class="eh-stat-val ${pnlAmt!=null?(pnlAmt>=0?'up':'down'):''}">
           ${pnlAmt!=null?`${pnlAmt>=0?'+':''}${pnlPct}%`:'--'}</div><div class="eh-stat-lbl">盈亏</div></div>
       </div>
@@ -3203,7 +3203,7 @@ function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, totalP
   let todayPnl=0, navCount=0;
   holdings.forEach(h=>{
     const nav=navCache[h.code];
-    if(nav){ todayPnl+=h.value*(parseFloat(nav.gszzl)||0)/100; navCount++; }
+    if(nav && h.value){ todayPnl+=(h.value||0)*(parseFloat(nav.gszzl)||0)/100; navCount++; }
   });
 
   // 估算本周/本月/本年收益（基于各基金1年收益率按比例折算）
@@ -3211,7 +3211,7 @@ function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, totalP
   let weekPnl=0, monthPnl=0, yearPnl=0, hasEstimate=false;
   holdings.forEach(h=>{
     const fd=CURATED_FUNDS.find(f=>f.code===h.code);
-    if(fd && fd.r1!=null && h.value>0){
+    if(fd && fd.r1!=null && h.value && h.value>0){
       const dailyR = fd.r1 / 365 / 100;
       weekPnl += h.value * dailyR * 5;   // ~5个交易日
       monthPnl += h.value * dailyR * 22;  // ~22个交易日
@@ -3224,12 +3224,12 @@ function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, totalP
   const details = holdings.map(h=>{
     const cost=h.amount||0;
     const cashDiv=h.totalCashDividend||0;
-    const pnl=cost>0?(h.value+cashDiv-cost):0;
+    const pnl=cost>0?((h.value||0)+cashDiv-cost):0;
     const pct=cost>0?(pnl/cost*100):0;
     const nav=navCache[h.code];
     const todayChg=nav?parseFloat(nav.gszzl)||0:null;
-    return {name:h.name, code:h.code, cost, value:h.value, pnl, pct, todayChg, source:h.source};
-  }).sort((a,b)=>b.value-a.value); // 按市值降序
+    return {name:h.name, code:h.code, cost, value:(h.value||0), pnl, pct, todayChg, source:h.source};
+  }).sort((a,b)=>(b.value||0)-(a.value||0)); // 按市值降序
 
   el.style.display='';
   el.innerHTML=`
