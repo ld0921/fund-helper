@@ -1933,7 +1933,7 @@ async function drainEastmoneyQ(){
   try {
     await loadScript(`https://fund.eastmoney.com/pingzhongdata/${code}.js?v=${Date.now()}`, 10000);
 
-    // 立即复制数据，避免被下一个请求覆盖
+    // 普通基金：使用净值数据
     if(window.Data_netWorthTrend && window.Data_netWorthTrend.length > 1){
       const localData = [...window.Data_netWorthTrend];
       const latest = localData[localData.length - 1];
@@ -1949,6 +1949,24 @@ async function drainEastmoneyQ(){
         dwjz: latestNav,
         gsz: latestNav,
         gszzl: changePercent.toString(),
+        jzrq: latestDate
+      });
+      return;
+    }
+
+    // 货币基金：使用每万份收益
+    if(window.Data_millionCopiesIncome && window.Data_millionCopiesIncome.length > 0){
+      const localData = [...window.Data_millionCopiesIncome];
+      const latest = localData[localData.length - 1];
+      const dailyIncome = latest[1];
+      const latestDate = new Date(latest[0]).toISOString().slice(0,10);
+
+      eastmoneyBusy = false;
+      setTimeout(drainEastmoneyQ, 100);
+      resolve({
+        dwjz: 1.0000,
+        gsz: 1.0000,
+        gszzl: (dailyIncome / 100).toString(),
         jzrq: latestDate
       });
       return;
