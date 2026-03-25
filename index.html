@@ -3031,14 +3031,6 @@ function refreshHoldingsNav(){
     });
   });
 }
-  // 联动删除同code的定投计划
-  if(code){
-    const dcaBefore = dcaPlans.length;
-    dcaPlans = dcaPlans.filter(d => d.code !== code);
-    if(dcaPlans.length !== dcaBefore) FundDB.set('dcaPlans', dcaPlans);
-  }
-  renderExistingHoldings(); renderDcaPlans(); runHealthMonitor(); renderTodayOverview(); runSignalEngine();
-}
 function clearExistingHoldings(){
   if(!existingHoldings.length||confirm('确定清空全部已有持仓？\n将同时清空所有定投计划。')){
     existingHoldings=[];
