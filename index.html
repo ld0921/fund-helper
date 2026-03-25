@@ -1917,6 +1917,19 @@ function drainQ(){
   setTimeout(()=>{ try{s.remove()}catch(e){} },5000);
 }
 
+// 从东方财富网获取最新确认净值（补充fundgz数据）
+async function fetchLatestNavFromEastmoney(code){
+  try {
+    await loadScript(`https://fund.eastmoney.com/pingzhongdata/${code}.js?v=${Date.now()}`, 10000);
+    if(window.Data_netWorthTrend && window.Data_netWorthTrend.length > 0){
+      const latest = window.Data_netWorthTrend[window.Data_netWorthTrend.length - 1];
+      const latestDate = new Date(latest.x).toISOString().slice(0,10);
+      return { dwjz: latest.y, jzrq: latestDate };
+    }
+  } catch(e){ console.warn(`[Eastmoney] 获取${code}净值失败:`, e); }
+  return null;
+}
+
 // ═══════════════ 基金详情动态拉取（天天基金 pingzhongdata + FundArchivesDatas） ═══════════════
 // 从API实时获取基金核心指标，替代硬编码数据
 let fundDetailCache = {}; // { code: { data, timestamp } }
@@ -3008,26 +3021,37 @@ function removeExistingHolding(i){
   renderExistingHoldings(); renderDcaPlans(); runHealthMonitor(); renderTodayOverview(); runSignalEngine();
 }
 // 刷新所有持仓基金的净值数据
-function refreshHoldingsNav(){
+async function refreshHoldingsNav(){
   if(!existingHoldings.length){ showToast('暂无持仓数据','info'); return; }
   const btn = document.getElementById('refresh-nav-btn');
   if(btn){ btn.textContent='⏳ 刷新中...'; btn.disabled=true; }
   let done = 0;
   const total = existingHoldings.length;
-  existingHoldings.forEach(h => {
-    fetchNav(h.code, data => {
-      done++;
-      if(data) {
-        navCache[h.code] = data;
-        FundDB.set('navCache', navCache);
+
+  for(const h of existingHoldings){
+    // 1. 从fundgz获取实时估算数据
+    fetchNav(h.code, async data => {
+      if(data) navCache[h.code] = data;
+
+      // 2. 从东方财富网获取最新确认净值（补充）
+      const eastmoneyNav = await fetchLatestNavFromEastmoney(h.code);
+      if(eastmoneyNav && navCache[h.code]){
+        // 如果东方财富网的净值日期更新，使用它
+        if(!navCache[h.code].jzrq || eastmoneyNav.jzrq >= navCache[h.code].jzrq){
+          navCache[h.code].dwjz = eastmoneyNav.dwjz;
+          navCache[h.code].jzrq = eastmoneyNav.jzrq;
+        }
       }
+
+      done++;
       if(done === total){
+        FundDB.set('navCache', navCache);
         renderExistingHoldings(); runHealthMonitor(); renderTodayOverview();
         if(btn){ btn.textContent='🔄 刷新净值'; btn.disabled=false; }
         showToast(`已刷新 ${total} 只基金净值`,'success');
       }
     });
-  });
+  }
 }
 function clearExistingHoldings(){
   if(!existingHoldings.length||confirm('确定清空全部已有持仓？\n将同时清空所有定投计划。')){
