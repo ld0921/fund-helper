@@ -3158,7 +3158,7 @@ function renderExistingHoldings(){
     const _isAftn=_h===13||_h===14;
     const _isEst=_d>=1&&_d<=5&&(_isMorn||_isAftn);
     const estTag=_isEst?'<span style="font-size:9px;color:var(--muted);margin-left:2px" title="盘中估算">估</span>':'';
-    const chgHtml = todayChg!==null ? `<div style="text-align:right"><span style="font-size:12px;font-weight:600;color:${todayChg>=0?'var(--danger)':'var(--success)'}">${todayChg>=0?'+':''}${todayChg}%${estTag}</span><div style="font-size:11px;font-weight:600;color:${todayPnl>=0?'var(--danger)':'var(--success)'}">今日${todayPnl>=0?'+':''}¥${Math.abs(todayPnl).toFixed(2)}</div></div>` : '';
+    const chgHtml = todayChg!==null ? `<div style="text-align:right"><span style="font-size:12px;font-weight:600;color:${todayChg>=0?'var(--danger)':'var(--success)'}">${todayChg>=0?'+':''}${todayChg}%${estTag}</span>${todayPnl!==null?`<div style="font-size:11px;font-weight:600;color:${todayPnl>=0?'var(--danger)':'var(--success)'}">今日${todayPnl>=0?'+':''}¥${Math.abs(todayPnl).toFixed(2)}</div>`:''}</div>` : '';
     const isPending = h.status!=='confirmed';
     return `<div class="eh-row" ${isPending?'style="opacity:.65;background:#fafafa"':''}>
       <div class="eh-top">
