@@ -4672,12 +4672,16 @@ function _doGenerateDca(){
     if(remain > 0) sorted[0].monthly += (diff > 0 ? remain : -remain);
   }
 
-  // 期望年化收益（加权 + 分类别均值回归折扣，与智能方案保持一致）
-  const dcaMeanRevCoef = { active:0.55, index:0.55, bond:0.80, money:0.95, qdii:0.55 };
-  const rawExpRate = withAmt.reduce((s,f)=>s+f.r1*(f.pct/100),0);
+  // 期望年化收益（与智能方案一致的均值回归模型）
+  // 长期中枢 + 均值回归：expected = mu + (r3_annualized - mu) * (1 - revSpeed)
+  const longTermMu = { active:8, index:7, bond:3, money:2, qdii:6 };
+  const revSpeed = { active:0.35, index:0.35, bond:0.6, money:0.1, qdii:0.35 };
   const expRate = withAmt.reduce((s,f)=>{
-    const coef = dcaMeanRevCoef[f.cat] || 0.6;
-    return s + f.r1 * coef * (f.pct/100);
+    const mu = longTermMu[f.cat] || 6;
+    const rev = revSpeed[f.cat] || 0.35;
+    const r3Ann = f.r3 > -100 ? (Math.pow(1+f.r3/100, 1/3)-1)*100 : 0;
+    const expected = mu + (r3Ann - mu) * (1 - rev);
+    return s + expected * (f.pct/100);
   }, 0);
   const r = expRate/100/12;
   const periods = years*12;
@@ -4925,7 +4929,13 @@ function importFromDcaPlans(){
     if(!existingHoldings.some(e=>e.code===d.code)){
       const months=d.start?Math.max(0,Math.floor((new Date()-new Date(d.start))/30/86400000)):0;
       const invested=d.monthly*months;
-      existingHoldings.push({code:d.code,name:d.name,amount:invested,date:d.start||new Date().toISOString().slice(0,10),status:'confirmed',type:d.type||'股票型',cost:0,value:d.curval||invested,source:'dca'});
+      const curval=d.curval||invested;
+      // cost = 估算平均买入净值：如果有市值和投入额，可以反推；否则用当前净值
+      const nav=navCache[d.code];
+      const curNav=nav?parseFloat(nav.gsz)||0:0;
+      // 估算平均成本净值：invested/curval*curNav（假设当前份额=curval/curNav）
+      const estCost = (curNav>0 && curval>0 && invested>0) ? (invested/(curval/curNav)) : (curNav||1);
+      existingHoldings.push({code:d.code,name:d.name,amount:invested,date:d.start||new Date().toISOString().slice(0,10),status:'confirmed',type:d.type||'股票型',cost:estCost,value:curval,source:'dca'});
       added++;
     }
   });
@@ -5085,7 +5095,10 @@ function runSignalEngine(){
     // 收集今天需要提醒的定投计划（扣款日当天或前1天）
     const duePlans = dcaPlans.filter(d=>{
       const dd = d.deductDay || 1;
-      return dayOfMonth === dd || dayOfMonth === dd - 1 || (dd === 1 && dayOfMonth >= 28);
+      // 当月最后一天（28-31号）且扣款日为1号时，提前提醒下月扣款
+      const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth()+1, 0).getDate();
+      const isMonthEnd = dd === 1 && dayOfMonth === lastDayOfMonth;
+      return dayOfMonth === dd || dayOfMonth === dd - 1 || isMonthEnd;
     });
     if(duePlans.length > 0){
       const totalDue = duePlans.reduce((s,d)=>s+d.monthly,0);
