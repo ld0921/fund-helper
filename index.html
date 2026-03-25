@@ -2373,10 +2373,13 @@ function buildFundCard(f,sortMode){
   if(nav){
     const chg=parseFloat(nav.gszzl), cls=chg>0?'up':chg<0?'down':'neutral';
     if(isMoney){
-      // 货币基金：显示万份收益和七日年化，与支付宝一致
-      const wfsy = nav.dwjz ? (parseFloat(nav.dwjz)*10000/10000).toFixed(4) : '--';
+      // 货币基金：万份收益=dwjz（每万份当日收益，如1.0524表示每万元收益1.0524元）
+      // 七日年化=ljjz字段或需单独获取，gszzl对货币基金也可能是七日年化
+      // 天天基金API中货币基金dwjz就是万份收益，ljjz是七日年化
+      const wfsy = nav.dwjz ? parseFloat(nav.dwjz).toFixed(4) : '--';
+      const qrnh = nav.ljjz ? parseFloat(nav.ljjz).toFixed(3) : (!isNaN(chg) ? chg.toFixed(3) : '--');
       navHtml=`<div><span class="nav-label">万份收益 </span><span class="nav-val" id="nav-${f.code}">${wfsy}</span></div>
-        <span style="font-size:12px;font-weight:600;color:var(--primary)" id="chg-${f.code}">七日年化 ${!isNaN(chg)?chg.toFixed(3)+'%':'--'}</span>
+        <span style="font-size:12px;font-weight:600;color:var(--primary)" id="chg-${f.code}">七日年化 ${qrnh}%</span>
         <span style="font-size:10px;color:var(--muted)">${nav.gztime||nav.jzrq||''}</span>`;
     } else {
       navHtml=`<div><span class="nav-label">估算净值 </span><span class="nav-val" id="nav-${f.code}">${nav.gsz||nav.dwjz}</span></div>
@@ -2437,7 +2440,7 @@ function buildFundCard(f,sortMode){
     <span class="fund-card-reason-more" onclick="var r=document.getElementById('reason-${f.code}');r.classList.toggle('expanded');this.textContent=r.classList.contains('expanded')?'收起 ▴':'查看更多 ▾'"">查看更多 ▾</span>${dcaHtml}
     <div class="fund-card-foot">
       <button class="fc-btn" onclick="window.open('https://fund.eastmoney.com/${f.code}.html','_blank','noopener')">🔗 查看详情</button>
-      <button class="fc-btn" onclick="copyCode('${f.code}');showToast('已复制 ${f.code}，打开支付宝搜索购买。买入后回到「资产」页录入','success',4000)">📋 复制代码购买</button>
+      <button class="fc-btn" onclick="copyCode('${f.code}');showToast('已复制 ${f.code}，打开支付宝搜索购买。${f.name.includes('C')?'C类免申购费，适合持有<1年':'A类有申购费(1折)，适合持有>1年'}。买入后回到「资产」页录入','success',5000)">📋 复制代码购买</button>
     </div>
   </div>`;
 }
@@ -2534,10 +2537,12 @@ function updateNavCard(code,data){
   const chgEl=document.getElementById(`chg-${code}`);
   const timeEl=document.getElementById(`time-${code}`);
   if(!el) return;
-  // 判断是否为盘中估算：交易日9:30-15:00之间为估算，其余为确认净值
+  // 判断是否为盘中估算：交易日9:30-11:30 / 13:00-15:00为交易时间
   const now=new Date();
   const h=now.getHours(), m=now.getMinutes(), day=now.getDay();
-  const isTrading=day>=1&&day<=5&&((h===9&&m>=30)||h===10||h===11||(h>=13&&h<15));
+  const isMorning=(h===9&&m>=30)||h===10||(h===11&&m<30);
+  const isAfternoon=h===13||h===14;
+  const isTrading=day>=1&&day<=5&&(isMorning||isAfternoon);
   const navLabel=isTrading?'估':'实';
   const navStyle=isTrading?'border-bottom:1px dashed var(--muted)':'';
   el.textContent=data.gsz||data.dwjz||'--'; el.style.color=''; el.style.cssText=navStyle; el.title=isTrading?'盘中估算值，收盘后更新为实际净值':'已确认净值';
@@ -2853,8 +2858,8 @@ function addExistingHolding(){
   const buyDate = date ? new Date(date) : new Date();
   const confirmDate = new Date(buyDate);
   confirmDate.setDate(confirmDate.getDate() + (buyTime==='after15' ? 2 : 1));
-  // 跳过周末：如果确认日落在周六→推到周一，周日→推到周一
-  while(confirmDate.getDay()===0 || confirmDate.getDay()===6) confirmDate.setDate(confirmDate.getDate()+1);
+  // 跳过周末和中国法定节假日
+  while(!isCNTradingDay(confirmDate)) confirmDate.setDate(confirmDate.getDate()+1);
   const confirmDateStr = confirmDate.toISOString().slice(0,10);
   // 自动检测基金类型
   const fd = CURATED_FUNDS.find(f=>f.code===code);
@@ -2871,7 +2876,7 @@ function addExistingHolding(){
 function confirmHolding(i){
   const h = existingHoldings[i];
   if(!h) return;
-  openModal(`请输入「${h.name}」在支付宝确认的份额数\n\n📋 查看路径：支付宝→理财→基金→持仓→点击该基金→查看"持有份额"`, '', function(val){
+  openModal(`请输入「${h.name}」在支付宝确认的份额数\n\n📋 查看路径：支付宝→财富→基金→持仓→点击该基金→查看"持有份额"`, '', function(val){
     const shares = parseFloat(val);
     if(!shares || shares <= 0){ showToast('请输入有效份额数（可在支付宝持仓中查看）','error'); return; }
     h.status = 'confirmed';
@@ -2924,8 +2929,7 @@ function redeemHolding(i){
   if(cat==='money') arrivalTime='快速赎回T+0(≤1万)，普通赎回T+1到账';
   else if(cat==='qdii') arrivalTime='T+2-3确认，T+7-10到账';
   else if(cat==='bond') arrivalTime='T+1确认，T+2-3到账';
-  const holdInfo=getHoldingDaysInfo(h.date);
-  const feeNote=holdInfo.fee!=='0%'?`\n⚠️ 当前赎回费率：${holdInfo.fee}（已持有${holdInfo.days}天）${holdInfo.nextTier?'\n💡 '+holdInfo.nextTier:''}`:'';
+  const holdInfo=getHoldingDaysInfo(h.date, h.code);  const feeNote=holdInfo.fee!=='0%'?`\n⚠️ 当前赎回费率：${holdInfo.fee}（已持有${holdInfo.days}天）${holdInfo.nextTier?'\n💡 '+holdInfo.nextTier:''}`:'';
   const label = h.shares ? `当前${h.shares.toFixed(2)}份，输入要赎回的份额数` : `当前市值约¥${(h.value||0).toLocaleString()}，输入要赎回的金额`;
   openModal(`赎回「${h.name}」— ${label}\n\n⏱ 预计${arrivalTime}${feeNote}`, '', function(val){
     const redeemVal = parseFloat(val);
@@ -2984,15 +2988,51 @@ function clearExistingHoldings(){
     renderExistingHoldings(); renderDcaPlans(); runHealthMonitor(); renderTodayOverview(); runSignalEngine();
   }
 }
+// 中国交易日判断：排除周末和法定节假日
+// 节假日列表按年更新（每年国务院公布后需手动维护）
+const CN_HOLIDAYS_2025 = ['2025-01-01','2025-01-28','2025-01-29','2025-01-30','2025-01-31','2025-02-01','2025-02-02','2025-02-03','2025-02-04','2025-04-04','2025-04-05','2025-04-06','2025-05-01','2025-05-02','2025-05-03','2025-05-04','2025-05-05','2025-06-01','2025-06-02','2025-10-01','2025-10-02','2025-10-03','2025-10-04','2025-10-05','2025-10-06','2025-10-07','2025-10-08'];
+const CN_HOLIDAYS_2026 = ['2026-01-01','2026-01-02','2026-01-03','2026-02-16','2026-02-17','2026-02-18','2026-02-19','2026-02-20','2026-02-21','2026-02-22','2026-04-05','2026-04-06','2026-04-07','2026-05-01','2026-05-02','2026-05-03','2026-05-04','2026-05-05','2026-06-19','2026-06-20','2026-06-21','2026-10-01','2026-10-02','2026-10-03','2026-10-04','2026-10-05','2026-10-06','2026-10-07'];
+const CN_HOLIDAYS = new Set([...CN_HOLIDAYS_2025, ...CN_HOLIDAYS_2026]);
+function isCNTradingDay(d){
+  const day=d.getDay();
+  if(day===0||day===6) return false;
+  const str=d.toISOString().slice(0,10);
+  if(CN_HOLIDAYS.has(str)) return false;
+  return true;
+}
 // 持有天数 & 赎回费率提示
-function getHoldingDaysInfo(dateStr){
-  if(!dateStr) return {days:0,feeHint:'',nextTier:''};
+function getHoldingDaysInfo(dateStr, fundCode){
+  if(!dateStr) return {days:0,fee:'--',tier:'',nextTier:''};
   const days=Math.floor((new Date()-new Date(dateStr))/86400000);
+  const fd=CURATED_FUNDS.find(f=>f.code===fundCode);
+  const cat=fd?fd.cat:'';
+  const isC=fd&&fd.name&&fd.name.includes('C');
   let fee,tier,nextTier='';
-  if(days<7){ fee='1.50%'; tier='<7天'; nextTier=`再持${7-days}天降至0.50%`; }
-  else if(days<365){ fee='0.50%'; tier='7天-1年'; nextTier=`再持${365-days}天降至0.25%`; }
-  else if(days<730){ fee='0.25%'; tier='1-2年'; nextTier=`再持${730-days}天降至0%`; }
-  else { fee='0%'; tier='>2年'; }
+  if(cat==='money'){
+    // 货币基金：通常无赎回费
+    fee='0%'; tier='货币基金免赎回费';
+  } else if(isC){
+    // C类份额：通常7天内1.5%，7天后0%
+    if(days<7){ fee='1.50%'; tier='<7天'; nextTier=`再持${7-days}天降至0%`; }
+    else { fee='0%'; tier='≥7天'; }
+  } else if(cat==='bond'){
+    // 债券基金：7天内1.5%，7天-30天0.1%，30天后通常0%
+    if(days<7){ fee='1.50%'; tier='<7天'; nextTier=`再持${7-days}天降至0.10%`; }
+    else if(days<30){ fee='0.10%'; tier='7-30天'; nextTier=`再持${30-days}天降至0%`; }
+    else { fee='0%'; tier='≥30天'; }
+  } else if(cat==='qdii'){
+    // QDII：7天内1.5%，7天-1年0.5%，1-2年0.25%，2年+0%
+    if(days<7){ fee='1.50%'; tier='<7天'; nextTier=`再持${7-days}天降至0.50%`; }
+    else if(days<365){ fee='0.50%'; tier='7天-1年'; nextTier=`再持${365-days}天降至0.25%`; }
+    else if(days<730){ fee='0.25%'; tier='1-2年'; nextTier=`再持${730-days}天降至0%`; }
+    else { fee='0%'; tier='>2年'; }
+  } else {
+    // 股票/混合型：标准四档
+    if(days<7){ fee='1.50%'; tier='<7天'; nextTier=`再持${7-days}天降至0.50%`; }
+    else if(days<365){ fee='0.50%'; tier='7天-1年'; nextTier=`再持${365-days}天降至0.25%`; }
+    else if(days<730){ fee='0.25%'; tier='1-2年'; nextTier=`再持${730-days}天降至0%`; }
+    else { fee='0%'; tier='>2年'; }
+  }
   return {days,fee,tier,nextTier};
 }
 function renderExistingHoldings(){
@@ -3010,14 +3050,15 @@ function renderExistingHoldings(){
     // 状态不自动变更：到了确认日期时显示"待确认"提示用户手动确认
     // （因为实际确认时间以支付宝为准，工具无法自动获知）
     const nav=navCache[h.code];
-    const curNav=nav?parseFloat(nav.gsz)||1:1;
-    const cost=h.cost||curNav;
+    // NAV回退策略：优先使用实时值，否则用上次记录的cost（买入净值），避免回退到1导致市值严重失真
+    const curNav=nav?parseFloat(nav.gsz)||(h.cost||0):(h.cost||0);
+    const cost=h.cost||curNav||0;
     if(h.shares && h.shares > 0){
       // Confirmed: use exact shares × current nav
-      const navVal = nav ? parseFloat(nav.gsz)||1 : (h.cost||1);
-      h.value = h.shares * navVal;
+      const navVal = nav ? parseFloat(nav.gsz)||(h.cost||0) : (h.cost||0);
+      h.value = navVal > 0 ? h.shares * navVal : (h.value||h.amount||0);
     } else {
-      h.value=h.amount?(h.amount/cost*curNav):(h.value||0);
+      h.value=(h.amount && cost>0)?(h.amount/cost*curNav):(h.value||h.amount||0);
     }
   });
   FundDB.set('existingHoldings',existingHoldings);
@@ -3026,15 +3067,17 @@ function renderExistingHoldings(){
   const pendingHoldings=existingHoldings.filter(h=>h.status!=='confirmed');
   const totalCost=confirmedHoldings.reduce((s,h)=>s+(h.amount||0),0);
   const totalVal=confirmedHoldings.reduce((s,h)=>s+h.value,0);
-  const totalPnl=totalCost>0?totalVal-totalCost:0;
+  const totalCashDiv=confirmedHoldings.reduce((s,h)=>s+(h.totalCashDividend||0),0);
+  const totalPnl=totalCost>0?(totalVal+totalCashDiv-totalCost):0;
   const totalPnlPct=totalCost>0?(totalPnl/totalCost*100):0;
   const pendingTotal=pendingHoldings.reduce((s,h)=>s+(h.amount||0),0);
   const isMobile=window.innerWidth<=600;
   list.innerHTML=existingHoldings.map((h,i)=>{
     const fd=CURATED_FUNDS.find(f=>f.code===h.code);
     const cost=h.amount||0;
-    const pnlAmt=cost>0?h.value-cost:null;
-    const pnlPct=cost>0?((h.value-cost)/cost*100).toFixed(1):null;
+    const cashDiv=h.totalCashDividend||0;
+    const pnlAmt=cost>0?(h.value+cashDiv-cost):null;
+    const pnlPct=cost>0?(((h.value+cashDiv-cost)/cost)*100).toFixed(1):null;
     const pnlHtml=pnlAmt!=null?`<span class="${pnlAmt>=0?'up':'down'}">${pnlAmt>=0?'+':'-'}¥${Math.abs(pnlAmt).toLocaleString('zh-CN',{maximumFractionDigits:0})} (${pnlAmt>=0?'+':''}${pnlPct}%)</span>`:'<span style="color:var(--muted)">--</span>';
     const statusBadge = h.status==='confirmed'
       ? '<span style="font-size:11px;color:var(--success)">✅已确认</span>'
@@ -3045,7 +3088,9 @@ function renderExistingHoldings(){
     const nav = navCache[h.code];
     const todayChg = nav ? parseFloat(nav.gszzl)||0 : null;
     const _now=new Date(),_h=_now.getHours(),_m=_now.getMinutes(),_d=_now.getDay();
-    const _isEst=_d>=1&&_d<=5&&((_h===9&&_m>=30)||_h===10||_h===11||(_h>=13&&_h<15));
+    const _isMorn=(_h===9&&_m>=30)||_h===10||(_h===11&&_m<30);
+    const _isAftn=_h===13||_h===14;
+    const _isEst=_d>=1&&_d<=5&&(_isMorn||_isAftn);
     const estTag=_isEst?'<span style="font-size:9px;color:var(--muted);margin-left:2px" title="盘中估算">估</span>':'';
     const chgHtml = todayChg!==null ? `<span style="font-size:12px;font-weight:600;color:${todayChg>=0?'var(--danger)':'var(--success)'}">${todayChg>=0?'+':''}${todayChg}%${estTag}</span>` : '';
     const isPending = h.status!=='confirmed';
@@ -3065,7 +3110,7 @@ function renderExistingHoldings(){
         <div class="eh-stat"><div class="eh-stat-val ${pnlAmt!=null?(pnlAmt>=0?'up':'down'):''}">
           ${pnlAmt!=null?`${pnlAmt>=0?'+':''}${pnlPct}%`:'--'}</div><div class="eh-stat-lbl">盈亏</div></div>
       </div>
-      <div class="eh-meta">${h.shares?`${h.shares.toFixed(2)}份 · `:''}${h.date||'--'} 买入${(()=>{const hi=getHoldingDaysInfo(h.date);return h.date?` · 已持有<b>${hi.days}</b>天 · 赎回费<b>${hi.fee}</b>${hi.nextTier?` <span style="color:var(--primary);font-size:10px">💡${hi.nextTier}</span>`:''}`:'';})()}${pnlAmt!=null?` · ${pnlAmt>=0?'盈利':'亏损'} ¥${Math.abs(pnlAmt).toLocaleString('zh-CN',{maximumFractionDigits:0})}`:''}${h.totalCashDividend?` · 累计分红 ¥${h.totalCashDividend.toFixed(2)}`:''}</div>
+      <div class="eh-meta">${h.shares?`${h.shares.toFixed(2)}份 · `:''}${h.date||'--'} 买入${(()=>{const hi=getHoldingDaysInfo(h.date,h.code);return h.date?` · 已持有<b>${hi.days}</b>天 · 赎回费<b>${hi.fee}</b>${hi.nextTier?` <span style="color:var(--primary);font-size:10px">💡${hi.nextTier}</span>`:''}`:'';})()}${pnlAmt!=null?` · ${pnlAmt>=0?'盈利':'亏损'} ¥${Math.abs(pnlAmt).toLocaleString('zh-CN',{maximumFractionDigits:0})}`:''}${h.totalCashDividend?` · 累计分红 ¥${h.totalCashDividend.toFixed(2)}`:''}</div>
       <div class="eh-actions">
         <button class="fc-btn" onclick="redeemHolding(${i})">💰 赎回</button>
         ${h.status==='confirmed'&&h.shares?`<button class="fc-btn" onclick="updateDividendShares(${i})">📊 分红</button>`:''}
@@ -3095,10 +3140,25 @@ function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, totalP
     if(nav){ todayPnl+=h.value*(parseFloat(nav.gszzl)||0)/100; navCount++; }
   });
 
-  // 各基金盈亏明细
+  // 估算本周/本月/本年收益（基于各基金1年收益率按比例折算）
+  // 实际精确计算需要历史净值序列，这里用线性估算给用户参考
+  let weekPnl=0, monthPnl=0, yearPnl=0, hasEstimate=false;
+  holdings.forEach(h=>{
+    const fd=CURATED_FUNDS.find(f=>f.code===h.code);
+    if(fd && fd.r1!=null && h.value>0){
+      const dailyR = fd.r1 / 365 / 100;
+      weekPnl += h.value * dailyR * 5;   // ~5个交易日
+      monthPnl += h.value * dailyR * 22;  // ~22个交易日
+      yearPnl += h.value * fd.r1 / 100;
+      hasEstimate = true;
+    }
+  });
+
+  // 各基金盈亏明细（含现金分红）
   const details = holdings.map(h=>{
     const cost=h.amount||0;
-    const pnl=cost>0?h.value-cost:0;
+    const cashDiv=h.totalCashDividend||0;
+    const pnl=cost>0?(h.value+cashDiv-cost):0;
     const pct=cost>0?(pnl/cost*100):0;
     const nav=navCache[h.code];
     const todayChg=nav?parseFloat(nav.gszzl)||0:null;
@@ -3115,6 +3175,11 @@ function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, totalP
         <div class="ov-item"><div class="ov-val ${totalPnl>=0?'up':'down'}">${totalPnl>=0?'+':''}${totalPnlPct.toFixed(1)}%</div><div class="ov-label">收益率</div></div>
         <div class="ov-item"><div class="ov-val ${todayPnl>=0?'up':'down'}">${todayPnl>=0?'+':''}¥${Math.abs(todayPnl).toLocaleString('zh-CN',{maximumFractionDigits:0})}</div><div class="ov-label">今日${navCount>0?'':'(待刷新)'}</div></div>
       </div>
+      ${hasEstimate?`<div class="ov-row" style="margin-bottom:12px;padding-top:8px;border-top:1px solid rgba(0,0,0,.06)">
+        <div class="ov-item"><div class="ov-val" style="font-size:15px" class="${weekPnl>=0?'up':'down'}">${weekPnl>=0?'+':''}¥${Math.abs(weekPnl).toLocaleString('zh-CN',{maximumFractionDigits:0})}</div><div class="ov-label">近一周(估)</div></div>
+        <div class="ov-item"><div class="ov-val" style="font-size:15px" class="${monthPnl>=0?'up':'down'}">${monthPnl>=0?'+':''}¥${Math.abs(monthPnl).toLocaleString('zh-CN',{maximumFractionDigits:0})}</div><div class="ov-label">近一月(估)</div></div>
+        <div class="ov-item"><div class="ov-val" style="font-size:15px" class="${yearPnl>=0?'up':'down'}">${yearPnl>=0?'+':''}¥${Math.abs(yearPnl).toLocaleString('zh-CN',{maximumFractionDigits:0})}</div><div class="ov-label">近一年(估)</div></div>
+      </div>`:''}
       <div style="border-top:1px solid rgba(0,0,0,.06);padding-top:10px">
         <div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px">各基金收益明细</div>
         ${details.map(d=>{
@@ -4585,10 +4650,21 @@ function _doGenerateDca(){
     monthly: Math.round(budget * f.w/totalW / 100) * 100 || Math.max(100, Math.round(budget * f.w/totalW))
   }));
 
-  // 修正月总额精度
+  // 修正月总额精度（将余额按权重从大到小分配，避免集中在第一只基金）
   const totalMonthly = withAmt.reduce((s,f)=>s+f.monthly,0);
   if(withAmt.length && totalMonthly !== budget){
-    withAmt[0].monthly += (budget - totalMonthly);
+    const diff = budget - totalMonthly;
+    // 按权重降序排列，余额分配给权重最大的
+    const sorted = [...withAmt].sort((a,b)=>b.w-a.w);
+    const step = diff > 0 ? 100 : -100;
+    let remain = Math.abs(diff);
+    let idx = 0;
+    while(remain >= 100 && idx < sorted.length){
+      sorted[idx].monthly += step;
+      remain -= 100;
+      idx = (idx + 1) % sorted.length;
+    }
+    if(remain > 0) sorted[0].monthly += (diff > 0 ? remain : -remain);
   }
 
   // 期望年化收益（加权 + 分类别均值回归折扣，与智能方案保持一致）
@@ -4896,8 +4972,8 @@ function runSignalEngine(){
       // 计算该基金在持仓中的占比
       const totalValue = allHeld.reduce((s,x)=>s+x.value,0);
       const fundPct = totalValue > 0 ? h.value / totalValue * 100 : 0;
-      // 超配阈值按类别差异化：低波动类别容忍度更高
-      const owThreshold = {money:40, bond:35, active:25, index:25, qdii:20}[fd?.cat] || 25;
+      // 超配阈值按类别差异化：货币基金作为现金储备通常是用户有意为之，提高容忍度
+      const owThreshold = {money:60, bond:35, active:25, index:25, qdii:20}[fd?.cat] || 25;
       const alreadyOverweight = fundPct > owThreshold;
       // 判断是否处于下跌趋势（r1<0 说明不只是单日波动）
       const inDowntrend = fd && fd.r1 < 0;
@@ -4997,17 +5073,31 @@ function runSignalEngine(){
     });
   }
 
-  // === 定投提醒 ===
+  // === 定投提醒（按用户设置的扣款日触发，前后1天提醒） ===
   if(dcaPlans.length > 0){
     const today = new Date();
     const dayOfMonth = today.getDate();
-    // 每月初（1-3号）提醒执行定投
-    if(dayOfMonth <= 3){
-      const totalMonthly = dcaPlans.reduce((s,d)=>s+d.monthly,0);
+    // 收集今天需要提醒的定投计划（扣款日当天或前1天）
+    const duePlans = dcaPlans.filter(d=>{
+      const dd = d.deductDay || 1;
+      return dayOfMonth === dd || dayOfMonth === dd - 1 || (dd === 1 && dayOfMonth >= 28);
+    });
+    if(duePlans.length > 0){
+      const totalDue = duePlans.reduce((s,d)=>s+d.monthly,0);
+      const planNames = duePlans.map(d=>`${d.name}(¥${d.monthly})`).join('、');
       signals.push({type:'info', priority:4, code:'_dca_remind', name:'定投提醒',
-        title:`📅 本月定投提醒`,
-        desc:`共 ${dcaPlans.length} 项定投计划，本月需投入 ¥${totalMonthly.toLocaleString()}。坚持纪律是定投成功的关键。`,
+        title:`📅 定投扣款提醒`,
+        desc:`${duePlans.length} 项定投即将扣款：${planNames}，合计 ¥${totalDue.toLocaleString()}。请确保支付宝余额充足。`,
         action:'执行定投'
+      });
+    }
+    // 月初总览提醒（1-2号）
+    if(dayOfMonth <= 2){
+      const totalMonthly = dcaPlans.reduce((s,d)=>s+d.monthly,0);
+      signals.push({type:'info', priority:5, code:'_dca_monthly', name:'本月定投总览',
+        title:`📊 本月定投总览`,
+        desc:`共 ${dcaPlans.length} 项定投计划，本月需投入 ¥${totalMonthly.toLocaleString()}。坚持纪律是定投成功的关键。`,
+        action:'查看计划'
       });
     }
   }
