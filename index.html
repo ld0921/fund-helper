@@ -37,7 +37,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue'
 .tab-short{display:none}.tab-full{display:inline}
 @media(max-width:600px){.tab-short{display:inline}.tab-full{display:none}}
 .tab:hover{color:var(--primary)}.tab.active{color:var(--primary);border-bottom-color:var(--primary)}
-.content{padding:14px;padding-left:calc(14px + env(safe-area-inset-left));padding-right:calc(14px + env(safe-area-inset-right));max-width:1200px;margin:0 auto}
+.content{padding:14px;padding-left:calc(14px + env(safe-area-inset-left));padding-right:calc(14px + env(safe-area-inset-right));max-width:1600px;margin:0 auto}
 .panel{display:none}.panel.active{display:block}
 .card{background:#fff;border-radius:var(--radius);padding:18px;margin-bottom:14px;box-shadow:0 1px 6px rgba(0,0,0,.07)}
 .card-title{font-size:15px;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
@@ -92,8 +92,8 @@ tr:last-child td{border-bottom:none}
 .section-sep::before,.section-sep::after{content:'';flex:1;height:1px;background:var(--border)}
 .up{color:var(--danger)}.down{color:var(--success)}.neutral{color:var(--muted)}
 /* ── Fund Cards (Panel 0) ── */
-.fund-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
-@media(max-width:700px){.fund-grid{grid-template-columns:1fr}}
+.fund-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media(max-width:1100px){.fund-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:700px){.fund-grid{grid-template-columns:1fr}}
 .fund-card{border:1px solid var(--border);border-radius:10px;overflow:hidden;transition:box-shadow .2s}
 .fund-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.1)}
 .fund-card-head{padding:12px 14px 10px;border-bottom:1px solid #f5f5f5}
@@ -1796,9 +1796,9 @@ function renderTodayOverview(){
   const ct=document.getElementById('today-overview-content');
   if(!el||!ct) return;
 
-  // 合并所有持仓
+  // 合并所有持仓（仅已确认的，与支付宝一致）
   const allHeld=[];
-  existingHoldings.forEach(h=>{
+  existingHoldings.filter(h=>h.status==='confirmed').forEach(h=>{
     if(!allHeld.some(x=>x.code===h.code)){
       const nav = navCache[h.code];
       const curNav = nav ? parseFloat(nav.gsz)||1 : 1;
@@ -2854,7 +2854,7 @@ function addExistingHolding(){
 function confirmHolding(i){
   const h = existingHoldings[i];
   if(!h) return;
-  openModal(`请输入「${h.name}」在支付宝确认的份额数`, '', function(val){
+  openModal(`请输入「${h.name}」在支付宝确认的份额数\n\n📋 查看路径：支付宝→理财→基金→持仓→点击该基金→查看"持有份额"`, '', function(val){
     const shares = parseFloat(val);
     if(!shares || shares <= 0){ showToast('请输入有效份额数（可在支付宝持仓中查看）','error'); return; }
     h.status = 'confirmed';
@@ -2968,10 +2968,14 @@ function renderExistingHoldings(){
     }
   });
   FundDB.set('existingHoldings',existingHoldings);
-  const totalCost=existingHoldings.reduce((s,h)=>s+(h.amount||0),0);
-  const totalVal=existingHoldings.reduce((s,h)=>s+h.value,0);
+  // 只统计已确认的持仓（与支付宝一致：确认中的不计入总资产）
+  const confirmedHoldings=existingHoldings.filter(h=>h.status==='confirmed');
+  const pendingHoldings=existingHoldings.filter(h=>h.status!=='confirmed');
+  const totalCost=confirmedHoldings.reduce((s,h)=>s+(h.amount||0),0);
+  const totalVal=confirmedHoldings.reduce((s,h)=>s+h.value,0);
   const totalPnl=totalCost>0?totalVal-totalCost:0;
   const totalPnlPct=totalCost>0?(totalPnl/totalCost*100):0;
+  const pendingTotal=pendingHoldings.reduce((s,h)=>s+(h.amount||0),0);
   const isMobile=window.innerWidth<=600;
   list.innerHTML=existingHoldings.map((h,i)=>{
     const fd=CURATED_FUNDS.find(f=>f.code===h.code);
@@ -2982,13 +2986,14 @@ function renderExistingHoldings(){
     const statusBadge = h.status==='confirmed'
       ? '<span style="font-size:11px;color:var(--success)">✅已确认</span>'
       : (todayStr >= (h.confirmDate||'')
-        ? `<span style="font-size:11px;color:var(--primary);cursor:pointer" onclick="confirmHolding(${i})" title="点击确认份额">📌 待确认(点击更新)</span>`
-        : `<span style="font-size:11px;color:var(--warning)">⏳交易中 预计${h.confirmDate||'--'}确认</span>`);
+        ? `<span style="font-size:11px;color:var(--primary);cursor:pointer" onclick="confirmHolding(${i})" title="在支付宝→基金→持仓查看确认份额">📌 待确认(点击输入份额)</span>`
+        : `<span style="font-size:11px;color:var(--warning)">⏳确认中 预计${h.confirmDate||'--'}确认<br><span style="font-size:10px;color:var(--muted)">确认后不计入总资产，请耐心等待</span></span>`);
     const sourceTag = h.source==='dca' ? '<span style="font-size:10px;padding:1px 5px;border-radius:3px;background:#f9f0ff;color:#722ed1">定投</span>' : '';
     const nav = navCache[h.code];
     const todayChg = nav ? parseFloat(nav.gszzl)||0 : null;
     const chgHtml = todayChg!==null ? `<span style="font-size:12px;font-weight:600;color:${todayChg>=0?'var(--danger)':'var(--success)'}">${todayChg>=0?'+':''}${todayChg}%</span>` : '';
-    return `<div class="eh-row">
+    const isPending = h.status!=='confirmed';
+    return `<div class="eh-row" ${isPending?'style="opacity:.65;background:#fafafa"':''}>
       <div class="eh-top">
         <div class="eh-fund-name">${escHtml(h.name)} ${sourceTag}</div>
         ${chgHtml}
@@ -3014,11 +3019,12 @@ function renderExistingHoldings(){
   }).join('');
   // summary
   const pnlHtml2=totalCost>0?`&nbsp;·&nbsp;盈亏 <b class="${totalPnl>=0?'up':'down'}">${totalPnl>=0?'+':'-'}¥${Math.abs(totalPnl).toLocaleString('zh-CN',{maximumFractionDigits:0})} (${totalPnl>=0?'+':''}${totalPnlPct.toFixed(1)}%)</b>`:'';
+  const pendingHtml=pendingTotal>0?`&nbsp;·&nbsp;<span style="color:var(--warning)">⏳确认中 ¥${pendingTotal.toLocaleString('zh-CN',{maximumFractionDigits:0})}</span>`:'';
   summary.style.display='block';
-  summary.innerHTML=`💼 <b>${existingHoldings.length}</b> 只基金 · 总成本 <b>¥${totalCost.toLocaleString('zh-CN',{maximumFractionDigits:0})}</b> · 总市值 <b>¥${totalVal.toLocaleString('zh-CN',{maximumFractionDigits:0})}</b>${pnlHtml2}`;
+  summary.innerHTML=`💼 <b>${confirmedHoldings.length}</b> 只基金 · 总成本 <b>¥${totalCost.toLocaleString('zh-CN',{maximumFractionDigits:0})}</b> · 总市值 <b>¥${totalVal.toLocaleString('zh-CN',{maximumFractionDigits:0})}</b>${pnlHtml2}${pendingHtml}`;
 
   // 渲染收益总览卡片
-  renderPortfolioOverview(existingHoldings, totalCost, totalVal, totalPnl, totalPnlPct);
+  renderPortfolioOverview(confirmedHoldings, totalCost, totalVal, totalPnl, totalPnlPct);
 }
 
 function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, totalPnlPct){
