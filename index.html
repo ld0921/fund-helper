@@ -981,6 +981,10 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
         <input id="eh-amount" type="number" placeholder="在支付宝买入的金额" inputmode="numeric">
       </div>
       <div class="form-item">
+        <label>持有份额 <span style="color:var(--primary);font-weight:600">（推荐）</span></label>
+        <input id="eh-shares" type="number" placeholder="支付宝显示的持有份额" inputmode="decimal" step="0.01">
+      </div>
+      <div class="form-item">
         <label>买入日期</label>
         <input id="eh-date" type="date">
       </div>
@@ -991,7 +995,10 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
       <label style="display:flex;align-items:center;gap:3px;font-size:12px;cursor:pointer;color:var(--text)"><input type="radio" name="eh-buytime" value="after15" style="accent-color:var(--primary)"> 15:00后</label>
       <span style="font-size:11px;color:var(--muted)">（影响净值确认日）</span>
     </div>
-    <div style="font-size:11px;color:var(--muted);margin-bottom:8px;line-height:1.6">15:00前买入按当日净值确认（T+1到账），15:00后按下一交易日净值确认（T+2到账）。实际以支付宝为准。</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:8px;line-height:1.6">
+      💡 <b>如何获取持有份额？</b>打开支付宝→理财→基金→点击对应基金→查看"持有份额"。输入份额后，工具将使用<b>确认净值</b>计算市值，与支付宝显示完全一致。<br>
+      ⏰ 15:00前买入按当日净值确认（T+1到账），15:00后按下一交易日净值确认（T+2到账）。实际以支付宝为准。
+    </div>
     <div class="action-bar" style="margin-top:0">
       <button class="btn btn-primary btn-sm" onclick="addExistingHolding()">＋ 添加持仓</button>
       <button class="btn btn-danger btn-sm" onclick="clearExistingHoldings()">清空全部</button>
@@ -2821,6 +2828,7 @@ function addExistingHolding(){
   const code=document.getElementById('eh-code').value.trim();
   const name=document.getElementById('eh-name').value.trim();
   const amount=parseFloat(document.getElementById('eh-amount').value)||0;
+  const shares=parseFloat(document.getElementById('eh-shares').value)||0;
   const date=document.getElementById('eh-date').value||'';
   // 内联校验
   let hasErr=false;
@@ -2829,27 +2837,31 @@ function addExistingHolding(){
   document.getElementById('eh-amount').closest('.form-item').classList.toggle('has-error',!amount||amount<=0);
   if(searchEmpty){showToast('请先搜索并选择一只基金','error');autoFadeErrors();return;}
   if(!amount||amount<=0){showToast('请填写买入金额','error');autoFadeErrors();return;}
-  // 从navCache获取当前净值作为买入成本
+  // 从navCache获取当前净值（优先使用确认净值dwjz）
   const nav = navCache[code];
-  const curNav = nav ? parseFloat(nav.gsz)||1 : 1;
+  const curNav = nav ? parseFloat(nav.dwjz)||parseFloat(nav.gsz)||1 : 1;
   const existing = existingHoldings.find(h=>h.code===code);
   if(existing){
     // 加仓：合并到已有持仓
     const oldAmount = existing.amount || 0;
     existing.amount = oldAmount + amount;
-    // 加权平均成本：(旧金额×旧净值 + 新金额×新净值) / 总金额... simplified: just update total amount
-    // If confirmed with shares, add estimated new shares
-    if(existing.shares && existing.shares > 0){
+    if(shares > 0){
+      // 用户输入了份额，直接累加
+      existing.shares = (existing.shares || 0) + shares;
+      existing.cost = existing.amount / existing.shares;
+    } else if(existing.shares && existing.shares > 0){
+      // 已有份额，新买入没输入份额，用净值反推
       const newShares = curNav > 0 ? amount / curNav : 0;
       existing.shares += newShares;
-      existing.cost = existing.amount / existing.shares; // weighted average cost
+      existing.cost = existing.amount / existing.shares;
     }
-    existing.value = existing.amount; // will be recalculated on next render
+    existing.value = existing.shares && existing.shares > 0 ? existing.shares * curNav : existing.amount;
     FundDB.set('existingHoldings',existingHoldings); markHoldingsChanged();
     flashSaved('eh-section');
     renderExistingHoldings(); runHealthMonitor(); renderTodayOverview(); runSignalEngine();
     clearFundMatch('eh');
     document.getElementById('eh-amount').value='';
+    document.getElementById('eh-shares').value='';
     showToast(`已加仓 ¥${amount.toLocaleString()} 到「${name}」，总买入 ¥${existing.amount.toLocaleString()}`,'success');
     return;
   }
@@ -2864,12 +2876,18 @@ function addExistingHolding(){
   // 自动检测基金类型
   const fd = CURATED_FUNDS.find(f=>f.code===code);
   const type = fd ? fd.type : '股票型';
-  existingHoldings.push({code,name,amount,date:date||new Date().toISOString().slice(0,10),buyTime,status:'pending',confirmDate:confirmDateStr,type,cost:curNav,value:amount});
+  const newHolding = {code,name,amount,date:date||new Date().toISOString().slice(0,10),buyTime,status:'pending',confirmDate:confirmDateStr,type,cost:curNav,value:amount};
+  if(shares > 0){
+    newHolding.shares = shares;
+    newHolding.value = shares * curNav;
+  }
+  existingHoldings.push(newHolding);
   FundDB.set('existingHoldings',existingHoldings); markHoldingsChanged();
   flashSaved('eh-section');
   renderExistingHoldings(); runHealthMonitor(); renderTodayOverview(); runSignalEngine();
   clearFundMatch('eh');
   document.getElementById('eh-amount').value='';
+  document.getElementById('eh-shares').value='';
   document.getElementById('eh-date').valueAsDate=new Date();
 }
 // 手动确认持仓份额（支付宝已确认后点击更新）
@@ -3050,14 +3068,15 @@ function renderExistingHoldings(){
     // 状态不自动变更：到了确认日期时显示"待确认"提示用户手动确认
     // （因为实际确认时间以支付宝为准，工具无法自动获知）
     const nav=navCache[h.code];
-    // NAV回退策略：优先使用实时值，否则用上次记录的cost（买入净值），避免回退到1导致市值严重失真
-    const curNav=nav?parseFloat(nav.gsz)||(h.cost||0):(h.cost||0);
+    // 优先使用确认净值dwjz，其次使用估算净值gsz，最后用买入成本
+    const curNav=nav?parseFloat(nav.dwjz)||parseFloat(nav.gsz)||(h.cost||0):(h.cost||0);
     const cost=h.cost||curNav||0;
     if(h.shares && h.shares > 0){
-      // Confirmed: use exact shares × current nav
-      const navVal = nav ? parseFloat(nav.gsz)||(h.cost||0) : (h.cost||0);
+      // 有份额数据：使用份额×净值计算市值（最准确）
+      const navVal = nav ? parseFloat(nav.dwjz)||parseFloat(nav.gsz)||(h.cost||0) : (h.cost||0);
       h.value = navVal > 0 ? h.shares * navVal : (h.value||h.amount||0);
     } else {
+      // 无份额数据：用买入金额反推（不够准确）
       h.value=(h.amount && cost>0)?(h.amount/cost*curNav):(h.value||h.amount||0);
     }
   });
