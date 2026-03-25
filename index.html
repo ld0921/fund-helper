@@ -5512,6 +5512,19 @@ function runHealthMonitor(){
   document.getElementById('eh-date').valueAsDate=new Date();
   document.getElementById('dp-start').valueAsDate=new Date();
 
+  // 3.1 自动获取所有持仓基金的净值数据
+  if(existingHoldings.length > 0){
+    existingHoldings.forEach(h => {
+      fetchNav(h.code, data => {
+        if(data) {
+          navCache[h.code] = data;
+          FundDB.set('navCache', navCache);
+          renderExistingHoldings();
+        }
+      });
+    });
+  }
+
   // 3.2 数据迁移：如果旧 holdings 数组有数据，合并到 existingHoldings
   if(holdings && holdings.length){
     let migrated=0;
