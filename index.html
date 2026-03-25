@@ -3048,15 +3048,24 @@ async function refreshHoldingsNav(){
   if(!existingHoldings.length){ showToast('暂无持仓数据','info'); return; }
   const btn = document.getElementById('refresh-nav-btn');
   if(btn){ btn.textContent='⏳ 刷新中...'; btn.disabled=true; }
+
+  // 1. 清理错误的navCache数据（键与fundcode不匹配）
+  Object.keys(navCache).forEach(key => {
+    if(navCache[key] && navCache[key].fundcode && navCache[key].fundcode !== key){
+      console.warn(`[NavCache] 检测到错误数据: key=${key}, fundcode=${navCache[key].fundcode}，已删除`);
+      delete navCache[key];
+    }
+  });
+
   let done = 0;
   const total = existingHoldings.length;
 
   for(const h of existingHoldings){
-    // 1. 从fundgz获取实时估算数据
+    // 2. 从fundgz获取实时估算数据
     fetchNav(h.code, async data => {
       if(data) navCache[h.code] = data;
 
-      // 2. 从东方财富网获取最新确认净值（补充）
+      // 3. 从东方财富网获取最新确认净值（补充）
       try {
         const eastmoneyNav = await fetchLatestNavFromEastmoney(h.code);
         if(eastmoneyNav && navCache[h.code]){
@@ -3074,7 +3083,7 @@ async function refreshHoldingsNav(){
         console.error(`[${h.code}] 东方财富网数据获取异常:`, e);
       }
 
-      // 3. 在东方财富网数据合并完成后才计数和保存
+      // 4. 在东方财富网数据合并完成后才计数和保存
       done++;
       if(done === total){
         FundDB.set('navCache', navCache);
