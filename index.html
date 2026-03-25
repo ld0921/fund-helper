@@ -2439,7 +2439,8 @@ function renderMarketGrid(){
     list.sort((a,b)=>calcDCAScore(b)-calcDCAScore(a));
   }
   const gridEl=document.getElementById('market-grid');
-  const FOLD_LIMIT = 3; // 默认每组显示3只
+  const isMobile = window.innerWidth <= 600;
+  const FOLD_LIMIT = isMobile ? 3 : 6; // 手机3只，网页6只（填满2行）
 
   if(!list.length){
     gridEl.innerHTML='<div class="empty">暂无该类别基金</div>';
