@@ -1927,11 +1927,11 @@ async function fetchLatestNavFromEastmoney(code){
       const latestNav = latest.y;
       const previousNav = previous.y;
       const latestDate = new Date(latest.x).toISOString().slice(0,10);
-      const changePercent = ((latestNav - previousNav) / previousNav * 100).toFixed(2);
+      const changePercent = ((latestNav - previousNav) / previousNav * 100);  // 不四舍五入，保持完整精度
       return {
         dwjz: latestNav,
         gsz: latestNav,  // 确认净值，设为与dwjz相同
-        gszzl: changePercent,  // 实际涨跌幅
+        gszzl: changePercent.toString(),  // 转为字符串保持精度
         jzrq: latestDate
       };
     }
