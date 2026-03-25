@@ -3058,7 +3058,9 @@ function renderExistingHoldings(){
   const empty=document.getElementById('eh-empty');
   const summary=document.getElementById('eh-summary');
   if(!existingHoldings.length){
-    list.style.display='none'; empty.style.display='block'; summary.style.display='none'; return;
+    list.style.display='none'; empty.style.display='block'; summary.style.display='none';
+    renderPortfolioOverview([], 0, 0, 0, 0); // 清空收益总览
+    return;
   }
   empty.style.display='none'; list.style.display='block';
   const today=new Date();
