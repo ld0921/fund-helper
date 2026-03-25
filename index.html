@@ -1974,13 +1974,14 @@ async function drainEastmoneyQ(){
       const latest = localData[localData.length - 1];
       const dailyIncome = latest[1];
       const latestDate = new Date(latest[0]).toISOString().slice(0,10);
+      const today = new Date().toISOString().slice(0,10);
 
       eastmoneyBusy = false;
       setTimeout(drainEastmoneyQ, 100);
       resolve({
         dwjz: 1.0000,
         gsz: 1.0000,
-        gszzl: (dailyIncome / 100).toString(),
+        gszzl: latestDate === today ? (dailyIncome / 100).toString() : '0',
         jzrq: latestDate
       });
       return;
