@@ -2848,14 +2848,16 @@ function addExistingHolding(){
     if(shares > 0){
       // 用户输入了份额，直接累加
       existing.shares = (existing.shares || 0) + shares;
-      existing.cost = existing.amount / existing.shares;
+      existing.cost = existing.amount / existing.shares; // 加权平均成本
     } else if(existing.shares && existing.shares > 0){
       // 已有份额，新买入没输入份额，用净值反推
       const newShares = curNav > 0 ? amount / curNav : 0;
       existing.shares += newShares;
       existing.cost = existing.amount / existing.shares;
     }
-    existing.value = existing.shares && existing.shares > 0 ? existing.shares * curNav : existing.amount;
+    // 使用当前确认净值计算市值
+    const currentNav = nav ? parseFloat(nav.dwjz)||parseFloat(nav.gsz)||(existing.cost||curNav) : (existing.cost||curNav);
+    existing.value = existing.shares && existing.shares > 0 ? existing.shares * currentNav : existing.amount;
     FundDB.set('existingHoldings',existingHoldings); markHoldingsChanged();
     flashSaved('eh-section');
     renderExistingHoldings(); runHealthMonitor(); renderTodayOverview(); runSignalEngine();
@@ -2876,10 +2878,18 @@ function addExistingHolding(){
   // 自动检测基金类型
   const fd = CURATED_FUNDS.find(f=>f.code===code);
   const type = fd ? fd.type : '股票型';
-  const newHolding = {code,name,amount,date:date||new Date().toISOString().slice(0,10),buyTime,status:'pending',confirmDate:confirmDateStr,type,cost:curNav,value:amount};
+  // 计算买入成本净值
+  let buyCost = curNav; // 默认使用当前净值估算
+  if(shares > 0){
+    // 如果用户输入了份额，反推真实买入净值
+    buyCost = amount / shares;
+  }
+  const newHolding = {code,name,amount,date:date||new Date().toISOString().slice(0,10),buyTime,status:'pending',confirmDate:confirmDateStr,type,cost:buyCost,value:amount};
   if(shares > 0){
     newHolding.shares = shares;
-    newHolding.value = shares * curNav;
+    // 使用当前确认净值计算市值
+    const currentNav = nav ? parseFloat(nav.dwjz)||parseFloat(nav.gsz)||buyCost : buyCost;
+    newHolding.value = shares * currentNav;
   }
   existingHoldings.push(newHolding);
   FundDB.set('existingHoldings',existingHoldings); markHoldingsChanged();
