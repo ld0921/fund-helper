@@ -3167,34 +3167,58 @@ function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, totalP
 
   el.style.display='';
   el.innerHTML=`
-    <div class="today-overview" style="margin-bottom:14px">
-      <div style="font-size:14px;font-weight:600;margin-bottom:12px">💰 收益总览</div>
-      <div class="ov-row" style="margin-bottom:12px">
-        <div class="ov-item"><div class="ov-val" style="color:var(--primary)">¥${totalVal.toLocaleString('zh-CN',{maximumFractionDigits:0})}</div><div class="ov-label">总市值</div></div>
-        <div class="ov-item"><div class="ov-val ${totalPnl>=0?'up':'down'}">${totalPnl>=0?'+':''}¥${Math.abs(totalPnl).toLocaleString('zh-CN',{maximumFractionDigits:0})}</div><div class="ov-label">累计盈亏</div></div>
-        <div class="ov-item"><div class="ov-val ${totalPnl>=0?'up':'down'}">${totalPnl>=0?'+':''}${totalPnlPct.toFixed(1)}%</div><div class="ov-label">收益率</div></div>
-        <div class="ov-item"><div class="ov-val ${todayPnl>=0?'up':'down'}">${todayPnl>=0?'+':''}¥${Math.abs(todayPnl).toLocaleString('zh-CN',{maximumFractionDigits:0})}</div><div class="ov-label">今日${navCount>0?'':'(待刷新)'}</div></div>
+    <div class="card">
+      <div class="card-title">
+        <span class="icon icon-green">💰</span>收益总览
       </div>
-      ${hasEstimate?`<div class="ov-row" style="margin-bottom:12px;padding-top:8px;border-top:1px solid rgba(0,0,0,.06)">
-        <div class="ov-item"><div class="ov-val" style="font-size:15px" class="${weekPnl>=0?'up':'down'}">${weekPnl>=0?'+':''}¥${Math.abs(weekPnl).toLocaleString('zh-CN',{maximumFractionDigits:0})}</div><div class="ov-label">近一周(估)</div></div>
-        <div class="ov-item"><div class="ov-val" style="font-size:15px" class="${monthPnl>=0?'up':'down'}">${monthPnl>=0?'+':''}¥${Math.abs(monthPnl).toLocaleString('zh-CN',{maximumFractionDigits:0})}</div><div class="ov-label">近一月(估)</div></div>
-        <div class="ov-item"><div class="ov-val" style="font-size:15px" class="${yearPnl>=0?'up':'down'}">${yearPnl>=0?'+':''}¥${Math.abs(yearPnl).toLocaleString('zh-CN',{maximumFractionDigits:0})}</div><div class="ov-label">近一年(估)</div></div>
+      <div class="stat-row" style="margin-bottom:14px">
+        <div class="stat-card">
+          <div class="stat-val" style="color:var(--primary)">¥${totalVal.toLocaleString('zh-CN',{maximumFractionDigits:0})}</div>
+          <div class="stat-label">总市值</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-val ${totalPnl>=0?'up':'down'}">${totalPnl>=0?'+':''}¥${Math.abs(totalPnl).toLocaleString('zh-CN',{maximumFractionDigits:0})}</div>
+          <div class="stat-label">累计盈亏</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-val ${totalPnl>=0?'up':'down'}">${totalPnl>=0?'+':''}${totalPnlPct.toFixed(1)}%</div>
+          <div class="stat-label">收益率</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-val ${todayPnl>=0?'up':'down'}">${todayPnl>=0?'+':''}¥${Math.abs(todayPnl).toLocaleString('zh-CN',{maximumFractionDigits:0})}</div>
+          <div class="stat-label">今日${navCount>0?'':'(待刷新)'}</div>
+        </div>
+      </div>
+      ${hasEstimate?`<div class="stat-row" style="margin-bottom:14px">
+        <div class="stat-card">
+          <div class="stat-val ${weekPnl>=0?'up':'down'}">${weekPnl>=0?'+':''}¥${Math.abs(weekPnl).toLocaleString('zh-CN',{maximumFractionDigits:0})}</div>
+          <div class="stat-label">近一周(估)</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-val ${monthPnl>=0?'up':'down'}">${monthPnl>=0?'+':''}¥${Math.abs(monthPnl).toLocaleString('zh-CN',{maximumFractionDigits:0})}</div>
+          <div class="stat-label">近一月(估)</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-val ${yearPnl>=0?'up':'down'}">${yearPnl>=0?'+':''}¥${Math.abs(yearPnl).toLocaleString('zh-CN',{maximumFractionDigits:0})}</div>
+          <div class="stat-label">近一年(估)</div>
+        </div>
       </div>`:''}
-      <div style="border-top:1px solid rgba(0,0,0,.06);padding-top:10px">
-        <div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px">各基金收益明细</div>
+      <div class="divider"></div>
+      <div style="font-size:13px;font-weight:600;margin-bottom:10px">各基金收益明细</div>
+      <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden">
         ${details.map(d=>{
           const pctStr=d.cost>0?`${d.pct>=0?'+':''}${d.pct.toFixed(1)}%`:'--';
           const pnlStr=d.cost>0?`${d.pnl>=0?'+':''}¥${Math.abs(d.pnl).toLocaleString('zh-CN',{maximumFractionDigits:0})}`:'--';
           const todayStr=d.todayChg!==null?`<span style="font-size:11px;color:${d.todayChg>=0?'var(--danger)':'var(--success)'}">${d.todayChg>=0?'+':''}${d.todayChg}%</span>`:'';
           const srcTag=d.source==='dca'?'<span style="font-size:9px;padding:0 4px;border-radius:2px;background:#f9f0ff;color:#722ed1;margin-left:3px">定投</span>':'';
-          return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(0,0,0,.04)">
+          return `<div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--border)">
             <div style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:500">${escHtml(d.name)}${srcTag} ${todayStr}</div>
             <div style="text-align:right;flex-shrink:0">
               <div style="font-size:13px;font-weight:600" class="${d.pnl>=0?'up':'down'}">${pctStr}</div>
               <div style="font-size:11px;color:var(--muted)">${pnlStr}</div>
             </div>
           </div>`;
-        }).join('')}
+        }).join('').replace(/border-bottom:1px solid var\(--border\)">$/,'">').replace(/border-bottom:1px solid var\(--border\)">(?![\s\S]*border-bottom:1px solid var\(--border\)">)/,'">')}
       </div>
     </div>`;
 }
