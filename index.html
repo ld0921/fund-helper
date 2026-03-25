@@ -959,6 +959,7 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
       <span class="icon icon-red">💼</span>我的持仓
       <span class="card-desc" style="font-size:12px;color:var(--muted);font-weight:400;margin-left:4px">记录在支付宝购买的基金，自动跟踪市值和盈亏</span>
       <span class="card-actions" style="margin-left:auto">
+        <button class="btn btn-ghost btn-sm" id="refresh-nav-btn" onclick="refreshHoldingsNav()">🔄 刷新净值</button>
         <button class="btn btn-ghost btn-sm" onclick="importFromDcaPlans()">从定投导入</button>
       </span>
     </div>
@@ -3004,6 +3005,32 @@ function removeExistingHolding(i){
   const code = h ? h.code : null;
   existingHoldings.splice(i,1);
   FundDB.set('existingHoldings',existingHoldings); markHoldingsChanged();
+  // 同时删除该基金的定投计划
+  if(code){ dcaPlans = dcaPlans.filter(d=>d.code!==code); FundDB.set('dcaPlans',dcaPlans); }
+  renderExistingHoldings(); renderDcaPlans(); runHealthMonitor(); renderTodayOverview(); runSignalEngine();
+}
+// 刷新所有持仓基金的净值数据
+function refreshHoldingsNav(){
+  if(!existingHoldings.length){ showToast('暂无持仓数据','info'); return; }
+  const btn = document.getElementById('refresh-nav-btn');
+  if(btn){ btn.textContent='⏳ 刷新中...'; btn.disabled=true; }
+  let done = 0;
+  const total = existingHoldings.length;
+  existingHoldings.forEach(h => {
+    fetchNav(h.code, data => {
+      done++;
+      if(data) {
+        navCache[h.code] = data;
+        FundDB.set('navCache', navCache);
+      }
+      if(done === total){
+        renderExistingHoldings(); runHealthMonitor(); renderTodayOverview();
+        if(btn){ btn.textContent='🔄 刷新净值'; btn.disabled=false; }
+        showToast(`已刷新 ${total} 只基金净值`,'success');
+      }
+    });
+  });
+}
   // 联动删除同code的定投计划
   if(code){
     const dcaBefore = dcaPlans.length;
@@ -3124,12 +3151,14 @@ function renderExistingHoldings(){
     const sourceTag = h.source==='dca' ? '<span style="font-size:10px;padding:1px 5px;border-radius:3px;background:#f9f0ff;color:#722ed1">定投</span>' : '';
     const nav = navCache[h.code];
     const todayChg = nav ? parseFloat(nav.gszzl)||0 : null;
+    // 计算今日盈亏金额
+    const todayPnl = todayChg!==null && h.value ? h.value * todayChg / 100 : null;
     const _now=new Date(),_h=_now.getHours(),_m=_now.getMinutes(),_d=_now.getDay();
     const _isMorn=(_h===9&&_m>=30)||_h===10||(_h===11&&_m<30);
     const _isAftn=_h===13||_h===14;
     const _isEst=_d>=1&&_d<=5&&(_isMorn||_isAftn);
     const estTag=_isEst?'<span style="font-size:9px;color:var(--muted);margin-left:2px" title="盘中估算">估</span>':'';
-    const chgHtml = todayChg!==null ? `<span style="font-size:12px;font-weight:600;color:${todayChg>=0?'var(--danger)':'var(--success)'}">${todayChg>=0?'+':''}${todayChg}%${estTag}</span>` : '';
+    const chgHtml = todayChg!==null ? `<div style="text-align:right"><span style="font-size:12px;font-weight:600;color:${todayChg>=0?'var(--danger)':'var(--success)'}">${todayChg>=0?'+':''}${todayChg}%${estTag}</span><div style="font-size:11px;font-weight:600;color:${todayPnl>=0?'var(--danger)':'var(--success)'}">今日${todayPnl>=0?'+':''}¥${Math.abs(todayPnl).toFixed(2)}</div></div>` : '';
     const isPending = h.status!=='confirmed';
     return `<div class="eh-row" ${isPending?'style="opacity:.65;background:#fafafa"':''}>
       <div class="eh-top">
