@@ -2880,11 +2880,13 @@ function addExistingHolding(){
   const type = fd ? fd.type : '股票型';
   // 计算买入成本净值
   let buyCost = curNav; // 默认使用当前净值估算
+  let initialStatus = 'pending'; // 默认待确认
   if(shares > 0){
-    // 如果用户输入了份额，反推真实买入净值
+    // 如果用户输入了份额，反推真实买入净值，并直接设为已确认
     buyCost = amount / shares;
+    initialStatus = 'confirmed';
   }
-  const newHolding = {code,name,amount,date:date||new Date().toISOString().slice(0,10),buyTime,status:'pending',confirmDate:confirmDateStr,type,cost:buyCost,value:amount};
+  const newHolding = {code,name,amount,date:date||new Date().toISOString().slice(0,10),buyTime,status:initialStatus,confirmDate:confirmDateStr,type,cost:buyCost,value:amount};
   if(shares > 0){
     newHolding.shares = shares;
     // 使用当前确认净值计算市值
@@ -2894,7 +2896,11 @@ function addExistingHolding(){
   existingHoldings.push(newHolding);
   FundDB.set('existingHoldings',existingHoldings); markHoldingsChanged();
   flashSaved('eh-section');
-  renderExistingHoldings(); runHealthMonitor(); renderTodayOverview(); runSignalEngine();
+  // 立即获取该基金的净值数据，确保市值准确
+  fetchNav(code, data => {
+    if(data) navCache[code] = data;
+    renderExistingHoldings(); runHealthMonitor(); renderTodayOverview(); runSignalEngine();
+  });
   clearFundMatch('eh');
   document.getElementById('eh-amount').value='';
   document.getElementById('eh-shares').value='';
