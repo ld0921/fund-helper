@@ -516,7 +516,7 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
   </div>
   <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
     <!-- 信号通知铃铛 -->
-    <button id="signal-bell" onclick="openSignalModal()" style="position:relative;background:none;border:none;color:#fff;font-size:20px;cursor:pointer;padding:4px;-webkit-tap-highlight-color:transparent;display:none">
+    <button id="signal-bell" onclick="openSignalModal()" style="position:relative;background:none;border:none;color:#fff;font-size:20px;cursor:pointer;padding:4px;-webkit-tap-highlight-color:transparent">
       🔔<span id="signal-badge" style="display:none;position:absolute;top:-2px;right:-4px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:#ff4d4f;color:#fff;font-size:10px;font-weight:700;line-height:16px;text-align:center"></span>
     </button>
     <!-- 用户头像 -->
@@ -1284,6 +1284,9 @@ document.addEventListener('click',function(e){
 function openSignalModal(){
   const modal=document.getElementById('signal-modal');
   if(modal){ modal.style.display='flex'; requestAnimationFrame(()=>modal.classList.add('show')); }
+  // 查看后清除角标
+  const badge=document.getElementById('signal-badge');
+  if(badge) badge.style.display='none';
 }
 function closeSignalModal(){
   const modal=document.getElementById('signal-modal');
@@ -2435,7 +2438,42 @@ function renderMarketGrid(){
     if(currentCat!=='money') list=list.filter(f=>f.cat!=='money');
     list.sort((a,b)=>calcDCAScore(b)-calcDCAScore(a));
   }
-  document.getElementById('market-grid').innerHTML=list.length?list.map(f=>buildFundCard(f,currentSortMode)).join(''):'<div class="empty">暂无该类别基金</div>';
+  const gridEl=document.getElementById('market-grid');
+  const FOLD_LIMIT = 3; // 默认每组显示3只
+
+  if(!list.length){
+    gridEl.innerHTML='<div class="empty">暂无该类别基金</div>';
+  } else if(currentCat==='all' && currentSortMode==='score'){
+    // 全部+综合评分模式：按类别分组折叠
+    const CAT_ORDER=['active','index','bond','money','qdii'];
+    const CAT_LABELS={active:'主动权益',index:'指数基金',bond:'债券基金',money:'货币基金',qdii:'QDII海外'};
+    const groups={};
+    list.forEach(f=>{ if(!groups[f.cat]) groups[f.cat]=[]; groups[f.cat].push(f); });
+    gridEl.innerHTML=CAT_ORDER.filter(c=>groups[c]&&groups[c].length).map(cat=>{
+      const funds=groups[cat];
+      const visible=funds.slice(0,FOLD_LIMIT);
+      const hidden=funds.slice(FOLD_LIMIT);
+      return `<div style="margin-bottom:16px">
+        <div style="font-size:14px;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:6px">
+          ${CAT_LABELS[cat]||cat} <span style="font-size:12px;color:var(--muted);font-weight:400">(${funds.length}只)</span>
+        </div>
+        <div class="fund-grid">${visible.map(f=>buildFundCard(f,currentSortMode)).join('')}</div>
+        ${hidden.length?`<div class="fund-grid" id="fold-${cat}" style="display:none">${hidden.map(f=>buildFundCard(f,currentSortMode)).join('')}</div>
+        <div style="text-align:center;margin-top:8px" id="fold-btn-${cat}">
+          <button class="btn btn-ghost btn-sm" onclick="document.getElementById('fold-${cat}').style.display='';this.parentElement.style.display='none'" style="font-size:12px">展开更多 ${hidden.length} 只 ▼</button>
+        </div>`:''}
+      </div>`;
+    }).join('');
+  } else {
+    // 筛选了具体类别或定投模式：直接显示，超过6只也折叠
+    const visible=list.slice(0,FOLD_LIMIT*2);
+    const hidden=list.slice(FOLD_LIMIT*2);
+    gridEl.innerHTML=`<div class="fund-grid">${visible.map(f=>buildFundCard(f,currentSortMode)).join('')}</div>
+    ${hidden.length?`<div class="fund-grid" id="fold-cat-list" style="display:none">${hidden.map(f=>buildFundCard(f,currentSortMode)).join('')}</div>
+    <div style="text-align:center;margin-top:8px" id="fold-btn-cat-list">
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('fold-cat-list').style.display='';this.parentElement.style.display='none'" style="font-size:12px">展开更多 ${hidden.length} 只 ▼</button>
+    </div>`:''}`;
+  }
   // 更新标题中的基金数量
   const titleEl=document.getElementById('curated-title');
   const discovered=CURATED_FUNDS.filter(f=>f.discovered).length;
@@ -4949,12 +4987,14 @@ function renderSignalBanner(signals){
   const listEl = document.getElementById('signal-modal-list');
 
   if(!signals.length){
-    if(bell) bell.style.display = 'none';
+    // 无信号：铃铛保留，隐藏角标，清空列表
+    if(badge) badge.style.display = 'none';
+    if(titleEl) titleEl.textContent = '📡 智能监控 · 暂无信号';
+    if(listEl) listEl.innerHTML = '<div style="padding:40px 20px;text-align:center;color:var(--muted);font-size:13px">✅ 当前没有需要关注的信号<br>系统会持续监控您的持仓和市场动态</div>';
     return;
   }
 
-  // 显示铃铛 + 角标
-  if(bell) bell.style.display = '';
+  // 显示角标数字
   if(badge){ badge.style.display = ''; badge.textContent = signals.length > 99 ? '99+' : signals.length; }
 
   const dangerCount = signals.filter(s=>s.type==='danger'||s.type==='warning').length;
