@@ -1921,10 +1921,19 @@ function drainQ(){
 async function fetchLatestNavFromEastmoney(code){
   try {
     await loadScript(`https://fund.eastmoney.com/pingzhongdata/${code}.js?v=${Date.now()}`, 10000);
-    if(window.Data_netWorthTrend && window.Data_netWorthTrend.length > 0){
+    if(window.Data_netWorthTrend && window.Data_netWorthTrend.length > 1){
       const latest = window.Data_netWorthTrend[window.Data_netWorthTrend.length - 1];
+      const previous = window.Data_netWorthTrend[window.Data_netWorthTrend.length - 2];
+      const latestNav = latest.y;
+      const previousNav = previous.y;
       const latestDate = new Date(latest.x).toISOString().slice(0,10);
-      return { dwjz: latest.y, jzrq: latestDate };
+      const changePercent = ((latestNav - previousNav) / previousNav * 100).toFixed(2);
+      return {
+        dwjz: latestNav,
+        gsz: latestNav,  // 确认净值，设为与dwjz相同
+        gszzl: changePercent,  // 实际涨跌幅
+        jzrq: latestDate
+      };
     }
   } catch(e){ console.warn(`[Eastmoney] 获取${code}净值失败:`, e); }
   return null;
@@ -3036,9 +3045,11 @@ async function refreshHoldingsNav(){
       // 2. 从东方财富网获取最新确认净值（补充）
       const eastmoneyNav = await fetchLatestNavFromEastmoney(h.code);
       if(eastmoneyNav && navCache[h.code]){
-        // 如果东方财富网的净值日期更新，使用它
+        // 如果东方财富网的净值日期更新，使用它的完整数据
         if(!navCache[h.code].jzrq || eastmoneyNav.jzrq >= navCache[h.code].jzrq){
           navCache[h.code].dwjz = eastmoneyNav.dwjz;
+          navCache[h.code].gsz = eastmoneyNav.gsz;
+          navCache[h.code].gszzl = eastmoneyNav.gszzl;
           navCache[h.code].jzrq = eastmoneyNav.jzrq;
         }
       }
