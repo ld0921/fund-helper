@@ -223,8 +223,8 @@ tr:last-child td{border-bottom:none}
   .step-item{padding:10px;gap:8px}
 }
 /* ── 持仓列表卡片 ── */
-.eh-row{padding:12px 14px;border-bottom:1px solid #f5f5f5}
-.eh-row:last-child{border-bottom:none}
+.eh-row{padding:14px 16px;border-bottom:1px solid #f5f5f5;margin-bottom:8px;border-radius:8px;background:#fafafa}
+.eh-row:last-child{border-bottom:none;margin-bottom:0}
 .eh-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
 .eh-fund-name{font-size:14px;font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .eh-stats{display:flex;gap:0;margin-bottom:6px;border-radius:8px;overflow:hidden;border:1px solid var(--border)}
@@ -950,6 +950,12 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
     <button class="chip" onclick="scrollToSection('dp-section')">定投</button>
   </div>
 
+  <!-- 刷新净值提示 -->
+  <div style="margin:12px 0;padding:12px;background:linear-gradient(135deg,#fff7e6,#fffbe6);border:1px solid #ffd666;border-radius:8px;text-align:center">
+    <div style="font-size:13px;color:#ad6800;margin-bottom:8px">💡 点击下方按钮刷新净值，获取最新收益数据</div>
+    <button class="btn btn-primary" id="refresh-nav-btn" onclick="refreshHoldingsNav()" style="font-size:14px;padding:10px 24px">🔄 刷新净值</button>
+  </div>
+
   <!-- 收益总览（有持仓时显示） -->
   <div id="portfolio-overview" style="display:none"></div>
 
@@ -959,7 +965,6 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
       <span class="icon icon-red">💼</span>我的持仓
       <span class="card-desc" style="font-size:12px;color:var(--muted);font-weight:400;margin-left:4px">记录在支付宝购买的基金，自动跟踪市值和盈亏</span>
       <span class="card-actions" style="margin-left:auto">
-        <button class="btn btn-ghost btn-sm" id="refresh-nav-btn" onclick="refreshHoldingsNav()">🔄 刷新净值</button>
         <button class="btn btn-ghost btn-sm" onclick="importFromDcaPlans()">从定投导入</button>
       </span>
     </div>
@@ -1796,6 +1801,7 @@ function renderAll(){
 let currentCat = 'all';
 let currentSortMode = 'score'; // 'score' or 'dca'
 let portfolioPieInst = null, sipChartInst = null;
+let navRefreshed = false; // 标记是否已刷新净值数据
 
 // ═══════════════ 标签切换 ═══════════════
 // ═══════════════ 今日概览 ═══════════════
@@ -3134,6 +3140,7 @@ async function refreshHoldingsNav(){
       // 4. 在东方财富网数据合并完成后才计数和保存
       done++;
       if(done === total){
+        navRefreshed = true;
         FundDB.set('navCache', navCache);
         renderExistingHoldings(); runHealthMonitor(); renderTodayOverview();
         if(btn){ btn.textContent='🔄 刷新净值'; btn.disabled=false; }
@@ -3254,7 +3261,7 @@ function renderExistingHoldings(){
         : `<span style="font-size:11px;color:var(--warning)">⏳确认中 预计${h.confirmDate||'--'}确认<br><span style="font-size:10px;color:var(--muted)">确认后不计入总资产，请耐心等待</span></span>`);
     const sourceTag = h.source==='dca' ? '<span style="font-size:10px;padding:1px 5px;border-radius:3px;background:#f9f0ff;color:#722ed1">定投</span>' : '';
     const nav = navCache[h.code];
-    const todayChg = nav ? parseFloat(nav.gszzl)||0 : null;
+    const todayChg = navRefreshed && nav ? parseFloat(nav.gszzl)||0 : null;
     // 计算今日盈亏金额：当前市值 - 昨日市值
     const todayPnl = todayChg!==null && h.value ? h.value * todayChg / (100 + todayChg) : null;
     const _now=new Date(),_h=_now.getHours(),_m=_now.getMinutes(),_d=_now.getDay();
@@ -3262,7 +3269,7 @@ function renderExistingHoldings(){
     const _isAftn=_h===13||_h===14;
     const _isEst=_d>=1&&_d<=5&&(_isMorn||_isAftn);
     const estTag=_isEst?'<span style="font-size:9px;color:var(--muted);margin-left:2px" title="盘中估算">估</span>':'';
-    const chgHtml = todayChg!==null ? `<div style="text-align:right"><span style="font-size:12px;font-weight:600;color:${todayChg>=0?'var(--danger)':'var(--success)'}">${todayChg>=0?'+':''}${parseFloat(todayChg).toFixed(2)}%${estTag}</span>${todayPnl!==null?`<div style="font-size:11px;font-weight:600;color:${todayPnl>=0?'var(--danger)':'var(--success)'}">今日${todayPnl>=0?'+':''}¥${Math.abs(todayPnl).toFixed(2)}</div>`:''}</div>` : '';
+    const chgHtml = todayChg!==null ? `<div style="text-align:right;padding:4px 8px;background:${todayChg>=0?'#fff1f0':'#f6ffed'};border-radius:6px;border:1px solid ${todayChg>=0?'#ffccc7':'#b7eb8f'}"><span style="font-size:12px;font-weight:600;color:${todayChg>=0?'#cf1322':'#389e0d'}">${todayChg>=0?'+':''}${parseFloat(todayChg).toFixed(2)}%${estTag}</span>${todayPnl!==null?`<div style="font-size:11px;font-weight:600;color:${todayPnl>=0?'#cf1322':'#389e0d'};margin-top:2px">${todayPnl>=0?'+':''}¥${Math.abs(todayPnl).toFixed(2)}</div>`:''}</div>` : '';
     const isPending = h.status!=='confirmed';
     return `<div class="eh-row" ${isPending?'style="opacity:.65;background:#fafafa"':''}>
       <div class="eh-top">
@@ -3275,8 +3282,8 @@ function renderExistingHoldings(){
         ${fd?`<span style="font-size:11px;color:var(--muted)">${escHtml(h.type||fd.type)}</span>`:''}
       </div>
       <div class="eh-stats">
-        <div class="eh-stat"><div class="eh-stat-val">¥${(h.amount||0).toLocaleString('zh-CN',{maximumFractionDigits:0})}</div><div class="eh-stat-lbl">买入成本</div></div>
-        <div class="eh-stat"><div class="eh-stat-val" style="color:var(--primary)">¥${(h.value||0).toLocaleString('zh-CN',{maximumFractionDigits:0})}</div><div class="eh-stat-lbl">当前市值</div></div>
+        <div class="eh-stat"><div class="eh-stat-val">¥${(h.amount||0).toLocaleString('zh-CN',{minimumFractionDigits:0,maximumFractionDigits:2})}</div><div class="eh-stat-lbl">买入成本</div></div>
+        <div class="eh-stat"><div class="eh-stat-val" style="color:var(--primary)">¥${(h.value||0).toLocaleString('zh-CN',{minimumFractionDigits:0,maximumFractionDigits:2})}</div><div class="eh-stat-lbl">当前市值</div></div>
         <div class="eh-stat"><div class="eh-stat-val ${pnlAmt!=null?(pnlAmt>=0?'up':'down'):''}">
           ${pnlAmt!=null?`${pnlAmt>=0?'+':''}${pnlPct}%`:'--'}</div><div class="eh-stat-lbl">盈亏</div></div>
       </div>
@@ -3305,11 +3312,13 @@ function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, totalP
 
   // 今日涨跌
   let todayPnl=0, navCount=0;
-  holdings.forEach(h=>{
-    const nav=navCache[h.code];
-    const chgPct=nav?(parseFloat(nav.gszzl)||0):0;
-    if(nav && h.value){ todayPnl+=(h.value||0)*chgPct/(100+chgPct); navCount++; }
-  });
+  if(navRefreshed){
+    holdings.forEach(h=>{
+      const nav=navCache[h.code];
+      const chgPct=nav?(parseFloat(nav.gszzl)||0):0;
+      if(nav && h.value){ todayPnl+=(h.value||0)*chgPct/(100+chgPct); navCount++; }
+    });
+  }
 
   // 估算本周/本月/本年收益（基于各基金1年收益率按比例折算）
   // 实际精确计算需要历史净值序列，这里用线性估算给用户参考
@@ -3357,8 +3366,8 @@ function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, totalP
           <div class="stat-label">收益率</div>
         </div>
         <div class="stat-card" style="min-width:110px;flex-shrink:0">
-          <div class="stat-val ${todayPnl>=0?'up':'down'}">${todayPnl>=0?'+':''}¥${Math.abs(todayPnl).toLocaleString('zh-CN',{maximumFractionDigits:0})}</div>
-          <div class="stat-label">今日${navCount>0?'':'(待刷新)'}</div>
+          <div class="stat-val ${navRefreshed?(todayPnl>=0?'up':'down'):''}">${navRefreshed?(todayPnl>=0?'+':'')+'¥'+Math.abs(todayPnl).toLocaleString('zh-CN',{maximumFractionDigits:0}):'--'}</div>
+          <div class="stat-label">今日${navRefreshed&&navCount>0?'':'(待刷新)'}</div>
         </div>
         ${hasEstimate?`<div class="stat-card" style="min-width:110px;flex-shrink:0">
           <div class="stat-val ${weekPnl>=0?'up':'down'}">${weekPnl>=0?'+':''}¥${Math.abs(weekPnl).toLocaleString('zh-CN',{maximumFractionDigits:0})}</div>
@@ -3417,6 +3426,14 @@ function computeRebalancePlan(targetPicks, newMoney){
   const totalPortfolio=existTotal+newMoney;
   const actions=[];
 
+  // 读取推荐历史，检测最近7天内推荐的基金
+  let recentRecommends = [];
+  try {
+    const history = JSON.parse(localStorage.getItem('recommendHistory') || '[]');
+    const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    recentRecommends = history.filter(h => new Date(h.date).getTime() > cutoff);
+  } catch(e){ console.warn('读取推荐历史失败:', e); }
+
   // 目标基金：检查是否已持有
   allPicks.forEach(pick=>{
     const targetAmt=Math.round(totalPortfolio*pick.pct/100);
@@ -3425,6 +3442,8 @@ function computeRebalancePlan(targetPicks, newMoney){
     const diff=targetAmt-currentAmt;
     const tol=Math.max(targetAmt*0.15,500); // 15%容忍带 or ¥500
     let action,actionAmt,actionDesc,actionColor;
+    // 修复：目标仓位为0时不显示"建议新买"
+    if(targetAmt === 0 && currentAmt === 0) return;
     if(currentAmt===0){
       action='buy'; actionAmt=targetAmt;
       actionDesc=`新建仓 ¥${targetAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
@@ -3437,12 +3456,38 @@ function computeRebalancePlan(targetPicks, newMoney){
       action='reduce'; actionAmt=Math.abs(diff);
       actionDesc=`减仓 ¥${Math.abs(diff).toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
       actionColor='act-reduce';
+
+      // 检测是否是最近推荐的基金需要大量减仓
+      const recentRec = recentRecommends.find(r => r.code === pick.code);
+      const reducePct = currentAmt > 0 ? (Math.abs(diff) / currentAmt * 100) : 0;
+      if(recentRec && reducePct > 20){
+        const daysSince = Math.floor((Date.now() - new Date(recentRec.date).getTime()) / (24*60*60*1000));
+        action = 'reduce_gentle'; // 标记为需要温和处理
+        actionDesc = `建议减仓 ¥${Math.abs(diff).toLocaleString('zh-CN',{maximumFractionDigits:0})}（${daysSince}天前推荐买入）`;
+      }
     } else {
       action='hold'; actionAmt=0;
       actionDesc='仓位合适，持有';
       actionColor='act-hold';
     }
-    actions.push({code:pick.code,name:pick.name,type:pick.type,cat:pick.cat,r1:pick.r1,currentAmt,targetAmt,action,actionAmt,actionDesc,actionColor,manager:pick.manager});
+
+    // 构建action对象
+    const actionObj = {code:pick.code,name:pick.name,type:pick.type,cat:pick.cat,r1:pick.r1,currentAmt,targetAmt,action,actionAmt,actionDesc,actionColor,manager:pick.manager};
+
+    // 如果是温和减仓，添加额外信息
+    if(action === 'reduce_gentle'){
+      const recentRec = recentRecommends.find(r => r.code === pick.code);
+      const daysSince = Math.floor((Date.now() - new Date(recentRec.date).getTime()) / (24*60*60*1000));
+      const reducePct = currentAmt > 0 ? (Math.abs(diff) / currentAmt * 100) : 0;
+      actionObj.gentleInfo = {
+        daysSince,
+        reducePct: Math.round(reducePct),
+        recommendAmt: recentRec.amt,
+        recommendDate: recentRec.date
+      };
+    }
+
+    actions.push(actionObj);
   });
 
   // 用户持有但不在目标中的基金
@@ -3489,14 +3534,14 @@ function computeRebalancePlan(targetPicks, newMoney){
     actions.push({code:h.code,name:h.name,type:fd?.type||'--',cat:fd?.cat||'other',r1:r1??'--',currentAmt:h.value,targetAmt:0,action,actionAmt,actionDesc,actionColor,manager:fd?.manager||'--'});
   });
 
-  // 优先级排序：卖出 → 减仓 → 新买 → 加仓 → 持有 → 卫星
-  const order={sell:0,reduce:1,buy:2,buy_more:3,hold:4,satellite:5};
+  // 优先级排序：卖出 → 减仓 → 温和减仓 → 新买 → 加仓 → 持有 → 卫星
+  const order={sell:0,reduce:1,reduce_gentle:1.5,buy:2,buy_more:3,hold:4,satellite:5};
   actions.sort((a,b)=>(order[a.action]??9)-(order[b.action]??9));
 
   const summary={
     existTotal, newMoney, totalPortfolio,
     sellAmt:  actions.filter(a=>a.action==='sell').reduce((s,a)=>s+a.actionAmt,0),
-    reduceAmt:actions.filter(a=>a.action==='reduce').reduce((s,a)=>s+a.actionAmt,0),
+    reduceAmt:actions.filter(a=>a.action==='reduce'||a.action==='reduce_gentle').reduce((s,a)=>s+a.actionAmt,0),
     buyAmt:   actions.filter(a=>['buy','buy_more'].includes(a.action)).reduce((s,a)=>s+a.actionAmt,0),
   };
   return {actions,summary};
@@ -3514,9 +3559,71 @@ function renderRebalancePlan(plan){
     <div class="rebal-sum-item"><div class="rebal-sum-val" style="color:var(--danger)">¥${releaseAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}</div><div class="rebal-sum-lbl">建议减持释放</div></div>
     <div class="rebal-sum-item"><div class="rebal-sum-val" style="color:var(--success)">¥${summary.buyAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}</div><div class="rebal-sum-lbl">建议买入总额</div></div>`;
 
-  const actionIcons={sell:'🔴',reduce:'🟠',buy:'🟢',buy_more:'🔵',hold:'⚪',satellite:'🟣'};
-  const actionLabels={sell:'建议卖出',reduce:'建议减仓',buy:'建议新买',buy_more:'建议加仓',hold:'建议持有',satellite:'观察持仓'};
-  document.getElementById('rebal-list').innerHTML=actions.map(a=>`
+  const actionIcons={sell:'🔴',reduce:'🟠',reduce_gentle:'🟡',buy:'🟢',buy_more:'🔵',hold:'⚪',satellite:'🟣'};
+  const actionLabels={sell:'建议卖出',reduce:'建议减仓',reduce_gentle:'温和调整',buy:'建议新买',buy_more:'建议加仓',hold:'建议持有',satellite:'观察持仓'};
+  document.getElementById('rebal-list').innerHTML=actions.map(a=>{
+    // 温和减仓：显示特殊UI
+    if(a.action === 'reduce_gentle' && a.gentleInfo){
+      const g = a.gentleInfo;
+      const riskP = document.getElementById('sp-risk')?.value || 'moderate';
+      const horizon = parseInt(document.getElementById('sp-horizon')?.value) || 5;
+      const riskNames = {conservative:'保守型',moderate:'稳健型',balanced:'平衡型',aggressive:'进取型'};
+
+      // 计算逐步调整的效果
+      const newMoney = parseFloat(document.getElementById('sp-amount')?.value) || 0;
+      const afterAmt = a.currentAmt; // 保持不变
+      const afterTotal = summary.existTotal + newMoney;
+      const afterPct = afterTotal > 0 ? (afterAmt / afterTotal * 100) : 0;
+
+      // 减仓原因分析
+      const reasons = [];
+      if(g.reducePct > 40) reasons.push(`当前${a.name}占总资产${Math.round(a.currentAmt/summary.existTotal*100)}%，建议降低到${Math.round(a.targetAmt/summary.totalPortfolio*100)}%`);
+      reasons.push(`您的投资期限为${horizon}年，${horizon<=2?'短期':'长期'}投资建议${a.cat==='money'?'降低货币基金配置':'调整配置结构'}`);
+      if(riskP !== 'conservative') reasons.push(`您的风险偏好为${riskNames[riskP]}，建议${a.cat==='money'?'增加权益类配置':'优化资产配置'}`);
+
+      return `
+        <div class="rebal-row" style="flex-direction:column;align-items:stretch;background:#fffbf0;border:1px solid #ffe58f;border-radius:10px;padding:14px;margin-bottom:8px">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+            <div style="width:88px;flex-shrink:0"><span class="rebal-action act-reduce">${actionIcons[a.action]} ${actionLabels[a.action]}</span></div>
+            <div class="rebal-fund" style="flex:1">
+              <div class="rebal-fund-name">${escHtml(a.name)}</div>
+              <div class="rebal-fund-meta">代码 ${escHtml(a.code)} · ${escHtml(a.type)} · ${g.daysSince}天前推荐买入 ¥${g.recommendAmt.toLocaleString()}</div>
+            </div>
+          </div>
+
+          <div style="background:#fff;border-radius:8px;padding:12px;margin-bottom:10px">
+            <div style="font-size:12px;font-weight:600;color:#ad6800;margin-bottom:6px">📊 减仓原因</div>
+            <div style="font-size:12px;color:#595959;line-height:1.7">${reasons.map(r=>`• ${r}`).join('<br>')}</div>
+          </div>
+
+          <div style="font-size:12px;font-weight:600;color:#ad6800;margin-bottom:8px">💡 两种调整方案</div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div style="background:#fff;border:1.5px solid #ffa39e;border-radius:8px;padding:10px">
+              <div style="font-size:12px;font-weight:600;color:#cf1322;margin-bottom:6px">方案A：立即减仓</div>
+              <div style="font-size:11px;color:#595959;line-height:1.6;margin-bottom:8px">
+                • 操作：赎回 ¥${a.actionAmt.toLocaleString()}<br>
+                • 优点：快速达到目标配置<br>
+                • 缺点：产生交易成本（赎回费约¥${Math.round(a.actionAmt*0.005)}-${Math.round(a.actionAmt*0.015)}）
+              </div>
+              <div style="font-size:11px;color:var(--muted)">适合：急需资金或市场环境剧变</div>
+            </div>
+
+            <div style="background:#f6ffed;border:1.5px solid #95de64;border-radius:8px;padding:10px">
+              <div style="font-size:12px;font-weight:600;color:#237804;margin-bottom:6px">方案B：逐步调整 ✓推荐</div>
+              <div style="font-size:11px;color:#595959;line-height:1.6;margin-bottom:8px">
+                • 操作：保持当前持仓不动，新资金不买此基金<br>
+                • 效果：占比将从${Math.round(a.currentAmt/summary.existTotal*100)}%降至${Math.round(afterPct)}%<br>
+                • 优点：无交易成本，平滑过渡
+              </div>
+              <div style="font-size:11px;color:var(--muted)">适合：正常情况（推荐）</div>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    // 普通action：使用原有渲染逻辑
+    return `
     <div class="rebal-row">
       <div style="width:88px;flex-shrink:0"><span class="rebal-action ${a.actionColor}">${actionIcons[a.action]} ${actionLabels[a.action]}</span></div>
       <div class="rebal-fund">
@@ -3530,7 +3637,7 @@ function renderRebalancePlan(plan){
         <div class="rebal-amt"><div class="rebal-amt-val" style="color:${a.action==='sell'||a.action==='reduce'?'var(--danger)':a.action==='buy'||a.action==='buy_more'?'var(--success)':'var(--muted)'}">${a.actionAmt>0?(a.action==='sell'||a.action==='reduce'?'-':'+')+'¥'+a.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0}):'--'}</div><div class="rebal-amt-lbl">调仓金额</div></div>
       </div>
       <div class="rebal-op" style="font-size:12px;color:var(--muted);min-width:120px">${escHtml(a.actionDesc)}</div>
-    </div>`).join('');
+    </div>`}).join('');
 }
 
 // ═══════════════ 面板1: AI智能组合规划 ═══════════════
@@ -4519,6 +4626,30 @@ function _doGenerate(shouldScroll){
   document.getElementById('analysis-time').textContent=Object.keys(navCache).length>0?`· 已融合${Object.keys(navCache).length}只基金实时净值`:'· 建议先刷新净值获取实时数据';
   document.getElementById('portfolio-result').style.display='block';
   if(shouldScroll) setTimeout(()=>document.getElementById('plan-summary').scrollIntoView({behavior:'smooth',block:'start'}),100);
+
+  // 记录推荐历史（用于检测最近推荐的基金）
+  try {
+    const newBuys = allPicks.filter(f => !f.isExisting);
+    if(newBuys.length > 0){
+      const history = JSON.parse(localStorage.getItem('recommendHistory') || '[]');
+      const now = new Date().toISOString();
+      newBuys.forEach(f => {
+        history.push({
+          date: now,
+          code: f.code,
+          name: f.name,
+          amt: f.amt,
+          pct: f.pct,
+          action: 'buy'
+        });
+      });
+      // 只保留最近30天的记录
+      const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+      const filtered = history.filter(h => new Date(h.date).getTime() > cutoff);
+      localStorage.setItem('recommendHistory', JSON.stringify(filtered));
+    }
+  } catch(e){ console.warn('记录推荐历史失败:', e); }
+
   return true;
 }
 
