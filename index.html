@@ -3068,16 +3068,22 @@ async function refreshHoldingsNav(){
       // 3. 从东方财富网获取最新确认净值（补充）
       try {
         const eastmoneyNav = await fetchLatestNavFromEastmoney(h.code);
-        if(eastmoneyNav && navCache[h.code]){
+        if(eastmoneyNav){
           console.log(`[${h.code}] 东方财富网数据:`, eastmoneyNav);
-          // 东方财富网数据更可靠，直接使用（不比较日期）
-          console.log(`[${h.code}] 合并东方财富网数据，gszzl: ${navCache[h.code].gszzl} -> ${eastmoneyNav.gszzl}`);
-          navCache[h.code].dwjz = eastmoneyNav.dwjz;
-          navCache[h.code].gsz = eastmoneyNav.gsz;
-          navCache[h.code].gszzl = eastmoneyNav.gszzl;
-          navCache[h.code].jzrq = eastmoneyNav.jzrq;
+          // 如果navCache不存在（fundgz失败），直接使用东方财富网数据
+          if(!navCache[h.code]){
+            console.log(`[${h.code}] fundgz无数据，使用东方财富网数据`);
+            navCache[h.code] = {fundcode: h.code, name: h.name, ...eastmoneyNav};
+          } else {
+            // 东方财富网数据更可靠，直接使用（不比较日期）
+            console.log(`[${h.code}] 合并东方财富网数据，gszzl: ${navCache[h.code].gszzl} -> ${eastmoneyNav.gszzl}`);
+            navCache[h.code].dwjz = eastmoneyNav.dwjz;
+            navCache[h.code].gsz = eastmoneyNav.gsz;
+            navCache[h.code].gszzl = eastmoneyNav.gszzl;
+            navCache[h.code].jzrq = eastmoneyNav.jzrq;
+          }
         } else {
-          console.log(`[${h.code}] 东方财富网数据获取失败或navCache不存在`);
+          console.log(`[${h.code}] 东方财富网数据获取失败`);
         }
       } catch(e) {
         console.error(`[${h.code}] 东方财富网数据获取异常:`, e);
