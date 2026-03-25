@@ -1931,7 +1931,21 @@ async function drainEastmoneyQ(){
   const {code, resolve} = eastmoneyQ.shift();
 
   try {
+    // 清空全局变量，避免读取到上一个基金的数据
+    window.Data_netWorthTrend = null;
+    window.Data_millionCopiesIncome = null;
+    window.fS_code = null;
+
     await loadScript(`https://fund.eastmoney.com/pingzhongdata/${code}.js?v=${Date.now()}`, 10000);
+
+    // 验证返回的数据是否匹配请求的基金代码
+    if(window.fS_code !== code){
+      console.warn(`[Eastmoney] 基金代码不匹配: 请求${code}, 返回${window.fS_code}`);
+      eastmoneyBusy = false;
+      setTimeout(drainEastmoneyQ, 100);
+      resolve(null);
+      return;
+    }
 
     // 普通基金：使用净值数据
     if(window.Data_netWorthTrend && window.Data_netWorthTrend.length > 1){
