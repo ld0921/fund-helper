@@ -4048,6 +4048,23 @@ function computeRebalancePlan(targetPicks, newMoney){
   const order={sell:0,reduce:1,reduce_gentle:1.5,buy:2,buy_more:3,hold:4,satellite:5};
   actions.sort((a,b)=>(order[a.action]??9)-(order[b.action]??9));
 
+  // 校验：确保所有买入操作的金额总和等于用户输入的新增资金
+  const buyActions = actions.filter(a=>['buy','buy_more'].includes(a.action));
+  const actualBuyTotal = buyActions.reduce((s,a)=>s+a.actionAmt,0);
+  if(Math.abs(actualBuyTotal - newMoney) > 0 && buyActions.length > 0){
+    const diff = newMoney - actualBuyTotal;
+    // 将差额加到金额最大的买入操作上
+    const maxBuyAction = [...buyActions].sort((a,b)=>b.actionAmt-a.actionAmt)[0];
+    maxBuyAction.actionAmt += diff;
+    maxBuyAction.targetAmt += diff;
+    // 更新描述
+    if(maxBuyAction.action === 'buy'){
+      maxBuyAction.actionDesc = `新建仓 ¥${maxBuyAction.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
+    } else {
+      maxBuyAction.actionDesc = `加仓 ¥${maxBuyAction.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
+    }
+  }
+
   const summary={
     existTotal, newMoney, totalPortfolio,
     sellAmt:  actions.filter(a=>a.action==='sell').reduce((s,a)=>s+a.actionAmt,0),
