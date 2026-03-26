@@ -1199,6 +1199,19 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
       <button class="btn btn-primary btn-sm" onclick="addDcaPlan()">＋ 添加定投计划</button>
       <button class="btn btn-danger btn-sm" onclick="clearDcaPlans()">清空全部</button>
     </div>
+
+    <!-- 定投日提醒横幅 -->
+    <div id="dca-reminder" style="display:none;margin-top:12px;background:#fff7e6;border:1px solid #ffd591;border-radius:8px;padding:12px 14px;font-size:13px;color:#ad6800">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:20px">🔔</span>
+        <div style="flex:1">
+          <div style="font-weight:600;margin-bottom:4px" id="dca-reminder-title">今日定投日提醒</div>
+          <div style="font-size:12px;color:#8c6800" id="dca-reminder-desc"></div>
+        </div>
+        <button class="btn btn-sm" style="background:#faad14;color:#fff;border:none;white-space:nowrap" onclick="dismissDcaReminder()">知道了</button>
+      </div>
+    </div>
+
     <div id="dp-list" style="margin-top:12px;border:1px solid var(--border);border-radius:10px;overflow:hidden;display:none"></div>
     <div id="dp-empty" class="empty-state" style="margin-top:8px">
       <div class="empty-icon">📅</div>
@@ -5543,6 +5556,36 @@ function removeDcaPlan(i){
   document.getElementById('dca-ai-result').style.display='none';
 }
 
+async function checkDcaReminder(){
+  if(!dcaPlans.length) return;
+
+  const today = new Date();
+  const todayDay = today.getDate();
+  const todayStr = today.toISOString().slice(0,10);
+
+  // 检查今天是否已关闭提醒
+  const dismissed = await FundDB.get('dcaReminderDismissed') || {};
+  if(dismissed[todayStr]) return;
+
+  // 查找今天需要定投的计划
+  const todayPlans = dcaPlans.filter(p => p.deductDay === todayDay);
+  if(!todayPlans.length) return;
+
+  // 显示提醒
+  const reminder = document.getElementById('dca-reminder');
+  const desc = document.getElementById('dca-reminder-desc');
+  desc.textContent = `今天是${todayPlans.map(p => `「${p.name}」`).join('、')}的定投日，记得在支付宝完成扣款`;
+  reminder.style.display = 'block';
+}
+
+async function dismissDcaReminder(){
+  const todayStr = new Date().toISOString().slice(0,10);
+  const dismissed = await FundDB.get('dcaReminderDismissed') || {};
+  dismissed[todayStr] = true;
+  await FundDB.set('dcaReminderDismissed', dismissed);
+  document.getElementById('dca-reminder').style.display = 'none';
+}
+
 // 显示持仓使用帮助
 function showHoldingsHelp(){
   alert(`📖 我的持仓使用说明
@@ -6276,6 +6319,7 @@ function runHealthMonitor(){
   renderMarketGrid();
   renderAll();
   renderTransactionHistory();
+  checkDcaReminder();
   document.getElementById('eh-date').valueAsDate=new Date();
   document.getElementById('dp-start').valueAsDate=new Date();
 
