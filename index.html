@@ -3872,10 +3872,10 @@ function computeRebalancePlan(targetPicks, newMoney){
     }
 
     // 已有持仓的处理逻辑
-    const targetAmt=Math.round(totalPortfolio*pick.pct/100);
     const held=existingHoldings.find(h=>h.code===pick.code);
     const currentAmt=held?held.value:0;
-    const diff=targetAmt-currentAmt;
+    const targetAmt=pick.amt; // 直接使用pick.amt作为目标金额，避免舍入误差
+    const diff=pick.newBuyAmt || (targetAmt-currentAmt); // 优先使用newBuyAmt
     const tol=Math.max(targetAmt*0.15,500); // 15%容忍带 or ¥500
     let action,actionAmt,actionDesc,actionColor;
     // 修复：目标仓位为0时不显示"建议新买"
