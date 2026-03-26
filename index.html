@@ -3884,6 +3884,11 @@ function computeRebalancePlan(targetPicks, newMoney){
       action='buy'; actionAmt=targetAmt;
       actionDesc=`新建仓 ¥${targetAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
       actionColor='act-buy';
+    } else if(pick.newBuyAmt && pick.newBuyAmt > 0){
+      // 对于有newBuyAmt的基金，直接使用newBuyAmt作为加仓金额，不受容忍带限制
+      action='buy_more'; actionAmt=pick.newBuyAmt;
+      actionDesc=`加仓 ¥${pick.newBuyAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
+      actionColor='act-buy_more';
     } else if(diff>tol){
       action='buy_more'; actionAmt=diff;
       actionDesc=`加仓 ¥${diff.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
