@@ -4165,7 +4165,7 @@ async function generateSmartPortfolio(){
     const iconEl=document.getElementById('gen-loading-icon');
     const stepsEl=document.getElementById('gen-steps');
     const cached=Object.keys(navCache).length;
-    countEl.textContent=`已缓存 ${cached} 只基金实时数据`;
+    countEl.textContent=`已缓存 ${cached}/${CURATED_FUNDS.length} 只基金实时数据`;
 
     const steps=[
       {icon:'📊',text:'5维正交模型评分（Calmar+一致性+任期+规模+费率）',pct:15},
