@@ -680,11 +680,11 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
 
       <b>一、基金评分体系（5维正交模型）</b><br>
       去除冗余指标，保留5个正交维度，总分100分：<br>
-      · <b>Calmar Ratio（38%）</b>：时间窗口匹配的混合Calmar——短期=(近1年收益−无风险利率)/近3年最大回撤 × 60% + 长期=(近3年年化收益−无风险利率)/全期最大回撤 × 40%。无风险利率默认2.0%（可自定义）<br>
+      · <b>Calmar Ratio（32%）</b>：时间窗口匹配的混合Calmar——短期=(近1年收益−无风险利率)/近3年最大回撤 × 60% + 长期=(近3年年化收益−无风险利率)/全期最大回撤 × 40%。无风险利率默认2.0%（可自定义）<br>
       · <b>收益一致性（24%）</b>：1年与3年收益方向+幅度匹配度（双正且幅度匹配4-10分，反向5分，双负0-2分）+ 3年收益强度分<br>
-      · <b>任期稳定性（24%）</b>：基金经理连续任期年限，6档：&lt;1年=3分，1-2年=8分，2-3年=12分，3-5年=16分，5-10年=20分，≥10年=24分<br>
-      · <b>规模适配性（9%）</b>：50-500亿满分9分，500-1000亿6分，10-50亿6分，2-10亿4分，&lt;2亿清盘风险2分，&gt;1000亿调仓困难4分<br>
-      · <b>费率优势（5%）</b>：≤0%满分5分，≤0.08%满分5分，≤0.12%得4分，≤0.15%得3分，&gt;0.15%仅1分。费率是预测长期表现的可靠指标，10年复利差距显著<br>
+      · <b>任期稳定性（22%）</b>：基金经理连续任期年限，6档：&lt;1年=3分，1-2年=7分，2-3年=11分，3-5年=15分，5-10年=19分，≥10年=22分<br>
+      · <b>规模适配性（10%）</b>：50-500亿满分10分，500-1000亿7分，10-50亿7分，2-10亿4分，&lt;2亿清盘风险2分，&gt;1000亿调仓困难4分<br>
+      · <b>费率优势（12%）</b>：≤0%满分12分，≤0.05%满分12分，≤0.08%得10分，≤0.12%得8分，≤0.15%得5分，&gt;0.15%仅2分。费率是预测长期表现的最可靠指标之一，10年复利差距可达5-10%<br>
       评分色标：≥80🟢强烈推荐，65-79🔵推荐，50-64🟡可关注，&lt;50🔴谨慎<br><br>
 
       <b>二、市场动量信号（资产相对强弱，非宏观周期）</b><br>
@@ -2794,7 +2794,7 @@ function scoreF(f){
   const dd3y=+(f.maxDD3y)||dd; // 近3年回撤，无则回退全期
   const fee = f.fee !== undefined ? +f.fee : getDefaultFee(f.cat); // 费率
 
-  // 1. Calmar Ratio（风险调整收益，权重 38%）
+  // 1. Calmar Ratio（风险调整收益，权重 32%）
   //    修正：使用匹配时间窗口的 Calmar，避免 r1 vs 全期maxDD 的错配
   //    短期 Calmar = r1 / maxDD3y（都是近几年的窗口）
   //    长期 Calmar = r3年化 / maxDD（长期视角）
@@ -2803,7 +2803,7 @@ function scoreF(f){
   const calmarShort = dd3y > 0 ? (r1 - RISK_FREE) / dd3y : 0;
   const calmarLong  = dd > 0 ? (r3Ann - RISK_FREE) / dd : 0;
   const calmar = calmarShort * 0.6 + calmarLong * 0.4;
-  const calmarScore = Math.min(38, Math.max(0, calmar * 19)); // 0-38分
+  const calmarScore = Math.min(32, Math.max(0, calmar * 16)); // 0-32分
 
   // 2. 收益一致性（权重 24%）
   //    中期(r1)与长期(r3)方向是否一致 + 幅度匹配度 + r3趋势强度
@@ -2819,32 +2819,33 @@ function scoreF(f){
   const r3Strength = r3 > 50 ? 14 : r3 > 20 ? 11 : r3 > 0 ? Math.max(5, r3 * 0.28) : Math.max(0, 3 + r3 * 0.05);
   const consistencyScore = Math.min(24, dirConsistency + r3Strength); // 0-24分
 
-  // 3. 任期稳定性（权重 24%）
+  // 3. 任期稳定性（权重 22%）
   //    客观指标：基金经理任期年限
   //    任期<1年=可能刚更换经理（高风险），>5年=稳定，>10年=非常稳定
   //    替代主观的「星级评定」
   let stabilityScore;
   if(mg < 1) stabilityScore = 3;       // 刚更换经理，高不确定性
-  else if(mg < 2) stabilityScore = 8;  // 磨合期
-  else if(mg < 3) stabilityScore = 12; // 初步稳定
-  else if(mg < 5) stabilityScore = 16; // 稳定
-  else if(mg < 10) stabilityScore = 20;// 成熟
-  else stabilityScore = 24;            // 超长任期，团队非常稳定
-  // 0-24分
+  else if(mg < 2) stabilityScore = 7;  // 磨合期
+  else if(mg < 3) stabilityScore = 11; // 初步稳定
+  else if(mg < 5) stabilityScore = 15; // 稳定
+  else if(mg < 10) stabilityScore = 19;// 成熟
+  else stabilityScore = 22;            // 超长任期，团队非常稳定
+  // 0-22分
 
-  // 4. 规模适配性（权重 9%）
+  // 4. 规模适配性（权重 10%）
   //    50-500亿最优区间，太小有清盘风险，太大有调仓/流动性困难
-  const sizeScore = sz >= 1000 ? 4 : sz >= 500 ? 6 : sz >= 50 ? 9 : sz >= 10 ? 6 : sz >= 2 ? 4 : 2; // 2-9分
+  const sizeScore = sz >= 1000 ? 4 : sz >= 500 ? 7 : sz >= 50 ? 10 : sz >= 10 ? 7 : sz >= 2 ? 4 : 2; // 2-10分
 
-  // 5. 费率优势（权重 5%）
+  // 5. 费率优势（权重 12%）
   //    费率是预测基金长期表现的可靠指标，低费率长期复利优势显著
   let feeScore;
-  if(fee <= 0) feeScore = 5;           // 货币基金/C类免申购费
-  else if(fee <= 0.08) feeScore = 5;   // 低费率指数/QDII
-  else if(fee <= 0.12) feeScore = 4;   // 标准指数
-  else if(fee <= 0.15) feeScore = 3;   // 标准主动
-  else feeScore = 1;                   // 高费率
-  // 0-5分
+  if(fee <= 0) feeScore = 12;           // 货币基金/C类免申购费
+  else if(fee <= 0.05) feeScore = 12;   // 超低费率
+  else if(fee <= 0.08) feeScore = 10;   // 低费率指数/QDII
+  else if(fee <= 0.12) feeScore = 8;    // 标准指数
+  else if(fee <= 0.15) feeScore = 5;    // 标准主动
+  else feeScore = 2;                    // 高费率
+  // 0-12分
 
   const total = Math.round(Math.min(100, Math.max(0, calmarScore + consistencyScore + stabilityScore + sizeScore + feeScore)));
   return total;
@@ -4614,11 +4615,11 @@ function _doGenerate(shouldScroll){
       <div class="notice" style="padding:6px 10px;border-radius:6px;font-size:11px;margin-bottom:10px;border-left:none">📡 基金收益率、最大回撤、规模、经理任期等核心数据由天天基金网API实时拉取（每24小时自动更新），确保评分和方案基于最新市场数据。</div>
       <b>一、基金评分体系（简化多因子）</b><br>
       去除冗余指标，保留5个正交维度：<br>
-      · <b>Calmar Ratio</b>（38%权重）：时间窗口匹配的混合Calmar——短期Calmar=(近1年收益-无风险利率${RISK_FREE}%)/近3年最大回撤(60%)，长期Calmar=(近3年年化收益-无风险利率${RISK_FREE}%)/全期最大回撤(40%)，避免收益与回撤时间窗口错配<br>
+      · <b>Calmar Ratio</b>（32%权重）：时间窗口匹配的混合Calmar——短期Calmar=(近1年收益-无风险利率${RISK_FREE}%)/近3年最大回撤(60%)，长期Calmar=(近3年年化收益-无风险利率${RISK_FREE}%)/全期最大回撤(40%)，避免收益与回撤时间窗口错配<br>
       · <b>收益一致性</b>（24%权重）：1年/3年趋势方向是否一致 + 3年收益强度，衡量收益可持续性<br>
-      · <b>任期稳定性</b>（24%权重）：客观指标——基金经理连续任期年限，6档评分：<1年=3分(刚更换，高风险)，1-2年=8分(磨合期)，2-3年=12分(初步稳定)，3-5年=16分(稳定)，5-10年=20分(成熟)，>10年=24分(超稳定)。替代主观的星级评定<br>
-      · <b>规模适配性</b>（9%权重）：50-500亿为最优区间（满分），<2亿有清盘风险（2分），>1000亿调仓困难（4分）<br>
-      · <b>费率优势</b>（5%权重）：≤0%满分，≤0.08%满分，≤0.12%得4分，≤0.15%得3分，>0.15%仅1分。费率是预测长期表现的可靠指标<br><br>
+      · <b>任期稳定性</b>（22%权重）：客观指标——基金经理连续任期年限，6档评分：<1年=3分(刚更换，高风险)，1-2年=7分(磨合期)，2-3年=11分(初步稳定)，3-5年=15分(稳定)，5-10年=19分(成熟)，>10年=22分(超稳定)。替代主观的星级评定<br>
+      · <b>规模适配性</b>（10%权重）：50-500亿为最优区间（满分），<2亿有清盘风险（2分），>1000亿调仓困难（4分）<br>
+      · <b>费率优势</b>（12%权重）：≤0%满分，≤0.05%满分，≤0.08%得10分，≤0.12%得8分，≤0.15%得5分，>0.15%仅2分。费率是预测长期表现的最可靠指标之一<br><br>
 
       <b>二、市场动量约束（基于资产相对强弱的顶层调整）</b><br>
       · 通过各类资产近1年相对收益推断市场状态，本质为动量/相对强弱信号（非真实宏观经济指标）<br>
