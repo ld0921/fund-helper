@@ -5445,7 +5445,7 @@ function renderAllocGroups(selectedPicks, weights){
             ${feeHtml}
           </div>
           <div class="alloc-item-pct" style="color:${g.color}">${f.pct}%</div>
-          <div class="alloc-item-amt">¥${f.amt.toLocaleString()}</div>
+          <div class="alloc-item-amt">¥${Math.round(f.amt).toLocaleString()}</div>
           <div class="alloc-item-method">${methodLabel(f.method)}</div>
           <button class="btn btn-sm" style="background:var(--primary);color:#fff;font-size:11px;padding:2px 8px" onclick="copyCode('${f.code}');showToast('已复制 ${f.code}，请打开支付宝搜索购买。买入后回到「资产」页录入持仓','success',4000)">复制代码</button>
         </div>`;
