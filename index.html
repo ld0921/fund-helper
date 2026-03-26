@@ -4902,6 +4902,25 @@ function _doGenerate(shouldScroll){
     }
     // 清理空类别
     emptyCats.forEach(c => delete selectedPicks[c.cat]);
+
+    // 回收权重后立即归一化
+    const allPicksAfterRecycle = Object.values(selectedPicks).flat();
+    allPicksAfterRecycle.forEach(p => {
+      p.pct = Math.round(p.amt / portfolioTotal * 100);
+    });
+    let totalPctAfterRecycle = allPicksAfterRecycle.reduce((s,p) => s + p.pct, 0);
+    if(totalPctAfterRecycle !== 100 && allPicksAfterRecycle.length > 0 && totalPctAfterRecycle > 0){
+      const scale = 100 / totalPctAfterRecycle;
+      allPicksAfterRecycle.forEach(p => {
+        p.pct = Math.round(p.pct * scale);
+      });
+      totalPctAfterRecycle = allPicksAfterRecycle.reduce((s,p) => s + p.pct, 0);
+      if(totalPctAfterRecycle !== 100){
+        const diff = 100 - totalPctAfterRecycle;
+        const maxPick = [...allPicksAfterRecycle].sort((a,b) => b.pct - a.pct)[0];
+        maxPick.pct += diff;
+      }
+    }
   }
 
   // 修正舍入误差：确保总百分比=100%
