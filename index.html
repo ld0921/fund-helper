@@ -470,7 +470,27 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
 .global-error{position:fixed;top:0;left:0;right:0;background:#ff4d4f;color:#fff;padding:10px 16px;font-size:13px;text-align:center;z-index:9997;transform:translateY(-100%);transition:transform .3s}
 .global-error.show{transform:translateY(0)}
 /* 手机端scroll-padding修正 */
-@media(max-width:600px){html{scroll-padding-top:100px}}
+@media(max-width:600px){
+  html{scroll-padding-top:100px}
+  /* 按钮触摸优化 */
+  .btn{min-height:44px;font-size:14px}
+  .btn-sm{min-height:38px;font-size:13px}
+  /* 刷新横幅移动端优化 */
+  #refresh-banner{padding:16px;margin:16px 0}
+  #refresh-banner button{font-size:15px;padding:12px 20px}
+  /* 持仓列表移动端优化 */
+  .eh-row{padding:12px;margin-bottom:10px}
+  .eh-fund-name{font-size:15px}
+  .eh-stat-val{font-size:15px}
+  .eh-stat-lbl{font-size:11px}
+  /* 表格横向滚动 */
+  .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .table-wrap table{min-width:600px}
+  /* 收益总览卡片优化 */
+  .stat-card{min-width:120px!important}
+  .stat-val{font-size:18px}
+  .stat-label{font-size:12px}
+}
 </style>
 </head>
 <body>
@@ -1022,10 +1042,22 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
       <button class="btn btn-danger btn-sm" onclick="clearExistingHoldings()">清空全部</button>
     </div>
     <div id="eh-list" style="margin-top:12px;border:1px solid var(--border);border-radius:10px;overflow:hidden;display:none"></div>
-    <div id="eh-empty" class="empty-state" style="margin-top:10px">
-      <div class="empty-icon">💼</div>
-      <div class="empty-text">暂未填写已有持仓<br>添加后可获得个性化调仓建议和健康诊断</div>
-      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('eh-search').focus()">＋ 添加第一笔持仓</button>
+    <div id="eh-empty" class="empty-state" style="margin-top:10px;padding:24px;text-align:center">
+      <div class="empty-icon" style="font-size:48px;margin-bottom:12px">💼</div>
+      <div style="font-size:16px;font-weight:600;color:var(--text);margin-bottom:8px">还没有持仓记录</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6">
+        从支付宝添加你的基金持仓，开始跟踪收益
+      </div>
+      <div style="background:#f0f8ff;border:1px solid #d6e4ff;border-radius:8px;padding:12px;margin-bottom:16px;text-align:left">
+        <div style="font-size:12px;font-weight:600;color:var(--primary);margin-bottom:8px">📝 快速开始</div>
+        <div style="font-size:11px;color:var(--text);line-height:1.8">
+          1️⃣ 在上方搜索框输入基金名称或代码<br>
+          2️⃣ 填写买入金额和日期<br>
+          3️⃣ 点击"添加持仓"<br>
+          4️⃣ 点击顶部"刷新净值数据"查看收益
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="document.getElementById('eh-search').focus()" style="padding:10px 24px">＋ 添加第一笔持仓</button>
     </div>
     <div id="eh-summary" style="display:none;margin-top:10px;padding:10px 14px;background:#f0f8ff;border-radius:8px;font-size:13px"></div>
     <div style="margin-top:8px;padding:8px 12px;background:#fffbe6;border-radius:6px;font-size:11px;color:#ad6800;line-height:1.6">
