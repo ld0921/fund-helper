@@ -1028,8 +1028,8 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
         <input id="eh-amount" type="number" placeholder="在支付宝买入的金额" inputmode="numeric">
       </div>
       <div class="form-item">
-        <label>持有份额 <span style="color:var(--primary);font-weight:600">（推荐）</span></label>
-        <input id="eh-shares" type="number" placeholder="支付宝显示的持有份额" inputmode="decimal" step="0.01">
+        <label>持有份额 <span style="color:var(--muted);font-weight:400">（可选，推荐填写）</span></label>
+        <input id="eh-shares" type="number" placeholder="可选，填写后数据更准确" inputmode="decimal" step="0.01">
       </div>
       <div class="form-item">
         <label>买入日期</label>
@@ -3225,6 +3225,7 @@ async function refreshHoldingsNav(){
       if(done === total){
         navRefreshed = true;
         FundDB.set('navCache', navCache);
+        localStorage.setItem('lastNavRefreshTime', Date.now().toString());
         renderExistingHoldings(); runHealthMonitor(); renderTodayOverview();
         if(btn){ btn.textContent='🔄 刷新净值数据'; btn.disabled=false; }
 
@@ -3349,8 +3350,13 @@ function renderExistingHoldings(){
     const statusBadge = h.status==='confirmed'
       ? '<span style="font-size:11px;color:var(--success)">✅已确认</span>'
       : (todayStr >= (h.confirmDate||'')
-        ? `<span style="font-size:11px;color:var(--primary);cursor:pointer" onclick="confirmHolding(${i})" title="在支付宝→基金→持仓查看确认份额">📌 待确认(点击输入份额)</span>`
-        : `<span style="font-size:11px;color:var(--warning)">⏳确认中 预计${h.confirmDate||'--'}确认<br><span style="font-size:10px;color:var(--muted)">确认后不计入总资产，请耐心等待</span></span>`);
+        ? `<span style="font-size:12px;padding:4px 10px;background:linear-gradient(135deg,#e6f4ff,#bae0ff);color:#0958d9;border-radius:6px;cursor:pointer;font-weight:600;border:1px solid #91caff" onclick="confirmHolding(${i})" title="在支付宝→基金→持仓查看确认份额">📌 待确认 · 点击输入份额</span>`
+        : (()=>{
+            const today=new Date(todayStr);
+            const confirmDay=new Date(h.confirmDate||todayStr);
+            const diffDays=Math.ceil((confirmDay-today)/(1000*60*60*24));
+            return `<span style="font-size:11px;color:var(--warning)">⏳确认中 · 预计${h.confirmDate||'--'}确认${diffDays>0?` (还有${diffDays}天)`:''}<br><span style="font-size:10px;color:var(--muted)">确认前不计入总资产</span></span>`;
+          })());
     const sourceTag = h.source==='dca' ? '<span style="font-size:10px;padding:1px 5px;border-radius:3px;background:#f9f0ff;color:#722ed1">定投</span>' : '';
     const nav = navCache[h.code];
     const todayChg = navRefreshed && nav ? parseFloat(nav.gszzl)||0 : null;
@@ -3443,6 +3449,7 @@ function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, totalP
     <div class="card">
       <div class="card-title">
         <span class="icon icon-green">💰</span>收益总览
+        <button onclick="showDataSourceInfo()" style="margin-left:6px;padding:2px 8px;font-size:11px;background:var(--primary-bg);color:var(--primary);border:1px solid var(--primary);border-radius:4px;cursor:pointer" title="数据来源说明">?</button>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
         <div style="display:flex;flex-direction:column;gap:8px">
@@ -5308,6 +5315,29 @@ function showHoldingsHelp(){
 • 所有数据仅供参考，以支付宝为准`);
 }
 
+function showDataSourceInfo(){
+  alert(`📊 收益数据说明
+
+💡 数据来源
+• 实时净值：天天基金网(fundgz)
+• 历史数据：东方财富网
+• 更新时间：交易日9:30-15:00实时估算
+
+⚠️ 为什么与支付宝有差异？
+• 数据源不同：本工具使用第三方数据源
+• 更新时间差：可能存在几分钟延迟
+• 计算方式：估算净值 vs 确认净值
+• 份额精度：小数位数可能不同
+
+✅ 如何保证准确性？
+• 输入支付宝显示的"持有份额"（推荐）
+• 定期刷新净值数据
+• 以支付宝显示为准，本工具仅供参考
+
+📌 温馨提示
+本工具旨在帮助您更好地管理基金投资，所有数据仅供参考，实际收益请以支付宝为准。`);
+}
+
 // 自定义弹窗系统
 let _modalCb=null;
 function openModal(title,defaultVal,cb){
@@ -6042,6 +6072,106 @@ function runHealthMonitor(){
     if(!document.hidden) refreshAllNav(true, true);
   });
 })();
+
+// ═══════════════ 新手引导 ═══════════════
+function showFirstTimeGuide(){
+  const hasSeenGuide = localStorage.getItem('hasSeenGuide');
+  if(hasSeenGuide) return;
+
+  setTimeout(()=>{
+    const result = confirm(`👋 欢迎使用基金理财辅助工具！
+
+这是一个帮助你管理支付宝基金投资的工具。
+
+📝 快速开始（3步）：
+1️⃣ 在"我的资产"tab添加持仓记录
+2️⃣ 点击"刷新净值数据"查看收益
+3️⃣ 在"智能方案"tab生成投资建议
+
+💡 温馨提示：
+• 所有数据仅供参考，以支付宝为准
+• 建议输入"持有份额"以获得更准确的数据
+• 交易日9:30-15:00可查看实时估算
+
+点击"确定"开始使用，点击"取消"查看详细说明`);
+
+    if(!result){
+      alert(`📖 详细使用说明
+
+🎯 核心功能：
+• 我的资产：记录持仓，跟踪收益
+• 智能方案：AI生成投资组合建议
+• 定投专区：定投方案和收益测算
+• 基金探索：查看精选基金详情
+
+💼 如何添加持仓？
+1. 在"我的资产"tab搜索基金
+2. 填写买入金额和日期
+3. 推荐填写"持有份额"（在支付宝查看）
+4. 点击"添加持仓"
+
+📊 如何查看收益？
+1. 点击"刷新净值数据"按钮
+2. 等待数据加载完成
+3. 查看今日收益和累计盈亏
+
+⚠️ 重要提示：
+• 本工具数据来源于第三方，可能与支付宝有细微差异
+• 所有数据仅供参考，实际收益以支付宝为准
+• 基金投资有风险，请谨慎决策`);
+    }
+
+    localStorage.setItem('hasSeenGuide', 'true');
+  }, 1000);
+}
+
+// 页面加载完成后显示新手引导
+if(document.readyState === 'loading'){
+  document.addEventListener('DOMContentLoaded', showFirstTimeGuide);
+} else {
+  showFirstTimeGuide();
+}
+
+// ═══════════════ 智能刷新提醒 ═══════════════
+function checkRefreshReminder(){
+  const now = new Date();
+  const hour = now.getHours();
+  const minute = now.getMinutes();
+  const day = now.getDay();
+
+  // 只在交易日的交易时段提醒（周一到周五，9:30-15:00）
+  if(day < 1 || day > 5) return;
+  if(hour < 9 || (hour === 9 && minute < 30) || hour >= 15) return;
+
+  // 检查上次刷新时间
+  const lastRefreshTime = localStorage.getItem('lastNavRefreshTime');
+  if(!lastRefreshTime) return;
+
+  const lastRefresh = new Date(parseInt(lastRefreshTime));
+  const diffMinutes = Math.floor((now - lastRefresh) / (1000 * 60));
+
+  // 如果超过30分钟未刷新，显示提醒
+  if(diffMinutes >= 30){
+    const banner = document.getElementById('refresh-banner');
+    if(banner){
+      banner.style.background = 'linear-gradient(135deg,#fff7e6,#ffe7ba)';
+      banner.style.borderColor = '#ffa940';
+      const title = banner.querySelector('div>div:first-child');
+      if(title) title.innerHTML = `💡 数据已${diffMinutes}分钟未更新，建议刷新`;
+    }
+  }
+}
+
+// 切换到"我的资产"tab时检查
+const assetTab = document.querySelector('[onclick*="switchPanel(3)"]');
+if(assetTab){
+  assetTab.addEventListener('click', ()=>{
+    setTimeout(checkRefreshReminder, 500);
+  });
+}
+
+// 页面加载时检查
+setTimeout(checkRefreshReminder, 2000);
 
 // 表单输入时自动清除校验红框（事件委托，一次性覆盖所有 .form-item）
 
