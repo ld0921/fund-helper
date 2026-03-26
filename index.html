@@ -4099,7 +4099,7 @@ function buildSteps(weights, picks, totalAmt, monthly, riskProfile, horizon){
 }
 
 // 主函数
-function generateSmartPortfolio(){
+async function generateSmartPortfolio(){
   // 校验：金额、风险偏好、投资期限
   const spAmountEl = document.getElementById('sp-amount');
   const amountRaw = spAmountEl.value.trim();
@@ -4132,7 +4132,7 @@ function generateSmartPortfolio(){
   }
 
   const btn=document.getElementById('gen-btn');
-  btn.disabled=true; btn.innerHTML='<span class="loading-dot"></span> 加载数据中…';
+  btn.disabled=true; btn.innerHTML='<span class="loading-dot"></span> 准备数据中…';
   document.getElementById('gen-status').textContent='';
 
   // 显示结果区 + 内联加载卡片
@@ -4145,6 +4145,17 @@ function generateSmartPortfolio(){
 
   // 滚动到加载卡片
   setTimeout(()=>loadCard.scrollIntoView({behavior:'smooth',block:'center'}),100);
+
+  // 自动更新基金详情数据（如果需要）
+  try {
+    btn.innerHTML='<span class="loading-dot"></span> 更新基金数据中…';
+    await refreshFundDetails(false);
+    await scanMarketFunds(false);
+  } catch(e){
+    console.warn('[AutoUpdate] 基金数据更新失败，使用缓存数据:', e);
+  }
+
+  btn.innerHTML='<span class="loading-dot"></span> 加载净值数据中…';
 
   // 如果已有足够净值缓存（>10只），显示策略步骤动画后生成
   if(Object.keys(navCache).length >= 10){
@@ -4299,7 +4310,7 @@ function _doGenerate(shouldScroll){
       notice.id = 'data-stale-notice';
       notice.className = 'warning-notice';
       notice.style.cssText = 'background:#fff1f0;border-left-color:#ff4d4f;color:#a8071a;font-weight:500';
-      notice.innerHTML = '⚠️ <b>基金数据尚未更新</b>，当前方案基于默认数据生成，可能不够准确。请点击「基金探索」Tab 中的「更新数据」按钮刷新，或检查网络连接后稍后重试。';
+      notice.innerHTML = '⚠️ <b>部分基金数据可能未更新</b>，当前方案基于可用数据生成。如需最新数据，请检查网络连接后重新生成方案。';
       const resultEl = document.getElementById('portfolio-result');
       if(resultEl) resultEl.insertBefore(notice, resultEl.firstChild);
     } else {
