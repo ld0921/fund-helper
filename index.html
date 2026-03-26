@@ -4834,6 +4834,11 @@ function _doGenerate(shouldScroll){
     maxAmtPick.pct = Math.round(maxAmtPick.amt / portfolioTotal * 100);
   }
 
+  // 重新同步selectedPicks：确保computeRebalancePlan使用的是过滤和调整后的数据
+  Object.keys(selectedPicks).forEach(cat => {
+    selectedPicks[cat] = finalPicks.filter(f => f.cat === cat);
+  });
+
   // 5. 收益预估（长期均值中枢 + 均值回归 + 统计置信区间）
   // 预期收益 = 类别长期年化均值（r3年化）向长期中枢回归，而非 r1 打折
   // 长期中枢参考值（A股长期年化）
