@@ -4771,6 +4771,25 @@ function _doGenerate(shouldScroll){
     }
 
     selectedPicks[cd.cat] = [...keptPicks, ...newPicks];
+
+    // 去重：如果同一只基金既在keptPicks又在newPicks中，合并为一个条目
+    const merged = {};
+    selectedPicks[cd.cat].forEach(p => {
+      if(!merged[p.code]){
+        merged[p.code] = p;
+      } else {
+        // 同一只基金出现两次，合并：保留已有持仓，累加新买入金额
+        const existing = merged[p.code];
+        if(!p.isExisting){
+          // p是新买入，existing是已有持仓
+          existing.amt += p.amt;
+          existing.pct += p.pct;
+          existing.method = '继续持有+加仓';
+          existing.role = '已持有·加仓';
+        }
+      }
+    });
+    selectedPicks[cd.cat] = Object.values(merged);
   });
 
   // 4.9 回收空类别的权重：风险过滤后某些类别可能选不出基金
