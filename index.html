@@ -951,9 +951,19 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
   </div>
 
   <!-- 刷新净值提示 -->
-  <div style="margin:12px 0;padding:12px;background:linear-gradient(135deg,#fff7e6,#fffbe6);border:1px solid #ffd666;border-radius:8px;text-align:center">
-    <div style="font-size:13px;color:#ad6800;margin-bottom:8px">💡 点击下方按钮刷新净值，获取最新收益数据</div>
-    <button class="btn btn-primary" id="refresh-nav-btn" onclick="refreshHoldingsNav()" style="font-size:14px;padding:10px 24px">🔄 刷新净值</button>
+  <div id="refresh-banner" style="margin:12px 0;padding:12px;background:linear-gradient(135deg,#fff7e6,#fffbe6);border:1px solid #ffd666;border-radius:8px">
+    <div style="display:flex;align-items:start;gap:8px">
+      <div style="font-size:20px">💡</div>
+      <div style="flex:1">
+        <div style="font-size:13px;color:#ad6800;font-weight:600;margin-bottom:4px">首次使用或想查看最新数据？点击刷新净值</div>
+        <div style="font-size:11px;color:#8c6800;line-height:1.5">
+          • 刷新后可查看今日收益、累计盈亏等数据<br>
+          • 数据来源：天天基金网(fundgz) + 东方财富网<br>
+          • 交易日9:30-15:00可获取实时估算，其他时间显示最新确认净值
+        </div>
+      </div>
+    </div>
+    <button class="btn btn-primary" id="refresh-nav-btn" onclick="refreshHoldingsNav()" style="font-size:14px;padding:10px 24px;margin-top:10px;width:100%">🔄 刷新净值数据</button>
   </div>
 
   <!-- 收益总览（有持仓时显示） -->
@@ -963,6 +973,7 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
   <div class="card" id="eh-section">
     <div class="card-title">
       <span class="icon icon-red">💼</span>我的持仓
+      <button onclick="showHoldingsHelp()" style="margin-left:6px;padding:2px 8px;font-size:11px;background:var(--primary-bg);color:var(--primary);border:1px solid var(--primary);border-radius:4px;cursor:pointer" title="查看使用说明">?</button>
       <span class="card-desc" style="font-size:12px;color:var(--muted);font-weight:400;margin-left:4px">记录在支付宝购买的基金，自动跟踪市值和盈亏</span>
       <span class="card-actions" style="margin-left:auto">
         <button class="btn btn-ghost btn-sm" onclick="importFromDcaPlans()">从定投导入</button>
@@ -2993,7 +3004,7 @@ function addExistingHolding(){
 function confirmHolding(i){
   const h = existingHoldings[i];
   if(!h) return;
-  openModal(`请输入「${h.name}」在支付宝确认的份额数\n\n📋 查看路径：支付宝→财富→基金→持仓→点击该基金→查看"持有份额"`, '', function(val){
+  openModal(`确认「${h.name}」的实际份额\n\n💡 为什么要确认份额？\n基金买入后需T+1或T+2确认，确认后才能计算准确的市值和收益。\n\n📋 在支付宝查看确认份额：\n支付宝 → 财富 → 基金 → 持仓 → 点击该基金 → 查看"持有份额"\n\n请输入确认的份额数：`, '', function(val){
     const shares = parseFloat(val);
     if(!shares || shares <= 0){ showToast('请输入有效份额数（可在支付宝持仓中查看）','error'); return; }
     h.status = 'confirmed';
@@ -3161,8 +3172,17 @@ async function refreshHoldingsNav(){
         navRefreshed = true;
         FundDB.set('navCache', navCache);
         renderExistingHoldings(); runHealthMonitor(); renderTodayOverview();
-        if(btn){ btn.textContent='🔄 刷新净值'; btn.disabled=false; }
-        showToast(`已刷新 ${total} 只基金净值`,'success');
+        if(btn){ btn.textContent='🔄 刷新净值数据'; btn.disabled=false; }
+
+        // 检查市场时间，显示相应提示
+        const now = new Date();
+        const hour = now.getHours();
+        const minute = now.getMinutes();
+        if(hour < 9 || (hour === 9 && minute < 30)){
+          showToast('市场未开盘(9:30开盘)，今日收益数据暂不可用','info');
+        } else {
+          showToast(`已刷新 ${total} 只基金净值`,'success');
+        }
       }
     });
   }
@@ -5164,6 +5184,32 @@ function removeDcaPlan(i){
   renderDcaPlans(); renderExistingHoldings(); runHealthMonitor(); renderTodayOverview(); runSignalEngine();
   document.getElementById('dca-ai-result').style.display='none';
 }
+
+// 显示持仓使用帮助
+function showHoldingsHelp(){
+  alert(`📖 我的持仓使用说明
+
+1️⃣ 添加持仓
+• 在搜索框输入基金名称或代码
+• 填写买入金额、日期（份额可选）
+• 点击"添加持仓"
+
+2️⃣ 刷新净值
+• 点击顶部"刷新净值数据"按钮
+• 获取最新净值和今日收益
+• 交易日9:30-15:00可查看实时估算
+
+3️⃣ 确认份额
+• 基金买入后需T+1或T+2确认
+• 确认后点击"📌待确认"输入实际份额
+• 在支付宝→基金→持仓中查看确认份额
+
+4️⃣ 数据说明
+• 数据来源：天天基金网 + 东方财富网
+• 可能与支付宝有细微差异（数据源不同）
+• 所有数据仅供参考，以支付宝为准`);
+}
+
 // 自定义弹窗系统
 let _modalCb=null;
 function openModal(title,defaultVal,cb){
