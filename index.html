@@ -658,12 +658,13 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
         📡 基金收益率、最大回撤、规模、经理任期等核心数据由天天基金网API实时拉取（每24小时自动更新），确保评分和方案基于最新市场数据。
       </div>
 
-      <b>一、基金评分体系（4维正交模型）</b><br>
-      去除冗余指标，保留4个正交维度，总分100分：<br>
-      · <b>Calmar Ratio（40%）</b>：时间窗口匹配的混合Calmar——短期=(近1年收益−无风险利率)/近3年最大回撤 × 60% + 长期=(近3年年化收益−无风险利率)/全期最大回撤 × 40%。无风险利率默认2.0%（可自定义）<br>
-      · <b>收益一致性（25%）</b>：1年与3年收益方向+幅度匹配度（双正且幅度匹配4-10分，反向5分，双负0-2分）+ 3年收益强度分<br>
-      · <b>任期稳定性（25%）</b>：基金经理连续任期年限，6档：&lt;1年=3分，1-2年=8分，2-3年=13分，3-5年=17分，5-10年=21分，≥10年=25分<br>
-      · <b>规模适配性（10%）</b>：50-500亿满分10分，500-1000亿7分，10-50亿7分，2-10亿5分，&lt;2亿清盘风险2分，&gt;1000亿调仓困难4分<br>
+      <b>一、基金评分体系（5维正交模型）</b><br>
+      去除冗余指标，保留5个正交维度，总分100分：<br>
+      · <b>Calmar Ratio（38%）</b>：时间窗口匹配的混合Calmar——短期=(近1年收益−无风险利率)/近3年最大回撤 × 60% + 长期=(近3年年化收益−无风险利率)/全期最大回撤 × 40%。无风险利率默认2.0%（可自定义）<br>
+      · <b>收益一致性（24%）</b>：1年与3年收益方向+幅度匹配度（双正且幅度匹配4-10分，反向5分，双负0-2分）+ 3年收益强度分<br>
+      · <b>任期稳定性（24%）</b>：基金经理连续任期年限，6档：&lt;1年=3分，1-2年=8分，2-3年=12分，3-5年=16分，5-10年=20分，≥10年=24分<br>
+      · <b>规模适配性（9%）</b>：50-500亿满分9分，500-1000亿6分，10-50亿6分，2-10亿4分，&lt;2亿清盘风险2分，&gt;1000亿调仓困难4分<br>
+      · <b>费率优势（5%）</b>：≤0%满分5分，≤0.08%满分5分，≤0.12%得4分，≤0.15%得3分，&gt;0.15%仅1分。费率是预测长期表现的可靠指标，10年复利差距显著<br>
       评分色标：≥80🟢强烈推荐，65-79🔵推荐，50-64🟡可关注，&lt;50🔴谨慎<br><br>
 
       <b>二、市场动量信号（资产相对强弱，非宏观周期）</b><br>
@@ -2759,8 +2760,9 @@ const RISK_FREE = (() => { try { const v = localStorage.getItem('riskFreeRate');
 function scoreF(f){
   const r1=+f.r1||0, r3=+f.r3||0, dd=+(f.dd||f.maxDD)||0, sz=+f.size||0, mg=+(f.mgr||f.mgrYears)||0;
   const dd3y=+(f.maxDD3y)||dd; // 近3年回撤，无则回退全期
+  const fee = f.fee !== undefined ? +f.fee : getDefaultFee(f.cat); // 费率
 
-  // 1. Calmar Ratio（唯一风险调整指标，权重 40%）
+  // 1. Calmar Ratio（风险调整收益，权重 38%）
   //    修正：使用匹配时间窗口的 Calmar，避免 r1 vs 全期maxDD 的错配
   //    短期 Calmar = r1 / maxDD3y（都是近几年的窗口）
   //    长期 Calmar = r3年化 / maxDD（长期视角）
@@ -2769,9 +2771,9 @@ function scoreF(f){
   const calmarShort = dd3y > 0 ? (r1 - RISK_FREE) / dd3y : 0;
   const calmarLong  = dd > 0 ? (r3Ann - RISK_FREE) / dd : 0;
   const calmar = calmarShort * 0.6 + calmarLong * 0.4;
-  const calmarScore = Math.min(40, Math.max(0, calmar * 20)); // 0-40分
+  const calmarScore = Math.min(38, Math.max(0, calmar * 19)); // 0-38分
 
-  // 2. 收益一致性（权重 25%）
+  // 2. 收益一致性（权重 24%）
   //    中期(r1)与长期(r3)方向是否一致 + 幅度匹配度 + r3趋势强度
   //    同方向且幅度匹配 → 收益可持续性强
   let dirConsistency;
@@ -2782,27 +2784,37 @@ function scoreF(f){
   } else {
     dirConsistency = 5; // 方向不一致
   }
-  const r3Strength = r3 > 50 ? 15 : r3 > 20 ? 12 : r3 > 0 ? Math.max(5, r3 * 0.3) : Math.max(0, 3 + r3 * 0.05);
-  const consistencyScore = Math.min(25, dirConsistency + r3Strength); // 0-25分
+  const r3Strength = r3 > 50 ? 14 : r3 > 20 ? 11 : r3 > 0 ? Math.max(5, r3 * 0.28) : Math.max(0, 3 + r3 * 0.05);
+  const consistencyScore = Math.min(24, dirConsistency + r3Strength); // 0-24分
 
-  // 3. 任期稳定性（权重 25%）
+  // 3. 任期稳定性（权重 24%）
   //    客观指标：基金经理任期年限
   //    任期<1年=可能刚更换经理（高风险），>5年=稳定，>10年=非常稳定
   //    替代主观的「星级评定」
   let stabilityScore;
   if(mg < 1) stabilityScore = 3;       // 刚更换经理，高不确定性
   else if(mg < 2) stabilityScore = 8;  // 磨合期
-  else if(mg < 3) stabilityScore = 13; // 初步稳定
-  else if(mg < 5) stabilityScore = 17; // 稳定
-  else if(mg < 10) stabilityScore = 21;// 成熟
-  else stabilityScore = 25;            // 超长任期，团队非常稳定
-  // 0-25分
+  else if(mg < 3) stabilityScore = 12; // 初步稳定
+  else if(mg < 5) stabilityScore = 16; // 稳定
+  else if(mg < 10) stabilityScore = 20;// 成熟
+  else stabilityScore = 24;            // 超长任期，团队非常稳定
+  // 0-24分
 
-  // 4. 规模适配性（权重 10%）
+  // 4. 规模适配性（权重 9%）
   //    50-500亿最优区间，太小有清盘风险，太大有调仓/流动性困难
-  const sizeScore = sz >= 1000 ? 4 : sz >= 500 ? 7 : sz >= 50 ? 10 : sz >= 10 ? 7 : sz >= 2 ? 5 : 2; // 2-10分
+  const sizeScore = sz >= 1000 ? 4 : sz >= 500 ? 6 : sz >= 50 ? 9 : sz >= 10 ? 6 : sz >= 2 ? 4 : 2; // 2-9分
 
-  const total = Math.round(Math.min(100, Math.max(0, calmarScore + consistencyScore + stabilityScore + sizeScore)));
+  // 5. 费率优势（权重 5%）
+  //    费率是预测基金长期表现的可靠指标，低费率长期复利优势显著
+  let feeScore;
+  if(fee <= 0) feeScore = 5;           // 货币基金/C类免申购费
+  else if(fee <= 0.08) feeScore = 5;   // 低费率指数/QDII
+  else if(fee <= 0.12) feeScore = 4;   // 标准指数
+  else if(fee <= 0.15) feeScore = 3;   // 标准主动
+  else feeScore = 1;                   // 高费率
+  // 0-5分
+
+  const total = Math.round(Math.min(100, Math.max(0, calmarScore + consistencyScore + stabilityScore + sizeScore + feeScore)));
   return total;
 }
 
@@ -4037,8 +4049,8 @@ function buildSteps(weights, picks, totalAmt, monthly, riskProfile, horizon){
     });
   }
   steps.push({
-    title:`📅 每季度检视并再平衡`,
-    desc:`每季度定期检查各基金表现，若某类资产偏离目标权重超过15%（相对偏离），需卖出高配部分、补仓低配部分。`
+    title:`📅 每半年检视并再平衡`,
+    desc:`每半年定期检查各基金表现，若某类资产偏离目标权重超过15%（相对偏离），需卖出高配部分、补仓低配部分。`
   });
   steps.push({
     title:'🛡️ 设置止损/止盈纪律',
@@ -4112,7 +4124,7 @@ function generateSmartPortfolio(){
     countEl.textContent=`已缓存 ${cached} 只基金实时数据`;
 
     const steps=[
-      {icon:'📊',text:'4维正交模型评分（Calmar+一致性+任期+规模）',pct:15},
+      {icon:'📊',text:'5维正交模型评分（Calmar+一致性+任期+规模+费率）',pct:15},
       {icon:'📡',text:'分析市场动量信号，推断经济周期阶段',pct:30},
       {icon:'⚖️',text:'Risk Parity风险平价基础配置',pct:45},
       {icon:'🎚️',text:'风险偏好倾斜 + 期限约束叠加',pct:60},
@@ -4188,7 +4200,7 @@ function generateSmartPortfolio(){
       stepsEl.innerHTML='';
 
       const algoSteps=[
-        {icon:'📊',text:'4维正交模型评分（Calmar+一致性+任期+规模）'},
+        {icon:'📊',text:'5维正交模型评分（Calmar+一致性+任期+规模+费率）'},
         {icon:'📡',text:'分析市场动量信号，推断经济周期阶段'},
         {icon:'⚖️',text:'Risk Parity风险平价基础配置'},
         {icon:'🎚️',text:'风险偏好倾斜 + 期限约束叠加'},
@@ -4569,11 +4581,12 @@ function _doGenerate(shouldScroll){
     stratEl.innerHTML = `
       <div class="notice" style="padding:6px 10px;border-radius:6px;font-size:11px;margin-bottom:10px;border-left:none">📡 基金收益率、最大回撤、规模、经理任期等核心数据由天天基金网API实时拉取（每24小时自动更新），确保评分和方案基于最新市场数据。</div>
       <b>一、基金评分体系（简化多因子）</b><br>
-      去除冗余指标，保留4个正交维度：<br>
-      · <b>Calmar Ratio</b>（40%权重）：时间窗口匹配的混合Calmar——短期Calmar=(近1年收益-无风险利率${RISK_FREE}%)/近3年最大回撤(60%)，长期Calmar=(近3年年化收益-无风险利率${RISK_FREE}%)/全期最大回撤(40%)，避免收益与回撤时间窗口错配<br>
-      · <b>收益一致性</b>（25%权重）：1年/3年趋势方向是否一致 + 3年收益强度，衡量收益可持续性<br>
-      · <b>任期稳定性</b>（25%权重）：客观指标——基金经理连续任期年限，6档评分：<1年=3分(刚更换，高风险)，1-2年=8分(磨合期)，2-3年=13分(初步稳定)，3-5年=17分(稳定)，5-10年=21分(成熟)，>10年=25分(超稳定)。替代主观的星级评定<br>
-      · <b>规模适配性</b>（10%权重）：50-500亿为最优区间（满分），<2亿有清盘风险（2分），>1000亿调仓困难（4分）<br><br>
+      去除冗余指标，保留5个正交维度：<br>
+      · <b>Calmar Ratio</b>（38%权重）：时间窗口匹配的混合Calmar——短期Calmar=(近1年收益-无风险利率${RISK_FREE}%)/近3年最大回撤(60%)，长期Calmar=(近3年年化收益-无风险利率${RISK_FREE}%)/全期最大回撤(40%)，避免收益与回撤时间窗口错配<br>
+      · <b>收益一致性</b>（24%权重）：1年/3年趋势方向是否一致 + 3年收益强度，衡量收益可持续性<br>
+      · <b>任期稳定性</b>（24%权重）：客观指标——基金经理连续任期年限，6档评分：<1年=3分(刚更换，高风险)，1-2年=8分(磨合期)，2-3年=12分(初步稳定)，3-5年=16分(稳定)，5-10年=20分(成熟)，>10年=24分(超稳定)。替代主观的星级评定<br>
+      · <b>规模适配性</b>（9%权重）：50-500亿为最优区间（满分），<2亿有清盘风险（2分），>1000亿调仓困难（4分）<br>
+      · <b>费率优势</b>（5%权重）：≤0%满分，≤0.08%满分，≤0.12%得4分，≤0.15%得3分，>0.15%仅1分。费率是预测长期表现的可靠指标<br><br>
 
       <b>二、市场动量约束（基于资产相对强弱的顶层调整）</b><br>
       · 通过各类资产近1年相对收益推断市场状态，本质为动量/相对强弱信号（非真实宏观经济指标）<br>
@@ -4621,7 +4634,7 @@ function _doGenerate(shouldScroll){
       · 债基专项：信用等级非AAA且久期>2年，信用下沉预警<br><br>
 
       <b>八、策略鲁棒性（新增）</b><br>
-      · 再平衡规则：季度检视，阈值触发(偏离>15%相对偏离)<br>
+      · 再平衡规则：半年度检视，阈值触发(偏离>15%相对偏离)<br>
       · 交易成本（支付宝1折费率）：混合型A类申购约0.15%，指数联接A类约0.10-0.12%，QDII A类约0.08%，C类免申购费；赎回费7天-1年约0.5%，1-2年0.25%，2年+免赎回费<br>
       · 压力测试：模拟10种历史情景（2015股灾/2018熊市/2020疫情/2022风格切换/债灾/泡沫/2023利率上行/2024小盘暴跌/全球流动性危机/温和市场基准），每个场景附概率估计，输出概率加权期望损失<br><br>
 
@@ -4750,9 +4763,9 @@ function renderStressTest(results, stressAmt){
       }).join('')}</tbody>
     </table></div>
     <div style="margin-top:8px;padding:8px 12px;background:#f8f9fc;border-radius:6px;font-size:11px;color:var(--muted);line-height:1.6">
-      📐 <b>再平衡规则：</b>建议每季度检视，当任一类别偏离目标权重>15%(相对偏离)时触发再平衡。<br>
+      📐 <b>再平衡规则：</b>建议每半年检视，当任一类别偏离目标权重>15%(相对偏离)时触发再平衡。<br>
       💰 <b>交易成本（支付宝1折费率）：</b>混合型A类申购约0.15%，指数联接A类约0.10-0.12%，QDII A类约0.08%，C类/货币基金免申购费。赎回费：&lt;7天=1.5%（惩罚性），7天-1年≈0.5%，1-2年≈0.25%，&gt;2年=0%。QDII基金可能有单日限购（1000-5000元）。每次再平衡综合成本约0.1-0.3%。<br>
-      ⏰ <b>再平衡频率：</b>季度为宜。过频(月度)增加成本，过疏(年度)偏离积累。阈值触发优于固定日历。
+      ⏰ <b>再平衡频率：</b>半年度为宜。过频(季度/月度)增加成本且心理负担重，过疏(年度以上)偏离积累过大。阈值触发优于固定日历。
     </div>`;
 }
 
