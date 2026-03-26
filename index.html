@@ -4913,12 +4913,14 @@ function _doGenerate(shouldScroll){
       const scale = 100 / totalPctAfterRecycle;
       allPicksAfterRecycle.forEach(p => {
         p.pct = Math.round(p.pct * scale);
+        p.amt = Math.round(portfolioTotal * p.pct / 100);
       });
       totalPctAfterRecycle = allPicksAfterRecycle.reduce((s,p) => s + p.pct, 0);
       if(totalPctAfterRecycle !== 100){
         const diff = 100 - totalPctAfterRecycle;
         const maxPick = [...allPicksAfterRecycle].sort((a,b) => b.pct - a.pct)[0];
         maxPick.pct += diff;
+        maxPick.amt = Math.round(portfolioTotal * maxPick.pct / 100);
       }
     }
   }
@@ -4984,6 +4986,7 @@ function _doGenerate(shouldScroll){
       const scale = 100 / totalPctAfterFilter;
       filteredPicks.forEach(f => {
         f.pct = Math.round(f.pct * scale);
+        f.amt = Math.round(portfolioTotal * f.pct / 100); // 同步金额
       });
       // 处理舍入误差
       const finalTotal = filteredPicks.reduce((s, f) => s + f.pct, 0);
@@ -4991,6 +4994,7 @@ function _doGenerate(shouldScroll){
         const diff = 100 - finalTotal;
         const maxPick = filteredPicks.sort((a,b) => b.pct - a.pct)[0];
         maxPick.pct += diff;
+        maxPick.amt = Math.round(portfolioTotal * maxPick.pct / 100); // 同步金额
       }
     }
   }
@@ -5010,6 +5014,7 @@ function _doGenerate(shouldScroll){
     const scale = 100 / totalPctFinal;
     finalPicks.forEach(f => {
       f.pct = Math.round(f.pct * scale);
+      f.amt = Math.round(portfolioTotal * f.pct / 100); // 同步金额
     });
     // 处理舍入误差
     totalPctFinal = finalPicks.reduce((s, f) => s + f.pct, 0);
@@ -5017,6 +5022,7 @@ function _doGenerate(shouldScroll){
       const diff = 100 - totalPctFinal;
       const maxPick = [...finalPicks].sort((a,b) => b.pct - a.pct)[0];
       maxPick.pct += diff;
+      maxPick.amt = Math.round(portfolioTotal * maxPick.pct / 100); // 同步金额
     }
   }
 
@@ -5060,12 +5066,14 @@ function _doGenerate(shouldScroll){
     const scale = 100 / totalPctAfterVerify;
     finalPicks.forEach(f => {
       f.pct = Math.round(f.pct * scale);
+      f.amt = Math.round(portfolioTotal * f.pct / 100); // 同步金额
     });
     totalPctAfterVerify = finalPicks.reduce((s, f) => s + f.pct, 0);
     if(totalPctAfterVerify !== 100){
       const diff = 100 - totalPctAfterVerify;
       const maxPick = [...finalPicks].sort((a,b) => b.pct - a.pct)[0];
       maxPick.pct += diff;
+      maxPick.amt = Math.round(portfolioTotal * maxPick.pct / 100); // 同步金额
     }
   }
 
