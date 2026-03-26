@@ -4982,6 +4982,25 @@ function _doGenerate(shouldScroll){
     return;
   }
 
+  // 最终百分比归一化：确保所有基金百分比总和为100%
+  finalPicks.forEach(f => {
+    f.pct = Math.round(f.amt / portfolioTotal * 100);
+  });
+  let totalPctFinal = finalPicks.reduce((s, f) => s + f.pct, 0);
+  if(totalPctFinal !== 100 && finalPicks.length > 0 && totalPctFinal > 0){
+    const scale = 100 / totalPctFinal;
+    finalPicks.forEach(f => {
+      f.pct = Math.round(f.pct * scale);
+    });
+    // 处理舍入误差
+    totalPctFinal = finalPicks.reduce((s, f) => s + f.pct, 0);
+    if(totalPctFinal !== 100){
+      const diff = 100 - totalPctFinal;
+      const maxPick = [...finalPicks].sort((a,b) => b.pct - a.pct)[0];
+      maxPick.pct += diff;
+    }
+  }
+
   // 金额校验：确保新买入的总金额等于用户输入的新资金（totalAmt）
   // 包括纯新买入的基金 + 合并后基金的新买入部分（newBuyAmt）
   const newBuyTotal = finalPicks.reduce((s, f) => {
