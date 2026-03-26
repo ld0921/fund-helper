@@ -5420,7 +5420,7 @@ function renderAllocGroups(selectedPicks, weights){
     const picks = g.cats.flatMap(cat=>selectedPicks[cat]||[]);
     if(!picks.length) return;
     const groupPct = Math.round(picks.reduce((s,f)=>s+f.pct,0));
-    const groupAmt = picks.reduce((s,f)=>s+f.amt,0);
+    const groupAmt = Math.round(picks.reduce((s,f)=>s+f.amt,0));
     html+=`<div class="alloc-group">
       <div class="alloc-group-head">
         <span>${g.title}</span>
