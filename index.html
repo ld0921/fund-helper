@@ -1778,8 +1778,8 @@ const CURATED_FUNDS = [
   {code:'110017',name:'易方达增强回报债券A',type:'债券型',cat:'bond',label:'债券基金',manager:'王晓晨',mgrYears:14.6,stars:5,risk:'R3',size:316.96,r1:5.55,r3:17.39,maxDD:21.1,fee:0.07,vol:0,tags:['信用债','增强','稳健'],reason:'长期业绩位居债基前列，信用债与利率债均衡，适度增强收益，风险控制优秀。'},
   {code:'000171',name:'易方达裕丰回报债券A',type:'债券型',cat:'bond',label:'债券基金',manager:'张清华',mgrYears:12.2,stars:4,risk:'R3',size:152.65,r1:7.09,r3:16.01,maxDD:26,fee:0.05,vol:0,tags:['债券','增强','稳健'],reason:'债券增强型产品，适合追求稳健收益的投资者，替代银行理财。'},
   {code:'070009',name:'嘉实超短债债券C',type:'债券型',cat:'bond',label:'债券基金',manager:'王亚洲',mgrYears:10.7,stars:5,risk:'R1',size:63.48,r1:1.54,r3:6.55,maxDD:2.3,fee:0,vol:0,tags:['超短债','流动性','保守'],reason:'持仓期限极短，流动性优异，收益高于货币基金，风险接近零，适合短期过渡资金。'},
-  {code:'000198',name:'天弘余额宝货币',type:'货币型',cat:'money',label:'货币基金',manager:'刘莹',mgrYears:8,stars:3,risk:'R1',size:7646.28,r1:1.11,r3:4.47,maxDD:0.0,fee:0,vol:0,tags:['余额宝','支付宝','随存随取'],reason:'支付宝默认货币基金，全球规模最大，T+0取用，历史从未亏损，适合闲置资金管理。'},
-  {code:'003003',name:'华夏现金增利货币A/E',type:'货币型',cat:'money',label:'货币基金',manager:'曲波',mgrYears:18.2,stars:3,risk:'R1',size:593.88,r1:1.13,r3:4.57,maxDD:0.0,fee:0,vol:0,tags:['货币','稳健','现金管理'],reason:'华夏基金旗下货币基金，规模较大，收益稳定，适合资金备用仓。'},
+  {code:'000198',name:'天弘余额宝货币',type:'货币型',cat:'money',label:'货币基金',manager:'王登峰',mgrYears:11.8,stars:3,risk:'R1',size:6891.5,r1:1.15,r3:4.62,maxDD:0.0,fee:0,vol:0,tags:['货币','余额宝','流动性'],reason:'余额宝对接货币基金，规模最大，流动性最佳，T+0快速赎回。注意：可能暂停申购，系统将自动推荐替代基金。'},
+  {code:'003003',name:'华夏现金增利货币A/E',type:'货币型',cat:'money',label:'货币基金',manager:'曲波',mgrYears:18.2,stars:3,risk:'R1',size:593.88,r1:1.13,r3:4.57,maxDD:0.0,fee:0,vol:0,tags:['货币','稳健','现金管理'],reason:'华夏基金旗下货币基金，规模较大，收益稳定，支持支付宝申购，适合资金备用仓。'},
   {code:'161125',name:'易方达标普500指数人民币A',type:'QDII',cat:'qdii',label:'QDII海外',manager:'刘依姗',mgrYears:1.3,stars:4,risk:'R4',size:14.75,r1:13.32,r3:66.24,maxDD:32.9,fee:0.08,vol:0,tags:['美股','标普500','全球配置'],reason:'跟踪标普500，投资苹果微软英伟达等美股核心资产，历史年化约10%+，全球配置首选。'},
   {code:'270042',name:'广发纳斯达克100ETF联接人民币(QDII)A',type:'QDII',cat:'qdii',label:'QDII海外',manager:'刘杰',mgrYears:12,stars:5,risk:'R5',size:108.44,r1:18.61,r3:88.66,maxDD:31.2,fee:0.08,vol:0,tags:['美股','纳斯达克','科技'],reason:'跟踪纳斯达克100，高度集中科技巨头，弹性极大，长期表现优异，适合激进型配置。'},
   {code:'040046',name:'华安纳斯达克100ETF联接(QDII)A',type:'QDII',cat:'qdii',label:'QDII海外',manager:'倪斌',mgrYears:7.5,stars:4,risk:'R4',size:55.2,r1:17.03,r3:85.36,maxDD:31.2,fee:0.08,vol:0,tags:['美股','纳斯达克','科技'],reason:'华安旗下纳斯达克100联接基金，管理经验丰富，费率合理，适合配置美股科技赛道的投资者。'},
@@ -1812,6 +1812,22 @@ const FUND_META = {
 };
 const STYLE_LABELS = {large_value:'大盘价值',large_blend:'大盘均衡',large_growth:'大盘成长',mid_value:'中盘价值',mid_blend:'中盘均衡',mid_growth:'中盘成长',bond_credit:'信用债',bond_rate:'利率债',bond_short:'短债',money:'货币'};
 function getMeta(code){ return FUND_META[code]||{}; }
+
+// ═══════════════ 暂停申购基金及替代方案 ═══════════════
+// 支付宝等平台暂停申购的基金代码列表（需定期更新）
+const SUSPENDED_FUNDS = new Set(['000198']); // 天弘余额宝货币
+// 暂停基金的替代方案映射（同类型、同风险等级）
+const FUND_ALTERNATIVES = {
+  '000198': '003003', // 余额宝暂停 → 华夏现金增利货币
+};
+// 检查基金是否可购买，若暂停则返回替代基金代码
+function checkFundAvailability(code){
+  if(SUSPENDED_FUNDS.has(code)){
+    return FUND_ALTERNATIVES[code] || null;
+  }
+  return code;
+}
+
 // 支付宝1折申购费率（第三方平台通常1折优惠，C类份额免申购费）
 function getDefaultFee(cat){ return {active:0.15,index:0.012,bond:0.05,money:0,qdii:0.08}[cat]||0.10; }
 
@@ -4342,7 +4358,19 @@ function selectFunds(cat, catData, riskProfile, pct, totalAmt){
 
   // 选几只：≥35%选3只，≥25%选2只，其他1只
   const pickCount = pct >= 35 && deduped.length >= 3 ? 3 : pct >= 25 && deduped.length >= 2 ? 2 : 1;
-  const picks = deduped.slice(0, pickCount);
+  let picks = deduped.slice(0, pickCount);
+
+  // 暂停申购检查：若基金暂停，替换为同类别替代基金
+  picks = picks.map(f => {
+    const availableCode = checkFundAvailability(f.code);
+    if(availableCode !== f.code){
+      const alternative = CURATED_FUNDS.find(af => af.code === availableCode);
+      if(alternative){
+        return {...alternative, composite: f.composite, adjustedScore: f.adjustedScore};
+      }
+    }
+    return f;
+  });
 
   // 核心-卫星分配：按评分差距自适应（评分接近→趋向均分，差距大→集中核心仓）
   let perPick;
@@ -4770,7 +4798,27 @@ function _doGenerate(shouldScroll){
   }
 
   const allPicks = Object.values(selectedPicks).flat();
-  if(!allPicks.length){
+
+  // 过滤掉金额过小的基金（< 100元），避免推荐0元或极小金额的基金
+  const filteredPicks = allPicks.filter(f => f.amt >= 100);
+  if(filteredPicks.length < allPicks.length){
+    // 重新分配被过滤基金的金额到剩余基金（按原比例）
+    const removedAmt = allPicks.filter(f => f.amt < 100).reduce((s, f) => s + f.amt, 0);
+    if(filteredPicks.length > 0 && removedAmt > 0){
+      const totalPct = filteredPicks.reduce((s, f) => s + f.pct, 0);
+      filteredPicks.forEach(f => {
+        const addAmt = Math.round(removedAmt * f.pct / totalPct);
+        f.amt += addAmt;
+      });
+    }
+    // 更新 selectedPicks
+    Object.keys(selectedPicks).forEach(cat => {
+      selectedPicks[cat] = selectedPicks[cat].filter(f => f.amt >= 100);
+    });
+  }
+
+  const finalPicks = filteredPicks;
+  if(!finalPicks.length){
     document.getElementById('plan-summary').innerHTML='<div style="padding:20px;text-align:center;color:var(--muted)">⚠️ 未能生成方案，请检查基金数据是否加载完成后重试。</div>';
     return;
   }
@@ -4780,7 +4828,7 @@ function _doGenerate(shouldScroll){
   // 长期中枢参考值（A股长期年化）
   const longTermMu = { active:8, index:7, bond:3, money:2, qdii:6 };
   // 均值回归：当前r3年化偏离长期中枢越远，回归力度越大
-  const expReturn = allPicks.reduce((s,f) => {
+  const expReturn = finalPicks.reduce((s,f) => {
     const r3Ann = f.r3 > -100 ? (Math.pow(1 + f.r3/100, 1/3) - 1) * 100 : 0;
     const mu = longTermMu[f.cat] || 5;
     // 回归系数：r3Ann 偏离 mu 越远，越向 mu 回归
@@ -4797,7 +4845,7 @@ function _doGenerate(shouldScroll){
   // 3. 跨类别：使用 CORR_MATRIX 5×5 相关性矩阵（主动-债券ρ=-0.15，指数-债券ρ=-0.10等）
   const RHO_INTRA = 0.8;
   const catFundsMap = {};
-  allPicks.forEach(f => {
+  finalPicks.forEach(f => {
     if(!catFundsMap[f.cat]) catFundsMap[f.cat] = [];
     catFundsMap[f.cat].push(f);
   });
@@ -4842,7 +4890,7 @@ function _doGenerate(shouldScroll){
   });
   const sigma = Math.sqrt(Math.max(portfolioVar, 0.01));
   // 反推组合等效回撤（加权 DD_TO_VOL）
-  const avgDDtoVol = allPicks.reduce((s,f) => s + (DD_TO_VOL[f.cat]||2.5) * f.pct, 0) / 100;
+  const avgDDtoVol = finalPicks.reduce((s,f) => s + (DD_TO_VOL[f.cat]||2.5) * f.pct, 0) / 100;
   const blendedDD = sigma * avgDDtoVol;
   // 正态分布置信区间
   const expReturnP75 = expReturn + 0.67 * sigma; // 乐观情景（75分位）
@@ -4858,7 +4906,7 @@ function _doGenerate(shouldScroll){
   // 权益类存在弱负自相关(ρ≈-0.05，均值回归)，债券类正自相关(ρ≈+0.08，利率趋势)
   // σ_T = σ × √(T × (1 + 2×Σ(1-k/T)×ρ_k))，简化为首阶自相关修正
   const cumReturn3Mid = (Math.pow(1 + expReturn/100, 3) - 1) * 100;
-  const equityPctTotal = allPicks.filter(f=>['active','index','qdii'].includes(f.cat)).reduce((s,f)=>s+f.pct,0)/100;
+  const equityPctTotal = finalPicks.filter(f=>['active','index','qdii'].includes(f.cat)).reduce((s,f)=>s+f.pct,0)/100;
   const autoCorr1 = equityPctTotal * (-0.05) + (1 - equityPctTotal) * 0.08;
   const acFactor = 1 + 2 * (2/3 * autoCorr1 + 1/3 * autoCorr1 * 0.6);
   const cumSigma3 = sigma * Math.sqrt(3 * Math.max(acFactor, 0.5));
@@ -4892,9 +4940,9 @@ function _doGenerate(shouldScroll){
   renderRiskMeter(blendedDD, riskP);
 
   // 10.5 风格暴露分析 + 压力测试
-  const styleExposure = analyzeStyleExposure(allPicks);
-  const stressResults = stressTest(allPicks);
-  renderStyleExposure(styleExposure, allPicks);
+  const styleExposure = analyzeStyleExposure(finalPicks);
+  const stressResults = stressTest(finalPicks);
+  renderStyleExposure(styleExposure, finalPicks);
   renderStressTest(stressResults, totalAmt);
 
   // 11. 执行步骤
@@ -5024,8 +5072,8 @@ function _doGenerate(shouldScroll){
 
   // 渲染方案摘要卡片
   const riskColors={conservative:'var(--success)',moderate:'var(--primary)',balanced:'var(--warning)',aggressive:'var(--danger)'};
-  const keptCount = allPicks.filter(f=>f.isExisting).length;
-  const newCount = allPicks.length - keptCount;
+  const keptCount = finalPicks.filter(f=>f.isExisting).length;
+  const newCount = finalPicks.length - keptCount;
   const summaryEl=document.getElementById('plan-summary');
   if(summaryEl){
     const holdingNote = hasHoldings
@@ -5038,13 +5086,13 @@ function _doGenerate(shouldScroll){
     summaryEl.innerHTML=`
       <div style="font-size:14px;font-weight:600;margin-bottom:10px">📋 方案摘要</div>
       <div class="ps-row">
-        <div class="ps-item"><div class="ps-val">${allPicks.length} 只</div><div class="ps-label">${hasHoldings?`保留${keptCount}+新${newCount}`:'推荐基金'}</div></div>
+        <div class="ps-item"><div class="ps-val">${finalPicks.length} 只</div><div class="ps-label">${hasHoldings?`保留${keptCount}+新${newCount}`:'推荐基金'}</div></div>
         <div class="ps-item"><div class="ps-val" style="color:${riskColors[riskP]}">${riskNames[riskP]}</div><div class="ps-label">风险类型</div></div>
         <div class="ps-item"><div class="ps-val">${expReturnLow.toFixed(1)}%~${expReturnHigh.toFixed(1)}%</div><div class="ps-label">预期年化区间</div></div>
         <div class="ps-item"><div class="ps-val" style="color:var(--danger)">-${blendedDD.toFixed(1)}%</div><div class="ps-label">组合最大回撤</div></div>
       </div>
       <div style="margin-top:10px;font-size:12px;color:var(--muted);line-height:1.6">
-        ${allPicks.map(f=>`${f.isExisting?'<span style="color:var(--primary)">✓</span> ':''}<b>${escHtml(f.name)}</b>(${f.pct}%)`).join(' · ')}
+        ${finalPicks.map(f=>`${f.isExisting?'<span style="color:var(--primary)">✓</span> ':''}<b>${escHtml(f.name)}</b>(${f.pct}%)`).join(' · ')}
       </div>
       ${holdingNote}`;
   }
@@ -5056,7 +5104,7 @@ function _doGenerate(shouldScroll){
 
   // 记录推荐历史（用于检测最近推荐的基金）
   try {
-    const newBuys = allPicks.filter(f => !f.isExisting);
+    const newBuys = finalPicks.filter(f => !f.isExisting);
     if(newBuys.length > 0){
       const history = JSON.parse(localStorage.getItem('recommendHistory') || '[]');
       const now = new Date().toISOString();
