@@ -4223,8 +4223,8 @@ function _doGenerate(shouldScroll){
   const origFunds = CURATED_FUNDS.filter(f => !f.discovered);
   const apiUpdatedCount = origFunds.filter(f => f._apiUpdated).length;
   const staleNotice = document.getElementById('data-stale-notice');
-  if(apiUpdatedCount < origFunds.length * 0.8){
-    // 超过 80% 的精选基金未被 API 更新，显示警告
+  if(apiUpdatedCount < origFunds.length * 0.6){
+    // 超过 60% 的精选基金未被 API 更新，显示警告
     if(!staleNotice){
       const notice = document.createElement('div');
       notice.id = 'data-stale-notice';
@@ -4510,14 +4510,22 @@ function _doGenerate(shouldScroll){
   if(replaceSuggestions.length > 0){
     const rebalCard = document.getElementById('rebal-card');
     if(rebalCard){
+      // 过滤出有效的替换建议（排除当前基金，且有更高评分的替换目标）
+      const validReplacements = replaceSuggestions.map(r=>{
+        const catFunds = catRanks.find(c=>c.cat===r.cat);
+        const betterFunds = catFunds ? catFunds.topFunds.filter(f => f.code !== r.code && scoreF(f) > r.score) : [];
+        const bestInCat = betterFunds.length > 0 ? betterFunds[0] : null;
+        return {r, bestInCat};
+      }).filter(item => item.bestInCat !== null);
+
+      if(validReplacements.length === 0) return; // 没有有效的替换建议
+
       const replaceHtml = `<div style="margin-top:14px;padding:12px;background:#fff1f0;border-radius:8px;border-left:3px solid var(--danger)">
         <div style="font-size:13px;font-weight:600;color:#cf1322;margin-bottom:8px">⚠️ 建议替换的低分基金</div>
-        ${replaceSuggestions.map(r=>{
-          const catFunds = catRanks.find(c=>c.cat===r.cat);
-          const bestInCat = catFunds ? catFunds.topFunds[0] : null;
+        ${validReplacements.map(({r, bestInCat})=>{
           return `<div style="font-size:12px;line-height:1.8;color:#595959;margin-bottom:4px">
             <b>${escHtml(r.name)}</b>（评分 ${r.score}，市值 ¥${r.value.toLocaleString()}）→
-            ${bestInCat?`建议换入 <b style="color:var(--primary)">${escHtml(bestInCat.name)}</b>（评分 ${scoreF(bestInCat)}）`:'同类中暂无更优选择'}
+            建议换入 <b style="color:var(--primary)">${escHtml(bestInCat.name)}</b>（评分 ${scoreF(bestInCat)}）
           </div>`;
         }).join('')}
         <div style="font-size:11px;color:var(--muted);margin-top:6px">注：在支付宝中赎回低分基金（到账约1-3个工作日），到账后买入推荐基金。赎回费：&lt;7天=1.5%，7天-1年≈0.5%，&gt;2年=0%。</div>
