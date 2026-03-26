@@ -4911,6 +4911,17 @@ function _doGenerate(shouldScroll){
     // 差额加到占比最大的基金上
     const maxPick = allPicksRaw.sort((a,b) => b.pct - a.pct)[0];
     maxPick.pct += 100 - totalPctNow;
+    // 确保单个基金百分比不超过50%
+    if(maxPick.pct > 50){
+      const excess = maxPick.pct - 50;
+      maxPick.pct = 50;
+      // 将超出部分分配给其他基金
+      const others = allPicksRaw.filter(p => p !== maxPick);
+      if(others.length > 0){
+        const perOther = Math.floor(excess / others.length);
+        others.forEach(p => p.pct += perOther);
+      }
+    }
     maxPick.amt = Math.round(portfolioTotal * maxPick.pct / 100);
   }
 
