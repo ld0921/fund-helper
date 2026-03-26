@@ -850,7 +850,7 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
       <span class="icon icon-blue">📊</span>
       <span style="font-size:15px;font-weight:600" id="curated-title">精选基金库</span>
       <span style="margin-left:auto;font-size:11px;color:var(--muted)" id="detail-update-time"></span>
-      <button id="btn-update-all" class="btn btn-sm" onclick="updateAllData()" style="font-size:11px;padding:3px 10px" title="更新精选库详情 + 加载全市场优质基金">🔄 更新数据</button>
+      <button id="btn-update-all" class="btn" onclick="updateAllData()" style="font-size:13px;padding:8px 16px;background:linear-gradient(135deg,#52c41a,#389e0d);color:#fff;border:none;box-shadow:0 2px 6px rgba(82,196,26,.3);font-weight:600" title="更新精选库详情 + 加载全市场优质基金">🔄 更新数据</button>
     </div>
   </div>
   <div class="card" style="border-top-left-radius:0;border-top-right-radius:0">
@@ -971,19 +971,29 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
   </div>
 
   <!-- 刷新净值提示 -->
-  <div id="refresh-banner" style="margin:12px 0;padding:12px;background:linear-gradient(135deg,#fff7e6,#fffbe6);border:1px solid #ffd666;border-radius:8px">
-    <div style="display:flex;align-items:start;gap:8px">
-      <div style="font-size:20px">💡</div>
+  <div id="refresh-banner" style="margin:12px 0;padding:16px;background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.08);border:1px solid #e8e8e8">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+      <div style="width:48px;height:48px;background:linear-gradient(135deg,#1890ff,#096dd9);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">📊</div>
       <div style="flex:1">
-        <div style="font-size:13px;color:#ad6800;font-weight:600;margin-bottom:4px">首次使用或想查看最新数据？点击刷新净值</div>
-        <div style="font-size:11px;color:#8c6800;line-height:1.5">
-          • 刷新后可查看今日收益、累计盈亏等数据<br>
-          • 数据来源：天天基金网(fundgz) + 东方财富网<br>
-          • 交易日9:30-15:00可获取实时估算，其他时间显示最新确认净值
-        </div>
+        <div style="font-size:15px;color:var(--text);font-weight:600;margin-bottom:4px">刷新净值数据</div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.5">获取最新净值，查看今日收益与盈亏数据</div>
       </div>
     </div>
-    <button class="btn btn-primary" id="refresh-nav-btn" onclick="refreshHoldingsNav()" style="font-size:14px;padding:10px 24px;margin-top:10px;width:100%">🔄 刷新净值数据</button>
+    <button class="btn btn-primary" id="refresh-nav-btn" onclick="refreshHoldingsNav()" style="font-size:14px;padding:12px 20px;width:100%;background:linear-gradient(135deg,#1890ff,#096dd9);border:none;box-shadow:0 2px 6px rgba(24,144,255,.3)">🔄 立即刷新</button>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid #f0f0f0">
+      <div style="text-align:center">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:2px">数据来源</div>
+        <div style="font-size:12px;font-weight:600;color:var(--text)">天天基金</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:2px">更新频率</div>
+        <div style="font-size:12px;font-weight:600;color:var(--text)">实时估算</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:2px">交易时段</div>
+        <div style="font-size:12px;font-weight:600;color:var(--text)">9:30-15:00</div>
+      </div>
+    </div>
   </div>
 
   <!-- 收益总览（有持仓时显示） -->
