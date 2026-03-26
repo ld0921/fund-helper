@@ -3111,13 +3111,17 @@ async function refreshHoldingsNav(){
   for(const h of existingHoldings){
     // 2. 从fundgz获取实时估算数据
     fetchNav(h.code, async data => {
-      const today = new Date().toISOString().slice(0,10);
+      const now = new Date();
+      const today = now.toISOString().slice(0,10);
+      const currentHour = now.getHours();
+      const currentMinute = now.getMinutes();
 
-      // 验证fundgz数据日期
+      // 验证fundgz数据日期和时间
       if(data && data.gztime){
         const gztimeDate = data.gztime.slice(0,10);
-        if(gztimeDate !== today){
-          console.log(`[${h.code}] fundgz数据非今日(${gztimeDate})，清空gszzl`);
+        // 如果数据不是今天，或者是今天但还未到开盘时间(9:30)，清空gszzl
+        if(gztimeDate !== today || (currentHour < 9 || (currentHour === 9 && currentMinute < 30))){
+          console.log(`[${h.code}] fundgz数据非今日或未到开盘时间(${data.gztime})，清空gszzl`);
           data.gszzl = '0';
         }
       }
@@ -3419,8 +3423,8 @@ function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, totalP
               const srcTag=d.source==='dca'?'<span style="font-size:9px;padding:1px 4px;border-radius:2px;background:#f9f0ff;color:#722ed1;margin-left:3px">定投</span>':'';
               return `<tr style="${idx===details.length-1?'':'border-bottom:1px solid var(--border)'}">
                 <td style="font-weight:500;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(d.name)}${srcTag}</td>
-                <td style="text-align:right;color:var(--muted)">¥${d.cost.toLocaleString('zh-CN',{maximumFractionDigits:0})}</td>
-                <td style="text-align:right;font-weight:600">¥${d.value.toLocaleString('zh-CN',{maximumFractionDigits:0})}</td>
+                <td style="text-align:right;color:var(--muted)">¥${d.cost.toLocaleString('zh-CN',{minimumFractionDigits:0,maximumFractionDigits:2})}</td>
+                <td style="text-align:right;font-weight:600">¥${d.value.toLocaleString('zh-CN',{minimumFractionDigits:0,maximumFractionDigits:2})}</td>
                 <td style="text-align:right;font-weight:600" class="${d.pnl>=0?'up':'down'}">${pctStr}</td>
                 <td style="text-align:right;font-weight:600" class="${d.pnl>=0?'up':'down'}">${pnlStr}</td>
                 <td style="text-align:right;font-size:11px" class="${todayClass}">${todayStr}</td>
