@@ -1057,6 +1057,19 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
       <button class="btn btn-primary btn-sm" onclick="addExistingHolding()">＋ 添加持仓</button>
       <button class="btn btn-danger btn-sm" onclick="clearExistingHoldings()">清空全部</button>
     </div>
+
+    <!-- 待确认提醒横幅 -->
+    <div id="pending-confirm-reminder" style="display:none;margin-top:12px;background:#fff7e6;border:1px solid #ffd591;border-radius:8px;padding:12px 14px;font-size:13px;color:#ad6800;line-height:1.6">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:20px">⏰</span>
+        <div style="flex:1">
+          <div style="font-weight:600;margin-bottom:4px" id="pending-confirm-title">您有 X 笔持仓待确认</div>
+          <div style="font-size:12px;color:#8c6800" id="pending-confirm-desc">基金已确认，请输入支付宝显示的持有份额以获得准确数据</div>
+        </div>
+        <button class="btn btn-sm" style="background:#faad14;color:#fff;border:none;white-space:nowrap" onclick="scrollToFirstPending()">立即确认</button>
+      </div>
+    </div>
+
     <div id="eh-list" style="margin-top:12px;border:1px solid var(--border);border-radius:10px;overflow:hidden;display:none"></div>
     <div id="eh-empty" class="empty-state" style="margin-top:10px;padding:24px;text-align:center">
       <div class="empty-icon" style="font-size:48px;margin-bottom:12px">💼</div>
@@ -3406,8 +3419,35 @@ function renderExistingHoldings(){
   summary.style.display='block';
   summary.innerHTML=`💼 <b>${confirmedHoldings.length}</b> 只基金 · 总成本 <b>¥${totalCost.toLocaleString('zh-CN',{maximumFractionDigits:0})}</b> · 总市值 <b>¥${totalVal.toLocaleString('zh-CN',{maximumFractionDigits:0})}</b>${pnlHtml2}${pendingHtml}`;
 
+  // 检查待确认提醒
+  const needConfirm = existingHoldings.filter(h => h.status !== 'confirmed' && todayStr >= (h.confirmDate || ''));
+  const reminderEl = document.getElementById('pending-confirm-reminder');
+  if(reminderEl){
+    if(needConfirm.length > 0){
+      document.getElementById('pending-confirm-title').textContent = `您有 ${needConfirm.length} 笔持仓待确认`;
+      document.getElementById('pending-confirm-desc').textContent = `基金已确认，请输入支付宝显示的持有份额以获得准确数据`;
+      reminderEl.style.display = '';
+    } else {
+      reminderEl.style.display = 'none';
+    }
+  }
+
   // 渲染收益总览卡片
   renderPortfolioOverview(confirmedHoldings, totalCost, totalVal, totalPnl, totalPnlPct);
+}
+
+function scrollToFirstPending(){
+  const todayStr = new Date().toISOString().slice(0,10);
+  const firstPendingIdx = existingHoldings.findIndex(h => h.status !== 'confirmed' && todayStr >= (h.confirmDate || ''));
+  if(firstPendingIdx >= 0){
+    // 滚动到持仓列表
+    const listEl = document.getElementById('eh-list');
+    if(listEl){
+      listEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // 延迟后触发第一个待确认项的确认操作
+      setTimeout(() => confirmHolding(firstPendingIdx), 500);
+    }
+  }
 }
 
 function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, totalPnlPct){
