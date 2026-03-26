@@ -5965,7 +5965,7 @@ function renderDcaTracker(){
     const realIdx=dcaPlans.indexOf(d);
     if(!d.execLog) d.execLog={};
     const executed=d.execLog[thisMonth]||false;
-    const nextDay=d.deductDay||1;
+    const nextDay=d.deductDay||10; // 默认10号，与表单默认值一致
     const nextDate=now.getDate()>=nextDay?`下月${nextDay}号`:`本月${nextDay}号`;
 
     return `<div style="padding:12px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;background:${executed?'#f6ffed':'#fff'}">
