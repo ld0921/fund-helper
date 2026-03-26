@@ -4906,23 +4906,24 @@ function _doGenerate(shouldScroll){
 
   // 修正舍入误差：确保总百分比=100%
   const allPicksRaw = Object.values(selectedPicks).flat();
-  const totalPctNow = allPicksRaw.reduce((s,p) => s + p.pct, 0);
-  if(totalPctNow !== 100 && allPicksRaw.length > 0){
-    // 差额加到占比最大的基金上
-    const maxPick = allPicksRaw.sort((a,b) => b.pct - a.pct)[0];
-    maxPick.pct += 100 - totalPctNow;
-    // 确保单个基金百分比不超过50%
-    if(maxPick.pct > 50){
-      const excess = maxPick.pct - 50;
-      maxPick.pct = 50;
-      // 将超出部分分配给其他基金
-      const others = allPicksRaw.filter(p => p !== maxPick);
-      if(others.length > 0){
-        const perOther = Math.floor(excess / others.length);
-        others.forEach(p => p.pct += perOther);
-      }
+  let totalPctNow = allPicksRaw.reduce((s,p) => s + p.pct, 0);
+
+  // 如果总百分比不等于100%，按比例归一化所有基金
+  if(totalPctNow !== 100 && allPicksRaw.length > 0 && totalPctNow > 0){
+    const scale = 100 / totalPctNow;
+    allPicksRaw.forEach(p => {
+      p.pct = Math.round(p.pct * scale);
+      p.amt = Math.round(portfolioTotal * p.pct / 100);
+    });
+
+    // 再次检查总和，处理舍入误差
+    totalPctNow = allPicksRaw.reduce((s,p) => s + p.pct, 0);
+    if(totalPctNow !== 100){
+      const diff = 100 - totalPctNow;
+      const maxPick = allPicksRaw.sort((a,b) => b.pct - a.pct)[0];
+      maxPick.pct += diff;
+      maxPick.amt = Math.round(portfolioTotal * maxPick.pct / 100);
     }
-    maxPick.amt = Math.round(portfolioTotal * maxPick.pct / 100);
   }
 
   const allPicks = Object.values(selectedPicks).flat();
