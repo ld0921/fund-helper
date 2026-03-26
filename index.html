@@ -4052,7 +4052,7 @@ function computeRebalancePlan(targetPicks, newMoney){
     existTotal, newMoney, totalPortfolio,
     sellAmt:  actions.filter(a=>a.action==='sell').reduce((s,a)=>s+a.actionAmt,0),
     reduceAmt:actions.filter(a=>a.action==='reduce'||a.action==='reduce_gentle').reduce((s,a)=>s+a.actionAmt,0),
-    buyAmt:   actions.filter(a=>['buy','buy_more'].includes(a.action)).reduce((s,a)=>s+a.actionAmt,0),
+    buyAmt:   newMoney, // 直接使用用户输入的新增资金
   };
   return {actions,summary};
 }
