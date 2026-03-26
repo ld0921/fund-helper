@@ -3859,6 +3859,19 @@ function computeRebalancePlan(targetPicks, newMoney){
 
   // 目标基金：检查是否已持有
   allPicks.forEach(pick=>{
+    // 特殊处理：如果是新买入的条目（isExisting=false），直接使用amt作为买入金额
+    if(pick.isExisting === false){
+      const actionAmt = pick.amt;
+      const actionDesc = `新建仓 ¥${actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
+      actions.push({
+        code:pick.code, name:pick.name, type:pick.type, cat:pick.cat, r1:pick.r1,
+        currentAmt:0, targetAmt:actionAmt, action:'buy', actionAmt, actionDesc,
+        actionColor:'act-buy', manager:pick.manager
+      });
+      return;
+    }
+
+    // 已有持仓的处理逻辑
     const targetAmt=Math.round(totalPortfolio*pick.pct/100);
     const held=existingHoldings.find(h=>h.code===pick.code);
     const currentAmt=held?held.value:0;
@@ -4760,27 +4773,6 @@ function _doGenerate(shouldScroll){
     selectedPicks[cd.cat] = [...keptPicks, ...newPicks];
   });
 
-  // 合并同一只基金的条目（已有持仓+新买入）
-  Object.keys(selectedPicks).forEach(cat => {
-    const picks = selectedPicks[cat];
-    const merged = {};
-    picks.forEach(p => {
-      if(!merged[p.code]){
-        merged[p.code] = {...p};
-      } else {
-        // 合并：累加百分比和金额
-        merged[p.code].pct += p.pct;
-        merged[p.code].amt += p.amt;
-        // 如果有新买入，更新method和role
-        if(!p.isExisting){
-          merged[p.code].method = merged[p.code].isExisting ? '继续持有+加仓' : '立即买入';
-          merged[p.code].role = merged[p.code].isExisting ? '已持有·加仓' : '新建仓';
-        }
-      }
-    });
-    selectedPicks[cat] = Object.values(merged);
-  });
-
   // 4.9 回收空类别的权重：风险过滤后某些类别可能选不出基金
   // 将空类别的百分比按比例分配给已有基金的类别
   const emptyCats = catRanks.filter(c => !selectedPicks[c.cat] || !selectedPicks[c.cat].length);
@@ -4848,11 +4840,21 @@ function _doGenerate(shouldScroll){
   const actualTotal = finalPicks.reduce((s, f) => s + f.amt, 0);
   const amtDiff = portfolioTotal - actualTotal;
   if(amtDiff !== 0 && finalPicks.length > 0){
-    // 差额加到金额最大的基金上（通常是新买入的基金）
+    // 差额加到金额最大的新买入基金上（通常是新买入的基金）
     const maxAmtPick = finalPicks.filter(f => !f.isExisting).sort((a,b) => b.amt - a.amt)[0] || finalPicks.sort((a,b) => b.amt - a.amt)[0];
     maxAmtPick.amt += amtDiff;
     // 同步更新百分比
     maxAmtPick.pct = Math.round(maxAmtPick.amt / portfolioTotal * 100);
+  }
+
+  // 二次校验：确保新买入的总金额等于用户输入的新资金（totalAmt）
+  const newBuyTotal = finalPicks.filter(f => !f.isExisting).reduce((s, f) => s + f.amt, 0);
+  const newBuyDiff = totalAmt - newBuyTotal;
+  if(Math.abs(newBuyDiff) > 0 && finalPicks.some(f => !f.isExisting)){
+    // 将差额加到金额最大的新买入基金上
+    const maxNewBuy = finalPicks.filter(f => !f.isExisting).sort((a,b) => b.amt - a.amt)[0];
+    maxNewBuy.amt += newBuyDiff;
+    maxNewBuy.pct = Math.round(maxNewBuy.amt / portfolioTotal * 100);
   }
 
   // 重新同步selectedPicks：确保computeRebalancePlan使用的是过滤和调整后的数据
