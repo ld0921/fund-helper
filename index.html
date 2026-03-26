@@ -4857,18 +4857,7 @@ function _doGenerate(shouldScroll){
     return;
   }
 
-  // 最终金额校验：确保总金额等于portfolioTotal（消除舍入误差）
-  const actualTotal = finalPicks.reduce((s, f) => s + f.amt, 0);
-  const amtDiff = portfolioTotal - actualTotal;
-  if(amtDiff !== 0 && finalPicks.length > 0){
-    // 差额加到金额最大的新买入基金上（通常是新买入的基金）
-    const maxAmtPick = finalPicks.filter(f => !f.isExisting).sort((a,b) => b.amt - a.amt)[0] || finalPicks.sort((a,b) => b.amt - a.amt)[0];
-    maxAmtPick.amt += amtDiff;
-    // 同步更新百分比
-    maxAmtPick.pct = Math.round(maxAmtPick.amt / portfolioTotal * 100);
-  }
-
-  // 二次校验：确保新买入的总金额等于用户输入的新资金（totalAmt）
+  // 金额校验：确保新买入的总金额等于用户输入的新资金（totalAmt）
   // 包括纯新买入的基金 + 合并后基金的新买入部分（newBuyAmt）
   const newBuyTotal = finalPicks.reduce((s, f) => {
     if(!f.isExisting){
