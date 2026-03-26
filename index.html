@@ -5077,6 +5077,16 @@ function _doGenerate(shouldScroll){
     }
   }
 
+  // 最终金额校验：确保所有基金金额总和精确等于 portfolioTotal
+  const finalAmtSum = finalPicks.reduce((s, f) => s + f.amt, 0);
+  if(finalAmtSum !== portfolioTotal && finalPicks.length > 0){
+    const diff = portfolioTotal - finalAmtSum;
+    // 将差额加到金额最大的基金上
+    const maxPick = [...finalPicks].sort((a,b) => b.amt - a.amt)[0];
+    maxPick.amt += diff;
+    maxPick.pct = Math.round(maxPick.amt / portfolioTotal * 100);
+  }
+
   // 重新同步selectedPicks：确保computeRebalancePlan使用的是过滤和调整后的数据
   Object.keys(selectedPicks).forEach(cat => {
     selectedPicks[cat] = finalPicks.filter(f => f.cat === cat);
