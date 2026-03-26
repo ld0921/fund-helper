@@ -1068,6 +1068,16 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
       </select>
     </div>
 
+    <!-- 批量操作 -->
+    <div id="eh-batch-bar" style="display:none;margin-bottom:8px;padding:8px 12px;background:#f0f8ff;border:1px solid #91caff;border-radius:6px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:12px;color:#0958d9">已选择 <b id="eh-batch-count">0</b> 项</span>
+        <button class="btn btn-sm" onclick="toggleSelectAll()" style="font-size:11px;padding:4px 10px">全选</button>
+        <button class="btn btn-danger btn-sm" onclick="batchDelete()" style="font-size:11px;padding:4px 10px">批量删除</button>
+        <button class="btn btn-ghost btn-sm" onclick="clearSelection()" style="font-size:11px;padding:4px 10px">取消</button>
+      </div>
+    </div>
+
     <!-- 待确认提醒横幅 -->
     <div id="pending-confirm-reminder" style="display:none;margin-top:12px;background:#fff7e6;border:1px solid #ffd591;border-radius:8px;padding:12px 14px;font-size:13px;color:#ad6800;line-height:1.6">
       <div style="display:flex;align-items:center;gap:8px">
@@ -3277,6 +3287,52 @@ function filterHoldings(){
   renderExistingHoldings();
 }
 
+function updateBatchBar(){
+  const checkboxes = document.querySelectorAll('.eh-checkbox:checked');
+  const count = checkboxes.length;
+  const bar = document.getElementById('eh-batch-bar');
+  const countEl = document.getElementById('eh-batch-count');
+
+  if(count > 0){
+    bar.style.display = 'block';
+    countEl.textContent = count;
+  } else {
+    bar.style.display = 'none';
+  }
+}
+
+function toggleSelectAll(){
+  const checkboxes = document.querySelectorAll('.eh-checkbox');
+  const checkedCount = document.querySelectorAll('.eh-checkbox:checked').length;
+  const shouldCheck = checkedCount < checkboxes.length;
+
+  checkboxes.forEach(cb => cb.checked = shouldCheck);
+  updateBatchBar();
+}
+
+async function batchDelete(){
+  const checkboxes = document.querySelectorAll('.eh-checkbox:checked');
+  if(checkboxes.length === 0) return;
+
+  if(!confirm(`确定要删除选中的 ${checkboxes.length} 项持仓吗？`)) return;
+
+  const indices = Array.from(checkboxes).map(cb => parseInt(cb.dataset.index)).sort((a,b) => b-a);
+
+  for(const idx of indices){
+    existingHoldings.splice(idx, 1);
+  }
+
+  await FundDB.set('existingHoldings', existingHoldings);
+  renderExistingHoldings();
+  clearSelection();
+  showToast('已删除选中的持仓','success');
+}
+
+function clearSelection(){
+  document.querySelectorAll('.eh-checkbox').forEach(cb => cb.checked = false);
+  updateBatchBar();
+}
+
 function clearExistingHoldings(){
   if(!existingHoldings.length||confirm('确定清空全部已有持仓？\n将同时清空所有定投计划。')){
     existingHoldings=[];
@@ -3432,6 +3488,9 @@ function renderExistingHoldings(){
     const chgHtml = todayChg!==null ? `<div style="text-align:right"><div style="font-size:13px;font-weight:700;color:${todayChg>=0?'#cf1322':'#389e0d'}">${todayChg>=0?'+':''}${parseFloat(todayChg).toFixed(2)}%${estTag}</div>${todayPnl!==null?`<div style="font-size:11px;font-weight:600;color:${todayPnl>=0?'#cf1322':'#389e0d'};margin-top:1px">${todayPnl>=0?'+':''}¥${Math.abs(todayPnl).toFixed(2)}</div>`:''}</div>` : '';
     const isPending = h.status!=='confirmed';
     return `<div class="eh-row" ${isPending?'style="opacity:.65;background:#fafafa"':''}>
+      <div style="display:flex;align-items:start;gap:8px">
+        <input type="checkbox" class="eh-checkbox" data-index="${i}" onchange="updateBatchBar()" style="margin-top:4px;width:16px;height:16px;cursor:pointer">
+        <div style="flex:1">
       <div class="eh-top">
         <div class="eh-fund-name">${escHtml(h.name)} ${sourceTag}</div>
       </div>
@@ -3452,6 +3511,8 @@ function renderExistingHoldings(){
         <button class="fc-btn" onclick="redeemHolding(${i})">💰 赎回</button>
         ${h.status==='confirmed'&&h.shares?`<button class="fc-btn" onclick="updateDividendShares(${i})">📊 分红</button>`:''}
         <button class="fc-btn fc-danger" onclick="removeExistingHolding(${i})">🗑 删除</button>
+      </div>
+        </div>
       </div>
     </div>`;
   }).join('');
