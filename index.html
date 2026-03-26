@@ -1058,6 +1058,16 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
       <button class="btn btn-danger btn-sm" onclick="clearExistingHoldings()">清空全部</button>
     </div>
 
+    <!-- 搜索和筛选 -->
+    <div style="display:flex;gap:8px;margin-top:12px;margin-bottom:8px">
+      <input id="eh-filter-search" type="text" placeholder="搜索基金名称或代码" style="flex:1;height:32px;border:1px solid var(--border);border-radius:6px;padding:0 10px;font-size:13px" oninput="filterHoldings()">
+      <select id="eh-filter-status" style="height:32px;border:1px solid var(--border);border-radius:6px;padding:0 10px;font-size:13px;background:#fff" onchange="filterHoldings()">
+        <option value="all">全部</option>
+        <option value="confirmed">已确认</option>
+        <option value="pending">待确认</option>
+      </select>
+    </div>
+
     <!-- 待确认提醒横幅 -->
     <div id="pending-confirm-reminder" style="display:none;margin-top:12px;background:#fff7e6;border:1px solid #ffd591;border-radius:8px;padding:12px 14px;font-size:13px;color:#ad6800;line-height:1.6">
       <div style="display:flex;align-items:center;gap:8px">
@@ -3262,6 +3272,11 @@ async function refreshHoldingsNav(){
     });
   }
 }
+
+function filterHoldings(){
+  renderExistingHoldings();
+}
+
 function clearExistingHoldings(){
   if(!existingHoldings.length||confirm('确定清空全部已有持仓？\n将同时清空所有定投计划。')){
     existingHoldings=[];
@@ -3323,16 +3338,43 @@ function renderExistingHoldings(){
   const list=document.getElementById('eh-list');
   const empty=document.getElementById('eh-empty');
   const summary=document.getElementById('eh-summary');
+
+  // 应用搜索和筛选
+  let filteredHoldings = existingHoldings;
+  const searchInput = document.getElementById('eh-filter-search');
+  const statusSelect = document.getElementById('eh-filter-status');
+
+  if(searchInput && searchInput.value.trim()){
+    const keyword = searchInput.value.trim().toLowerCase();
+    filteredHoldings = filteredHoldings.filter(h =>
+      h.name.toLowerCase().includes(keyword) || h.code.includes(keyword)
+    );
+  }
+
+  if(statusSelect && statusSelect.value !== 'all'){
+    const status = statusSelect.value;
+    filteredHoldings = filteredHoldings.filter(h =>
+      status === 'confirmed' ? h.status === 'confirmed' : h.status !== 'confirmed'
+    );
+  }
+
   if(!existingHoldings.length){
     list.style.display='none'; empty.style.display='block'; summary.style.display='none';
     renderPortfolioOverview([], 0, 0, 0, 0); // 清空收益总览
     return;
   }
+
+  if(!filteredHoldings.length){
+    list.innerHTML='<div style="padding:24px;text-align:center;color:var(--muted)">未找到匹配的基金</div>';
+    list.style.display='block'; empty.style.display='none';
+    return;
+  }
+
   empty.style.display='none'; list.style.display='block';
   const today=new Date();
   const todayStr=today.toISOString().slice(0,10);
   // Auto-update status + calculate values
-  existingHoldings.forEach(h=>{
+  filteredHoldings.forEach(h=>{
     // 状态不自动变更：到了确认日期时显示"待确认"提示用户手动确认
     // （因为实际确认时间以支付宝为准，工具无法自动获知）
     const nav=navCache[h.code];
