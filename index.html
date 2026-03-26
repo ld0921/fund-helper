@@ -4782,10 +4782,12 @@ function _doGenerate(shouldScroll){
         const existing = merged[p.code];
         if(!p.isExisting){
           // p是新买入，existing是已有持仓
+          const newBuyAmt = p.amt; // 记录新买入金额
           existing.amt += p.amt;
           existing.pct += p.pct;
           existing.method = '继续持有+加仓';
           existing.role = '已持有·加仓';
+          existing.newBuyAmt = newBuyAmt; // 保存新买入金额，用于后续校验
         }
       }
     });
@@ -4867,13 +4869,34 @@ function _doGenerate(shouldScroll){
   }
 
   // 二次校验：确保新买入的总金额等于用户输入的新资金（totalAmt）
-  const newBuyTotal = finalPicks.filter(f => !f.isExisting).reduce((s, f) => s + f.amt, 0);
+  // 包括纯新买入的基金 + 合并后基金的新买入部分（newBuyAmt）
+  const newBuyTotal = finalPicks.reduce((s, f) => {
+    if(!f.isExisting){
+      return s + f.amt; // 纯新买入的基金
+    } else if(f.newBuyAmt){
+      return s + f.newBuyAmt; // 合并后基金的新买入部分
+    }
+    return s;
+  }, 0);
   const newBuyDiff = totalAmt - newBuyTotal;
-  if(Math.abs(newBuyDiff) > 0 && finalPicks.some(f => !f.isExisting)){
+  if(Math.abs(newBuyDiff) > 0){
     // 将差额加到金额最大的新买入基金上
-    const maxNewBuy = finalPicks.filter(f => !f.isExisting).sort((a,b) => b.amt - a.amt)[0];
-    maxNewBuy.amt += newBuyDiff;
-    maxNewBuy.pct = Math.round(maxNewBuy.amt / portfolioTotal * 100);
+    const candidates = finalPicks.filter(f => !f.isExisting || f.newBuyAmt);
+    if(candidates.length > 0){
+      const maxNewBuy = candidates.sort((a,b) => {
+        const amtA = !a.isExisting ? a.amt : (a.newBuyAmt || 0);
+        const amtB = !b.isExisting ? b.amt : (b.newBuyAmt || 0);
+        return amtB - amtA;
+      })[0];
+
+      if(!maxNewBuy.isExisting){
+        maxNewBuy.amt += newBuyDiff;
+      } else if(maxNewBuy.newBuyAmt){
+        maxNewBuy.newBuyAmt += newBuyDiff;
+        maxNewBuy.amt += newBuyDiff;
+      }
+      maxNewBuy.pct = Math.round(maxNewBuy.amt / portfolioTotal * 100);
+    }
   }
 
   // 重新同步selectedPicks：确保computeRebalancePlan使用的是过滤和调整后的数据
