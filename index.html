@@ -4955,6 +4955,25 @@ function _doGenerate(shouldScroll){
     Object.keys(selectedPicks).forEach(cat => {
       selectedPicks[cat] = selectedPicks[cat].filter(f => f.amt >= 100);
     });
+
+    // 重新计算百分比并归一化
+    filteredPicks.forEach(f => {
+      f.pct = Math.round(f.amt / portfolioTotal * 100);
+    });
+    const totalPctAfterFilter = filteredPicks.reduce((s, f) => s + f.pct, 0);
+    if(totalPctAfterFilter !== 100 && filteredPicks.length > 0 && totalPctAfterFilter > 0){
+      const scale = 100 / totalPctAfterFilter;
+      filteredPicks.forEach(f => {
+        f.pct = Math.round(f.pct * scale);
+      });
+      // 处理舍入误差
+      const finalTotal = filteredPicks.reduce((s, f) => s + f.pct, 0);
+      if(finalTotal !== 100){
+        const diff = 100 - finalTotal;
+        const maxPick = filteredPicks.sort((a,b) => b.pct - a.pct)[0];
+        maxPick.pct += diff;
+      }
+    }
   }
 
   const finalPicks = filteredPicks;
