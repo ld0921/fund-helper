@@ -5032,6 +5032,24 @@ function _doGenerate(shouldScroll){
     }
   }
 
+  // 金额校验后重新归一化百分比
+  finalPicks.forEach(f => {
+    f.pct = Math.round(f.amt / portfolioTotal * 100);
+  });
+  let totalPctAfterVerify = finalPicks.reduce((s, f) => s + f.pct, 0);
+  if(totalPctAfterVerify !== 100 && finalPicks.length > 0 && totalPctAfterVerify > 0){
+    const scale = 100 / totalPctAfterVerify;
+    finalPicks.forEach(f => {
+      f.pct = Math.round(f.pct * scale);
+    });
+    totalPctAfterVerify = finalPicks.reduce((s, f) => s + f.pct, 0);
+    if(totalPctAfterVerify !== 100){
+      const diff = 100 - totalPctAfterVerify;
+      const maxPick = [...finalPicks].sort((a,b) => b.pct - a.pct)[0];
+      maxPick.pct += diff;
+    }
+  }
+
   // 重新同步selectedPicks：确保computeRebalancePlan使用的是过滤和调整后的数据
   Object.keys(selectedPicks).forEach(cat => {
     selectedPicks[cat] = finalPicks.filter(f => f.cat === cat);
