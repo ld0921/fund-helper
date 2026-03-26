@@ -958,6 +958,13 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
     <div id="sip-table-wrap" style="margin-top:14px"></div>
   </div>
 
+  <!-- 定投跟踪 -->
+  <div class="card" id="dca-tracker-card" style="display:none">
+    <div class="card-title"><span class="icon icon-purple">📅</span>定投跟踪</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px">记录定投执行情况，避免遗漏</div>
+    <div id="dca-tracker-list"></div>
+  </div>
+
   <div class="warning-notice">⚠️ <b>免责声明：</b>定投不等于保本，收益率仅为模拟测算，实际收益受市场波动影响。基金投资有风险，请根据自身风险承受能力决策。</div>
 
 </div>
@@ -5429,6 +5436,53 @@ function renderDcaPlans(){
   summaryEl.innerHTML=`📅 共 <b>${dcaPlans.length}</b> 项定投计划${pausedCount>0?`（${pausedCount}项已暂停）`:''}，每月合计 <b>¥${totalMonthly.toLocaleString()}</b>${totalCurval>0?`，总持仓市值约 <b>¥${totalCurval.toLocaleString()}</b>`:''}。已自动同步至已有持仓与持仓统计。<div style="font-size:11px;color:var(--muted);margin-top:6px">💡 每月扣款后，工具会自动按期数估算累计投入。如需精确跟踪，可在持仓中更新确认份额。</div>`;
   // 同步Panel3
   renderDcaInHoldings();
+  renderDcaTracker();
+}
+
+// 渲染定投跟踪
+function renderDcaTracker(){
+  const card=document.getElementById('dca-tracker-card');
+  const list=document.getElementById('dca-tracker-list');
+  if(!card||!list) return;
+
+  const activePlans=dcaPlans.filter(d=>!d.paused);
+  if(!activePlans.length){ card.style.display='none'; return; }
+
+  card.style.display='block';
+  const now=new Date();
+  const thisMonth=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+
+  list.innerHTML=activePlans.map((d,i)=>{
+    const realIdx=dcaPlans.indexOf(d);
+    if(!d.execLog) d.execLog={};
+    const executed=d.execLog[thisMonth]||false;
+    const nextDay=d.deductDay||1;
+    const nextDate=now.getDate()>=nextDay?`下月${nextDay}号`:`本月${nextDay}号`;
+
+    return `<div style="padding:12px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;background:${executed?'#f6ffed':'#fff'}">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <div style="font-weight:600;font-size:13px">${escHtml(d.name)}</div>
+        <div style="font-size:12px;color:var(--muted)">¥${d.monthly}/月</div>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:8px">下次扣款：${nextDate}</div>
+      <div style="display:flex;gap:8px">
+        ${executed
+          ?`<span style="font-size:11px;color:var(--success);padding:4px 8px;background:#f6ffed;border-radius:4px;border:1px solid #b7eb8f">✅ 本月已执行</span>`
+          :`<button class="btn btn-sm" onclick="markDcaExecuted(${realIdx})" style="font-size:11px;padding:4px 12px">✓ 标记已执行</button>`
+        }
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function markDcaExecuted(idx){
+  const now=new Date();
+  const thisMonth=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  if(!dcaPlans[idx].execLog) dcaPlans[idx].execLog={};
+  dcaPlans[idx].execLog[thisMonth]=true;
+  FundDB.set('dcaPlans',dcaPlans);
+  renderDcaTracker();
+  showToast('已标记本月定投执行','success');
 }
 
 // 渲染定投计划到Panel3
