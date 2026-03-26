@@ -3744,6 +3744,7 @@ function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, totalP
           <thead>
             <tr>
               <th style="text-align:left;min-width:120px">基金名称</th>
+              <th style="text-align:left;min-width:80px">占比</th>
               <th style="text-align:right;min-width:70px">持仓成本</th>
               <th style="text-align:right;min-width:70px">当前市值</th>
               <th style="text-align:right;min-width:60px">收益率</th>
@@ -3753,6 +3754,7 @@ function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, totalP
           </thead>
           <tbody>
             ${details.map((d,idx)=>{
+              const weight = totalVal > 0 ? (d.value / totalVal * 100) : 0;
               const pctStr=d.cost>0?`${d.pct>=0?'+':''}${d.pct.toFixed(1)}%`:'--';
               const pnlStr=d.cost>0?`${d.pnl>=0?'+':''}¥${Math.abs(d.pnl).toLocaleString('zh-CN',{maximumFractionDigits:0})}`:'--';
               const todayStr=d.todayChg!==null?`<div>${d.todayChg>=0?'+':''}${parseFloat(d.todayChg).toFixed(2)}%</div>${d.todayPnl!==null?`<div style="font-size:10px">${d.todayPnl>=0?'+':''}¥${Math.abs(d.todayPnl).toFixed(2)}</div>`:''}`:'--';
@@ -3760,6 +3762,14 @@ function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, totalP
               const srcTag=d.source==='dca'?'<span style="font-size:9px;padding:1px 4px;border-radius:2px;background:#f9f0ff;color:#722ed1;margin-left:3px">定投</span>':'';
               return `<tr style="${idx===details.length-1?'':'border-bottom:1px solid var(--border)'}">
                 <td style="font-weight:500;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(d.name)}${srcTag}</td>
+                <td style="padding:8px 6px">
+                  <div style="display:flex;align-items:center;gap:6px">
+                    <div style="flex:1;height:6px;background:#f0f0f0;border-radius:3px;overflow:hidden;min-width:40px">
+                      <div style="height:100%;background:linear-gradient(90deg,#1890ff,#52c41a);border-radius:3px;width:${weight.toFixed(1)}%"></div>
+                    </div>
+                    <span style="font-size:11px;color:var(--muted);white-space:nowrap">${weight.toFixed(1)}%</span>
+                  </div>
+                </td>
                 <td style="text-align:right;color:var(--muted)">¥${d.cost.toLocaleString('zh-CN',{minimumFractionDigits:0,maximumFractionDigits:2})}</td>
                 <td style="text-align:right;font-weight:600">¥${d.value.toLocaleString('zh-CN',{minimumFractionDigits:0,maximumFractionDigits:2})}</td>
                 <td style="text-align:right;font-weight:600" class="${d.pnl>=0?'up':'down'}">${pctStr}</td>
