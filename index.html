@@ -4836,14 +4836,25 @@ function _doGenerate(shouldScroll){
   // 过滤掉金额过小的基金（< 100元），避免推荐0元或极小金额的基金
   const filteredPicks = allPicks.filter(f => f.amt >= 100);
   if(filteredPicks.length < allPicks.length){
-    // 重新分配被过滤基金的金额到剩余基金（按原比例）
-    const removedAmt = allPicks.filter(f => f.amt < 100).reduce((s, f) => s + f.amt, 0);
-    if(filteredPicks.length > 0 && removedAmt > 0){
-      const totalPct = filteredPicks.reduce((s, f) => s + f.pct, 0);
-      filteredPicks.forEach(f => {
-        const addAmt = Math.round(removedAmt * f.pct / totalPct);
-        f.amt += addAmt;
-      });
+    // 计算被过滤基金中有多少是新买入的金额
+    const removedFunds = allPicks.filter(f => f.amt < 100);
+    const removedNewBuyAmt = removedFunds.reduce((s, f) => {
+      if(!f.isExisting) return s + f.amt;
+      if(f.newBuyAmt) return s + f.newBuyAmt;
+      return s;
+    }, 0);
+
+    if(filteredPicks.length > 0 && removedNewBuyAmt > 0){
+      // 将新买入金额重新分配到接收新资金的基金上
+      const newBuyFunds = filteredPicks.filter(f => !f.isExisting || f.newBuyAmt);
+      if(newBuyFunds.length > 0){
+        const totalPct = newBuyFunds.reduce((s, f) => s + f.pct, 0);
+        newBuyFunds.forEach(f => {
+          const addAmt = Math.round(removedNewBuyAmt * f.pct / totalPct);
+          f.amt += addAmt;
+          if(f.newBuyAmt) f.newBuyAmt += addAmt;
+        });
+      }
     }
     // 更新 selectedPicks
     Object.keys(selectedPicks).forEach(cat => {
