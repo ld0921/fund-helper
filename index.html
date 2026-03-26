@@ -277,6 +277,38 @@ tr:last-child td{border-bottom:none}
   .card{padding:12px}
   .tabs{padding:0}.tab{flex:1;text-align:center;padding:11px 6px;font-size:12px}
 }
+/* ── 移动端优化 ── */
+@media(max-width:600px){
+  /* 确保所有按钮有足够的触控区域 (最小44px) */
+  .btn,.fc-btn,button{min-height:44px;padding:10px 16px}
+  .btn-sm{min-height:40px;padding:8px 14px}
+
+  /* 搜索和筛选栏优化 */
+  #eh-filter-search,#eh-filter-status{height:44px;font-size:14px}
+
+  /* 批量操作栏优化 */
+  #eh-batch-bar{padding:10px 14px}
+  #eh-batch-bar .btn{min-height:36px;padding:6px 12px;font-size:12px}
+
+  /* 表单输入优化 */
+  input[type="text"],input[type="number"],input[type="date"],select{min-height:44px;font-size:16px;padding:0 12px}
+
+  /* 交易历史卡片优化 */
+  #transaction-list > div{padding:14px;gap:10px}
+
+  /* 持仓卡片复选框优化 */
+  .eh-checkbox{width:20px;height:20px;margin-top:2px}
+}
+@media(max-width:480px){
+  /* 小屏幕下搜索筛选栏垂直排列 */
+  #eh-section > div:has(#eh-filter-search){flex-direction:column}
+  #eh-filter-search{width:100%}
+  #eh-filter-status{width:100%}
+
+  /* 批量操作按钮换行 */
+  #eh-batch-bar > div{flex-wrap:wrap;gap:6px}
+  #eh-batch-bar .btn{flex:1;min-width:80px}
+}
 /* ── 持仓健康诊断 ── */
 .health-item{display:flex;align-items:flex-start;gap:10px;padding:11px 14px;border-bottom:1px solid #f5f5f5}
 .health-item:last-child{border-bottom:none}
