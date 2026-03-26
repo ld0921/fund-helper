@@ -3940,7 +3940,10 @@ function computeRebalancePlan(targetPicks, newMoney){
     const currentAmt=held?held.value:0;
     const targetAmt=pick.amt; // 直接使用pick.amt作为目标金额，避免舍入误差
     const diff=pick.newBuyAmt || (targetAmt-currentAmt); // 优先使用newBuyAmt
-    const tol=Math.max(targetAmt*0.15,500); // 15%容忍带 or ¥500
+    // 容忍带差异化：货币/债券5%或¥200，指数10%或¥300，主动/QDII 15%或¥500
+    const tolPct = ['money','bond'].includes(pick.cat) ? 0.05 : pick.cat === 'index' ? 0.10 : 0.15;
+    const tolMin = ['money','bond'].includes(pick.cat) ? 200 : pick.cat === 'index' ? 300 : 500;
+    const tol = Math.max(targetAmt * tolPct, tolMin);
     let action,actionAmt,actionDesc,actionColor;
     // 修复：目标仓位为0时不显示"建议新买"
     if(targetAmt === 0 && currentAmt === 0) return;
@@ -4172,8 +4175,8 @@ function analyzeCategoryPerf(){
       const trendConsistency = shortDir + midDir + longDir; // -3 to +3
       // 任期稳定性（客观指标）
       const stability = Math.min(f.mgrYears, 15) / 15 * 10; // 0-10
-      // 综合评分：Calmar 50% + 趋势一致性 25% + 稳定性 15% + 实时动量 10%
-      const composite = calmar * 10 * 0.5 + trendConsistency * 4 * 0.25 + stability * 0.15 + todayChg * 5 * 0.1;
+      // 综合评分：Calmar 50% + 趋势一致性 25% + 稳定性 20% + 实时动量 5%
+      const composite = calmar * 10 * 0.5 + trendConsistency * 4 * 0.25 + stability * 0.20 + todayChg * 5 * 0.05;
       return { ...f, todayChg, calmar, trendConsistency, stability, composite };
     });
     const avgR1 = funds.reduce((s,f)=>s+f.r1,0)/funds.length;
@@ -4184,7 +4187,7 @@ function analyzeCategoryPerf(){
     const avgCalmar = scores.reduce((s,f)=>s+f.calmar,0)/scores.length;
     const catTrend = (avgChg > 0 ? 1 : avgChg < 0 ? -1 : 0) + (avgR1 > 0 ? 1 : -1) + (avgR3 > 0 ? 1 : -1);
     const avgStability = funds.reduce((s,f)=>s+Math.min(f.mgrYears,15)/15*10,0)/funds.length;
-    const catScore = avgCalmar * 10 * 0.5 + catTrend * 4 * 0.25 + avgStability * 0.15 + avgChg * 5 * 0.1;
+    const catScore = avgCalmar * 10 * 0.5 + catTrend * 4 * 0.25 + avgStability * 0.20 + avgChg * 5 * 0.05;
     scores.sort((a,b)=>b.composite-a.composite);
     return { cat, name:CAT_NAMES[cat], avgR1, avgDD, avgChg, avgR3, stdR1, avgCalmar, catTrend, catScore, riskAdj:avgCalmar, topFunds:scores };
   }).sort((a,b)=>b.catScore-a.catScore);
@@ -4455,19 +4458,28 @@ function selectFunds(cat, catData, riskProfile, pct, totalAmt){
   });
 
   // 核心-卫星分配：按评分差距自适应（评分接近→趋向均分，差距大→集中核心仓）
+  // 集中度控制：单只基金不超过30%
+  const maxSingleFundPct = 30;
   let perPick;
   if(pickCount === 3){
     const spread = picks[0].composite - picks[2].composite;
-    const coreRatio = Math.min(0.60, Math.max(0.40, 0.40 + spread * 0.004));
+    let coreRatio = Math.min(0.60, Math.max(0.40, 0.40 + spread * 0.004));
+    // 确保核心仓不超过30%
+    if(pct * coreRatio > maxSingleFundPct) coreRatio = maxSingleFundPct / pct;
     const spread12 = picks[0].composite - picks[1].composite;
     const satRatio2 = (1 - coreRatio) * (spread12 < 5 ? 0.5 : 0.6);
     const satRatio3 = 1 - coreRatio - satRatio2;
     perPick = [Math.round(pct*coreRatio), Math.round(pct*satRatio2), pct - Math.round(pct*coreRatio) - Math.round(pct*satRatio2)];
   } else if(pickCount === 2){
     const spread = picks[0].composite - picks[1].composite;
-    const coreRatio = Math.min(0.80, Math.max(0.55, 0.55 + spread * 0.005));
+    let coreRatio = Math.min(0.80, Math.max(0.55, 0.55 + spread * 0.005));
+    // 确保核心仓不超过30%
+    if(pct * coreRatio > maxSingleFundPct) coreRatio = maxSingleFundPct / pct;
     perPick = [Math.round(pct*coreRatio), pct - Math.round(pct*coreRatio)];
-  } else perPick = [pct];
+  } else {
+    // 单只基金时，确保不超过30%
+    perPick = [Math.min(pct, maxSingleFundPct)];
+  }
 
   return picks.map((f,i)=>({
     ...f,
