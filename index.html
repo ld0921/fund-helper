@@ -3686,11 +3686,11 @@ async function renderExistingHoldings(){
         ${fd?`<span style="font-size:11px;color:var(--muted)">${escHtml(h.type||fd.type)}</span>`:''}
       </div>
       <div class="eh-stats">
-        <div class="eh-stat" ${isPending?'style="background:#d6e9ff"':''}><div class="eh-stat-val">¥${(h.amount||0).toLocaleString('zh-CN',{minimumFractionDigits:0,maximumFractionDigits:2})}</div><div class="eh-stat-lbl">买入成本</div></div>
-        <div class="eh-stat" ${isPending?'style="background:#d6e9ff"':''}><div class="eh-stat-val" style="color:var(--primary)">¥${(h.value||0).toLocaleString('zh-CN',{minimumFractionDigits:0,maximumFractionDigits:2})}</div><div class="eh-stat-lbl">当前市值</div></div>
-        <div class="eh-stat" ${isPending?'style="background:#d6e9ff"':''}><div class="eh-stat-val ${pnlAmt!=null?(pnlAmt>=0?'up':'down'):''}">
+        <div class="eh-stat" ${isPending?'style="background:#e6f4ff"':''}><div class="eh-stat-val">¥${(h.amount||0).toLocaleString('zh-CN',{minimumFractionDigits:0,maximumFractionDigits:2})}</div><div class="eh-stat-lbl">买入成本</div></div>
+        <div class="eh-stat" ${isPending?'style="background:#e6f4ff"':''}><div class="eh-stat-val" style="color:var(--primary)">¥${(h.value||0).toLocaleString('zh-CN',{minimumFractionDigits:0,maximumFractionDigits:2})}</div><div class="eh-stat-lbl">当前市值</div></div>
+        <div class="eh-stat" ${isPending?'style="background:#e6f4ff"':''}><div class="eh-stat-val ${pnlAmt!=null?(pnlAmt>=0?'up':'down'):''}">
           ${pnlAmt!=null?`${pnlAmt>=0?'+':''}${pnlPct}%`:'--'}</div><div class="eh-stat-lbl">盈亏</div></div>
-        <div class="eh-stat" ${isPending?'style="background:#d6e9ff"':''}><div class="eh-stat-val ${todayChg!==null?(todayChg>=0?'up':'down'):''}">${todayChg!==null?`${todayChg>=0?'+':''}${parseFloat(todayChg).toFixed(2)}%${estTag}`:'--'}</div><div class="eh-stat-lbl">今日${todayPnl!==null?`<br><span style="font-size:9px">${todayPnl>=0?'+':''}¥${Math.abs(todayPnl).toFixed(2)}</span>`:''}</div></div>
+        <div class="eh-stat" ${isPending?'style="background:#e6f4ff"':''}><div class="eh-stat-val ${todayChg!==null?(todayChg>=0?'up':'down'):''}">${todayChg!==null?`${todayChg>=0?'+':''}${parseFloat(todayChg).toFixed(2)}%${estTag}`:'--'}</div><div class="eh-stat-lbl">今日${todayPnl!==null?`<br><span style="font-size:9px">${todayPnl>=0?'+':''}¥${Math.abs(todayPnl).toFixed(2)}</span>`:''}</div></div>
       </div>
       <div class="eh-meta">${h.shares?`${h.shares.toFixed(2)}份 · `:''}${h.date||'--'} 买入${(()=>{const hi=getHoldingDaysInfo(h.date,h.code);return h.date?` · 已持有<b>${hi.days}</b>天 · 赎回费<b>${hi.fee}</b>${hi.nextTier?` <span style="color:var(--primary);font-size:10px">💡${hi.nextTier}</span>`:''}`:'';})()}${pnlAmt!=null?` · ${pnlAmt>=0?'盈利':'亏损'} ¥${Math.abs(pnlAmt).toLocaleString('zh-CN',{maximumFractionDigits:0})}`:''}${h.totalCashDividend?` · 累计分红 ¥${h.totalCashDividend.toFixed(2)}`:''}</div>
       <div class="eh-actions">
@@ -6839,13 +6839,19 @@ async function checkRefreshReminder(){
   const diffMinutes = Math.floor((now - lastRefresh) / (1000 * 60));
 
   // 如果超过30分钟未刷新，显示提醒
-  if(diffMinutes >= 30){
-    const banner = document.getElementById('refresh-banner');
-    if(banner){
+  const banner = document.getElementById('refresh-banner');
+  if(banner){
+    if(diffMinutes >= 30){
       banner.style.background = 'linear-gradient(135deg,#fff7e6,#ffe7ba)';
       banner.style.borderColor = '#ffa940';
       const title = banner.querySelector('div>div:first-child');
       if(title) title.innerHTML = `💡 数据已${diffMinutes}分钟未更新，建议刷新`;
+    } else {
+      // 数据新鲜，重置为正常状态
+      banner.style.background = 'linear-gradient(135deg,#e6f4ff,#bae0ff)';
+      banner.style.borderColor = '#91caff';
+      const title = banner.querySelector('div>div:first-child');
+      if(title) title.innerHTML = `📊 持仓总览`;
     }
   }
 }
