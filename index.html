@@ -3877,52 +3877,56 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
       </div>
     </div>`;
 
-  // 渲染饼图（防抖避免短时间内多次重绘）
+  // 渲染饼图（确保单次渲染，避免重复加载）
   if(window.portfolioPieRenderTimer) clearTimeout(window.portfolioPieRenderTimer);
   window.portfolioPieRenderTimer = setTimeout(()=>{
     const canvas=document.getElementById('portfolioPieChart');
     if(!canvas) return;
 
-    const ctx=canvas.getContext('2d');
-    if(window.portfolioPieChartInstance){
-      window.portfolioPieChartInstance.destroy();
-      window.portfolioPieChartInstance = null;
-    }
+    // 使用 requestAnimationFrame 确保布局稳定后再渲染
+    requestAnimationFrame(()=>{
+      const ctx=canvas.getContext('2d');
+      if(window.portfolioPieChartInstance){
+        window.portfolioPieChartInstance.destroy();
+        window.portfolioPieChartInstance = null;
+      }
 
-    const chartData=details.slice(0,8).map(d=>({label:d.name,value:d.value,color:d.pnl>=0?'#52c41a':'#ff4d4f'}));
-    const others=details.slice(8).reduce((s,d)=>s+d.value,0);
-    if(others>0) chartData.push({label:'其他',value:others,color:'#d9d9d9'});
+      const chartData=details.slice(0,8).map(d=>({label:d.name,value:d.value,color:d.pnl>=0?'#52c41a':'#ff4d4f'}));
+      const others=details.slice(8).reduce((s,d)=>s+d.value,0);
+      if(others>0) chartData.push({label:'其他',value:others,color:'#d9d9d9'});
 
-    const colors=['#1890ff','#52c41a','#faad14','#f5222d','#722ed1','#13c2c2','#eb2f96','#fa8c16','#d9d9d9'];
-    window.portfolioPieChartInstance=new Chart(ctx,{
-      type:'doughnut',
-      data:{
-        labels:chartData.map(d=>d.label),
-        datasets:[{
-          data:chartData.map(d=>d.value),
-          backgroundColor:chartData.map((d,i)=>colors[i%colors.length]),
-          borderWidth:2,
-          borderColor:'#fff'
-        }]
-      },
-      options:{
-        responsive:true,
-        maintainAspectRatio:true,
-        plugins:{
-          legend:{display:true,position:'right',labels:{boxWidth:12,font:{size:11},padding:8}},
-          tooltip:{
-            callbacks:{
-              label:ctx=>{
-                const val=ctx.parsed;
-                const pct=(val/totalVal*100).toFixed(1);
-                return `${ctx.label}: ¥${val.toLocaleString('zh-CN',{maximumFractionDigits:0})} (${pct}%)`;
+      const colors=['#1890ff','#52c41a','#faad14','#f5222d','#722ed1','#13c2c2','#eb2f96','#fa8c16','#d9d9d9'];
+      window.portfolioPieChartInstance=new Chart(ctx,{
+        type:'doughnut',
+        data:{
+          labels:chartData.map(d=>d.label),
+          datasets:[{
+            data:chartData.map(d=>d.value),
+            backgroundColor:chartData.map((d,i)=>colors[i%colors.length]),
+            borderWidth:2,
+            borderColor:'#fff'
+          }]
+        },
+        options:{
+          responsive:true,
+          maintainAspectRatio:true,
+          animation:{duration:400},
+          plugins:{
+            legend:{display:true,position:'right',labels:{boxWidth:12,font:{size:11},padding:8}},
+            tooltip:{
+              callbacks:{
+                label:ctx=>{
+                  const val=ctx.parsed;
+                  const pct=(val/totalVal*100).toFixed(1);
+                  return `${ctx.label}: ¥${val.toLocaleString('zh-CN',{maximumFractionDigits:0})} (${pct}%)`;
+                }
               }
             }
           }
         }
-      }
+      });
     });
-  },300);
+  },500);
 }
 
 // ═══════════════ 调仓算法 ═══════════════
