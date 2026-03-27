@@ -1724,30 +1724,43 @@ function _highlightSubnav(sectionId){
 
 // ═══════════════ 基金智能搜索（合并代码+名称为一个输入框） ═══════════════
 function smartFundSearch(prefix, val){
-  const dl=document.getElementById(prefix+'-datalist');
-  dl.innerHTML='';
-  if(val.length<1) return;
-  // 同时匹配代码和名称
-  const matches=CURATED_FUNDS.filter(f=>f.name.includes(val)||f.code.includes(val)).slice(0,8);
-  matches.forEach(f=>{
-    const opt=document.createElement('option');
-    const catLabel = {active:'主动',index:'指数',bond:'债券',money:'货币',qdii:'QDII'}[f.cat]||'';
-    opt.value=f.name+' ('+f.code+')';
-    opt.label=`${f.name} [${catLabel}] (${f.code})`;
-    dl.appendChild(opt);
-  });
-  // 精确匹配：选中 datalist 选项或输入完整6位代码
-  const exact = CURATED_FUNDS.find(f=>val===f.name+' ('+f.code+')' || val===f.name || (val.length===6 && val===f.code));
-  if(exact){
-    document.getElementById(prefix+'-code').value=exact.code;
-    document.getElementById(prefix+'-name').value=exact.name;
-    document.getElementById(prefix+'-matched-name').textContent=exact.name;
-    document.getElementById(prefix+'-matched-code').textContent=exact.code;
-    document.getElementById(prefix+'-matched').style.display='';
-    if((prefix==='dp' || prefix==='h') && exact.type){
-      const typeEl = document.getElementById(prefix+'-type');
-      if(typeEl) typeEl.value=exact.type;
+  try {
+    const dl=document.getElementById(prefix+'-datalist');
+    if(!dl) {
+      console.error(`Datalist element ${prefix}-datalist not found`);
+      return;
     }
+    dl.innerHTML='';
+    if(!val || val.length<1) return;
+
+    // 同时匹配代码和名称
+    const matches=CURATED_FUNDS.filter(f=>f.name.includes(val)||f.code.includes(val)).slice(0,8);
+    matches.forEach(f=>{
+      const opt=document.createElement('option');
+      const catLabel = {active:'主动',index:'指数',bond:'债券',money:'货币',qdii:'QDII'}[f.cat]||'';
+      opt.value=f.name+' ('+f.code+')';
+      opt.label=`${f.name} [${catLabel}] (${f.code})`;
+      dl.appendChild(opt);
+    });
+
+    // 精确匹配：选中 datalist 选项或输入完整6位代码
+    const exact = CURATED_FUNDS.find(f=>val===f.name+' ('+f.code+')' || val===f.name || (val.length===6 && val===f.code));
+    if(exact){
+      document.getElementById(prefix+'-code').value=exact.code;
+      document.getElementById(prefix+'-name').value=exact.name;
+      const matchedName = document.getElementById(prefix+'-matched-name');
+      const matchedCode = document.getElementById(prefix+'-matched-code');
+      const matched = document.getElementById(prefix+'-matched');
+      if(matchedName) matchedName.textContent=exact.name;
+      if(matchedCode) matchedCode.textContent=exact.code;
+      if(matched) matched.style.display='';
+      if((prefix==='dp' || prefix==='h') && exact.type){
+        const typeEl = document.getElementById(prefix+'-type');
+        if(typeEl) typeEl.value=exact.type;
+      }
+    }
+  } catch(e) {
+    console.error('smartFundSearch error:', e);
   }
 }
 function clearFundMatch(prefix){
