@@ -3877,16 +3877,11 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
       </div>
     </div>`;
 
-  // 渲染饼图（防抖 + 数据指纹检测，避免重复渲染）
+  // 渲染饼图（防抖避免短时间内多次重绘）
   if(window.portfolioPieRenderTimer) clearTimeout(window.portfolioPieRenderTimer);
   window.portfolioPieRenderTimer = setTimeout(()=>{
     const canvas=document.getElementById('portfolioPieChart');
     if(!canvas) return;
-
-    // 生成数据指纹（基于持仓代码和金额）
-    const dataFingerprint = details.map(d=>`${d.code}:${d.value}`).join('|');
-    // 只有在图表已存在且数据未变化时才跳过渲染
-    if(window.portfolioPieChartInstance && window.lastPieChartFingerprint === dataFingerprint) return;
 
     const ctx=canvas.getContext('2d');
     if(window.portfolioPieChartInstance){
@@ -3927,8 +3922,7 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
         }
       }
     });
-    window.lastPieChartFingerprint = dataFingerprint;
-  },800);
+  },300);
 }
 
 // ═══════════════ 调仓算法 ═══════════════
