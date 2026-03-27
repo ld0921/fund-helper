@@ -4556,17 +4556,14 @@ function buildSteps(weights, picks, totalAmt, monthly, riskProfile, horizon){
     });
   }
   if(immediateFunds.length){
-    const hasExistingSteps = holdOnlyFunds.length > 0 || addPositionFunds.length > 0;
     steps.push({
-      title:`第${hasExistingSteps?'二':'一'}步：买入稳健底仓 ¥${immediateAmt.toLocaleString()}`,
+      title:`💰 买入稳健底仓 ¥${immediateAmt.toLocaleString()}`,
       desc:`在支付宝搜索基金代码直接购买：${immediateFunds.map(f=>`「${f.name}」(${f.code})`).join('、')}。这部分资金安全稳定，作为组合的基础保障。`
     });
   }
   if(equityFunds.length){
-    const hasExistingSteps = holdOnlyFunds.length > 0 || addPositionFunds.length > 0;
-    const stepN = (hasExistingSteps?1:0)+(immediateFunds.length?1:0)+1;
     steps.push({
-      title:`第${stepN===1?'一':stepN===2?'二':'三'}步：分批买入权益基金 ¥${equityAmt.toLocaleString()}`,
+      title:`📊 分批买入权益基金 ¥${equityAmt.toLocaleString()}`,
       desc:`在支付宝搜索基金代码购买：${equityFunds.map(f=>`「${f.name}」(${f.code}, ¥${f.amt.toLocaleString()})`).join('、')}。建议分2-3次买入，间隔1-2周。注意：QDII基金有单日限购额度（各基金不同，请在支付宝基金详情页查看具体限额），大额需分多日买入。<br>⏰ 注意：卖出的资金T+1到账后才能用于购买，请先操作赎回，到账后再执行买入。`
     });
   }
