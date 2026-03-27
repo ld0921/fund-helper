@@ -1122,7 +1122,13 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
       </div>
     </div>
 
-    <div id="eh-list" style="margin-top:12px;border:1px solid var(--border);border-radius:10px;overflow:hidden;display:none"></div>
+    <details open style="margin-top:12px">
+      <summary style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:8px 0;user-select:none">
+        <div style="font-size:13px;font-weight:600">持仓列表</div>
+        <span class="toggle-arrow"></span>
+      </summary>
+      <div id="eh-list" style="margin-top:8px;border:1px solid var(--border);border-radius:10px;overflow:hidden;display:none"></div>
+    </details>
     <div id="eh-empty" class="empty-state" style="margin-top:10px;padding:24px;text-align:center">
       <div class="empty-icon" style="font-size:48px;margin-bottom:12px">💼</div>
       <div style="font-size:16px;font-weight:600;color:var(--text);margin-bottom:8px">还没有持仓记录</div>
@@ -1152,8 +1158,14 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
       <span class="icon">📊</span>交易历史
       <span style="font-size:12px;color:var(--muted);font-weight:400;margin-left:4px">— 最近的买入和赎回记录</span>
     </div>
-    <div id="transaction-list" style="border:1px solid var(--border);border-radius:8px;overflow:hidden"></div>
-    <div id="transaction-empty" style="padding:24px;text-align:center;color:var(--muted);font-size:13px">暂无交易记录</div>
+    <details open>
+      <summary style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:8px 0;user-select:none">
+        <div style="font-size:13px;font-weight:600">交易记录列表</div>
+        <span class="toggle-arrow"></span>
+      </summary>
+      <div id="transaction-list" style="margin-top:8px;border:1px solid var(--border);border-radius:8px;overflow:hidden"></div>
+      <div id="transaction-empty" style="padding:24px;text-align:center;color:var(--muted);font-size:13px">暂无交易记录</div>
+    </details>
   </div>
 
   <!-- 我的定投计划（从Panel1移入） -->
@@ -1212,7 +1224,13 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
       </div>
     </div>
 
-    <div id="dp-list" style="margin-top:12px;border:1px solid var(--border);border-radius:10px;overflow:hidden;display:none"></div>
+    <details open style="margin-top:12px">
+      <summary style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:8px 0;user-select:none">
+        <div style="font-size:13px;font-weight:600">定投计划列表</div>
+        <span class="toggle-arrow"></span>
+      </summary>
+      <div id="dp-list" style="margin-top:8px;border:1px solid var(--border);border-radius:10px;overflow:hidden;display:none"></div>
+    </details>
     <div id="dp-empty" class="empty-state" style="margin-top:8px">
       <div class="empty-icon">📅</div>
       <div class="empty-text">暂无定投计划<br>添加后将自动同步至持仓统计</div>
@@ -3833,9 +3851,13 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
         </div>
       </div>
       <div class="divider"></div>
-      <div style="font-size:13px;font-weight:600;margin-bottom:10px">各基金收益明细</div>
-      <div class="table-wrap">
-        <table style="width:100%;font-size:12px">
+      <details open>
+        <summary style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:8px 0;user-select:none">
+          <div style="font-size:13px;font-weight:600">各基金收益明细</div>
+          <span class="toggle-arrow"></span>
+        </summary>
+        <div class="table-wrap">
+          <table style="width:100%;font-size:12px">
           <thead>
             <tr>
               <th style="text-align:left;min-width:120px">基金名称</th>
@@ -3875,6 +3897,7 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
           </tbody>
         </table>
       </div>
+      </details>
     </div>`;
 
   // 渲染饼图（确保单次渲染，避免重复加载）
@@ -6134,7 +6157,12 @@ function renderDcaInHoldings(){
   const totalMonthly=dcaPlans.reduce((s,d)=>s+d.monthly,0);
   const totalCurval=dcaPlans.reduce((s,d)=>s+d.curval,0);
   sec.innerHTML=`<div class="card-title"><span class="icon icon-orange">📅</span>定投计划汇总 <span style="font-size:12px;color:var(--muted);font-weight:400">— 共${dcaPlans.length}项，每月¥${totalMonthly.toLocaleString()}</span></div>
-    <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:12px">
+    <details open>
+      <summary style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:8px 0;user-select:none">
+        <div style="font-size:13px;font-weight:600">定投基金列表</div>
+        <span class="toggle-arrow"></span>
+      </summary>
+      <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-top:8px">
     ${dcaPlans.map((d,i)=>{
       const nav=navCache[d.code]; const chg=nav?parseFloat(nav.gszzl)||0:null;
       const months=d.start?Math.max(0,Math.floor((new Date()-new Date(d.start))/30/86400000)):0;
@@ -6150,6 +6178,7 @@ function renderDcaInHoldings(){
       </div>`;
     }).join('')}
     </div>
+    </details>
     ${totalCurval>0?`<div class="stat-row" style="margin-bottom:0">
       <div class="stat-card"><div class="stat-val">¥${totalMonthly.toLocaleString()}/月</div><div class="stat-label">每月总定投</div></div>
       <div class="stat-card"><div class="stat-val" style="color:var(--primary)">¥${totalCurval.toLocaleString()}</div><div class="stat-label">定投总市值</div></div>
