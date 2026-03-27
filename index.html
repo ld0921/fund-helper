@@ -3634,7 +3634,7 @@ async function renderExistingHoldings(){
   const totalPnlPct=totalCost>0?(totalPnl/totalCost*100):0;
   const pendingTotal=pendingHoldings.reduce((s,h)=>s+(h.amount||0),0);
   const isMobile=window.innerWidth<=600;
-  list.innerHTML=existingHoldings.map((h,i)=>{
+  list.innerHTML=filteredHoldings.map((h,i)=>{
     const fd=CURATED_FUNDS.find(f=>f.code===h.code);
     const cost=h.amount||0;
     const cashDiv=h.totalCashDividend||0;
