@@ -3673,7 +3673,7 @@ async function renderExistingHoldings(){
     const estTag=_isEst?'<span style="font-size:9px;color:var(--muted);margin-left:2px" title="盘中估算">估</span>':'';
     const chgHtml = todayChg!==null ? `<div style="text-align:right"><div style="font-size:13px;font-weight:700;color:${todayChg>=0?'#cf1322':'#389e0d'}">${todayChg>=0?'+':''}${parseFloat(todayChg).toFixed(2)}%${estTag}</div>${todayPnl!==null?`<div style="font-size:11px;font-weight:600;color:${todayPnl>=0?'#cf1322':'#389e0d'};margin-top:1px">${todayPnl>=0?'+':''}¥${Math.abs(todayPnl).toFixed(2)}</div>`:''}</div>` : '';
     const isPending = h.status!=='confirmed';
-    return `<div class="eh-row" ${isPending?'style="opacity:.65;background:#fafafa"':''}>
+    return `<div class="eh-row" ${isPending?'style="background:#fffbe6;border-left:3px solid #faad14"':''}>
       <div style="display:flex;align-items:start;gap:8px">
         <input type="checkbox" class="eh-checkbox" data-index="${i}" onchange="updateBatchBar()" style="margin-top:4px;width:16px;height:16px;cursor:pointer">
         <div style="flex:1">
@@ -3877,8 +3877,9 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
       </div>
     </div>`;
 
-  // 渲染饼图
-  setTimeout(()=>{
+  // 渲染饼图（防抖：避免短时间内多次重绘）
+  if(window.portfolioPieRenderTimer) clearTimeout(window.portfolioPieRenderTimer);
+  window.portfolioPieRenderTimer = setTimeout(()=>{
     const canvas=document.getElementById('portfolioPieChart');
     if(!canvas) return;
     const ctx=canvas.getContext('2d');
