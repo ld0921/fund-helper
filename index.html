@@ -3101,33 +3101,7 @@ function addExistingHolding(){
   // 从navCache获取当前净值（优先使用确认净值dwjz）
   const nav = navCache[code];
   const curNav = nav ? parseFloat(nav.dwjz)||parseFloat(nav.gsz)||1 : 1;
-  const existing = existingHoldings.find(h=>h.code===code);
-  if(existing){
-    // 加仓：合并到已有持仓
-    const oldAmount = existing.amount || 0;
-    existing.amount = oldAmount + amount;
-    if(shares > 0){
-      // 用户输入了份额，直接累加
-      existing.shares = (existing.shares || 0) + shares;
-      existing.cost = existing.amount / existing.shares; // 加权平均成本
-    } else if(existing.shares && existing.shares > 0){
-      // 已有份额，新买入没输入份额，用净值反推
-      const newShares = curNav > 0 ? amount / curNav : 0;
-      existing.shares += newShares;
-      existing.cost = existing.amount / existing.shares;
-    }
-    // 使用当前确认净值计算市值
-    const currentNav = nav ? parseFloat(nav.dwjz)||parseFloat(nav.gsz)||(existing.cost||curNav) : (existing.cost||curNav);
-    existing.value = existing.shares && existing.shares > 0 ? existing.shares * currentNav : existing.amount;
-    FundDB.set('existingHoldings',existingHoldings); markHoldingsChanged();
-    flashSaved('eh-section');
-    renderExistingHoldings(); runHealthMonitor(); renderTodayOverview(); runSignalEngine();
-    clearFundMatch('eh');
-    document.getElementById('eh-amount').value='';
-    document.getElementById('eh-shares').value='';
-    showToast(`已加仓 ¥${amount.toLocaleString()} 到「${name}」，总买入 ¥${existing.amount.toLocaleString()}`,'success');
-    return;
-  }
+
   // 确认日期：15:00前→T+1（买入日+1天确认），15:00后→T+2（买入日+2天确认）
   const buyTime = (document.querySelector('input[name="eh-buytime"]:checked')||{}).value || 'before15';
   const buyDate = date ? new Date(date) : new Date();
@@ -3136,9 +3110,11 @@ function addExistingHolding(){
   // 跳过周末和中国法定节假日
   while(!isCNTradingDay(confirmDate)) confirmDate.setDate(confirmDate.getDate()+1);
   const confirmDateStr = confirmDate.toISOString().slice(0,10);
+
   // 自动检测基金类型
   const fd = CURATED_FUNDS.find(f=>f.code===code);
   const type = fd ? fd.type : '股票型';
+
   // 计算买入成本净值
   let buyCost = curNav; // 默认使用当前净值估算
   let initialStatus = 'pending'; // 默认待确认
@@ -3147,6 +3123,29 @@ function addExistingHolding(){
     buyCost = amount / shares;
     initialStatus = 'confirmed';
   }
+
+  const existing = existingHoldings.find(h=>h.code===code && h.status==='confirmed');
+  if(existing && initialStatus === 'confirmed'){
+    // 仅当新买入也是已确认状态时，才合并到已有的已确认持仓
+    const oldAmount = existing.amount || 0;
+    existing.amount = oldAmount + amount;
+    existing.shares = (existing.shares || 0) + shares;
+    existing.cost = existing.amount / existing.shares; // 加权平均成本
+    // 使用当前确认净值计算市值
+    const currentNav = nav ? parseFloat(nav.dwjz)||parseFloat(nav.gsz)||(existing.cost||curNav) : (existing.cost||curNav);
+    existing.value = existing.shares && existing.shares > 0 ? existing.shares * currentNav : existing.amount;
+    FundDB.set('existingHoldings',existingHoldings); markHoldingsChanged();
+    addTransaction('buy', code, name, amount, shares);
+    flashSaved('eh-section');
+    renderExistingHoldings(); runHealthMonitor(); renderTodayOverview(); runSignalEngine();
+    clearFundMatch('eh');
+    document.getElementById('eh-amount').value='';
+    document.getElementById('eh-shares').value='';
+    showToast(`已加仓 ¥${amount.toLocaleString()} 到「${name}」，总买入 ¥${existing.amount.toLocaleString()}`,'success');
+    return;
+  }
+
+  // 未确认的购买或首次购买：添加为独立持仓记录
   const newHolding = {code,name,amount,date:date||new Date().toISOString().slice(0,10),buyTime,status:initialStatus,confirmDate:confirmDateStr,type,cost:buyCost,value:amount};
   if(shares > 0){
     newHolding.shares = shares;
