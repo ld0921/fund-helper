@@ -4944,23 +4944,26 @@ function _doGenerate(shouldScroll){
 
   // 修正舍入误差：确保总百分比=100%
   const allPicksRaw = Object.values(selectedPicks).flat();
-  let totalPctNow = allPicksRaw.reduce((s,p) => s + p.pct, 0);
+  normalizePicksPercentage(allPicksRaw, portfolioTotal);
 
-  // 如果总百分比不等于100%，按比例归一化所有基金
-  if(totalPctNow !== 100 && allPicksRaw.length > 0 && totalPctNow > 0){
-    const scale = 100 / totalPctNow;
-    allPicksRaw.forEach(p => {
-      p.pct = Math.round(p.pct * scale);
-      p.amt = Math.round(portfolioTotal * p.pct / 100);
-    });
-
-    // 再次检查总和，处理舍入误差
-    totalPctNow = allPicksRaw.reduce((s,p) => s + p.pct, 0);
-    if(totalPctNow !== 100){
-      const diff = 100 - totalPctNow;
-      const maxPick = allPicksRaw.sort((a,b) => b.pct - a.pct)[0];
-      maxPick.pct += diff;
-      maxPick.amt = Math.round(portfolioTotal * maxPick.pct / 100);
+  // 归一化函数：确保百分比总和为100%，并同步金额
+  function normalizePicksPercentage(picks, portfolioTotal){
+    if(!picks.length) return;
+    picks.forEach(f => f.pct = Math.round(f.amt / portfolioTotal * 100));
+    let totalPct = picks.reduce((s, f) => s + f.pct, 0);
+    if(totalPct !== 100 && totalPct > 0){
+      const scale = 100 / totalPct;
+      picks.forEach(f => {
+        f.pct = Math.round(f.pct * scale);
+        f.amt = Math.round(portfolioTotal * f.pct / 100);
+      });
+      totalPct = picks.reduce((s, f) => s + f.pct, 0);
+      if(totalPct !== 100){
+        const diff = 100 - totalPct;
+        const maxPick = [...picks].sort((a,b) => b.pct - a.pct)[0];
+        maxPick.pct += diff;
+        maxPick.amt = Math.round(portfolioTotal * maxPick.pct / 100);
+      }
     }
   }
 
@@ -4995,25 +4998,7 @@ function _doGenerate(shouldScroll){
     });
 
     // 重新计算百分比并归一化
-    filteredPicks.forEach(f => {
-      f.pct = Math.round(f.amt / portfolioTotal * 100);
-    });
-    const totalPctAfterFilter = filteredPicks.reduce((s, f) => s + f.pct, 0);
-    if(totalPctAfterFilter !== 100 && filteredPicks.length > 0 && totalPctAfterFilter > 0){
-      const scale = 100 / totalPctAfterFilter;
-      filteredPicks.forEach(f => {
-        f.pct = Math.round(f.pct * scale);
-        f.amt = Math.round(portfolioTotal * f.pct / 100); // 同步金额
-      });
-      // 处理舍入误差
-      const finalTotal = filteredPicks.reduce((s, f) => s + f.pct, 0);
-      if(finalTotal !== 100){
-        const diff = 100 - finalTotal;
-        const maxPick = filteredPicks.sort((a,b) => b.pct - a.pct)[0];
-        maxPick.pct += diff;
-        maxPick.amt = Math.round(portfolioTotal * maxPick.pct / 100); // 同步金额
-      }
-    }
+    normalizePicksPercentage(filteredPicks, portfolioTotal);
   }
 
   const finalPicks = filteredPicks;
@@ -5023,25 +5008,7 @@ function _doGenerate(shouldScroll){
   }
 
   // 最终百分比归一化：确保所有基金百分比总和为100%
-  finalPicks.forEach(f => {
-    f.pct = Math.round(f.amt / portfolioTotal * 100);
-  });
-  let totalPctFinal = finalPicks.reduce((s, f) => s + f.pct, 0);
-  if(totalPctFinal !== 100 && finalPicks.length > 0 && totalPctFinal > 0){
-    const scale = 100 / totalPctFinal;
-    finalPicks.forEach(f => {
-      f.pct = Math.round(f.pct * scale);
-      f.amt = Math.round(portfolioTotal * f.pct / 100); // 同步金额
-    });
-    // 处理舍入误差
-    totalPctFinal = finalPicks.reduce((s, f) => s + f.pct, 0);
-    if(totalPctFinal !== 100){
-      const diff = 100 - totalPctFinal;
-      const maxPick = [...finalPicks].sort((a,b) => b.pct - a.pct)[0];
-      maxPick.pct += diff;
-      maxPick.amt = Math.round(portfolioTotal * maxPick.pct / 100); // 同步金额
-    }
-  }
+  normalizePicksPercentage(finalPicks, portfolioTotal);
 
   // 金额校验：确保新买入的总金额等于用户输入的新资金（totalAmt）
   // 包括纯新买入的基金 + 合并后基金的新买入部分（newBuyAmt）
@@ -5075,24 +5042,7 @@ function _doGenerate(shouldScroll){
   }
 
   // 金额校验后重新归一化百分比
-  finalPicks.forEach(f => {
-    f.pct = Math.round(f.amt / portfolioTotal * 100);
-  });
-  let totalPctAfterVerify = finalPicks.reduce((s, f) => s + f.pct, 0);
-  if(totalPctAfterVerify !== 100 && finalPicks.length > 0 && totalPctAfterVerify > 0){
-    const scale = 100 / totalPctAfterVerify;
-    finalPicks.forEach(f => {
-      f.pct = Math.round(f.pct * scale);
-      f.amt = Math.round(portfolioTotal * f.pct / 100); // 同步金额
-    });
-    totalPctAfterVerify = finalPicks.reduce((s, f) => s + f.pct, 0);
-    if(totalPctAfterVerify !== 100){
-      const diff = 100 - totalPctAfterVerify;
-      const maxPick = [...finalPicks].sort((a,b) => b.pct - a.pct)[0];
-      maxPick.pct += diff;
-      maxPick.amt = Math.round(portfolioTotal * maxPick.pct / 100); // 同步金额
-    }
-  }
+  normalizePicksPercentage(finalPicks, portfolioTotal);
 
   // 最终金额校验：确保所有基金金额总和精确等于 portfolioTotal
   const finalAmtSum = finalPicks.reduce((s, f) => s + f.amt, 0);
