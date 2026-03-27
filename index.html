@@ -4519,30 +4519,52 @@ function buildSteps(weights, picks, totalAmt, monthly, riskProfile, horizon){
   const allPicks = Object.values(picks).flat();
   const keptFunds = allPicks.filter(f=>f.isExisting);
   const newFunds = allPicks.filter(f=>!f.isExisting);
+
+  // 将已持有基金分为两组：需要加仓的和只需持有的
+  const addPositionFunds = keptFunds.filter(f=>f.newBuyAmt && f.newBuyAmt > 0);
+  const holdOnlyFunds = keptFunds.filter(f=>!f.newBuyAmt || f.newBuyAmt <= 0);
+
   const immediateFunds = newFunds.filter(f=>['money','bond'].includes(f.cat));
   const equityFunds    = newFunds.filter(f=>['active','index','qdii'].includes(f.cat));
   const immediateAmt   = immediateFunds.reduce((s,f)=>s+f.amt,0);
   const equityAmt      = equityFunds.reduce((s,f)=>s+f.amt,0);
 
   const steps = [];
-  if(keptFunds.length){
+
+  // 只需持有的基金
+  if(holdOnlyFunds.length){
     steps.push({
-      title:`✅ 继续持有 ${keptFunds.length} 只达标基金`,
-      desc:`${keptFunds.map(f=>{
+      title:`✅ 继续持有 ${holdOnlyFunds.length} 只达标基金`,
+      desc:`${holdOnlyFunds.map(f=>{
         const held = existingHoldings.find(h=>h.code===f.code);
         const currentAmt = held ? held.value : 0;
         return `「${f.name}」(¥${currentAmt.toLocaleString()})`;
       }).join('、')}。这些基金评分达标，保持现有仓位即可。`
     });
   }
-  if(immediateFunds.length){
+
+  // 需要加仓的基金
+  if(addPositionFunds.length){
+    const addPositionAmt = addPositionFunds.reduce((s,f)=>s+(f.newBuyAmt||0),0);
     steps.push({
-      title:`第${keptFunds.length?'二':'一'}步：买入稳健底仓 ¥${immediateAmt.toLocaleString()}`,
+      title:`📈 加仓 ${addPositionFunds.length} 只已持有基金 ¥${addPositionAmt.toLocaleString()}`,
+      desc:`${addPositionFunds.map(f=>{
+        const held = existingHoldings.find(h=>h.code===f.code);
+        const currentAmt = held ? held.value : 0;
+        return `「${f.name}」(${f.code})：当前¥${currentAmt.toLocaleString()}，建议加仓¥${(f.newBuyAmt||0).toLocaleString()}`;
+      }).join('、')}。这些基金表现良好，建议增加配置。`
+    });
+  }
+  if(immediateFunds.length){
+    const hasExistingSteps = holdOnlyFunds.length > 0 || addPositionFunds.length > 0;
+    steps.push({
+      title:`第${hasExistingSteps?'二':'一'}步：买入稳健底仓 ¥${immediateAmt.toLocaleString()}`,
       desc:`在支付宝搜索基金代码直接购买：${immediateFunds.map(f=>`「${f.name}」(${f.code})`).join('、')}。这部分资金安全稳定，作为组合的基础保障。`
     });
   }
   if(equityFunds.length){
-    const stepN = (keptFunds.length?1:0)+(immediateFunds.length?1:0)+1;
+    const hasExistingSteps = holdOnlyFunds.length > 0 || addPositionFunds.length > 0;
+    const stepN = (hasExistingSteps?1:0)+(immediateFunds.length?1:0)+1;
     steps.push({
       title:`第${stepN===1?'一':stepN===2?'二':'三'}步：分批买入权益基金 ¥${equityAmt.toLocaleString()}`,
       desc:`在支付宝搜索基金代码购买：${equityFunds.map(f=>`「${f.name}」(${f.code}, ¥${f.amt.toLocaleString()})`).join('、')}。建议分2-3次买入，间隔1-2周。注意：QDII基金有单日限购额度（各基金不同，请在支付宝基金详情页查看具体限额），大额需分多日买入。<br>⏰ 注意：卖出的资金T+1到账后才能用于购买，请先操作赎回，到账后再执行买入。`
