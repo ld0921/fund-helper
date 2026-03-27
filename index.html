@@ -3885,7 +3885,8 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
 
     // 生成数据指纹（基于持仓代码和金额）
     const dataFingerprint = details.map(d=>`${d.code}:${d.value}`).join('|');
-    if(window.lastPieChartFingerprint === dataFingerprint) return; // 数据未变化，跳过渲染
+    // 只有在图表已存在且数据未变化时才跳过渲染
+    if(window.portfolioPieChartInstance && window.lastPieChartFingerprint === dataFingerprint) return;
     window.lastPieChartFingerprint = dataFingerprint;
 
     const ctx=canvas.getContext('2d');
