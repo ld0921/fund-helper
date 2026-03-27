@@ -3887,10 +3887,12 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
     const dataFingerprint = details.map(d=>`${d.code}:${d.value}`).join('|');
     // 只有在图表已存在且数据未变化时才跳过渲染
     if(window.portfolioPieChartInstance && window.lastPieChartFingerprint === dataFingerprint) return;
-    window.lastPieChartFingerprint = dataFingerprint;
 
     const ctx=canvas.getContext('2d');
-    if(window.portfolioPieChartInstance) window.portfolioPieChartInstance.destroy();
+    if(window.portfolioPieChartInstance){
+      window.portfolioPieChartInstance.destroy();
+      window.portfolioPieChartInstance = null;
+    }
 
     const chartData=details.slice(0,8).map(d=>({label:d.name,value:d.value,color:d.pnl>=0?'#52c41a':'#ff4d4f'}));
     const others=details.slice(8).reduce((s,d)=>s+d.value,0);
@@ -3925,6 +3927,7 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
         }
       }
     });
+    window.lastPieChartFingerprint = dataFingerprint;
   },800);
 }
 
