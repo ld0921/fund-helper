@@ -3166,6 +3166,7 @@ function addExistingHolding(){
   document.getElementById('eh-amount').value='';
   document.getElementById('eh-shares').value='';
   document.getElementById('eh-date').valueAsDate=new Date();
+  showToast(`已添加持仓「${name}」¥${amount.toLocaleString()}${initialStatus==='confirmed'?'（已确认）':'（待确认）'}`,'success');
 }
 // 手动确认持仓份额（支付宝已确认后点击更新）
 function confirmHolding(i){
