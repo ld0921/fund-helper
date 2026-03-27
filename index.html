@@ -3355,6 +3355,7 @@ async function refreshHoldingsNav(){
         }
 
         renderExistingHoldings(); runHealthMonitor(); renderTodayOverview();
+        checkRefreshReminder(); // 更新刷新提醒显示
         if(btn){ btn.textContent='🔄 刷新净值数据'; btn.disabled=false; }
 
         // 检查市场时间，显示相应提示
@@ -4527,7 +4528,11 @@ function buildSteps(weights, picks, totalAmt, monthly, riskProfile, horizon){
   if(keptFunds.length){
     steps.push({
       title:`✅ 继续持有 ${keptFunds.length} 只达标基金`,
-      desc:`${keptFunds.map(f=>`「${f.name}」(¥${f.amt.toLocaleString()})`).join('、')}。这些基金评分达标，保持现有仓位即可。`
+      desc:`${keptFunds.map(f=>{
+        const held = existingHoldings.find(h=>h.code===f.code);
+        const currentAmt = held ? held.value : 0;
+        return `「${f.name}」(¥${currentAmt.toLocaleString()})`;
+      }).join('、')}。这些基金评分达标，保持现有仓位即可。`
     });
   }
   if(immediateFunds.length){
