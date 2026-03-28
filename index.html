@@ -3800,7 +3800,23 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
 
   // 获取昨日收益数据
   const yesterdayPnlData = await FundDB.get('yesterdayPnl') || {};
-  const yesterdayPnl = yesterdayPnlData.pnl || 0;
+  let yesterdayPnl = yesterdayPnlData.pnl || 0;
+
+  // 如果没有存储的昨日收益数据，实时计算
+  const today = new Date().toISOString().slice(0,10);
+  if(!yesterdayPnl || yesterdayPnlData.date !== today){
+    let calculatedYesterdayPnl = 0;
+    holdings.forEach(h => {
+      const nav = navCache[h.code];
+      const yNav = yesterdayNav[h.code];
+      if(nav && nav.dwjz && yNav && yNav.date !== today && h.shares){
+        const currentNavValue = parseFloat(nav.dwjz);
+        const storedNavValue = yNav.nav;
+        calculatedYesterdayPnl += h.shares * (currentNavValue - storedNavValue);
+      }
+    });
+    yesterdayPnl = calculatedYesterdayPnl;
+  }
 
   // 今日涨跌 - 使用昨日净值精确计算（仅交易日）
   let todayPnl=0, navCount=0;
@@ -3845,13 +3861,13 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
     const nav=navCache[h.code];
     const yNav=yesterdayNav[h.code];
 
-    // 使用昨日净值精确计算今日收益
+    // 使用昨日净值精确计算今日收益（仅交易日）
     let todayChg=null, todayPnl=null;
-    if(navRefreshed && nav && h.shares && yNav){
+    if(isTradingDay() && navRefreshed && nav && h.shares && yNav){
       const currentNav = parseFloat(nav.gsz) || parseFloat(nav.dwjz) || 0;
       todayPnl = h.shares * (currentNav - yNav.nav);
       todayChg = yNav.nav > 0 ? ((currentNav - yNav.nav) / yNav.nav * 100) : 0;
-    } else if(navRefreshed && nav && h.value){
+    } else if(isTradingDay() && navRefreshed && nav && h.value){
       // 降级方案：无昨日净值时使用估算涨跌幅
       todayChg = parseFloat(nav.gszzl)||0;
       todayPnl = (h.value||0)*todayChg/100;
