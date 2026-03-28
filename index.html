@@ -3378,10 +3378,10 @@ async function refreshHoldingsNav(){
         FundDB.set('navCache', navCache);
         FundDB.set('lastNavRefreshTime', Date.now());
 
-        // 收盘后(15:00后)存储昨日净值
+        // 收盘后(15:00后)存储昨日净值（仅交易日）
         const now = new Date();
         const hour = now.getHours();
-        if(hour >= 15){
+        if(hour >= 15 && isTradingDay()){
           updateYesterdayNav();
         }
 
@@ -3809,7 +3809,8 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
     holdings.forEach(h => {
       const nav = navCache[h.code];
       const yNav = yesterdayNav[h.code];
-      if(nav && nav.dwjz && yNav && yNav.date !== today && h.shares){
+      // 只有当存储的净值日期早于今天时才计算（避免计算出0）
+      if(nav && nav.dwjz && yNav && yNav.nav && yNav.date && yNav.date < today && h.shares){
         const currentNavValue = parseFloat(nav.dwjz);
         const storedNavValue = yNav.nav;
         calculatedYesterdayPnl += h.shares * (currentNavValue - storedNavValue);
