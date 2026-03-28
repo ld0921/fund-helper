@@ -3585,6 +3585,13 @@ function getHoldingDaysInfo(dateStr, fundCode){
   }
   return {days,fee,tier,nextTier};
 }
+
+// 判断是否是交易日（简化版：仅判断周末，不包含节假日）
+function isTradingDay(date = new Date()){
+  const day = date.getDay();
+  return day >= 1 && day <= 5; // 周一到周五
+}
+
 async function renderExistingHoldings(){
   const list=document.getElementById('eh-list');
   const empty=document.getElementById('eh-empty');
@@ -3677,13 +3684,13 @@ async function renderExistingHoldings(){
     const nav = navCache[h.code];
     const yNav = yesterdayNav[h.code];
 
-    // 使用昨日净值精确计算今日收益
+    // 使用昨日净值精确计算今日收益（仅交易日）
     let todayChg = null, todayPnl = null;
-    if(navRefreshed && nav && h.shares && yNav){
+    if(isTradingDay() && navRefreshed && nav && h.shares && yNav){
       const currentNav = parseFloat(nav.gsz) || parseFloat(nav.dwjz) || 0;
       todayPnl = h.shares * (currentNav - yNav.nav);
       todayChg = yNav.nav > 0 ? ((currentNav - yNav.nav) / yNav.nav * 100) : 0;
-    } else if(navRefreshed && nav && h.value){
+    } else if(isTradingDay() && navRefreshed && nav && h.value){
       // 降级方案：无昨日净值时使用估算涨跌幅
       todayChg = parseFloat(nav.gszzl)||0;
       todayPnl = h.value * todayChg / 100;
@@ -3769,9 +3776,9 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
   // 获取昨日净值数据
   const yesterdayNav = await FundDB.get('yesterdayNav') || {};
 
-  // 今日涨跌 - 使用昨日净值精确计算
+  // 今日涨跌 - 使用昨日净值精确计算（仅交易日）
   let todayPnl=0, navCount=0;
-  if(navRefreshed){
+  if(isTradingDay() && navRefreshed){
     holdings.forEach(h=>{
       const nav=navCache[h.code];
       const yNav=yesterdayNav[h.code];
