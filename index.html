@@ -3406,6 +3406,28 @@ async function updateYesterdayNav(){
   const yesterdayNav = await FundDB.get('yesterdayNav') || {};
   const today = new Date().toISOString().slice(0,10);
 
+  // 计算昨日收益（在更新yesterdayNav之前）
+  let yesterdayPnl = 0;
+  existingHoldings.forEach(h => {
+    const nav = navCache[h.code];
+    const existing = yesterdayNav[h.code];
+
+    // 如果有昨日净值记录且日期不是今天，说明可以计算昨日收益
+    if(nav && nav.dwjz && existing && existing.date !== today && h.shares){
+      const yesterdayNavValue = parseFloat(nav.dwjz);
+      const beforeYesterdayNavValue = existing.nav;
+      yesterdayPnl += h.shares * (yesterdayNavValue - beforeYesterdayNavValue);
+    }
+  });
+
+  // 存储昨日收益
+  if(yesterdayPnl !== 0){
+    await FundDB.set('yesterdayPnl', {
+      date: today,
+      pnl: yesterdayPnl
+    });
+  }
+
   // 遍历所有持仓基金，存储当前确认净值作为昨日净值
   // 关键修复：如果今天已经更新过，不要再覆盖（避免晚上刷新时把今日净值当作昨日净值）
   existingHoldings.forEach(h => {
@@ -3776,6 +3798,10 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
   // 获取昨日净值数据
   const yesterdayNav = await FundDB.get('yesterdayNav') || {};
 
+  // 获取昨日收益数据
+  const yesterdayPnlData = await FundDB.get('yesterdayPnl') || {};
+  const yesterdayPnl = yesterdayPnlData.pnl || 0;
+
   // 今日涨跌 - 使用昨日净值精确计算（仅交易日）
   let todayPnl=0, navCount=0;
   if(isTradingDay() && navRefreshed){
@@ -3853,8 +3879,12 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
             <div style="font-size:14px;font-weight:600;color:${totalPnl>=0?'#cf1322':'#389e0d'};margin-top:2px">${totalPnl>=0?'+':''}${totalPnlPct.toFixed(1)}%</div>
           </div>
           <div style="padding:12px;background:${navRefreshed&&todayPnl!==0?(todayPnl>=0?'linear-gradient(135deg,#fff1f0,#fff2f0)':'linear-gradient(135deg,#f6ffed,#f0fff4)'):'linear-gradient(135deg,#fafafa,#f5f5f5)'};border-radius:8px;border:1px solid ${navRefreshed&&todayPnl!==0?(todayPnl>=0?'#ffccc7':'#b7eb8f'):'#d9d9d9'}">
-            <div style="font-size:13px;color:${navRefreshed&&todayPnl!==0?(todayPnl>=0?'#cf1322':'#389e0d'):'#8c8c8c'};margin-bottom:4px">今日盈亏${navRefreshed&&navCount>0?'':'(待刷新)'}</div>
-            <div style="font-size:20px;font-weight:700;color:${navRefreshed&&todayPnl!==0?(todayPnl>=0?'#cf1322':'#389e0d'):'#8c8c8c'}">${navRefreshed?(todayPnl>=0?'+':'')+'¥'+Math.abs(todayPnl).toLocaleString('zh-CN',{maximumFractionDigits:0}):'--'}</div>
+            <div style="font-size:13px;color:${navRefreshed&&todayPnl!==0?(todayPnl>=0?'#cf1322':'#389e0d'):'#8c8c8c'};margin-bottom:4px">今日盈亏${!isTradingDay()?'(非交易日)':(navRefreshed&&navCount>0?'':'(待刷新)')}</div>
+            <div style="font-size:20px;font-weight:700;color:${navRefreshed&&todayPnl!==0?(todayPnl>=0?'#cf1322':'#389e0d'):'#8c8c8c'}">${!isTradingDay()?'--':(navRefreshed?(todayPnl>=0?'+':'')+'¥'+Math.abs(todayPnl).toLocaleString('zh-CN',{maximumFractionDigits:0}):'--')}</div>
+          </div>
+          <div style="padding:12px;background:${yesterdayPnl!==0?(yesterdayPnl>=0?'linear-gradient(135deg,#fff1f0,#fff2f0)':'linear-gradient(135deg,#f6ffed,#f0fff4)'):'linear-gradient(135deg,#fafafa,#f5f5f5)'};border-radius:8px;border:1px solid ${yesterdayPnl!==0?(yesterdayPnl>=0?'#ffccc7':'#b7eb8f'):'#d9d9d9'}">
+            <div style="font-size:13px;color:${yesterdayPnl!==0?(yesterdayPnl>=0?'#cf1322':'#389e0d'):'#8c8c8c'};margin-bottom:4px">昨日收益</div>
+            <div style="font-size:20px;font-weight:700;color:${yesterdayPnl!==0?(yesterdayPnl>=0?'#cf1322':'#389e0d'):'#8c8c8c'}">${yesterdayPnl!==0?(yesterdayPnl>=0?'+':'')+'¥'+Math.abs(yesterdayPnl).toLocaleString('zh-CN',{maximumFractionDigits:2}):'--'}</div>
           </div>
         </div>
         <div style="display:flex;align-items:center;justify-content:center;background:#fafafa;border-radius:8px;border:1px solid var(--border);padding:12px">
