@@ -3407,9 +3407,13 @@ async function updateYesterdayNav(){
   const today = new Date().toISOString().slice(0,10);
 
   // 遍历所有持仓基金，存储当前确认净值作为昨日净值
+  // 关键修复：如果今天已经更新过，不要再覆盖（避免晚上刷新时把今日净值当作昨日净值）
   existingHoldings.forEach(h => {
     const nav = navCache[h.code];
-    if(nav && nav.dwjz){
+    const existing = yesterdayNav[h.code];
+
+    // 只在以下情况更新：1) 不存在记录 2) 记录日期不是今天
+    if(nav && nav.dwjz && (!existing || existing.date !== today)){
       yesterdayNav[h.code] = {
         date: today,
         nav: parseFloat(nav.dwjz)
@@ -3680,9 +3684,9 @@ async function renderExistingHoldings(){
       todayPnl = h.shares * (currentNav - yNav.nav);
       todayChg = yNav.nav > 0 ? ((currentNav - yNav.nav) / yNav.nav * 100) : 0;
     } else if(navRefreshed && nav && h.value){
-      // 降级方案：无昨日净值时使用原公式
+      // 降级方案：无昨日净值时使用估算涨跌幅
       todayChg = parseFloat(nav.gszzl)||0;
-      todayPnl = h.value * todayChg / (100 + todayChg);
+      todayPnl = h.value * todayChg / 100;
     }
     const _now=new Date(),_h=_now.getHours(),_m=_now.getMinutes(),_d=_now.getDay();
     const _isMorn=(_h===9&&_m>=30)||_h===10||(_h===11&&_m<30);
@@ -3777,9 +3781,9 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
         todayPnl += h.shares * (currentNav - yNav.nav);
         navCount++;
       } else if(nav && h.value){
-        // 降级方案：无昨日净值时使用原公式
+        // 降级方案：无昨日净值时使用估算涨跌幅
         const chgPct=parseFloat(nav.gszzl)||0;
-        todayPnl+=(h.value||0)*chgPct/(100+chgPct);
+        todayPnl+=(h.value||0)*chgPct/100;
         navCount++;
       }
     });
@@ -3815,9 +3819,9 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
       todayPnl = h.shares * (currentNav - yNav.nav);
       todayChg = yNav.nav > 0 ? ((currentNav - yNav.nav) / yNav.nav * 100) : 0;
     } else if(navRefreshed && nav && h.value){
-      // 降级方案：无昨日净值时使用原公式
+      // 降级方案：无昨日净值时使用估算涨跌幅
       todayChg = parseFloat(nav.gszzl)||0;
-      todayPnl = (h.value||0)*todayChg/(100+todayChg);
+      todayPnl = (h.value||0)*todayChg/100;
     }
 
     return {name:h.name, code:h.code, cost, value:(h.value||0), pnl, pct, todayChg, todayPnl, source:h.source};
