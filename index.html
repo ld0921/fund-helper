@@ -953,8 +953,9 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
     <div style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.6">根据你的预算和风险偏好，从全市场基金中智能匹配最适合定投的组合。定投适合「波动大、长期向上」的资产，市场下跌时自动摊低成本。</div>
     <div class="form-grid" style="margin-bottom:12px">
       <div class="form-item">
-        <label>💰 每月定投预算(元) <span id="dca-budget-hint" style="font-size:11px;color:var(--muted);font-weight:400"></span></label>
+        <label>💰 每月定投预算(元)</label>
         <input id="dca-budget" type="number" value="1000" placeholder="如：1000" oninput="updateDcaBudgetHint()">
+        <div id="dca-budget-hint" style="font-size:11px;color:var(--muted);margin-top:2px;line-height:1.4"></div>
       </div>
       <div class="form-item">
         <label>🛡️ 风险偏好</label>
