@@ -5845,11 +5845,13 @@ function _doGenerateDca(){
   }[risk];
 
   // 4. 计算每个类别的缺口
+  // 关键修复：用户输入的预算是"追加预算"，总预算 = 已有 + 追加
+  const totalBudget = totalExistingMonthly + budget;
   const dcaCats = ['active','index','bond','qdii'];
   const catGap = {};
   const catKept = {};
   dcaCats.forEach(cat => {
-    const targetMonthly = budget * (riskWeightMap[cat] || 0);
+    const targetMonthly = totalBudget * (riskWeightMap[cat] || 0);
     const keptPlans = (holdingPlansByCat[cat] || []).filter(p => p.keep);
     const keptMonthly = keptPlans.reduce((s,p) => s + p.monthly, 0);
     catGap[cat] = Math.max(0, targetMonthly - keptMonthly);
@@ -6055,7 +6057,7 @@ function _doGenerateDca(){
       💡 <b>方案说明（${riskNames[risk]}·${years}年）：</b>以上为${withAmt.length}只基金的月定投分配，预期加权年化收益约 <b>${expRate.toFixed(1)}%</b>，${years}年后预估收益 <b>+¥${Math.round(profit).toLocaleString()}</b>（收益率 +${((profit/totalCost)*100).toFixed(1)}%）。${keepPicks.length > 0 ? `已保留${keepPicks.length}只达标的现有定投计划。` : ''}定投建议每月固定日期执行，坚持不懈效果最佳。<br><span style="color:#ad6800">⚠️ 预期收益基于历史数据经均值回归折扣估算，仅供参考，不构成收益承诺。</span>
     </div>
     <div style="margin-top:8px">
-      ${newPicks.length > 0 ? `<button class="btn btn-primary btn-sm" onclick="importDcaAiToPlan()">⬇ 一键加入${newPicks.length}只新增定投</button>` : '<div style="text-align:center;padding:10px;color:var(--success);font-size:13px">✓ 您的定投计划已经很完善，继续保持即可</div>'}
+      ${newPicks.length > 0 ? `<button class="btn btn-primary btn-sm" id="dca-import-btn" onclick="importDcaAiToPlan()">⬇ 一键加入${newPicks.length}只新增定投</button>` : '<div style="text-align:center;padding:10px;color:var(--success);font-size:13px">✓ 您的定投计划已经很完善，继续保持即可</div>'}
     </div>`;
 
   resultEl.innerHTML = html;
@@ -6081,8 +6083,27 @@ function importDcaAiToPlan(planArr){
     });
     FundDB.set('dcaPlans', dcaPlans);
     renderDcaPlans();
-    if(added>0){ showToast(`已添加 ${added} 只基金到您的定投计划`,'success'); }
-    else { showToast('所有基金已在定投计划中','info'); }
+
+    // 更新按钮状态
+    const btn = document.getElementById('dca-import-btn');
+    if(btn) {
+      if(added > 0) {
+        btn.textContent = `✓ 已加入${added}只到定投计划`;
+        btn.disabled = true;
+        btn.style.opacity = '0.6';
+        btn.style.cursor = 'not-allowed';
+        showToast(`已添加 ${added} 只基金到您的定投计划`,'success');
+      } else {
+        btn.textContent = '✓ 全部已在定投计划中';
+        btn.disabled = true;
+        btn.style.opacity = '0.6';
+        btn.style.cursor = 'not-allowed';
+        showToast('所有基金已在定投计划中','info');
+      }
+    } else {
+      if(added>0){ showToast(`已添加 ${added} 只基金到您的定投计划`,'success'); }
+      else { showToast('所有基金已在定投计划中','info'); }
+    }
   };
   // 优先用参数/内存，其次从IndexedDB加载
   const arr = planArr || window._lastDcaAiPicks;
