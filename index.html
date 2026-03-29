@@ -5814,37 +5814,33 @@ function _doGenerateDca(){
   const risk = document.getElementById('dca-risk-pref').value;
   const years = parseInt(document.getElementById('dca-plan-years').value)||5;
 
-  // 按定投评分过滤（排除货币）
+  // 1. 分析已有定投计划（排除暂停的）
+  const activePlans = dcaPlans.filter(d => !d.paused);
+  const totalExistingMonthly = activePlans.reduce((s,d)=>s+d.monthly,0);
+
+  // 按类别分组并评估质量
+  const holdingPlansByCat = {};
+  const replaceSuggestions = [];
+  activePlans.forEach(plan => {
+    const fd = CURATED_FUNDS.find(f => f.code === plan.code);
+    if(!fd) return; // 未知基金跳过
+    const cat = fd.cat;
+    if(cat === 'money') return; // 货币基金不参与定投方案
+    const dcaScore = calcDCAScore(fd);
+    const keep = dcaScore >= 60; // 定投评分≥60为达标
+    if(!holdingPlansByCat[cat]) holdingPlansByCat[cat] = [];
+    holdingPlansByCat[cat].push({ code:plan.code, name:plan.name||fd.name, monthly:plan.monthly, dcaScore, keep, fundData:fd });
+    if(!keep) replaceSuggestions.push({ code:plan.code, name:plan.name||fd.name, cat, dcaScore, monthly:plan.monthly });
+  });
+
+  // 2. 按定投评分过滤候选池（排除货币）
   let pool = CURATED_FUNDS.filter(f=>f.cat!=='money');
   if(risk==='conservative') pool = pool.filter(f=>['R1','R2','R3'].includes(f.risk));
   else if(risk==='moderate') pool = pool.filter(f=>['R1','R2','R3','R4'].includes(f.risk));
 
   const scored = pool.map(f=>({...f, dcaScore:calcDCAScore(f)})).sort((a,b)=>b.dcaScore-a.dcaScore);
 
-  // 选3-4只（强制类别分散：每个类别至少选1只，再用剩余名额给最高分）
-  const count = budget>=2000 ? 4 : budget>=1000 ? 3 : 2;
-  const picks = [];
-  const usedCats = new Set();
-  // 第一轮：每个类别选评分最高的1只（保证分散）
-  const dcaCats = ['active','index','bond','qdii']; // 定投关注的类别
-  dcaCats.forEach(cat => {
-    if(picks.length >= count) return;
-    const best = scored.find(f => f.cat === cat && !picks.some(p => p.code === f.code));
-    if(best && best.dcaScore >= 30){ // 最低门槛30分
-      picks.push(best);
-      usedCats.add(cat);
-    }
-  });
-  // 第二轮：剩余名额给全局最高分（不限类别，但避免同类别超过2只）
-  scored.forEach(f => {
-    if(picks.length >= count) return;
-    if(picks.some(p => p.code === f.code)) return;
-    const sameCatCount = picks.filter(p => p.cat === f.cat).length;
-    if(sameCatCount >= 2) return; // 同类别最多2只
-    picks.push(f);
-  });
-
-  // 按风险权重分配
+  // 3. 按风险权重计算目标分配
   const riskWeightMap = {
     conservative: {bond:0.4, index:0.3, active:0.2, qdii:0.1},
     moderate:     {index:0.35, active:0.3, qdii:0.2, bond:0.15},
@@ -5852,34 +5848,102 @@ function _doGenerateDca(){
     aggressive:   {active:0.4, qdii:0.35, index:0.25, bond:0},
   }[risk];
 
-  // 按类别分配权重
-  const withPct = picks.map((f,i)=>{
-    const baseW = riskWeightMap[f.cat] || 0.15;
-    return {...f, w: baseW + (i===0?0.1:0)};
+  // 4. 计算每个类别的缺口
+  const dcaCats = ['active','index','bond','qdii'];
+  const catGap = {};
+  const catKept = {};
+  dcaCats.forEach(cat => {
+    const targetMonthly = budget * (riskWeightMap[cat] || 0);
+    const keptPlans = (holdingPlansByCat[cat] || []).filter(p => p.keep);
+    const keptMonthly = keptPlans.reduce((s,p) => s + p.monthly, 0);
+    catGap[cat] = Math.max(0, targetMonthly - keptMonthly);
+    catKept[cat] = keptPlans;
   });
-  const totalW = withPct.reduce((s,f)=>s+f.w,0);
-  const withAmt = withPct.map(f=>({
-    ...f,
-    pct: Math.round(f.w/totalW*100),
-    monthly: Math.round(budget * f.w/totalW / 100) * 100 || Math.max(100, Math.round(budget * f.w/totalW))
-  }));
+  const totalGap = Object.values(catGap).reduce((s,v) => s + v, 0);
 
-  // 修正月总额精度（将余额按权重从大到小分配，避免集中在第一只基金）
-  const totalMonthly = withAmt.reduce((s,f)=>s+f.monthly,0);
-  if(withAmt.length && totalMonthly !== budget){
-    const diff = budget - totalMonthly;
-    // 按权重降序排列，余额分配给权重最大的
-    const sorted = [...withAmt].sort((a,b)=>b.w-a.w);
-    const step = diff > 0 ? 100 : -100;
-    let remain = Math.abs(diff);
-    let idx = 0;
-    while(remain >= 100 && idx < sorted.length){
-      sorted[idx].monthly += step;
-      remain -= 100;
-      idx = (idx + 1) % sorted.length;
+  // 5. 智能选基（融合已有计划）
+  const allPicks = [];
+
+  dcaCats.forEach(cat => {
+    const gap = catGap[cat] || 0;
+    const kept = catKept[cat] || [];
+
+    // A. 保留达标的已有计划
+    kept.forEach(plan => {
+      allPicks.push({
+        ...plan.fundData,
+        monthly: plan.monthly,
+        dcaScore: plan.dcaScore,
+        action: 'keep',
+        actionLabel: '✓ 继续定投',
+        isExisting: true
+      });
+    });
+
+    // B. 为缺口选择新基金
+    if(gap > 100) { // 缺口至少100元才选新基金
+      const newMonthly = Math.round(gap / 100) * 100;
+      // 从候选池中选择该类别评分最高的基金（排除已有的）
+      const candidate = scored.find(f =>
+        f.cat === cat &&
+        !allPicks.some(p => p.code === f.code) &&
+        f.dcaScore >= 60 // 新选基金也要达标
+      );
+      if(candidate) {
+        allPicks.push({
+          ...candidate,
+          monthly: newMonthly,
+          action: 'new',
+          actionLabel: '+ 新增定投',
+          isExisting: false
+        });
+      }
     }
-    if(remain > 0) sorted[0].monthly += (diff > 0 ? remain : -remain);
+  });
+
+  // 如果没有已有计划或缺口很大，确保至少选2-3只基金
+  const minCount = budget >= 1000 ? 3 : 2;
+  if(allPicks.length < minCount) {
+    const remaining = minCount - allPicks.length;
+    const candidates = scored.filter(f =>
+      !allPicks.some(p => p.code === f.code) &&
+      f.dcaScore >= 60
+    ).slice(0, remaining);
+
+    candidates.forEach(f => {
+      const avgMonthly = Math.round(budget / minCount / 100) * 100;
+      allPicks.push({
+        ...f,
+        monthly: avgMonthly,
+        action: 'new',
+        actionLabel: '+ 新增定投',
+        isExisting: false
+      });
+    });
   }
+
+  // 6. 调整月投金额，确保总额等于预算
+  let totalAllocated = allPicks.reduce((s,p) => s + p.monthly, 0);
+  if(totalAllocated !== budget && allPicks.length > 0) {
+    const diff = budget - totalAllocated;
+    // 优先调整新增的基金
+    const adjustable = allPicks.filter(p => p.action === 'new');
+    if(adjustable.length > 0) {
+      const perFund = Math.round(diff / adjustable.length / 100) * 100;
+      adjustable.forEach(p => p.monthly += perFund);
+    } else {
+      // 如果没有新增的，调整第一只
+      allPicks[0].monthly += diff;
+    }
+  }
+
+  // 7. 计算百分比
+  const finalTotal = allPicks.reduce((s,p) => s + p.monthly, 0);
+  allPicks.forEach(p => {
+    p.pct = Math.round(p.monthly / finalTotal * 100);
+  });
+
+  const withAmt = allPicks;
 
   // 期望年化收益（与智能方案一致的均值回归模型）
   // 长期中枢 + 均值回归：expected = mu + (r3_annualized - mu) * (1 - revSpeed)
@@ -5900,41 +5964,105 @@ function _doGenerateDca(){
   const profit = val - totalCost;
 
   const riskNames={conservative:'保守型',moderate:'稳健型',balanced:'平衡型',aggressive:'进取型'};
-  // 存入全局以供一键导入按钮使用（避免onclick内联JSON）
-  window._lastDcaAiPicks = withAmt.map(f=>({code:f.code,name:f.name,monthly:f.monthly,type:f.type}));
+
+  // 分组：继续定投 vs 新增定投
+  const keepPicks = withAmt.filter(f => f.action === 'keep');
+  const newPicks = withAmt.filter(f => f.action === 'new');
+
+  // 存入全局以供一键导入按钮使用（只导入新增的）
+  window._lastDcaAiPicks = newPicks.map(f=>({code:f.code,name:f.name,monthly:f.monthly,type:f.type}));
   // 持久化到IndexedDB，防止刷新后丢失
   FundDB.set('lastDcaAiPicks', window._lastDcaAiPicks);
+
   const resultEl = document.getElementById('dca-ai-result');
   resultEl.style.display='block';
-  resultEl.innerHTML=`
+
+  // 构建UI
+  let html = `
     <div style="background:#f0f8ff;border-radius:10px;padding:14px;margin-bottom:12px;display:flex;gap:16px;flex-wrap:wrap;text-align:center">
       <div style="flex:1;min-width:90px"><div style="font-size:20px;font-weight:700;color:var(--primary)">¥${budget.toLocaleString()}/月</div><div style="font-size:11px;color:var(--muted)">每月总定投</div></div>
       <div style="flex:1;min-width:90px"><div style="font-size:20px;font-weight:700;color:#722ed1">${years}年</div><div style="font-size:11px;color:var(--muted)">计划年限</div></div>
       <div style="flex:1;min-width:90px"><div style="font-size:20px;font-weight:700;color:var(--success)">¥${Math.round(totalCost).toLocaleString()}</div><div style="font-size:11px;color:var(--muted)">累计投入</div></div>
       <div style="flex:1;min-width:90px"><div style="font-size:20px;font-weight:700;color:var(--danger)">¥${Math.round(val).toLocaleString()}</div><div style="font-size:11px;color:var(--muted)">预期${years}年后</div></div>
-    </div>
-    <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden">
-      ${withAmt.map((f,i)=>{
-        const nav=navCache[f.code]; const chg=nav?parseFloat(nav.gszzl)||0:null;
-        const todayStr=chg!==null?`<span style="font-size:11px;color:${chg>=0?'var(--danger)':'var(--success)'};margin-left:6px">今日${chg>=0?'+':''}${chg}%</span>`:'';
-        return `<div class="dca-ai-item">
-          <div style="width:28px;text-align:center;font-size:16px;font-weight:700;color:var(--muted)">${i+1}</div>
-          <div class="dca-ai-fund">
-            <div class="dca-ai-name">${f.name}${todayStr}</div>
-            <div class="dca-ai-meta">代码 ${f.code} · ${f.manager} · 近1年 <span class="${f.r1>=0?'up':'down'}">${f.r1>=0?'+':''}${f.r1}%</span> · 定投评分 <b style="color:var(--primary)">${f.dcaScore}</b></div>
-          </div>
-          <div class="dca-ai-bar"><div class="dca-ai-bar-fill" style="width:${f.pct}%;background:${CAT_COLORS[f.cat]||'#999'}"></div></div>
-          <div class="dca-ai-pct">${f.pct}%</div>
-          <div class="dca-ai-amt">¥${f.monthly.toLocaleString()}</div>
-        </div>`;
-      }).join('')}
-    </div>
+    </div>`;
+
+  // 继续定投部分
+  if(keepPicks.length > 0) {
+    html += `<div style="margin-bottom:12px">
+      <div style="font-size:13px;font-weight:600;color:var(--success);margin-bottom:8px;display:flex;align-items:center;gap:6px">
+        <span style="font-size:16px">✓</span> 继续定投（${keepPicks.length}只）
+      </div>
+      <div style="border:1px solid #b7eb8f;border-radius:10px;overflow:hidden;background:#f6ffed">
+        ${keepPicks.map((f,i)=>{
+          const nav=navCache[f.code]; const chg=nav?parseFloat(nav.gszzl)||0:null;
+          const todayStr=chg!==null?`<span style="font-size:11px;color:${chg>=0?'var(--danger)':'var(--success)'};margin-left:6px">今日${chg>=0?'+':''}${chg}%</span>`:'';
+          return `<div class="dca-ai-item" style="background:#f6ffed">
+            <div style="width:28px;text-align:center;font-size:14px;color:var(--success)">✓</div>
+            <div class="dca-ai-fund">
+              <div class="dca-ai-name">${f.name}${todayStr}</div>
+              <div class="dca-ai-meta">代码 ${f.code} · ${f.manager} · 近1年 <span class="${f.r1>=0?'up':'down'}">${f.r1>=0?'+':''}${f.r1}%</span> · 定投评分 <b style="color:var(--success)">${f.dcaScore}</b></div>
+            </div>
+            <div class="dca-ai-bar"><div class="dca-ai-bar-fill" style="width:${f.pct}%;background:${CAT_COLORS[f.cat]||'#999'}"></div></div>
+            <div class="dca-ai-pct">${f.pct}%</div>
+            <div class="dca-ai-amt">¥${f.monthly.toLocaleString()}</div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }
+
+  // 新增定投部分
+  if(newPicks.length > 0) {
+    html += `<div style="margin-bottom:12px">
+      <div style="font-size:13px;font-weight:600;color:var(--primary);margin-bottom:8px;display:flex;align-items:center;gap:6px">
+        <span style="font-size:16px">+</span> 新增定投（${newPicks.length}只）
+      </div>
+      <div style="border:1px solid #91caff;border-radius:10px;overflow:hidden">
+        ${newPicks.map((f,i)=>{
+          const nav=navCache[f.code]; const chg=nav?parseFloat(nav.gszzl)||0:null;
+          const todayStr=chg!==null?`<span style="font-size:11px;color:${chg>=0?'var(--danger)':'var(--success)'};margin-left:6px">今日${chg>=0?'+':''}${chg}%</span>`:'';
+          return `<div class="dca-ai-item">
+            <div style="width:28px;text-align:center;font-size:14px;color:var(--primary)">+</div>
+            <div class="dca-ai-fund">
+              <div class="dca-ai-name">${f.name}${todayStr}</div>
+              <div class="dca-ai-meta">代码 ${f.code} · ${f.manager} · 近1年 <span class="${f.r1>=0?'up':'down'}">${f.r1>=0?'+':''}${f.r1}%</span> · 定投评分 <b style="color:var(--primary)">${f.dcaScore}</b></div>
+            </div>
+            <div class="dca-ai-bar"><div class="dca-ai-bar-fill" style="width:${f.pct}%;background:${CAT_COLORS[f.cat]||'#999'}"></div></div>
+            <div class="dca-ai-pct">${f.pct}%</div>
+            <div class="dca-ai-amt">¥${f.monthly.toLocaleString()}</div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }
+
+  // 低分定投计划的替换建议
+  if(replaceSuggestions.length > 0) {
+    html += `<div style="margin-bottom:12px">
+      <div style="font-size:13px;font-weight:600;color:#d48806;margin-bottom:8px;display:flex;align-items:center;gap:6px">
+        <span style="font-size:16px">⚠️</span> 建议调整（${replaceSuggestions.length}只）
+      </div>
+      <div style="border:1px solid #ffc53d;border-radius:10px;padding:12px;background:#fffbe6">
+        ${replaceSuggestions.map(s => {
+          const replacement = scored.find(f => f.cat === s.cat && !withAmt.some(p => p.code === f.code) && f.dcaScore >= 60);
+          return `<div style="font-size:12px;line-height:1.8;color:#7c5800;margin-bottom:8px">
+            <b>${s.name}</b>（${s.code}）当前月投¥${s.monthly} · 评分${s.dcaScore}分
+            ${replacement ? `<br>→ 建议替换为 <b>${replacement.name}</b>（${replacement.code}，评分${replacement.dcaScore}分）` : '<br>→ 建议暂停或减少投入'}
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }
+
+  html += `
     <div style="margin-top:10px;padding:10px 14px;background:#fffbe6;border-radius:8px;font-size:12px;color:#7c5800;line-height:1.7">
-      💡 <b>方案说明（${riskNames[risk]}·${years}年）：</b>以上为${count}只基金的月定投分配，预期加权年化收益约 <b>${expRate.toFixed(1)}%</b>，${years}年后预估收益 <b>+¥${Math.round(profit).toLocaleString()}</b>（收益率 +${((profit/totalCost)*100).toFixed(1)}%）。定投建议每月固定日期执行，坚持不懈效果最佳。<br><span style="color:#ad6800">⚠️ 预期收益基于历史数据经均值回归折扣估算，仅供参考，不构成收益承诺。</span>
+      💡 <b>方案说明（${riskNames[risk]}·${years}年）：</b>以上为${withAmt.length}只基金的月定投分配，预期加权年化收益约 <b>${expRate.toFixed(1)}%</b>，${years}年后预估收益 <b>+¥${Math.round(profit).toLocaleString()}</b>（收益率 +${((profit/totalCost)*100).toFixed(1)}%）。${keepPicks.length > 0 ? `已保留${keepPicks.length}只达标的现有定投计划。` : ''}定投建议每月固定日期执行，坚持不懈效果最佳。<br><span style="color:#ad6800">⚠️ 预期收益基于历史数据经均值回归折扣估算，仅供参考，不构成收益承诺。</span>
     </div>
     <div style="margin-top:8px">
-      <button class="btn btn-primary btn-sm" onclick="importDcaAiToPlan()">⬇ 一键加入我的定投计划</button>
+      ${newPicks.length > 0 ? `<button class="btn btn-primary btn-sm" onclick="importDcaAiToPlan()">⬇ 一键加入${newPicks.length}只新增定投</button>` : '<div style="text-align:center;padding:10px;color:var(--success);font-size:13px">✓ 您的定投计划已经很完善，继续保持即可</div>'}
     </div>`;
+
+  resultEl.innerHTML = html;
   // 自动同步参数到收益测算
   document.getElementById('sip-amount').value = budget;
   document.getElementById('sip-rate').value = expRate.toFixed(1);
