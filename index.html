@@ -3377,9 +3377,16 @@ function redeemHolding(i){
   const fd=CURATED_FUNDS.find(f=>f.code===h.code);
   const cat=fd?fd.cat:(h.type||'');
   let arrivalTime='T+1确认，T+3-4到账';
-  if(cat==='money') arrivalTime='快速赎回T+0(≤1万)，普通赎回T+1到账';
-  else if(cat==='qdii') arrivalTime='T+2-3确认，T+7-10到账';
-  else if(cat==='bond') arrivalTime='T+1确认，T+2-3到账';
+  let arrivalDays = 4; // 默认4天到账
+  if(cat==='money') { arrivalTime='快速赎回T+0(≤1万)，普通赎回T+1到账'; arrivalDays = 1; }
+  else if(cat==='qdii') { arrivalTime='T+2-3确认，T+7-10到账'; arrivalDays = 10; }
+  else if(cat==='bond') { arrivalTime='T+1确认，T+2-3到账'; arrivalDays = 3; }
+
+  // 计算预计到账日期
+  const arrivalDate = new Date();
+  arrivalDate.setDate(arrivalDate.getDate() + arrivalDays);
+  const arrivalDateStr = arrivalDate.toISOString().slice(0,10);
+
   const holdInfo=getHoldingDaysInfo(h.date, h.code);  const feeNote=holdInfo.fee!=='0%'?`\n⚠️ 当前赎回费率：${holdInfo.fee}（已持有${holdInfo.days}天）${holdInfo.nextTier?'\n💡 '+holdInfo.nextTier:''}`:'';
   const label = h.shares ? `当前${h.shares.toFixed(4)}份，输入要赎回的份额数` : `当前市值约¥${(h.value||0).toLocaleString()}，输入要赎回的金额`;
   openModal(`赎回「${h.name}」— ${label}\n\n⏱ 预计${arrivalTime}${feeNote}`, '', function(val){
@@ -3391,7 +3398,7 @@ function redeemHolding(i){
         // 全部赎回 → 删除持仓
         const redeemAmount = h.value || 0;
         existingHoldings.splice(i, 1);
-        addTransaction('redeem', h.code, h.name, redeemAmount, redeemVal);
+        addTransaction('redeem', h.code, h.name, redeemAmount, redeemVal, arrivalDateStr);
         showToast(`已全部赎回「${h.name}」，${arrivalTime}`,'success');
       } else {
         // 部分赎回
@@ -3400,20 +3407,20 @@ function redeemHolding(i){
         h.shares -= redeemVal;
         h.amount = h.amount ? h.amount * (1 - ratio) : 0;
         h.value = h.value * (1 - ratio);
-        addTransaction('redeem', h.code, h.name, redeemAmount, redeemVal);
+        addTransaction('redeem', h.code, h.name, redeemAmount, redeemVal, arrivalDateStr);
         showToast(`已赎回${redeemVal.toFixed(4)}份「${h.name}」，剩余${h.shares.toFixed(4)}份，${arrivalTime}`,'success');
       }
     } else {
       // 按金额赎回（未确认份额时）
       if(redeemVal >= (h.amount||h.value||0)){
         existingHoldings.splice(i, 1);
-        addTransaction('redeem', h.code, h.name, redeemVal, 0);
+        addTransaction('redeem', h.code, h.name, redeemVal, 0, arrivalDateStr);
         showToast(`已全部赎回「${h.name}」，${arrivalTime}`,'success');
       } else {
         const ratio = redeemVal / (h.amount||h.value||1);
         h.amount = h.amount ? h.amount * (1 - ratio) : 0;
         h.value = (h.value||0) * (1 - ratio);
-        addTransaction('redeem', h.code, h.name, redeemVal, 0);
+        addTransaction('redeem', h.code, h.name, redeemVal, 0, arrivalDateStr);
         showToast(`已赎回¥${redeemVal.toLocaleString()}「${h.name}」，${arrivalTime}`,'success');
       }
     }
@@ -3616,7 +3623,7 @@ function clearSelection(){
   updateBatchBar();
 }
 
-async function addTransaction(type, fundCode, fundName, amount, shares = 0){
+async function addTransaction(type, fundCode, fundName, amount, shares = 0, arrivalDate = null){
   const transactions = await FundDB.get('transactions') || [];
   transactions.unshift({
     type,
@@ -3625,7 +3632,9 @@ async function addTransaction(type, fundCode, fundName, amount, shares = 0){
     amount,
     shares,
     date: new Date().toISOString().slice(0,10),
-    timestamp: Date.now()
+    timestamp: Date.now(),
+    arrivalDate: arrivalDate || null,
+    arrived: false
   });
   // 只保留最近100条记录
   if(transactions.length > 100) transactions.length = 100;
@@ -6353,7 +6362,7 @@ async function checkDcaReminder(){
   if(dismissed[todayStr]) return;
 
   // 查找今天需要定投的计划
-  const todayPlans = dcaPlans.filter(p => p.deductDay === todayDay);
+  const todayPlans = dcaPlans.filter(p => p.deductDay === todayDay && !p.paused);
   if(!todayPlans.length) return;
 
   // 显示提醒
@@ -6361,6 +6370,17 @@ async function checkDcaReminder(){
   const desc = document.getElementById('dca-reminder-desc');
   desc.textContent = `今天是${todayPlans.map(p => `「${p.name}」`).join('、')}的定投日，记得在支付宝完成扣款`;
   reminder.style.display = 'block';
+
+  // 发送浏览器通知
+  if('Notification' in window && Notification.permission === 'granted'){
+    try {
+      new Notification('📅 定投提醒', {
+        body: `今天有 ${todayPlans.length} 笔定投计划需要扣款`,
+        icon: 'icons/icon-192.png',
+        tag: 'dca-reminder-' + todayStr,
+      });
+    } catch(e){}
+  }
 }
 
 async function dismissDcaReminder(){
@@ -6369,6 +6389,64 @@ async function dismissDcaReminder(){
   dismissed[todayStr] = true;
   await FundDB.set('dcaReminderDismissed', dismissed);
   document.getElementById('dca-reminder').style.display = 'none';
+}
+
+// 检查持仓确认提醒
+async function checkHoldingConfirmReminder(){
+  if(!existingHoldings.length) return;
+
+  const todayStr = new Date().toISOString().slice(0,10);
+
+  // 检查今天是否已关闭提醒
+  const dismissed = await FundDB.get('holdingConfirmDismissed') || {};
+  if(dismissed[todayStr]) return;
+
+  // 查找需要确认的持仓
+  const needConfirm = existingHoldings.filter(h =>
+    h.status !== 'confirmed' && (h.confirmDate || '') <= todayStr
+  );
+
+  if(!needConfirm.length) return;
+
+  // 发送浏览器通知
+  if('Notification' in window && Notification.permission === 'granted'){
+    try {
+      new Notification('📌 持仓待确认', {
+        body: `您有 ${needConfirm.length} 笔持仓已确认，请输入份额以获得准确数据`,
+        icon: 'icons/icon-192.png',
+        tag: 'holding-confirm-' + todayStr,
+      });
+    } catch(e){}
+  }
+}
+
+// 检查赎回到账提醒
+async function checkRedeemArrivalReminder(){
+  const transactions = await FundDB.get('transactions') || [];
+  const todayStr = new Date().toISOString().slice(0,10);
+
+  // 检查今天是否已关闭提醒
+  const dismissed = await FundDB.get('redeemArrivalDismissed') || {};
+  if(dismissed[todayStr]) return;
+
+  // 查找到账日期到了但还未标记到账的赎回记录
+  const arrivedRedeems = transactions.filter(t =>
+    t.type === 'redeem' && t.arrivalDate && t.arrivalDate <= todayStr && !t.arrived
+  );
+
+  if(!arrivedRedeems.length) return;
+
+  // 发送浏览器通知
+  if('Notification' in window && Notification.permission === 'granted'){
+    try {
+      const totalAmount = arrivedRedeems.reduce((sum, t) => sum + (t.amount || 0), 0);
+      new Notification('💰 赎回到账提醒', {
+        body: `您有 ${arrivedRedeems.length} 笔赎回已到账，总金额约 ¥${totalAmount.toLocaleString()}`,
+        icon: 'icons/icon-192.png',
+        tag: 'redeem-arrival-' + todayStr,
+      });
+    } catch(e){}
+  }
 }
 
 // 显示持仓使用帮助
@@ -7093,6 +7171,8 @@ function runHealthMonitor(){
   renderAll();
   renderTransactionHistory();
   checkDcaReminder();
+  checkHoldingConfirmReminder();
+  checkRedeemArrivalReminder();
   document.getElementById('eh-date').valueAsDate=new Date();
   document.getElementById('dp-start').valueAsDate=new Date();
 
