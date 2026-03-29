@@ -979,6 +979,17 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
     <div class="action-bar">
       <button class="btn btn-primary" onclick="generateDcaAiPlan()" id="dca-gen-btn">🤖 生成AI定投方案</button>
     </div>
+
+    <!-- 定投方案加载动画 -->
+    <div class="card" id="dca-loading-card" style="display:none;text-align:center;padding:40px 20px;margin-top:14px">
+      <div style="font-size:36px;margin-bottom:14px;animation:pulse 1.2s infinite" id="dca-loading-icon">🤖</div>
+      <div style="font-size:15px;font-weight:600;margin-bottom:8px" id="dca-loading-text">正在分析定投计划…</div>
+      <div style="max-width:280px;margin:0 auto 10px;height:6px;background:var(--border);border-radius:3px;overflow:hidden">
+        <div id="dca-loading-bar" style="height:100%;background:var(--primary);border-radius:3px;transition:width .3s;width:0%"></div>
+      </div>
+      <div id="dca-steps" style="display:none;max-width:320px;margin:16px auto 0;text-align:left"></div>
+    </div>
+
     <div id="dca-ai-result" style="display:none;margin-top:14px"></div>
   </div>
 
@@ -5929,10 +5940,63 @@ function generateDcaAiPlan(){
   updateDcaBudgetHint(); // 生成前更新提示
   const btn=document.getElementById('dca-gen-btn');
   if(btn){btn.classList.add('is-loading');btn.innerHTML='<span class="loading-dot"></span> 生成中…';}
-  setTimeout(()=>{
-  try{ _doGenerateDca(); }catch(e){ console.error(e); }
-  if(btn){btn.classList.remove('is-loading');btn.innerHTML='🤖 生成AI定投方案';}
-  },200);
+
+  // 显示加载卡片，隐藏结果
+  const loadCard = document.getElementById('dca-loading-card');
+  const resultEl = document.getElementById('dca-ai-result');
+  loadCard.style.display = 'block';
+  resultEl.style.display = 'none';
+
+  // 滚动到加载卡片
+  setTimeout(() => loadCard.scrollIntoView({behavior:'smooth',block:'center'}), 100);
+
+  // 显示算法执行步骤动画
+  setTimeout(() => {
+    const bar = document.getElementById('dca-loading-bar');
+    const textEl = document.getElementById('dca-loading-text');
+    const iconEl = document.getElementById('dca-loading-icon');
+    const stepsEl = document.getElementById('dca-steps');
+
+    stepsEl.style.display = 'block';
+    stepsEl.innerHTML = '';
+    bar.style.width = '0%';
+
+    const algoSteps = [
+      {icon:'📊',text:'分析已有定投计划，评估基金质量'},
+      {icon:'⚖️',text:'按风险偏好计算类别配置权重'},
+      {icon:'🔍',text:'智能选基（定投评分+类别分散）'},
+      {icon:'💰',text:'优化金额分配，确保预算平衡'},
+      {icon:'📈',text:'计算预期收益（均值回归模型）'},
+      {icon:'✅',text:'生成专属定投方案'}
+    ];
+
+    let si = 0;
+    function showAlgoStep(){
+      if(si >= algoSteps.length) return;
+      const s = algoSteps[si];
+      iconEl.textContent = s.icon;
+      textEl.textContent = s.text;
+      bar.style.width = ((si + 1) / algoSteps.length * 100) + '%';
+
+      const stepDiv = document.createElement('div');
+      stepDiv.style.cssText = 'font-size:12px;line-height:1.8;color:var(--muted);opacity:0;transition:opacity .3s';
+      stepDiv.innerHTML = `<span style="color:var(--success)">✓</span> ${s.text}`;
+      stepsEl.appendChild(stepDiv);
+      requestAnimationFrame(() => stepDiv.style.opacity = '1');
+
+      si++;
+      if(si < algoSteps.length){
+        setTimeout(showAlgoStep, 350);
+      } else {
+        setTimeout(() => {
+          try{ _doGenerateDca(); }catch(e){ console.error(e); }
+          loadCard.style.display = 'none';
+          if(btn){btn.classList.remove('is-loading');btn.innerHTML='🤖 生成AI定投方案';}
+        }, 400);
+      }
+    }
+    showAlgoStep();
+  }, 300);
 }
 function _doGenerateDca(){
   const budget = parseFloat(document.getElementById('dca-budget').value)||1000;
