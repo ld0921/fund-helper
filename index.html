@@ -3657,8 +3657,8 @@ async function renderExistingHoldings(){
     // 状态不自动变更：到了确认日期时显示"待确认"提示用户手动确认
     // （因为实际确认时间以支付宝为准，工具无法自动获知）
     const nav=navCache[h.code];
-    // 优先使用确认净值dwjz，其次使用估算净值gsz，最后用买入成本
-    const curNav=nav?parseFloat(nav.dwjz)||parseFloat(nav.gsz)||(h.cost||0):(h.cost||0);
+    // 优先使用估算净值gsz，其次使用确认净值dwjz，最后用买入成本
+    const curNav=nav?parseFloat(nav.gsz)||parseFloat(nav.dwjz)||(h.cost||0):(h.cost||0);
     const cost=h.cost||curNav||0;
     if(h.shares && h.shares > 0){
       // 有份额数据：使用份额×净值计算市值（最准确）
