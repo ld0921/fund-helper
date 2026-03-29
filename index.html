@@ -1063,8 +1063,8 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
         </div>
       </div>
       <div class="form-item">
-        <label>买入金额 (元)</label>
-        <input id="eh-amount" type="number" placeholder="在支付宝买入的金额" inputmode="numeric">
+        <label>买入金额 (元) <span style="color:var(--muted);font-weight:400">（实际支付金额，含申购费）</span></label>
+        <input id="eh-amount" type="number" placeholder="支付宝实际支付的金额" inputmode="numeric">
       </div>
       <div class="form-item">
         <label>持有份额 <span style="color:var(--muted);font-weight:400">（可选，推荐填写）</span></label>
@@ -3211,7 +3211,7 @@ function confirmHolding(i){
     h.cost = h.amount / shares; // 确认净值 = 买入金额 / 确认份额
     FundDB.set('existingHoldings', existingHoldings);
     renderExistingHoldings(); runHealthMonitor(); renderTodayOverview();
-    showToast(`${h.name} 已确认：${shares}份，确认净值${h.cost.toFixed(4)}`, 'success');
+    showToast(`${h.name} 已确认：${shares.toFixed(4)}份，确认净值${h.cost.toFixed(4)}`, 'success');
   });
 }
 function updateDividendShares(i){
@@ -3221,7 +3221,7 @@ function updateDividendShares(i){
   const divType = confirm('请选择分红方式：\n\n点击「确定」= 红利再投资（份额增加）\n点击「取消」= 现金分红（记录分红金额）');
   if(divType){
     // 红利再投资：份额增加，成本不变
-    openModal(`「${h.name}」红利再投资\n当前${h.shares.toFixed(2)}份，请输入分红后的新总份额\n\n📋 查看路径：支付宝→基金→持仓→查看"持有份额"`, h.shares.toFixed(2), function(val){
+    openModal(`「${h.name}」红利再投资\n当前${h.shares.toFixed(4)}份，请输入分红后的新总份额\n\n📋 查看路径：支付宝→基金→持仓→查看"持有份额"`, h.shares.toFixed(4), function(val){
       const newShares = parseFloat(val);
       if(!newShares || newShares <= 0){ showToast('请输入有效份额数','error'); return; }
       if(newShares <= h.shares){ showToast('红利再投资后份额应增加，新份额应大于当前份额','error'); return; }
@@ -3229,7 +3229,7 @@ function updateDividendShares(i){
       h.shares = newShares;
       FundDB.set('existingHoldings', existingHoldings);
       renderExistingHoldings(); runHealthMonitor(); renderTodayOverview();
-      showToast(`红利再投资成功：新增${addedShares.toFixed(2)}份，当前共${newShares.toFixed(2)}份`,'success');
+      showToast(`红利再投资成功：新增${addedShares.toFixed(4)}份，当前共${newShares.toFixed(4)}份`,'success');
     });
   } else {
     // 现金分红：份额不变，记录分红金额（不影响持仓计算）
@@ -3257,7 +3257,7 @@ function redeemHolding(i){
   else if(cat==='qdii') arrivalTime='T+2-3确认，T+7-10到账';
   else if(cat==='bond') arrivalTime='T+1确认，T+2-3到账';
   const holdInfo=getHoldingDaysInfo(h.date, h.code);  const feeNote=holdInfo.fee!=='0%'?`\n⚠️ 当前赎回费率：${holdInfo.fee}（已持有${holdInfo.days}天）${holdInfo.nextTier?'\n💡 '+holdInfo.nextTier:''}`:'';
-  const label = h.shares ? `当前${h.shares.toFixed(2)}份，输入要赎回的份额数` : `当前市值约¥${(h.value||0).toLocaleString()}，输入要赎回的金额`;
+  const label = h.shares ? `当前${h.shares.toFixed(4)}份，输入要赎回的份额数` : `当前市值约¥${(h.value||0).toLocaleString()}，输入要赎回的金额`;
   openModal(`赎回「${h.name}」— ${label}\n\n⏱ 预计${arrivalTime}${feeNote}`, '', function(val){
     const redeemVal = parseFloat(val);
     if(!redeemVal || redeemVal <= 0){ showToast('请输入有效的赎回数量','error'); return; }
@@ -3277,7 +3277,7 @@ function redeemHolding(i){
         h.amount = h.amount ? h.amount * (1 - ratio) : 0;
         h.value = h.value * (1 - ratio);
         addTransaction('redeem', h.code, h.name, redeemAmount, redeemVal);
-        showToast(`已赎回${redeemVal.toFixed(2)}份「${h.name}」，剩余${h.shares.toFixed(2)}份，${arrivalTime}`,'success');
+        showToast(`已赎回${redeemVal.toFixed(4)}份「${h.name}」，剩余${h.shares.toFixed(4)}份，${arrivalTime}`,'success');
       }
     } else {
       // 按金额赎回（未确认份额时）
@@ -3378,12 +3378,8 @@ async function refreshHoldingsNav(){
         FundDB.set('navCache', navCache);
         FundDB.set('lastNavRefreshTime', Date.now());
 
-        // 收盘后(15:00后)存储昨日净值（仅交易日）
-        const now = new Date();
-        const hour = now.getHours();
-        if(hour >= 15 && isTradingDay()){
-          updateYesterdayNav();
-        }
+        // 每次刷新净值后都检查是否需要更新昨日净值（函数内部会基于净值日期判断）
+        updateYesterdayNav();
 
         renderExistingHoldings(); runHealthMonitor(); renderTodayOverview();
         checkRefreshReminder(); // 更新刷新提醒显示
@@ -3412,15 +3408,15 @@ async function updateYesterdayNav(){
     const nav = navCache[h.code];
     const existing = yesterdayNav[h.code];
 
-    // 如果有昨日净值记录且日期不是今天，说明可以计算昨日收益
-    if(nav && nav.dwjz && existing && existing.date !== today && h.shares){
-      const yesterdayNavValue = parseFloat(nav.dwjz);
-      const beforeYesterdayNavValue = existing.nav;
-      yesterdayPnl += h.shares * (yesterdayNavValue - beforeYesterdayNavValue);
+    // 使用净值日期判断：如果当前净值日期 > 存储的净值日期，说明可以计算昨日收益
+    if(nav && nav.dwjz && nav.jzrq && existing && existing.date && nav.jzrq > existing.date && h.shares){
+      const currentNavValue = parseFloat(nav.dwjz);
+      const storedNavValue = existing.nav;
+      yesterdayPnl += h.shares * (currentNavValue - storedNavValue);
     }
   });
 
-  // 存储昨日收益
+  // 存储昨日收益（使用今天的系统日期作为记录日期）
   if(yesterdayPnl !== 0){
     await FundDB.set('yesterdayPnl', {
       date: today,
@@ -3428,16 +3424,16 @@ async function updateYesterdayNav(){
     });
   }
 
-  // 遍历所有持仓基金，存储当前确认净值作为昨日净值
-  // 关键修复：如果今天已经更新过，不要再覆盖（避免晚上刷新时把今日净值当作昨日净值）
+  // 遍历所有持仓基金，更新昨日净值
+  // 关键优化：基于净值日期（jzrq）而不是系统日期判断
   existingHoldings.forEach(h => {
     const nav = navCache[h.code];
     const existing = yesterdayNav[h.code];
 
-    // 只在以下情况更新：1) 不存在记录 2) 记录日期不是今天
-    if(nav && nav.dwjz && (!existing || existing.date !== today)){
+    // 只在净值日期 > 存储日期时更新（确保不会用旧数据覆盖新数据）
+    if(nav && nav.dwjz && nav.jzrq && (!existing || !existing.date || nav.jzrq > existing.date)){
       yesterdayNav[h.code] = {
-        date: today,
+        date: nav.jzrq,  // 使用净值日期而不是系统日期
         nav: parseFloat(nav.dwjz)
       };
     }
@@ -3532,7 +3528,7 @@ async function renderTransactionHistory(){
   list.innerHTML = recent.map(t => {
     const typeLabel = t.type === 'buy' ? '买入' : '赎回';
     const typeColor = t.type === 'buy' ? '#52c41a' : '#ff4d4f';
-    const amountText = t.shares > 0 ? `¥${t.amount.toFixed(2)} (${t.shares.toFixed(2)}份)` : `¥${t.amount.toFixed(2)}`;
+    const amountText = t.shares > 0 ? `¥${t.amount.toFixed(2)} (${t.shares.toFixed(4)}份)` : `¥${t.amount.toFixed(2)}`;
 
     return `<div style="padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px">
       <div style="width:40px;height:40px;border-radius:8px;background:${typeColor}15;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">
@@ -3691,7 +3687,7 @@ async function renderExistingHoldings(){
     const cashDiv=h.totalCashDividend||0;
     const pnlAmt=cost>0?(h.value+cashDiv-cost):null;
     const pnlPct=cost>0?(((h.value+cashDiv-cost)/cost)*100).toFixed(1):null;
-    const pnlHtml=pnlAmt!=null?`<span class="${pnlAmt>=0?'up':'down'}">${pnlAmt>=0?'+':'-'}¥${Math.abs(pnlAmt).toLocaleString('zh-CN',{maximumFractionDigits:0})} (${pnlAmt>=0?'+':''}${pnlPct}%)</span>`:'<span style="color:var(--muted)">--</span>';
+    const pnlHtml=pnlAmt!=null?`<span class="${pnlAmt>=0?'up':'down'}">${pnlAmt>=0?'+':'-'}¥${Math.abs(pnlAmt).toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2})} (${pnlAmt>=0?'+':''}${pnlPct}%)</span>`:'<span style="color:var(--muted)">--</span>';
     const statusBadge = h.status==='confirmed'
       ? '<span style="font-size:11px;color:var(--success)">✅已确认</span>'
       : (todayStr >= (h.confirmDate||'')
@@ -3743,7 +3739,7 @@ async function renderExistingHoldings(){
           ${pnlAmt!=null?`${pnlAmt>=0?'+':''}${pnlPct}%`:'--'}</div><div class="eh-stat-lbl">盈亏</div></div>
         <div class="eh-stat" ${isPending?'style="background:#e6f4ff"':''}><div class="eh-stat-val ${todayChg!==null?(todayChg>=0?'up':'down'):''}">${todayChg!==null?`${todayChg>=0?'+':''}${parseFloat(todayChg).toFixed(2)}%${estTag}`:'--'}</div><div class="eh-stat-lbl">今日${todayPnl!==null?`<br><span style="font-size:9px">${todayPnl>=0?'+':''}¥${Math.abs(todayPnl).toFixed(2)}</span>`:''}</div></div>
       </div>
-      <div class="eh-meta">${h.shares?`${h.shares.toFixed(2)}份 · `:''}${h.date||'--'} 买入${(()=>{const hi=getHoldingDaysInfo(h.date,h.code);return h.date?` · 已持有<b>${hi.days}</b>天 · 赎回费<b>${hi.fee}</b>${hi.nextTier?` <span style="color:var(--primary);font-size:10px">💡${hi.nextTier}</span>`:''}`:'';})()}${pnlAmt!=null?` · ${pnlAmt>=0?'盈利':'亏损'} ¥${Math.abs(pnlAmt).toLocaleString('zh-CN',{maximumFractionDigits:0})}`:''}${h.totalCashDividend?` · 累计分红 ¥${h.totalCashDividend.toFixed(2)}`:''}</div>
+      <div class="eh-meta">${h.shares?`${h.shares.toFixed(4)}份 · `:''}${h.date||'--'} 买入${(()=>{const hi=getHoldingDaysInfo(h.date,h.code);return h.date?` · 已持有<b>${hi.days}</b>天 · 赎回费<b>${hi.fee}</b>${hi.nextTier?` <span style="color:var(--primary);font-size:10px">💡${hi.nextTier}</span>`:''}`:'';})()}${pnlAmt!=null?` · ${pnlAmt>=0?'盈利':'亏损'} ¥${Math.abs(pnlAmt).toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2})}`:''}${h.totalCashDividend?` · 累计分红 ¥${h.totalCashDividend.toFixed(2)}`:''}</div>
       <div class="eh-actions">
         <button class="fc-btn" onclick="redeemHolding(${i})">💰 赎回</button>
         ${h.status==='confirmed'&&h.shares?`<button class="fc-btn" onclick="updateDividendShares(${i})">📊 分红</button>`:''}
@@ -3754,10 +3750,10 @@ async function renderExistingHoldings(){
     </div>`;
   }).join('');
   // summary
-  const pnlHtml2=totalCost>0?`&nbsp;·&nbsp;盈亏 <b class="${totalPnl>=0?'up':'down'}">${totalPnl>=0?'+':'-'}¥${Math.abs(totalPnl).toLocaleString('zh-CN',{maximumFractionDigits:0})} (${totalPnl>=0?'+':''}${totalPnlPct.toFixed(1)}%)</b>`:'';
-  const pendingHtml=pendingTotal>0?`&nbsp;·&nbsp;<span style="color:var(--warning)">⏳确认中 ¥${pendingTotal.toLocaleString('zh-CN',{maximumFractionDigits:0})}</span>`:'';
+  const pnlHtml2=totalCost>0?`&nbsp;·&nbsp;盈亏 <b class="${totalPnl>=0?'up':'down'}">${totalPnl>=0?'+':'-'}¥${Math.abs(totalPnl).toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2})} (${totalPnl>=0?'+':''}${totalPnlPct.toFixed(1)}%)</b>`:'';
+  const pendingHtml=pendingTotal>0?`&nbsp;·&nbsp;<span style="color:var(--warning)">⏳确认中 ¥${pendingTotal.toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2})}</span>`:'';
   summary.style.display='block';
-  summary.innerHTML=`💼 <b>${confirmedHoldings.length}</b> 只基金 · 总成本 <b>¥${totalCost.toLocaleString('zh-CN',{maximumFractionDigits:0})}</b> · 总市值 <b>¥${totalVal.toLocaleString('zh-CN',{maximumFractionDigits:0})}</b>${pnlHtml2}${pendingHtml}`;
+  summary.innerHTML=`💼 <b>${confirmedHoldings.length}</b> 只基金 · 总成本 <b>¥${totalCost.toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2})}</b> · 总市值 <b>¥${totalVal.toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2})}</b>${pnlHtml2}${pendingHtml}`;
 
   // 检查待确认提醒
   const needConfirm = existingHoldings.filter(h => h.status !== 'confirmed' && todayStr >= (h.confirmDate || ''));
@@ -3907,16 +3903,16 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
         <div style="display:flex;flex-direction:column;gap:8px">
           <div style="padding:12px;background:linear-gradient(135deg,#e6f7ff,#f0f5ff);border-radius:8px;border:1px solid #91d5ff">
             <div style="font-size:13px;color:#096dd9;margin-bottom:4px">总市值</div>
-            <div style="font-size:22px;font-weight:700;color:#0050b3">¥${totalVal.toLocaleString('zh-CN',{maximumFractionDigits:0})}</div>
+            <div style="font-size:22px;font-weight:700;color:#0050b3">¥${totalVal.toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
           </div>
           <div style="padding:12px;background:${totalPnl>=0?'linear-gradient(135deg,#fff1f0,#fff2f0)':'linear-gradient(135deg,#f6ffed,#f0fff4)'};border-radius:8px;border:1px solid ${totalPnl>=0?'#ffccc7':'#b7eb8f'}">
             <div style="font-size:13px;color:${totalPnl>=0?'#cf1322':'#389e0d'};margin-bottom:4px">累计盈亏</div>
-            <div style="font-size:20px;font-weight:700;color:${totalPnl>=0?'#cf1322':'#389e0d'}">${totalPnl>=0?'+':''}¥${Math.abs(totalPnl).toLocaleString('zh-CN',{maximumFractionDigits:0})}</div>
+            <div style="font-size:20px;font-weight:700;color:${totalPnl>=0?'#cf1322':'#389e0d'}">${totalPnl>=0?'+':''}¥${Math.abs(totalPnl).toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
             <div style="font-size:14px;font-weight:600;color:${totalPnl>=0?'#cf1322':'#389e0d'};margin-top:2px">${totalPnl>=0?'+':''}${totalPnlPct.toFixed(1)}%</div>
           </div>
           <div style="padding:12px;background:${navRefreshed&&todayPnl!==0?(todayPnl>=0?'linear-gradient(135deg,#fff1f0,#fff2f0)':'linear-gradient(135deg,#f6ffed,#f0fff4)'):'linear-gradient(135deg,#fafafa,#f5f5f5)'};border-radius:8px;border:1px solid ${navRefreshed&&todayPnl!==0?(todayPnl>=0?'#ffccc7':'#b7eb8f'):'#d9d9d9'}">
             <div style="font-size:13px;color:${navRefreshed&&todayPnl!==0?(todayPnl>=0?'#cf1322':'#389e0d'):'#8c8c8c'};margin-bottom:4px">今日盈亏${!isTradingDay()?'(非交易日)':(navRefreshed&&navCount>0?'':'(待刷新)')}</div>
-            <div style="font-size:20px;font-weight:700;color:${navRefreshed&&todayPnl!==0?(todayPnl>=0?'#cf1322':'#389e0d'):'#8c8c8c'}">${!isTradingDay()?'--':(navRefreshed?(todayPnl>=0?'+':'')+'¥'+Math.abs(todayPnl).toLocaleString('zh-CN',{maximumFractionDigits:0}):'--')}</div>
+            <div style="font-size:20px;font-weight:700;color:${navRefreshed&&todayPnl!==0?(todayPnl>=0?'#cf1322':'#389e0d'):'#8c8c8c'}">${!isTradingDay()?'--':(navRefreshed?(todayPnl>=0?'+':'')+'¥'+Math.abs(todayPnl).toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2}):'--')}</div>
           </div>
           <div style="padding:12px;background:${yesterdayPnl!==0?(yesterdayPnl>=0?'linear-gradient(135deg,#fff1f0,#fff2f0)':'linear-gradient(135deg,#f6ffed,#f0fff4)'):'linear-gradient(135deg,#fafafa,#f5f5f5)'};border-radius:8px;border:1px solid ${yesterdayPnl!==0?(yesterdayPnl>=0?'#ffccc7':'#b7eb8f'):'#d9d9d9'}">
             <div style="font-size:13px;color:${yesterdayPnl!==0?(yesterdayPnl>=0?'#cf1322':'#389e0d'):'#8c8c8c'};margin-bottom:4px">昨日收益</div>
@@ -3950,7 +3946,7 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
             ${details.map((d,idx)=>{
               const weight = totalVal > 0 ? (d.value / totalVal * 100) : 0;
               const pctStr=d.cost>0?`${d.pct>=0?'+':''}${d.pct.toFixed(1)}%`:'--';
-              const pnlStr=d.cost>0?`${d.pnl>=0?'+':''}¥${Math.abs(d.pnl).toLocaleString('zh-CN',{maximumFractionDigits:0})}`:'--';
+              const pnlStr=d.cost>0?`${d.pnl>=0?'+':''}¥${Math.abs(d.pnl).toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2})}`:'--';
               const todayStr=d.todayChg!==null?`<div>${d.todayChg>=0?'+':''}${parseFloat(d.todayChg).toFixed(2)}%</div>${d.todayPnl!==null?`<div style="font-size:10px">${d.todayPnl>=0?'+':''}¥${Math.abs(d.todayPnl).toFixed(2)}</div>`:''}`:'--';
               const todayClass=d.todayChg!==null?(d.todayChg>=0?'up':'down'):'';
               const srcTag=d.source==='dca'?'<span style="font-size:9px;padding:1px 4px;border-radius:2px;background:#f9f0ff;color:#722ed1;margin-left:3px">定投</span>':'';
