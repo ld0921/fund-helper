@@ -601,6 +601,18 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
   </div>
 </div>
 
+<div class="modal-mask" id="history-chart-modal" style="display:none" onclick="if(event.target===this)closeHistoryChart()">
+  <div class="modal-box" style="max-width:90%;max-height:85vh;overflow:hidden;display:flex;flex-direction:column;padding:0">
+    <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+      <span style="font-size:15px;font-weight:700" id="history-chart-title">📈 历史收益曲线</span>
+      <button onclick="closeHistoryChart()" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;line-height:1">&times;</button>
+    </div>
+    <div style="padding:20px;overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1">
+      <canvas id="history-chart-canvas"></canvas>
+    </div>
+  </div>
+</div>
+
 <div class="tabs">
   <div class="tab active" onclick="switchTab(0)">🎯 <span class="tab-full">智能方案</span><span class="tab-short">方案</span></div>
   <div class="tab" onclick="switchTab(1)">🔍 <span class="tab-full">基金探索</span><span class="tab-short">探索</span></div>
@@ -1472,6 +1484,86 @@ function closeSignalModal(){
   if(!modal) return;
   modal.classList.remove('show');
   setTimeout(()=>{ modal.style.display='none'; }, 200);
+}
+
+let historyChartInstance = null;
+function closeHistoryChart(){
+  const modal=document.getElementById('history-chart-modal');
+  if(!modal) return;
+  modal.classList.remove('show');
+  setTimeout(()=>{ modal.style.display='none'; if(historyChartInstance){historyChartInstance.destroy();historyChartInstance=null;} }, 200);
+}
+
+async function showHistoryChart(code, name, cost){
+  const modal=document.getElementById('history-chart-modal');
+  const title=document.getElementById('history-chart-title');
+  const canvas=document.getElementById('history-chart-canvas');
+  if(!modal||!title||!canvas) return;
+
+  title.textContent=`📈 ${name} - 历史收益曲线`;
+  modal.style.display='flex';
+  requestAnimationFrame(()=>modal.classList.add('show'));
+
+  if(historyChartInstance){historyChartInstance.destroy();historyChartInstance=null;}
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  try{
+    await loadScript(`https://fund.eastmoney.com/pingzhongdata/${code}.js?v=${Date.now()}`, 15000);
+    if(!window.Data_netWorthTrend||window.Data_netWorthTrend.length<2){
+      showToast('暂无历史数据','error');
+      closeHistoryChart();
+      return;
+    }
+
+    const data=window.Data_netWorthTrend;
+    const firstNav=data[0].y;
+    const labels=data.map(d=>new Date(d.x).toLocaleDateString('zh-CN',{month:'numeric',day:'numeric'}));
+    const profits=data.map(d=>cost*((d.y/firstNav)-1));
+
+    historyChartInstance=new Chart(ctx,{
+      type:'line',
+      data:{
+        labels,
+        datasets:[{
+          label:'累计收益(元)',
+          data:profits,
+          borderColor:'#1677ff',
+          backgroundColor:'rgba(22,119,255,0.1)',
+          fill:true,
+          tension:0.3,
+          pointRadius:0,
+          pointHoverRadius:4
+        }]
+      },
+      options:{
+        responsive:true,
+        maintainAspectRatio:true,
+        plugins:{
+          legend:{display:false},
+          tooltip:{
+            callbacks:{
+              label:ctx=>`收益: ¥${ctx.parsed.y.toFixed(2)}`
+            }
+          }
+        },
+        scales:{
+          y:{
+            ticks:{callback:v=>'¥'+v.toFixed(0)},
+            grid:{color:'rgba(0,0,0,0.05)'}
+          },
+          x:{
+            ticks:{maxTicksLimit:8},
+            grid:{display:false}
+          }
+        }
+      }
+    });
+  }catch(e){
+    console.error('获取历史数据失败:',e);
+    showToast('获取历史数据失败','error');
+    closeHistoryChart();
+  }
 }
 
 async function pushToCloud(){
@@ -3937,10 +4029,11 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
           <table style="width:100%;font-size:12px">
           <thead>
             <tr>
-              <th style="text-align:left;min-width:120px">基金名称</th>
-              <th style="text-align:left;min-width:80px">占比</th>
-              <th style="text-align:right;min-width:70px">持仓成本</th>
+              <th style="text-align:left;min-width:90px">基金名称</th>
+              <th style="text-align:left;min-width:60px">占比</th>
+              <th style="text-align:right;min-width:60px">持仓成本</th>
               <th style="text-align:right;min-width:70px">当前市值</th>
+              <th style="text-align:center;min-width:70px">历史收益</th>
               <th style="text-align:right;min-width:60px">收益率</th>
               <th style="text-align:right;min-width:70px">盈亏金额</th>
               <th style="text-align:right;min-width:50px">今日</th>
@@ -3955,10 +4048,10 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
               const todayClass=d.todayChg!==null?(d.todayChg>=0?'up':'down'):'';
               const srcTag=d.source==='dca'?'<span style="font-size:9px;padding:1px 4px;border-radius:2px;background:#f9f0ff;color:#722ed1;margin-left:3px">定投</span>':'';
               return `<tr style="${idx===details.length-1?'':'border-bottom:1px solid var(--border)'}">
-                <td style="font-weight:500;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(d.name)}${srcTag}</td>
+                <td style="font-weight:500;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(d.name)}${srcTag}</td>
                 <td style="padding:8px 6px">
                   <div style="display:flex;align-items:center;gap:6px">
-                    <div style="flex:1;height:6px;background:#f0f0f0;border-radius:3px;overflow:hidden;min-width:40px">
+                    <div style="flex:1;height:6px;background:#f0f0f0;border-radius:3px;overflow:hidden;min-width:30px">
                       <div style="height:100%;background:linear-gradient(90deg,#1890ff,#52c41a);border-radius:3px;width:${weight.toFixed(1)}%"></div>
                     </div>
                     <span style="font-size:11px;color:var(--muted);white-space:nowrap">${weight.toFixed(1)}%</span>
@@ -3966,6 +4059,7 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
                 </td>
                 <td style="text-align:right;color:var(--muted)">¥${d.cost.toLocaleString('zh-CN',{minimumFractionDigits:0,maximumFractionDigits:2})}</td>
                 <td style="text-align:right;font-weight:600">¥${d.value.toLocaleString('zh-CN',{minimumFractionDigits:0,maximumFractionDigits:2})}</td>
+                <td style="text-align:center;padding:8px 6px"><button onclick="showHistoryChart('${d.code}','${escHtml(d.name)}',${d.cost})" style="padding:4px 12px;background:#1677ff;color:white;border:none;border-radius:4px;cursor:pointer;font-size:11px">查看</button></td>
                 <td style="text-align:right;font-weight:600" class="${d.pnl>=0?'up':'down'}">${pctStr}</td>
                 <td style="text-align:right;font-weight:600" class="${d.pnl>=0?'up':'down'}">${pnlStr}</td>
                 <td style="text-align:right;font-size:11px" class="${todayClass}">${todayStr}</td>
