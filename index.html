@@ -953,8 +953,8 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
     <div style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.6">根据你的预算和风险偏好，从全市场基金中智能匹配最适合定投的组合。定投适合「波动大、长期向上」的资产，市场下跌时自动摊低成本。</div>
     <div class="form-grid" style="margin-bottom:12px">
       <div class="form-item">
-        <label>💰 每月定投预算(元)</label>
-        <input id="dca-budget" type="number" value="1000" placeholder="如：1000">
+        <label>💰 每月定投预算(元) <span id="dca-budget-hint" style="font-size:11px;color:var(--muted);font-weight:400"></span></label>
+        <input id="dca-budget" type="number" value="1000" placeholder="如：1000" oninput="updateDcaBudgetHint()">
       </div>
       <div class="form-item">
         <label>🛡️ 风险偏好</label>
@@ -5912,7 +5912,20 @@ function renderDcaRanking(){
   if(currentSortMode==='dca') renderMarketGrid();
 }
 
+function updateDcaBudgetHint(){
+  const activePlans = dcaPlans.filter(d => !d.paused);
+  const totalExisting = activePlans.reduce((s,d)=>s+d.monthly,0);
+  const hintEl = document.getElementById('dca-budget-hint');
+  if(!hintEl) return;
+  if(totalExisting > 0){
+    hintEl.textContent = `（当前已有¥${totalExisting.toLocaleString()}/月，输入追加金额）`;
+  } else {
+    hintEl.textContent = '';
+  }
+}
+
 function generateDcaAiPlan(){
+  updateDcaBudgetHint(); // 生成前更新提示
   const btn=document.getElementById('dca-gen-btn');
   if(btn){btn.classList.add('is-loading');btn.innerHTML='<span class="loading-dot"></span> 生成中…';}
   setTimeout(()=>{
@@ -6035,10 +6048,10 @@ function _doGenerateDca(){
     });
   }
 
-  // 6. 调整月投金额，确保总额等于预算
+  // 6. 调整月投金额，确保总额等于总预算
   let totalAllocated = allPicks.reduce((s,p) => s + p.monthly, 0);
-  if(totalAllocated !== budget && allPicks.length > 0) {
-    const diff = budget - totalAllocated;
+  if(totalAllocated !== totalBudget && allPicks.length > 0) {
+    const diff = totalBudget - totalAllocated;
     // 优先调整新增的基金
     const adjustable = allPicks.filter(p => p.action === 'new');
     if(adjustable.length > 0) {
@@ -6072,8 +6085,8 @@ function _doGenerateDca(){
   const r = expRate/100/12;
   const periods = years*12;
   let val = 0;
-  for(let i=1;i<=periods;i++) val = (val+budget)*(1+r);
-  const totalCost = budget * periods;
+  for(let i=1;i<=periods;i++) val = (val+totalBudget)*(1+r);
+  const totalCost = totalBudget * periods;
   const profit = val - totalCost;
 
   const riskNames={conservative:'保守型',moderate:'稳健型',balanced:'平衡型',aggressive:'进取型'};
@@ -6091,9 +6104,21 @@ function _doGenerateDca(){
   resultEl.style.display='block';
 
   // 构建UI
-  let html = `
+  let html = '';
+
+  // 预算说明（如果有已有定投）
+  if(totalExistingMonthly > 0) {
+    html += `<div style="background:#f6ffed;border:1px solid #b7eb8f;border-radius:10px;padding:12px 14px;margin-bottom:12px;font-size:13px;line-height:1.8">
+      <div style="color:#237804;font-weight:600;margin-bottom:4px">💰 预算说明</div>
+      <div style="color:#595959">已有定投：<b>¥${totalExistingMonthly.toLocaleString()}/月</b>（${activePlans.length}只基金）</div>
+      <div style="color:#595959">追加预算：<b>¥${budget.toLocaleString()}/月</b></div>
+      <div style="color:#237804;font-weight:600">总预算：<b>¥${totalBudget.toLocaleString()}/月</b></div>
+    </div>`;
+  }
+
+  html += `
     <div style="background:#f0f8ff;border-radius:10px;padding:14px;margin-bottom:12px;display:flex;gap:16px;flex-wrap:wrap;text-align:center">
-      <div style="flex:1;min-width:90px"><div style="font-size:20px;font-weight:700;color:var(--primary)">¥${budget.toLocaleString()}/月</div><div style="font-size:11px;color:var(--muted)">每月总定投</div></div>
+      <div style="flex:1;min-width:90px"><div style="font-size:20px;font-weight:700;color:var(--primary)">¥${totalBudget.toLocaleString()}/月</div><div style="font-size:11px;color:var(--muted)">每月总定投</div></div>
       <div style="flex:1;min-width:90px"><div style="font-size:20px;font-weight:700;color:#722ed1">${years}年</div><div style="font-size:11px;color:var(--muted)">计划年限</div></div>
       <div style="flex:1;min-width:90px"><div style="font-size:20px;font-weight:700;color:var(--success)">¥${Math.round(totalCost).toLocaleString()}</div><div style="font-size:11px;color:var(--muted)">累计投入</div></div>
       <div style="flex:1;min-width:90px"><div style="font-size:20px;font-weight:700;color:var(--danger)">¥${Math.round(val).toLocaleString()}</div><div style="font-size:11px;color:var(--muted)">预期${years}年后</div></div>
@@ -6177,7 +6202,7 @@ function _doGenerateDca(){
 
   resultEl.innerHTML = html;
   // 自动同步参数到收益测算
-  document.getElementById('sip-amount').value = budget;
+  document.getElementById('sip-amount').value = totalBudget;
   document.getElementById('sip-rate').value = expRate.toFixed(1);
   document.getElementById('sip-years').value = years;
   calcSIP();
@@ -6437,6 +6462,8 @@ function renderDcaPlans(){
   // 同步Panel3
   renderDcaInHoldings();
   renderDcaTracker();
+  // 更新定投预算提示
+  updateDcaBudgetHint();
 }
 
 // 渲染定投跟踪
