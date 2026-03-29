@@ -4050,10 +4050,10 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
               <th style="text-align:left;min-width:60px">占比</th>
               <th style="text-align:right;min-width:60px">持仓成本</th>
               <th style="text-align:right;min-width:70px">当前市值</th>
-              <th style="text-align:center;min-width:70px">历史收益</th>
               <th style="text-align:right;min-width:60px">收益率</th>
               <th style="text-align:right;min-width:70px">盈亏金额</th>
               <th style="text-align:right;min-width:50px">今日</th>
+              <th style="text-align:center;min-width:70px">历史收益</th>
             </tr>
           </thead>
           <tbody>
@@ -4076,10 +4076,10 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
                 </td>
                 <td style="text-align:right;color:var(--muted)">¥${d.cost.toLocaleString('zh-CN',{minimumFractionDigits:0,maximumFractionDigits:2})}</td>
                 <td style="text-align:right;font-weight:600">¥${d.value.toLocaleString('zh-CN',{minimumFractionDigits:0,maximumFractionDigits:2})}</td>
-                <td style="text-align:center;padding:8px 6px"><button onclick="showHistoryChart('${d.code}','${escHtml(d.name)}',${d.shares},'${d.date||''}',${d.pnl})" style="padding:6px 16px;background:#1677ff;color:white;border:none;border-radius:4px;cursor:pointer;font-size:11px;min-width:60px">查看</button></td>
                 <td style="text-align:right;font-weight:600" class="${d.pnl>=0?'up':'down'}">${pctStr}</td>
                 <td style="text-align:right;font-weight:600" class="${d.pnl>=0?'up':'down'}">${pnlStr}</td>
                 <td style="text-align:right;font-size:11px" class="${todayClass}">${todayStr}</td>
+                <td style="text-align:center;padding:8px 6px"><button onclick="showHistoryChart('${d.code}','${escHtml(d.name)}',${d.shares},'${d.date||''}',${d.pnl})" style="padding:6px 16px;background:#1677ff;color:white;border:none;border-radius:4px;cursor:pointer;font-size:11px;min-width:60px">查看</button></td>
               </tr>`;
             }).join('')}
           </tbody>
