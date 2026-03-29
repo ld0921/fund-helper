@@ -223,18 +223,18 @@ tr:last-child td{border-bottom:none}
   .step-item{padding:10px;gap:8px}
 }
 /* ── 持仓列表卡片 ── */
-.eh-row{padding:16px;border-bottom:none;margin-bottom:10px;border-radius:10px;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.06);border:1px solid #f0f0f0}
+.eh-row{padding:10px;border-bottom:none;margin-bottom:6px;border-radius:10px;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.06);border:1px solid #f0f0f0}
 .eh-row:last-child{margin-bottom:0}
-.eh-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}
+.eh-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:4px}
 .eh-fund-name{font-size:15px;font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.eh-stats{display:flex;gap:0;margin-bottom:8px;border-radius:6px;overflow:hidden;border:1px solid #e8e8e8}
-.eh-stat{flex:1;text-align:center;padding:8px 4px;background:#fafafa}
+.eh-stats{display:flex;gap:0;margin-bottom:4px;border-radius:6px;overflow:hidden;border:1px solid #e8e8e8}
+.eh-stat{flex:1;text-align:center;padding:6px 4px;background:#fafafa}
 .eh-stat:not(:last-child){border-right:1px solid #e8e8e8}
 .eh-stat-val{font-size:14px;font-weight:700}
 .eh-stat-lbl{font-size:10px;color:var(--muted);margin-top:2px}
-.eh-meta{font-size:11px;color:var(--muted);line-height:1.6;margin-bottom:6px}
-.eh-actions{display:flex;gap:0;border-top:1px solid #f0f0f0;margin:10px -16px -16px;padding:0}
-.eh-actions .fc-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:3px;padding:10px 0;font-size:12px;font-weight:500;cursor:pointer;border:none;background:none;color:var(--primary);transition:all .15s;-webkit-tap-highlight-color:transparent}
+.eh-meta{font-size:11px;color:var(--muted);line-height:1.6;margin-bottom:4px}
+.eh-actions{display:flex;gap:0;border-top:1px solid #f0f0f0;margin:8px -10px -10px;padding:0}
+.eh-actions .fc-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:3px;padding:8px 0;font-size:12px;font-weight:500;cursor:pointer;border:none;background:none;color:var(--primary);transition:all .15s;-webkit-tap-highlight-color:transparent}
 .eh-actions .fc-btn:not(:last-child){border-right:1px solid #f0f0f0}
 .eh-actions .fc-btn:hover{background:#f0f8ff}
 .eh-actions .fc-btn.fc-danger{color:var(--danger)}
@@ -511,7 +511,7 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
   #refresh-banner{padding:16px;margin:16px 0}
   #refresh-banner button{font-size:15px;padding:12px 20px}
   /* 持仓列表移动端优化 */
-  .eh-row{padding:12px;margin-bottom:10px}
+  .eh-row{padding:8px;margin-bottom:6px}
   .eh-fund-name{font-size:15px}
   .eh-stat-val{font-size:15px}
   .eh-stat-lbl{font-size:11px}
@@ -3845,7 +3845,7 @@ async function renderExistingHoldings(){
       <div class="eh-top">
         <div class="eh-fund-name">${escHtml(h.name)} ${sourceTag}</div>
       </div>
-      <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;flex-wrap:wrap">
         <code class="code-copy" onclick="copyCode('${escHtml(h.code)}',this)" title="点击复制" style="font-size:11px;color:var(--muted)">${escHtml(h.code)}</code>
         ${statusBadge}
         ${fd?`<span style="font-size:11px;color:var(--muted)">${escHtml(h.type||fd.type)}</span>`:''}
