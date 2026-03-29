@@ -1535,7 +1535,12 @@ async function showHistoryChart(code, name, shares, buyDate, totalPnl){
 
     for(let i=buyDateIndex+1;i<data.length;i++){
       const dateStr=new Date(data[i].x).toISOString().slice(0,10);
-      const prevNav=data[i-1].y;
+      let prevNav;
+      if(i===buyDateIndex+1){
+        prevNav=costNav;
+      }else{
+        prevNav=data[i-1].y;
+      }
       const curNav=data[i].y;
       const profit=(curNav-prevNav)*shares;
       dailyProfits.push({
