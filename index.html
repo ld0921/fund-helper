@@ -3791,6 +3791,9 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
   if(!el) return;
   if(!holdings.length){ el.style.display='none'; return; }
 
+  // 调试：输出待确认金额
+  console.log('pendingTotal:', pendingTotal);
+
   // 获取昨日净值数据
   const yesterdayNav = await FundDB.get('yesterdayNav') || {};
 
