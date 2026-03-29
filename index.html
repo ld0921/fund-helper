@@ -3639,7 +3639,7 @@ async function renderExistingHoldings(){
 
   if(!existingHoldings.length){
     list.style.display='none'; empty.style.display='block'; summary.style.display='none';
-    renderPortfolioOverview([], 0, 0, 0, 0); // 清空收益总览
+    renderPortfolioOverview([], 0, 0, 0, 0, 0); // 清空收益总览
     return;
   }
 
@@ -3769,7 +3769,7 @@ async function renderExistingHoldings(){
   }
 
   // 渲染收益总览卡片
-  renderPortfolioOverview(confirmedHoldings, totalCost, totalVal, totalPnl, totalPnlPct);
+  renderPortfolioOverview(confirmedHoldings, totalCost, totalVal, totalPnl, totalPnlPct, pendingTotal);
 }
 
 function scrollToFirstPending(){
@@ -3786,7 +3786,7 @@ function scrollToFirstPending(){
   }
 }
 
-async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, totalPnlPct){
+async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, totalPnlPct, pendingTotal){
   const el = document.getElementById('portfolio-overview');
   if(!el) return;
   if(!holdings.length){ el.style.display='none'; return; }
@@ -3904,6 +3904,7 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
           <div style="padding:12px;background:linear-gradient(135deg,#e6f7ff,#f0f5ff);border-radius:8px;border:1px solid #91d5ff">
             <div style="font-size:13px;color:#096dd9;margin-bottom:4px">总市值</div>
             <div style="font-size:22px;font-weight:700;color:#0050b3">¥${totalVal.toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
+            ${pendingTotal>0?`<div style="margin-top:8px;padding:4px 10px;background:rgba(22,119,255,0.1);border-radius:12px;display:inline-block"><span style="font-size:12px;color:#1677ff">买入待确认 ${pendingTotal.toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2})} 元</span></div>`:''}
           </div>
           <div style="padding:12px;background:${totalPnl>=0?'linear-gradient(135deg,#fff1f0,#fff2f0)':'linear-gradient(135deg,#f6ffed,#f0fff4)'};border-radius:8px;border:1px solid ${totalPnl>=0?'#ffccc7':'#b7eb8f'}">
             <div style="font-size:13px;color:${totalPnl>=0?'#cf1322':'#389e0d'};margin-bottom:4px">累计盈亏</div>
