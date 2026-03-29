@@ -1517,12 +1517,24 @@ async function showHistoryChart(code, name, shares, buyDate, totalPnl){
     }
 
     const data=window.Data_netWorthTrend;
+    const currentNav=data[data.length-1].y;
+    const costNav=currentNav-(totalPnl/shares);
+
     const dailyProfits=[];
+    let buyDateIndex=-1;
 
-    for(let i=1;i<data.length;i++){
+    for(let i=0;i<data.length;i++){
       const dateStr=new Date(data[i].x).toISOString().slice(0,10);
-      if(buyDate&&dateStr<=buyDate) continue;
+      if(buyDate&&dateStr===buyDate){
+        buyDateIndex=i;
+        break;
+      }
+    }
 
+    if(buyDateIndex===-1) buyDateIndex=0;
+
+    for(let i=buyDateIndex+1;i<data.length;i++){
+      const dateStr=new Date(data[i].x).toISOString().slice(0,10);
       const prevNav=data[i-1].y;
       const curNav=data[i].y;
       const profit=(curNav-prevNav)*shares;
@@ -1552,6 +1564,7 @@ async function showHistoryChart(code, name, shares, buyDate, totalPnl){
       <div style="text-align:center;padding:20px;border-bottom:1px solid var(--border)">
         <div style="font-size:13px;color:var(--muted);margin-bottom:8px">累计收益(元)</div>
         <div style="font-size:32px;font-weight:700;color:${totalPnl>=0?'#ff4d4f':'#52c41a'}">${totalPnl>=0?'+':''}${totalPnl.toFixed(2)}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px">成本净值: ${costNav.toFixed(4)} · 当前净值: ${currentNav.toFixed(4)}</div>
       </div>
       <div style="max-height:400px;overflow-y:auto;-webkit-overflow-scrolling:touch">
         ${listHtml}
