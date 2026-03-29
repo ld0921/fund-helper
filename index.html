@@ -1260,9 +1260,6 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
     </div>
     <div id="dp-summary" style="display:none;margin-top:10px;padding:10px 14px;background:#f6ffed;border-radius:8px;font-size:13px"></div>
   </div>
-
-  <!-- 定投计划汇总（动态渲染） -->
-  <div class="card" id="dca-holdings-section" style="display:none"></div>
   <!-- 持仓健康诊断（动态渲染） -->
   <div id="health-monitor-wrap"></div>
 
@@ -6472,8 +6469,6 @@ function renderDcaPlans(){
   const summaryEl=document.getElementById('dp-summary');
   if(!dcaPlans.length){
     listEl.style.display='none'; emptyEl.style.display='block'; summaryEl.style.display='none';
-    // 同步Panel3
-    renderDcaInHoldings();
     return;
   }
   emptyEl.style.display='none'; listEl.style.display='block';
@@ -6503,8 +6498,6 @@ function renderDcaPlans(){
   const activeCount=dcaPlans.filter(d=>!d.paused).length;
   const pausedCount=dcaPlans.length-activeCount;
   summaryEl.innerHTML=`📅 共 <b>${dcaPlans.length}</b> 项定投计划${pausedCount>0?`（${pausedCount}项已暂停）`:''}，每月合计 <b>¥${totalMonthly.toLocaleString()}</b>${totalCurval>0?`，总持仓市值约 <b>¥${totalCurval.toLocaleString()}</b>`:''}。已自动同步至已有持仓与持仓统计。<div style="font-size:11px;color:var(--muted);margin-top:6px">💡 每月扣款后，工具会自动按期数估算累计投入。如需精确跟踪，可在持仓中更新确认份额。</div>`;
-  // 同步Panel3
-  renderDcaInHoldings();
   renderDcaTracker();
   // 更新定投预算提示
   updateDcaBudgetHint();
@@ -6575,43 +6568,6 @@ function clearDcaTracking(idx){
   FundDB.set('dcaPlans',dcaPlans);
   renderDcaTracker();
   showToast('已清空跟踪记录','success');
-}
-
-// 渲染定投计划到Panel3
-function renderDcaInHoldings(){
-  const sec = document.getElementById('dca-holdings-section');
-  if(!sec) return;
-  if(!dcaPlans.length){ sec.style.display='none'; return; }
-  sec.style.display='block';
-  const totalMonthly=dcaPlans.reduce((s,d)=>s+d.monthly,0);
-  const totalCurval=dcaPlans.reduce((s,d)=>s+d.curval,0);
-  sec.innerHTML=`<div class="card-title"><span class="icon icon-orange">📅</span>定投计划汇总 <span style="font-size:12px;color:var(--muted);font-weight:400">— 共${dcaPlans.length}项，每月¥${totalMonthly.toLocaleString()}</span></div>
-    <details open>
-      <summary style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:8px 0;user-select:none">
-        <div style="font-size:13px;font-weight:600">定投基金列表</div>
-        <span class="toggle-arrow"></span>
-      </summary>
-      <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-top:8px">
-    ${dcaPlans.map((d,i)=>{
-      const nav=navCache[d.code]; const chg=nav?parseFloat(nav.gszzl)||0:null;
-      const months=d.start?Math.max(0,Math.floor((new Date()-new Date(d.start))/30/86400000)):0;
-      const invested=d.monthly*months;
-      const pnl=d.curval>0&&invested>0?d.curval-invested:null;
-      return `<div class="dp-item"${d.paused?' style="opacity:0.6"':''}>
-        <div class="dp-fund">
-          <div class="dp-name">${d.paused?'<span style="color:var(--warning);font-size:11px;margin-right:4px">⏸已暂停</span>':''}${escHtml(d.name)} <code class="code-copy" onclick="copyCode('${escHtml(d.code)}',this)" title="点击复制" style="font-size:11px;color:var(--muted)">${escHtml(d.code)}</code>${chg!==null?`<span style="margin-left:6px;font-size:11px;color:${chg>=0?'var(--danger)':'var(--success)'}">${chg>=0?'+':''}${chg}%</span>`:''}  </div>
-          <div class="dp-meta">${escHtml(d.type)}${d.start?` · 始于 ${fmtDateCN(d.start)}`:''} · 已约 ${months} 期 · 累计约 ¥${invested.toLocaleString()}${pnl!=null?` · <span class="${pnl>=0?'up':'down'}">${pnl>=0?'+':'-'}¥${Math.abs(pnl).toLocaleString()}</span>`:''}</div>
-        </div>
-        <div class="dp-monthly"><div class="dp-monthly-val">¥${d.monthly.toLocaleString()}</div><div class="dp-monthly-lbl">每月</div></div>
-        <div class="dp-total"><div class="dp-total-val">${d.curval>0?'¥'+d.curval.toLocaleString():'--'}</div><div class="dp-total-lbl">当前市值</div></div>
-      </div>`;
-    }).join('')}
-    </div>
-    </details>
-    ${totalCurval>0?`<div class="stat-row" style="margin-bottom:0">
-      <div class="stat-card"><div class="stat-val">¥${totalMonthly.toLocaleString()}/月</div><div class="stat-label">每月总定投</div></div>
-      <div class="stat-card"><div class="stat-val" style="color:var(--primary)">¥${totalCurval.toLocaleString()}</div><div class="stat-label">定投总市值</div></div>
-    </div>`:''}`;
 }
 
 // Panel1: 从定投计划导入到已有持仓
