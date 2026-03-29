@@ -6028,27 +6028,6 @@ function _doGenerateDca(){
     }
   });
 
-  // 如果没有已有计划或缺口很大，确保至少选2-3只基金
-  const minCount = budget >= 1000 ? 3 : 2;
-  if(allPicks.length < minCount) {
-    const remaining = minCount - allPicks.length;
-    const candidates = scored.filter(f =>
-      !allPicks.some(p => p.code === f.code) &&
-      f.dcaScore >= 60
-    ).slice(0, remaining);
-
-    candidates.forEach(f => {
-      const avgMonthly = Math.round(budget / minCount / 100) * 100;
-      allPicks.push({
-        ...f,
-        monthly: avgMonthly,
-        action: 'new',
-        actionLabel: '+ 新增定投',
-        isExisting: false
-      });
-    });
-  }
-
   // 6. 调整月投金额，确保总额等于总预算
   let totalAllocated = allPicks.reduce((s,p) => s + p.monthly, 0);
   if(totalAllocated !== totalBudget && allPicks.length > 0) {
