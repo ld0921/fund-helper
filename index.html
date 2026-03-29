@@ -3664,6 +3664,8 @@ async function renderExistingHoldings(){
       // 有份额数据：使用份额×净值计算市值（最准确）
       // 优先使用dwjz（确认净值）与支付宝保持一致
       const navVal = nav ? parseFloat(nav.dwjz)||parseFloat(nav.gsz)||(h.cost||0) : (h.cost||0);
+      // 调试：输出净值数据
+      if(nav) console.log(`[${h.code}] dwjz=${nav.dwjz}, gsz=${nav.gsz}, navVal=${navVal}, shares=${h.shares}, value=${h.shares * navVal}`);
       h.value = navVal > 0 ? h.shares * navVal : (h.value||h.amount||0);
     } else {
       // 无份额数据：用买入金额反推（不够准确）
