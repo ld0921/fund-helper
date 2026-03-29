@@ -6463,20 +6463,26 @@ function renderDcaTracker(){
     const realIdx=dcaPlans.indexOf(d);
     if(!d.execLog) d.execLog={};
     const executed=d.execLog[thisMonth]||false;
-    const nextDay=d.deductDay||10; // 默认10号，与表单默认值一致
+    const nextDay=d.deductDay||10;
     const nextDate=now.getDate()>=nextDay?`下月${nextDay}号`:`本月${nextDay}号`;
+
+    // 计算累计已投期数和金额
+    const executedCount = Object.keys(d.execLog).filter(k => d.execLog[k]).length;
+    const totalInvested = executedCount * d.monthly;
 
     return `<div style="padding:12px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;background:${executed?'#f6ffed':'#fff'}">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
         <div style="font-weight:600;font-size:13px">${escHtml(d.name)}</div>
         <div style="font-size:12px;color:var(--muted)">¥${d.monthly}/月</div>
       </div>
-      <div style="font-size:11px;color:var(--muted);margin-bottom:8px">下次扣款：${nextDate}</div>
-      <div style="display:flex;gap:8px">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:4px">下次扣款：${nextDate}</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:8px">累计已投：<b>${executedCount}</b>期 · 共<b>¥${totalInvested.toLocaleString()}</b></div>
+      <div style="display:flex;gap:8px;align-items:center">
         ${executed
           ?`<span style="font-size:11px;color:var(--success);padding:4px 8px;background:#f6ffed;border-radius:4px;border:1px solid #b7eb8f">✅ 本月已执行</span>`
           :`<button class="btn btn-sm" onclick="markDcaExecuted(${realIdx})" style="font-size:11px;padding:4px 12px">✓ 标记已执行</button>`
         }
+        <button class="btn btn-danger btn-sm" onclick="clearDcaTracking(${realIdx})" style="font-size:11px;padding:4px 12px" title="清空跟踪记录">🗑️ 清空</button>
       </div>
     </div>`;
   }).join('');
@@ -6490,6 +6496,21 @@ function markDcaExecuted(idx){
   FundDB.set('dcaPlans',dcaPlans);
   renderDcaTracker();
   showToast('已标记本月定投执行','success');
+}
+
+function clearDcaTracking(idx){
+  const plan = dcaPlans[idx];
+  if(!plan) return;
+  const executedCount = plan.execLog ? Object.keys(plan.execLog).filter(k => plan.execLog[k]).length : 0;
+  if(executedCount === 0){
+    showToast('该定投计划暂无跟踪记录','info');
+    return;
+  }
+  if(!confirm(`确定清空「${plan.name}」的跟踪记录？\n\n将清空${executedCount}期的执行记录，此操作不可恢复。`)) return;
+  dcaPlans[idx].execLog = {};
+  FundDB.set('dcaPlans',dcaPlans);
+  renderDcaTracker();
+  showToast('已清空跟踪记录','success');
 }
 
 // 渲染定投计划到Panel3
