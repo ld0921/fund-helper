@@ -1491,78 +1491,73 @@ function closeHistoryChart(){
   const modal=document.getElementById('history-chart-modal');
   if(!modal) return;
   modal.classList.remove('show');
-  setTimeout(()=>{ modal.style.display='none'; if(historyChartInstance){historyChartInstance.destroy();historyChartInstance=null;} }, 200);
+  setTimeout(()=>{ modal.style.display='none'; }, 200);
 }
 
-async function showHistoryChart(code, name, cost){
+async function showHistoryChart(code, name, shares){
   const modal=document.getElementById('history-chart-modal');
   const title=document.getElementById('history-chart-title');
   const canvas=document.getElementById('history-chart-canvas');
   if(!modal||!title||!canvas) return;
 
-  title.textContent=`📈 ${name} - 历史收益曲线`;
+  if(!shares||shares<=0){
+    showToast('暂无持仓份额','error');
+    return;
+  }
+
+  title.textContent=`📈 ${name} - 收益明细`;
   modal.style.display='flex';
   requestAnimationFrame(()=>modal.classList.add('show'));
 
-  if(historyChartInstance){historyChartInstance.destroy();historyChartInstance=null;}
-  const ctx=canvas.getContext('2d');
-  ctx.clearRect(0,0,canvas.width,canvas.height);
+  canvas.parentElement.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted)">加载中...</div>';
 
   try{
     await loadScript(`https://fund.eastmoney.com/pingzhongdata/${code}.js?v=${Date.now()}`, 15000);
     if(!window.Data_netWorthTrend||window.Data_netWorthTrend.length<2){
-      showToast('暂无历史数据','error');
-      closeHistoryChart();
+      canvas.parentElement.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted)">暂无历史数据</div>';
       return;
     }
 
     const data=window.Data_netWorthTrend;
-    const firstNav=data[0].y;
-    const labels=data.map(d=>new Date(d.x).toLocaleDateString('zh-CN',{month:'numeric',day:'numeric'}));
-    const profits=data.map(d=>cost*((d.y/firstNav)-1));
+    const dailyProfits=[];
+    let totalProfit=0;
 
-    historyChartInstance=new Chart(ctx,{
-      type:'line',
-      data:{
-        labels,
-        datasets:[{
-          label:'累计收益(元)',
-          data:profits,
-          borderColor:'#1677ff',
-          backgroundColor:'rgba(22,119,255,0.1)',
-          fill:true,
-          tension:0.3,
-          pointRadius:0,
-          pointHoverRadius:4
-        }]
-      },
-      options:{
-        responsive:true,
-        maintainAspectRatio:true,
-        plugins:{
-          legend:{display:false},
-          tooltip:{
-            callbacks:{
-              label:ctx=>`收益: ¥${ctx.parsed.y.toFixed(2)}`
-            }
-          }
-        },
-        scales:{
-          y:{
-            ticks:{callback:v=>'¥'+v.toFixed(0)},
-            grid:{color:'rgba(0,0,0,0.05)'}
-          },
-          x:{
-            ticks:{maxTicksLimit:8},
-            grid:{display:false}
-          }
-        }
-      }
-    });
+    for(let i=1;i<data.length;i++){
+      const prevNav=data[i-1].y;
+      const curNav=data[i].y;
+      const profit=(curNav-prevNav)*shares;
+      totalProfit+=profit;
+      dailyProfits.push({
+        date:new Date(data[i].x).toISOString().slice(0,10),
+        profit:profit
+      });
+    }
+
+    dailyProfits.reverse();
+    const recent90=dailyProfits.slice(0,90);
+
+    const listHtml=recent90.map(d=>{
+      const bgColor=d.profit>0?'#ff4d4f':d.profit<0?'#52c41a':'#d9d9d9';
+      const textColor=d.profit===0?'#595959':'white';
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:${bgColor};color:${textColor};margin-bottom:1px">
+        <span>${d.date}</span>
+        <span style="font-weight:600">${d.profit.toFixed(2)}</span>
+      </div>`;
+    }).join('');
+
+    canvas.parentElement.innerHTML=`
+      <div style="text-align:center;padding:20px;border-bottom:1px solid var(--border)">
+        <div style="font-size:13px;color:var(--muted);margin-bottom:8px">累计收益(元)</div>
+        <div style="font-size:32px;font-weight:700;color:${totalProfit>=0?'#ff4d4f':'#52c41a'}">${totalProfit>=0?'+':''}${totalProfit.toFixed(2)}</div>
+      </div>
+      <div style="max-height:400px;overflow-y:auto;-webkit-overflow-scrolling:touch">
+        ${listHtml}
+      </div>
+      <div style="text-align:center;padding:12px;color:var(--muted);font-size:12px">累计收益目前只显示示最近90个交易日明细</div>
+    `;
   }catch(e){
     console.error('获取历史数据失败:',e);
-    showToast('获取历史数据失败','error');
-    closeHistoryChart();
+    canvas.parentElement.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted)">获取历史数据失败</div>';
   }
 }
 
@@ -3984,7 +3979,7 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
       todayPnl = (h.value||0)*todayChg/100;
     }
 
-    return {name:h.name, code:h.code, cost, value:(h.value||0), pnl, pct, todayChg, todayPnl, source:h.source};
+    return {name:h.name, code:h.code, cost, value:(h.value||0), pnl, pct, todayChg, todayPnl, source:h.source, shares:h.shares||0};
   }).sort((a,b)=>(b.value||0)-(a.value||0)); // 按市值降序
 
   el.style.display='';
@@ -4059,7 +4054,7 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
                 </td>
                 <td style="text-align:right;color:var(--muted)">¥${d.cost.toLocaleString('zh-CN',{minimumFractionDigits:0,maximumFractionDigits:2})}</td>
                 <td style="text-align:right;font-weight:600">¥${d.value.toLocaleString('zh-CN',{minimumFractionDigits:0,maximumFractionDigits:2})}</td>
-                <td style="text-align:center;padding:8px 6px"><button onclick="showHistoryChart('${d.code}','${escHtml(d.name)}',${d.cost})" style="padding:4px 12px;background:#1677ff;color:white;border:none;border-radius:4px;cursor:pointer;font-size:11px">查看</button></td>
+                <td style="text-align:center;padding:8px 6px"><button onclick="showHistoryChart('${d.code}','${escHtml(d.name)}',${d.shares})" style="padding:4px 12px;background:#1677ff;color:white;border:none;border-radius:4px;cursor:pointer;font-size:11px">查看</button></td>
                 <td style="text-align:right;font-weight:600" class="${d.pnl>=0?'up':'down'}">${pctStr}</td>
                 <td style="text-align:right;font-weight:600" class="${d.pnl>=0?'up':'down'}">${pnlStr}</td>
                 <td style="text-align:right;font-size:11px" class="${todayClass}">${todayStr}</td>
