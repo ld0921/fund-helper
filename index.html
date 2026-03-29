@@ -1492,7 +1492,7 @@ function closeHistoryChart(){
   setTimeout(()=>{ modal.style.display='none'; }, 200);
 }
 
-async function showHistoryChart(code, name, shares){
+async function showHistoryChart(code, name, shares, buyDate){
   const modal=document.getElementById('history-chart-modal');
   const title=document.getElementById('history-chart-title');
   const content=document.getElementById('history-chart-content');
@@ -1521,20 +1521,27 @@ async function showHistoryChart(code, name, shares){
     let totalProfit=0;
 
     for(let i=1;i<data.length;i++){
+      const dateStr=new Date(data[i].x).toISOString().slice(0,10);
+      if(buyDate&&dateStr<buyDate) continue;
+
       const prevNav=data[i-1].y;
       const curNav=data[i].y;
       const profit=(curNav-prevNav)*shares;
       totalProfit+=profit;
       dailyProfits.push({
-        date:new Date(data[i].x).toISOString().slice(0,10),
+        date:dateStr,
         profit:profit
       });
     }
 
-    dailyProfits.reverse();
-    const recent90=dailyProfits.slice(0,90);
+    if(!dailyProfits.length){
+      content.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted)">暂无收益数据</div>';
+      return;
+    }
 
-    const listHtml=recent90.map(d=>{
+    dailyProfits.reverse();
+
+    const listHtml=dailyProfits.map(d=>{
       const bgColor=d.profit>0?'#ff4d4f':d.profit<0?'#52c41a':'#d9d9d9';
       const textColor=d.profit===0?'#595959':'white';
       return `<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:${bgColor};color:${textColor};margin-bottom:1px">
@@ -1551,7 +1558,7 @@ async function showHistoryChart(code, name, shares){
       <div style="max-height:400px;overflow-y:auto;-webkit-overflow-scrolling:touch">
         ${listHtml}
       </div>
-      <div style="text-align:center;padding:12px;color:var(--muted);font-size:12px">累计收益目前只显示最近90个交易日明细</div>
+      <div style="text-align:center;padding:12px;color:var(--muted);font-size:12px">显示从${buyDate||'最早'}开始的收益明细</div>
     `;
   }catch(e){
     console.error('获取历史数据失败:',e);
@@ -3977,7 +3984,7 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
       todayPnl = (h.value||0)*todayChg/100;
     }
 
-    return {name:h.name, code:h.code, cost, value:(h.value||0), pnl, pct, todayChg, todayPnl, source:h.source, shares:h.shares||0};
+    return {name:h.name, code:h.code, cost, value:(h.value||0), pnl, pct, todayChg, todayPnl, source:h.source, shares:h.shares||0, date:h.date};
   }).sort((a,b)=>(b.value||0)-(a.value||0)); // 按市值降序
 
   el.style.display='';
@@ -4052,7 +4059,7 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
                 </td>
                 <td style="text-align:right;color:var(--muted)">¥${d.cost.toLocaleString('zh-CN',{minimumFractionDigits:0,maximumFractionDigits:2})}</td>
                 <td style="text-align:right;font-weight:600">¥${d.value.toLocaleString('zh-CN',{minimumFractionDigits:0,maximumFractionDigits:2})}</td>
-                <td style="text-align:center;padding:8px 6px"><button onclick="showHistoryChart('${d.code}','${escHtml(d.name)}',${d.shares})" style="padding:4px 12px;background:#1677ff;color:white;border:none;border-radius:4px;cursor:pointer;font-size:11px">查看</button></td>
+                <td style="text-align:center;padding:8px 6px"><button onclick="showHistoryChart('${d.code}','${escHtml(d.name)}',${d.shares},'${d.date||''}')" style="padding:4px 12px;background:#1677ff;color:white;border:none;border-radius:4px;cursor:pointer;font-size:11px">查看</button></td>
                 <td style="text-align:right;font-weight:600" class="${d.pnl>=0?'up':'down'}">${pctStr}</td>
                 <td style="text-align:right;font-weight:600" class="${d.pnl>=0?'up':'down'}">${pnlStr}</td>
                 <td style="text-align:right;font-size:11px" class="${todayClass}">${todayStr}</td>
