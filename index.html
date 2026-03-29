@@ -716,7 +716,7 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
       <span style="font-size:13px;font-weight:600;white-space:nowrap">💰 投入金额</span>
       <div style="position:relative;width:140px;flex-shrink:0">
         <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:14px;font-weight:600;color:var(--muted)">¥</span>
-        <input id="sp-amount" type="number" placeholder="金额" inputmode="numeric" style="height:36px;font-size:15px;font-weight:600;padding-left:26px;padding-right:8px;border:1.5px solid var(--border);border-radius:8px;width:100%;background:var(--card);color:var(--text);outline:none;transition:border-color .2s" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
+        <input id="sp-amount" type="number" placeholder="金额" inputmode="numeric" style="height:36px;font-size:15px;font-weight:600;padding-left:26px;padding-right:8px;border:1.5px solid var(--border);border-radius:8px;width:100%;background:var(--card);color:var(--text);outline:none;transition:border-color .2s" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'" oninput="resetSmartGenButton()">
       </div>
       <div style="display:flex;gap:4px;flex-wrap:wrap">
         <button class="chip" onclick="document.getElementById('sp-amount').value='5000'" style="font-size:11px;height:24px;padding:0 8px;border-radius:4px">5千</button>
@@ -1020,12 +1020,12 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
     <div class="form-grid" style="margin-bottom:12px">
       <div class="form-item">
         <label>💰 每月定投预算(元)</label>
-        <input id="dca-budget" type="number" value="1000" placeholder="如：1000" oninput="updateDcaBudgetHint()">
+        <input id="dca-budget" type="number" value="1000" placeholder="如：1000" oninput="updateDcaBudgetHint();resetDcaGenButton()">
         <div id="dca-budget-hint" style="font-size:11px;color:var(--muted);margin-top:2px;line-height:1.4"></div>
       </div>
       <div class="form-item">
         <label>🛡️ 风险偏好</label>
-        <select id="dca-risk-pref">
+        <select id="dca-risk-pref" onchange="resetDcaGenButton()">
           <option value="conservative">保守型</option>
           <option value="moderate" selected>稳健型</option>
           <option value="balanced">平衡型</option>
@@ -1034,7 +1034,7 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
       </div>
       <div class="form-item">
         <label>📅 计划定投年限</label>
-        <select id="dca-plan-years">
+        <select id="dca-plan-years" onchange="resetDcaGenButton()">
           <option value="3">3年</option>
           <option value="5" selected>5年</option>
           <option value="10">10年</option>
@@ -2292,6 +2292,7 @@ function selectRisk(val){
     el.classList.toggle('selected', el.getAttribute('data-v')===val);
   });
   document.getElementById('risk-selector').style.outline='';
+  resetSmartGenButton();
 }
 function selectHorizon(val){
   document.getElementById('sp-horizon').value=val;
@@ -2300,6 +2301,7 @@ function selectHorizon(val){
     el.classList.remove('active');
   });
   document.getElementById('horizon-selector').style.outline='';
+  resetSmartGenButton();
 }
 
 function switchTab(i){
@@ -5129,10 +5131,22 @@ function _finishGenerate(btn, shouldScroll){
     const hint = document.getElementById('holdings-changed-hint');
     if(hint) hint.classList.remove('show');
   }
-  btn.disabled=false;
-  btn.innerHTML='🤖 重新生成方案';
+  btn.disabled=true;
+  btn.innerHTML='✅ 已生成方案';
+  btn.style.opacity = '0.6';
+  btn.style.cursor = 'not-allowed';
   const cached=Object.keys(navCache).length;
   document.getElementById('gen-status').textContent=cached>0?`已融合 ${cached} 只基金实时净值`:'';
+}
+
+function resetSmartGenButton(){
+  const btn = document.getElementById('gen-btn');
+  if(btn && btn.disabled){
+    btn.disabled = false;
+    btn.innerHTML = '🤖 生成我的专属方案';
+    btn.style.opacity = '1';
+    btn.style.cursor = 'pointer';
+  }
 }
 
 function _doGenerate(shouldScroll){
@@ -6036,6 +6050,16 @@ function updateDcaBudgetHint(){
   }
 }
 
+function resetDcaGenButton(){
+  const btn = document.getElementById('dca-gen-btn');
+  if(btn && btn.disabled){
+    btn.disabled = false;
+    btn.innerHTML = '🤖 生成AI定投方案';
+    btn.style.opacity = '1';
+    btn.style.cursor = 'pointer';
+  }
+}
+
 function generateDcaAiPlan(){
   updateDcaBudgetHint(); // 生成前更新提示
   const btn=document.getElementById('dca-gen-btn');
@@ -6091,7 +6115,13 @@ function generateDcaAiPlan(){
         setTimeout(() => {
           try{ _doGenerateDca(); }catch(e){ console.error(e); }
           loadCard.style.display = 'none';
-          if(btn){btn.classList.remove('is-loading');btn.innerHTML='🤖 生成AI定投方案';}
+          if(btn){
+            btn.classList.remove('is-loading');
+            btn.innerHTML='✅ 已生成方案';
+            btn.disabled = true;
+            btn.style.opacity = '0.6';
+            btn.style.cursor = 'not-allowed';
+          }
         }, 400);
       }
     }
@@ -6173,7 +6203,7 @@ function _doGenerateDca(){
 
     // B. 为缺口选择新基金
     if(gap > 100) { // 缺口至少100元才选新基金
-      const newMonthly = Math.round(gap / 100) * 100;
+      const newMonthly = Math.floor(gap / 100) * 100; // 向下取整，避免超出预算
       // 从候选池中选择该类别评分最高的基金（排除已有的）
       const candidate = scored.find(f =>
         f.cat === cat &&
