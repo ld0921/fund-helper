@@ -3864,6 +3864,32 @@ async function renderExistingHoldings(){
   const empty=document.getElementById('eh-empty');
   const summary=document.getElementById('eh-summary');
 
+  // 自动合并相同基金代码的已确认持仓
+  const codeMap = new Map();
+  const toRemove = [];
+  existingHoldings.forEach((h, idx) => {
+    if(h.status === 'confirmed'){
+      if(codeMap.has(h.code)){
+        const firstIdx = codeMap.get(h.code);
+        const first = existingHoldings[firstIdx];
+        // 合并到第一条记录
+        first.shares = (first.shares || 0) + (h.shares || 0);
+        first.amount = (first.amount || 0) + (h.amount || 0);
+        first.cost = first.shares > 0 ? first.amount / first.shares : first.cost;
+        first.totalCashDividend = (first.totalCashDividend || 0) + (h.totalCashDividend || 0);
+        // 标记当前记录为待删除
+        toRemove.push(idx);
+      } else {
+        codeMap.set(h.code, idx);
+      }
+    }
+  });
+  // 删除重复记录（从后往前删除，避免索引变化）
+  if(toRemove.length > 0){
+    toRemove.reverse().forEach(idx => existingHoldings.splice(idx, 1));
+    FundDB.set('existingHoldings', existingHoldings);
+  }
+
   // 获取昨日净值数据
   const yesterdayNav = await FundDB.get('yesterdayNav') || {};
 
