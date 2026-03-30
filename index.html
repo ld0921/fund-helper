@@ -3922,27 +3922,10 @@ async function renderExistingHoldings(){
   FundDB.set('existingHoldings',existingHoldings);
   // 只统计已确认的持仓（与支付宝一致：确认中的不计入总资产）
   const confirmedHoldings=existingHoldings.filter(h=>h.status==='confirmed');
-
-  // 合并相同基金代码的已确认持仓
-  const mergedMap = new Map();
-  confirmedHoldings.forEach(h => {
-    if(mergedMap.has(h.code)){
-      const existing = mergedMap.get(h.code);
-      existing.shares += h.shares || 0;
-      existing.amount += h.amount || 0;
-      existing.cost = existing.shares > 0 ? existing.amount / existing.shares : existing.cost;
-      existing.value += h.value || 0;
-      existing.totalCashDividend = (existing.totalCashDividend || 0) + (h.totalCashDividend || 0);
-    } else {
-      mergedMap.set(h.code, {...h});
-    }
-  });
-  const mergedHoldings = Array.from(mergedMap.values());
-
   const pendingHoldings=existingHoldings.filter(h=>h.status!=='confirmed');
-  const totalCost=mergedHoldings.reduce((s,h)=>s+(h.amount||0),0);
-  const totalVal=mergedHoldings.reduce((s,h)=>s+h.value,0);
-  const totalCashDiv=mergedHoldings.reduce((s,h)=>s+(h.totalCashDividend||0),0);
+  const totalCost=confirmedHoldings.reduce((s,h)=>s+(h.amount||0),0);
+  const totalVal=confirmedHoldings.reduce((s,h)=>s+h.value,0);
+  const totalCashDiv=confirmedHoldings.reduce((s,h)=>s+(h.totalCashDividend||0),0);
   const totalPnl=totalCost>0?(totalVal+totalCashDiv-totalCost):0;
   const totalPnlPct=totalCost>0?(totalPnl/totalCost*100):0;
   const pendingTotal=pendingHoldings.reduce((s,h)=>s+(h.amount||0),0);
@@ -4034,7 +4017,7 @@ async function renderExistingHoldings(){
   }
 
   // 渲染收益总览卡片
-  renderPortfolioOverview(mergedHoldings, totalCost, totalVal, totalPnl, totalPnlPct, pendingTotal);
+  renderPortfolioOverview(confirmedHoldings, totalCost, totalVal, totalPnl, totalPnlPct, pendingTotal);
 }
 
 function scrollToFirstPending(){
