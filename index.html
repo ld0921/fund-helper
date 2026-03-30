@@ -1097,6 +1097,17 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
     <button class="chip" onclick="scrollToSection('dp-section')">定投</button>
   </div>
 
+  <!-- 非交易日提示 -->
+  <div id="non-trading-day-banner" style="display:none;margin:12px 0;padding:12px 16px;background:#fff7e6;border-radius:8px;border-left:4px solid #faad14">
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="font-size:18px">📅</span>
+      <div style="flex:1">
+        <div style="font-size:13px;color:#d48806;font-weight:600">今天是非交易日（周末/节假日）</div>
+        <div style="font-size:12px;color:#ad6800;margin-top:2px">基金净值不更新，下一交易日：<span id="next-trading-day"></span></div>
+      </div>
+    </div>
+  </div>
+
   <!-- 刷新净值提示 -->
   <div id="refresh-banner" style="margin:12px 0;padding:16px;background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.08);border:1px solid #e8e8e8">
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
@@ -3891,6 +3902,30 @@ function isMarketOpen(date = new Date()){
   const hour = date.getHours();
   const minute = date.getMinutes();
   return hour > 9 || (hour === 9 && minute >= 30); // >= 9:30
+}
+
+function getNextTradingDay(){
+  const next = new Date();
+  next.setDate(next.getDate() + 1);
+  while(!isTradingDay(next)){
+    next.setDate(next.getDate() + 1);
+  }
+  return next;
+}
+
+function updateNonTradingDayBanner(){
+  const banner = document.getElementById('non-trading-day-banner');
+  if(!banner) return;
+
+  if(!isTradingDay()){
+    const next = getNextTradingDay();
+    const weekdays = ['周日','周一','周二','周三','周四','周五','周六'];
+    const dateStr = `${next.getMonth()+1}月${next.getDate()}日（${weekdays[next.getDay()]}）`;
+    document.getElementById('next-trading-day').textContent = dateStr;
+    banner.style.display = 'block';
+  } else {
+    banner.style.display = 'none';
+  }
 }
 
 async function renderExistingHoldings(){
@@ -7543,6 +7578,7 @@ async function showFirstTimeGuide(){
 async function autoRefreshOnLoad(){
   // 显示上次更新时间
   updateLastRefreshTime();
+  updateNonTradingDayBanner();
 
   const lastRefreshTime = await FundDB.get('lastNavRefreshTime') || 0;
   const now = Date.now();
