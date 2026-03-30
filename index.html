@@ -3425,9 +3425,26 @@ function confirmHolding(i){
     h.status = 'confirmed';
     h.shares = shares;
     h.cost = h.amount / shares; // 确认净值 = 买入金额 / 确认份额
+
+    // 检查是否存在相同基金代码的已确认持仓，如果存在则合并
+    const existingIndex = existingHoldings.findIndex((x, idx) => idx !== i && x.code === h.code && x.status === 'confirmed');
+    if(existingIndex !== -1){
+      const existing = existingHoldings[existingIndex];
+      // 合并：份额相加，金额相加，重新计算平均成本
+      existing.shares += h.shares;
+      existing.amount += h.amount;
+      existing.cost = existing.amount / existing.shares;
+      // 合并现金分红
+      if(h.totalCashDividend) existing.totalCashDividend = (existing.totalCashDividend || 0) + h.totalCashDividend;
+      // 删除当前记录
+      existingHoldings.splice(i, 1);
+      showToast(`${h.name} 已确认并合并：总份额${existing.shares.toFixed(4)}份`, 'success');
+    } else {
+      showToast(`${h.name} 已确认：${shares.toFixed(4)}份，确认净值${h.cost.toFixed(4)}`, 'success');
+    }
+
     FundDB.set('existingHoldings', existingHoldings);
     renderExistingHoldings(); runHealthMonitor(); renderTodayOverview();
-    showToast(`${h.name} 已确认：${shares.toFixed(4)}份，确认净值${h.cost.toFixed(4)}`, 'success');
   });
 }
 function updateDividendShares(i){
