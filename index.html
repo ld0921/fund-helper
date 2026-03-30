@@ -4261,7 +4261,7 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
       isEstimated = nav.jzrq !== today;
     }
 
-    return {name:h.name, code:h.code, cost, value:(h.value||0), pnl, pct, todayChg, todayPnl, isEstimated, source:h.source, shares:h.shares||0, date:h.date};
+    return {name:h.name, code:h.code, cost, value:(h.value||0), pnl, pct, todayChg, todayPnl, isEstimated, source:h.source, shares:h.shares||0, date:h.date, jzrq:nav?.jzrq};
   }).sort((a,b)=>(b.value||0)-(a.value||0)); // 按市值降序
 
   el.style.display='';
@@ -4327,8 +4327,10 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
               const todayStr=d.todayChg!==null?`<div>${d.todayChg>=0?'+':''}${parseFloat(d.todayChg).toFixed(2)}%${d.isEstimated?'<span style="font-size:9px;color:var(--muted);margin-left:2px">估</span>':''}</div>${d.todayPnl!==null?`<div style="font-size:10px">${d.todayPnl>=0?'+':''}¥${Math.abs(d.todayPnl).toFixed(2)}</div>`:''}`:'--';
               const todayClass=d.todayChg!==null?(d.todayChg>=0?'up':'down'):'';
               const srcTag=d.source==='dca'?'<span style="font-size:9px;padding:1px 4px;border-radius:2px;background:#f9f0ff;color:#722ed1;margin-left:3px">定投</span>':'';
+              const today=new Date().toISOString().slice(0,10);
+              const dateTag=d.jzrq&&d.jzrq!==today?`<span style="font-size:9px;padding:1px 4px;border-radius:2px;background:#fff7e6;color:#d48806;margin-left:3px">${d.jzrq.slice(5)}</span>`:'';
               return `<tr style="${idx===details.length-1?'':'border-bottom:1px solid var(--border)'}">
-                <td style="font-weight:500;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(d.name)}${srcTag}</td>
+                <td style="font-weight:500;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(d.name)}${srcTag}${dateTag}</td>
                 <td style="padding:8px 6px">
                   <div style="display:flex;align-items:center;gap:6px">
                     <div style="flex:1;height:6px;background:#f0f0f0;border-radius:3px;overflow:hidden;min-width:30px">
