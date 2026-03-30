@@ -2240,7 +2240,7 @@ function renderTodayOverview(){
     const nav=navCache[h.code];
     if(!isMarketOpen()){ return; } // 未开盘时不显示今日涨跌
     const chgPct=nav?(parseFloat(nav.gszzl)||0):0;
-    if(nav){
+    if(nav && chgPct!==0){ // 只有当gszzl不为0时才计算
       todayChg+=h.value*chgPct/(100+chgPct);
       navCount++;
       if(nav.jzrq!==today) isEstimated=true; // 净值日期不是今天，说明是估算
