@@ -3888,6 +3888,9 @@ async function renderExistingHoldings(){
   if(toRemove.length > 0){
     toRemove.reverse().forEach(idx => existingHoldings.splice(idx, 1));
     FundDB.set('existingHoldings', existingHoldings);
+    // 合并后清空昨日净值数据，强制重新计算
+    await FundDB.set('yesterdayNav', {});
+    await FundDB.set('yesterdayPnl', {});
   }
 
   // 获取昨日净值数据
