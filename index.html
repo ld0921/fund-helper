@@ -3915,6 +3915,7 @@ function getNextTradingDay(){
 
 function updateNonTradingDayBanner(){
   const banner = document.getElementById('non-trading-day-banner');
+  const btn = document.getElementById('refresh-nav-btn');
   if(!banner) return;
 
   if(!isTradingDay()){
@@ -3923,8 +3924,22 @@ function updateNonTradingDayBanner(){
     const dateStr = `${next.getMonth()+1}月${next.getDate()}日（${weekdays[next.getDay()]}）`;
     document.getElementById('next-trading-day').textContent = dateStr;
     banner.style.display = 'block';
+
+    // 更新刷新按钮状态
+    if(btn){
+      btn.innerHTML = '📅 非交易日（可刷新历史数据）';
+      btn.style.background = '#d9d9d9';
+      btn.style.boxShadow = 'none';
+    }
   } else {
     banner.style.display = 'none';
+
+    // 恢复刷新按钮状态
+    if(btn){
+      btn.innerHTML = '🔄 立即刷新';
+      btn.style.background = 'linear-gradient(135deg,#1890ff,#096dd9)';
+      btn.style.boxShadow = '0 2px 6px rgba(24,144,255,.3)';
+    }
   }
 }
 
