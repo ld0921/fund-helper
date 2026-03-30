@@ -4273,7 +4273,7 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
     <div class="card">
       <div class="card-title">
         <span class="icon icon-green">💰</span>收益总览
-        <button onclick="showDataSourceInfo()" style="margin-left:6px;padding:2px 8px;font-size:11px;background:var(--primary-bg);color:var(--primary);border:1px solid var(--primary);border-radius:4px;cursor:pointer" title="数据来源说明">?</button>
+        <button onclick="showProfitExplanation()" style="margin-left:6px;padding:2px 8px;font-size:11px;background:var(--primary-bg);color:var(--primary);border:1px solid var(--primary);border-radius:4px;cursor:pointer" title="收益指标说明">?</button>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
         <div style="display:flex;flex-direction:column;gap:8px">
@@ -6767,6 +6767,34 @@ function showDataSourceInfo(){
 
 📌 温馨提示
 本工具旨在帮助您更好地管理基金投资，所有数据仅供参考，实际收益请以支付宝为准。`);
+}
+
+function showProfitExplanation(){
+  alert(`💰 收益指标说明
+
+📊 总市值
+• 当前所有基金持仓的总价值
+• 计算：持有份额 × 当前净值
+
+💵 累计盈亏
+• 从买入至今的总收益（含现金分红）
+• 计算：(当前市值 + 现金分红) - 持仓成本
+• 显示金额和收益率百分比
+
+📈 今日盈亏
+• 今天的实时收益变化
+• 仅交易日9:30后显示
+• 使用实时估算净值计算
+• 标注"实时估算"表示为估算值
+
+📉 昨日收益
+• 昨天一天的收益变化
+• 使用确认净值精确计算
+• 非交易日不显示
+
+💡 温馨提示
+• 实时估算数据供参考，以收盘后确认净值为准
+• 非交易日（周末/节假日）净值不更新`);
 }
 
 // 自定义弹窗系统
