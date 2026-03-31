@@ -3659,10 +3659,9 @@ async function updateYesterdayNav(){
   const yesterdayNav = await FundDB.get('yesterdayNav') || {};
   const today = new Date().toISOString().slice(0,10);
 
-  // 计算昨日收益（在更新yesterdayNav之前）- 仅计算已确认持仓
+  // 计算昨日收益（在更新yesterdayNav之前）
   let yesterdayPnl = 0;
-  const confirmedHoldings = existingHoldings.filter(h => h.status === 'confirmed');
-  confirmedHoldings.forEach(h => {
+  existingHoldings.forEach(h => {
     const nav = navCache[h.code];
     const existing = yesterdayNav[h.code];
 
