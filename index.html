@@ -3676,12 +3676,21 @@ async function updateYesterdayNav(){
 
   // 计算昨日收益（在更新yesterdayNav之前）
   let yesterdayPnl = 0;
+
+  // 找出所有基金中最新的净值日期作为基准
+  const latestNavDate = Math.max(...existingHoldings
+    .map(h => navCache[h.code]?.jzrq)
+    .filter(Boolean)
+    .map(d => new Date(d).getTime())
+  );
+  const latestDateStr = latestNavDate ? new Date(latestNavDate).toISOString().slice(0,10) : null;
+
   existingHoldings.forEach(h => {
     const nav = navCache[h.code];
     const existing = yesterdayNav[h.code];
 
-    // 使用净值日期判断：如果当前净值日期 > 存储的净值日期，说明可以计算昨日收益
-    if(nav && nav.dwjz && nav.jzrq && existing && existing.date && nav.jzrq > existing.date && h.shares){
+    // 只计算净值日期等于最新日期的基金，确保所有基金使用同一天的数据
+    if(nav && nav.dwjz && nav.jzrq === latestDateStr && existing && existing.date && h.shares){
       const currentNavValue = parseFloat(nav.dwjz);
       const storedNavValue = existing.nav;
       yesterdayPnl += h.shares * (currentNavValue - storedNavValue);
