@@ -3659,19 +3659,6 @@ async function updateYesterdayNav(){
   let yesterdayNav = await FundDB.get('yesterdayNav') || {};
   const today = new Date().toISOString().slice(0,10);
 
-  // 自动清理：检测数据不一致时重置
-  const navDates = Object.values(yesterdayNav).map(v => v.date).filter(Boolean);
-  if(navDates.length > 0){
-    const uniqueDates = [...new Set(navDates)];
-
-    // 如果 yesterdayNav 中存在多个不同日期，清空重置
-    if(uniqueDates.length > 1){
-      console.log('检测到昨日净值日期不一致，自动清空重置');
-      yesterdayNav = {};
-      await FundDB.set('yesterdayNav', {});
-    }
-  }
-
   // 计算昨日收益（在更新yesterdayNav之前）
   let yesterdayPnl = 0;
   let calculatedCount = 0;
