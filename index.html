@@ -3656,8 +3656,23 @@ async function refreshHoldingsNav(){
 }
 
 async function updateYesterdayNav(){
-  const yesterdayNav = await FundDB.get('yesterdayNav') || {};
+  let yesterdayNav = await FundDB.get('yesterdayNav') || {};
   const today = new Date().toISOString().slice(0,10);
+
+  // 自动清理：检测数据不一致时重置
+  const navDates = Object.values(yesterdayNav).map(v => v.date).filter(Boolean);
+  if(navDates.length > 0){
+    const minDate = Math.min(...navDates.map(d => new Date(d).getTime()));
+    const maxDate = Math.max(...navDates.map(d => new Date(d).getTime()));
+    const daysDiff = (maxDate - minDate) / (1000 * 60 * 60 * 24);
+    // 如果日期跨度超过3天，说明数据不一致，清空重置
+    if(daysDiff > 3){
+      console.log('检测到昨日净值数据不一致，自动清空重置');
+      yesterdayNav = ;
+      await FundDB.set('yesterdayNav', {});
+      await FundDB.set('yesterdayPnl', {});
+    }
+  }
 
   // 计算昨日收益（在更新yesterdayNav之前）
   let yesterdayPnl = 0;
