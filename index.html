@@ -7111,13 +7111,16 @@ function runSignalEngine(){
   if(dcaPlans.length > 0){
     const today = new Date();
     const dayOfMonth = today.getDate();
+    console.log(`[定投提醒] 今天是${dayOfMonth}号，检查${dcaPlans.length}个定投计划`);
     // 收集今天需要提醒的定投计划（扣款日当天或前1天）
     const duePlans = dcaPlans.filter(d=>{
       const dd = d.deductDay || 1;
       // 当月最后一天（28-31号）且扣款日为1号时，提前提醒下月扣款
       const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth()+1, 0).getDate();
       const isMonthEnd = dd === 1 && dayOfMonth === lastDayOfMonth;
-      return dayOfMonth === dd || dayOfMonth === dd - 1 || isMonthEnd;
+      const shouldRemind = dayOfMonth === dd || dayOfMonth === dd - 1 || isMonthEnd;
+      console.log(`[定投提醒] ${d.name}: 扣款日=${dd}号, 是否提醒=${shouldRemind}`);
+      return shouldRemind;
     });
     if(duePlans.length > 0){
       const totalDue = duePlans.reduce((s,d)=>s+d.monthly,0);
