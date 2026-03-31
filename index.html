@@ -4216,9 +4216,9 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
     yesterdayPnl = calculatedYesterdayPnl;
   }
 
-  // 今日涨跌 - 使用昨日净值精确计算（仅交易日）
+  // 今日涨跌 - 使用昨日净值精确计算（仅交易日且已开盘）
   let todayPnl=0, navCount=0;
-  if(isTradingDay() && navRefreshed){
+  if(isTradingDay() && isMarketOpen() && navRefreshed){
     holdings.forEach(h=>{
       const nav=navCache[h.code];
       const yNav=yesterdayNav[h.code];
