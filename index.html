@@ -7114,7 +7114,7 @@ function runSignalEngine(){
     console.log(`[定投提醒] 今天是${dayOfMonth}号，检查${dcaPlans.length}个定投计划`);
     // 收集今天需要提醒的定投计划（扣款日当天或前1天）
     const duePlans = dcaPlans.filter(d=>{
-      const dd = d.deductDay || 1;
+      const dd = d.deductDay || 10;  // 默认10号，与定投跟踪模块保持一致
       // 当月最后一天（28-31号）且扣款日为1号时，提前提醒下月扣款
       const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth()+1, 0).getDate();
       const isMonthEnd = dd === 1 && dayOfMonth === lastDayOfMonth;
