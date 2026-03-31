@@ -3668,7 +3668,7 @@ async function updateYesterdayNav(){
     // 如果日期跨度超过3天，说明数据不一致，清空重置
     if(daysDiff > 3){
       console.log('检测到昨日净值数据不一致，自动清空重置');
-      yesterdayNav = ;
+      yesterdayNav = {};
       await FundDB.set('yesterdayNav', {});
       await FundDB.set('yesterdayPnl', {});
     }
