@@ -3049,7 +3049,7 @@ function setSortMode(mode){
 }
 function updateNavCard(code,data){
   if(!data) return;
-  navCache[code]=data;
+  navCache[code]={...data, fundcode: code};
   const el=document.getElementById(`nav-${code}`);
   const chgEl=document.getElementById(`chg-${code}`);
   const timeEl=document.getElementById(`time-${code}`);
@@ -3422,7 +3422,7 @@ function addExistingHolding(){
   flashSaved('eh-section');
   // 立即获取该基金的净值数据，确保市值准确
   fetchNav(code, data => {
-    if(data) navCache[code] = data;
+    if(data) navCache[code] = {...data, fundcode: code};
     renderExistingHoldings(); runHealthMonitor(); renderTodayOverview(); runSignalEngine();
   });
   clearFundMatch('eh');
@@ -3597,7 +3597,7 @@ async function refreshHoldingsNav(){
           data.gszzl = '0';
         }
       }
-      if(data) navCache[h.code] = data;
+      if(data) navCache[h.code] = {...data, fundcode: h.code};
 
       // 3. 从东方财富网获取最新确认净值（补充）
       try {
@@ -7462,7 +7462,7 @@ function runHealthMonitor(){
     existingHoldings.forEach(h => {
       fetchNav(h.code, data => {
         if(data) {
-          navCache[h.code] = data;
+          navCache[h.code] = {...data, fundcode: h.code};
           FundDB.set('navCache', navCache);
           renderExistingHoldings();
         }
