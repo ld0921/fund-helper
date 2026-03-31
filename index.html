@@ -3674,17 +3674,19 @@ async function updateYesterdayNav(){
 
   // 计算昨日收益（在更新yesterdayNav之前）
   let yesterdayPnl = 0;
+  let hasCalculated = false;
   existingHoldings.forEach(h => {
     const nav = navCache[h.code];
     const existing = yesterdayNav[h.code];
     // 只有当前净值日期 > 存储的净值日期时才计算
     if(nav && nav.dwjz && nav.jzrq && existing && existing.date && nav.jzrq > existing.date && h.shares){
       yesterdayPnl += h.shares * (parseFloat(nav.dwjz) - existing.nav);
+      hasCalculated = true;
     }
   });
 
-  // 存储昨日收益
-  if(yesterdayPnl !== 0){
+  // 存储昨日收益（只要有计算就存储，即使为0）
+  if(hasCalculated){
     await FundDB.set('yesterdayPnl', { date: today, pnl: yesterdayPnl });
   }
 
