@@ -3662,18 +3662,11 @@ async function updateYesterdayNav(){
   // 自动清理：检测数据不一致时重置
   const navDates = Object.values(yesterdayNav).map(v => v.date).filter(Boolean);
   if(navDates.length > 0){
-    const minDate = Math.min(...navDates.map(d => new Date(d).getTime()));
-    const maxDate = Math.max(...navDates.map(d => new Date(d).getTime()));
-    const daysDiff = (maxDate - minDate) / (1000 * 60 * 60 * 24);
+    const uniqueDates = [...new Set(navDates)];
 
-    // 检查存储的昨日净值是否比当前净值还新（数据倒退）
-    const currentNavDates = existingHoldings.map(h => navCache[h.code]?.jzrq).filter(Boolean);
-    const maxCurrentDate = currentNavDates.length > 0 ? Math.max(...currentNavDates.map(d => new Date(d).getTime())) : 0;
-    const maxStoredDate = Math.max(...navDates.map(d => new Date(d).getTime()));
-
-    // 如果日期跨度超过3天，或最大存储日期比最大当前净值日期还新，清空重置
-    if(daysDiff > 3 || (maxCurrentDate > 0 && maxStoredDate > maxCurrentDate)){
-      console.log('检测到昨日净值数据异常（存储日期比当前还新），自动清空重置');
+    // 如果 yesterdayNav 中存在多个不同日期，清空重置
+    if(uniqueDates.length > 1){
+      console.log('检测到昨日净值日期不一致，自动清空重置');
       yesterdayNav = {};
       await FundDB.set('yesterdayNav', {});
       await FundDB.set('yesterdayPnl', {});
