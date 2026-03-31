@@ -3672,24 +3672,6 @@ async function updateYesterdayNav(){
     }
   }
 
-  // 计算昨日收益（在更新yesterdayNav之前）
-  let yesterdayPnl = 0;
-  let hasCalculated = false;
-  existingHoldings.forEach(h => {
-    const nav = navCache[h.code];
-    const existing = yesterdayNav[h.code];
-    // 只有当前净值日期 > 存储的净值日期时才计算
-    if(nav && nav.dwjz && nav.jzrq && existing && existing.date && nav.jzrq > existing.date && h.shares){
-      yesterdayPnl += h.shares * (parseFloat(nav.dwjz) - existing.nav);
-      hasCalculated = true;
-    }
-  });
-
-  // 存储昨日收益（只要有计算就存储，即使为0）
-  if(hasCalculated){
-    await FundDB.set('yesterdayPnl', { date: today, pnl: yesterdayPnl });
-  }
-
   // 更新昨日净值
   existingHoldings.forEach(h => {
     const nav = navCache[h.code];
@@ -4183,10 +4165,19 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
   // 获取昨日净值数据
   const yesterdayNav = await FundDB.get('yesterdayNav') || {};
 
-  // 获取存储的昨日收益
-  const yesterdayPnlData = await FundDB.get('yesterdayPnl') || {};
-  const yesterdayPnl = yesterdayPnlData.pnl !== undefined ? yesterdayPnlData.pnl : null;
-  const hasYesterdayData = yesterdayPnl !== null;
+  // 实时计算昨日收益：遍历所有基金，用当前净值减去昨日净值
+  let yesterdayPnl = 0;
+  let yesterdayCount = 0;
+  holdings.forEach(h => {
+    const nav = navCache[h.code];
+    const yNav = yesterdayNav[h.code];
+    // 只有当前净值日期 > 昨日净值日期时才计算
+    if(nav && nav.dwjz && nav.jzrq && yNav && yNav.date && yNav.nav && nav.jzrq > yNav.date && h.shares){
+      yesterdayPnl += h.shares * (parseFloat(nav.dwjz) - yNav.nav);
+      yesterdayCount++;
+    }
+  });
+  const hasYesterdayData = yesterdayCount > 0;
 
   // 今日涨跌 - 使用昨日净值精确计算（仅交易日且已开盘）
   let todayPnl=0, navCount=0;
