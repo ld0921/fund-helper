@@ -4093,14 +4093,18 @@ async function renderExistingHoldings(){
     // 使用昨日净值精确计算今日收益（仅交易日且已开盘）
     let todayChg = null, todayPnl = null, isEstimated = false;
     const today = new Date().toISOString().slice(0,10);
+    // 货币基金特殊处理：单位净值固定1.00，今日盈亏接近0
+    const fundInfo=CURATED_FUNDS.find(f=>f.code===h.code);
+    const isMoneyFund=fundInfo&&(fundInfo.type==='货币型'||fundInfo.cat==='money');
     if(isMarketOpen() && isTradingDay() && navRefreshed && nav && h.shares && yNav){
-      const currentNav = parseFloat(nav.gsz) || parseFloat(nav.dwjz) || 0;
-      todayPnl = h.shares * (currentNav - yNav.nav);
-      todayChg = yNav.nav > 0 ? ((currentNav - yNav.nav) / yNav.nav * 100) : 0;
+      const currentNav = isMoneyFund ? 1.00 : (parseFloat(nav.gsz) || parseFloat(nav.dwjz) || 0);
+      const yesterdayNavVal = isMoneyFund ? 1.00 : yNav.nav;
+      todayPnl = h.shares * (currentNav - yesterdayNavVal);
+      todayChg = yesterdayNavVal > 0 ? ((currentNav - yesterdayNavVal) / yesterdayNavVal * 100) : 0;
       isEstimated = nav.jzrq !== today; // 净值日期不是今天，说明是估算
     } else if(isMarketOpen() && isTradingDay() && navRefreshed && nav && h.value){
       // 降级方案：无昨日净值时使用估算涨跌幅
-      todayChg = parseFloat(nav.gszzl)||0;
+      todayChg = isMoneyFund ? 0 : (parseFloat(nav.gszzl)||0);
       todayPnl = h.value * todayChg / 100;
       isEstimated = nav.jzrq !== today;
     }
@@ -4199,14 +4203,18 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
     holdings.forEach(h=>{
       const nav=navCache[h.code];
       const yNav=yesterdayNav[h.code];
+      // 货币基金特殊处理：单位净值固定1.00
+      const fundInfo=CURATED_FUNDS.find(f=>f.code===h.code);
+      const isMoneyFund=fundInfo&&(fundInfo.type==='货币型'||fundInfo.cat==='money');
       if(nav && h.shares && yNav){
         // 优先使用gsz(盘中估算)，其次dwjz(收盘确认)
-        const currentNav = parseFloat(nav.gsz) || parseFloat(nav.dwjz) || 0;
-        todayPnl += h.shares * (currentNav - yNav.nav);
+        const currentNav = isMoneyFund ? 1.00 : (parseFloat(nav.gsz) || parseFloat(nav.dwjz) || 0);
+        const yesterdayNavVal = isMoneyFund ? 1.00 : yNav.nav;
+        todayPnl += h.shares * (currentNav - yesterdayNavVal);
         navCount++;
       } else if(nav && h.value){
         // 降级方案：无昨日净值时使用估算涨跌幅
-        const chgPct=parseFloat(nav.gszzl)||0;
+        const chgPct=isMoneyFund ? 0 : (parseFloat(nav.gszzl)||0);
         todayPnl+=(h.value||0)*chgPct/100;
         navCount++;
       }
@@ -4244,14 +4252,18 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
     // 使用昨日净值精确计算今日收益（仅交易日且已开盘）
     let todayChg=null, todayPnl=null, isEstimated=false;
     const today=new Date().toISOString().slice(0,10);
+    // 货币基金特殊处理：单位净值固定1.00
+    const fundInfo=CURATED_FUNDS.find(f=>f.code===h.code);
+    const isMoneyFund=fundInfo&&(fundInfo.type==='货币型'||fundInfo.cat==='money');
     if(isMarketOpen() && isTradingDay() && navRefreshed && nav && h.shares && yNav){
-      const currentNav = parseFloat(nav.gsz) || parseFloat(nav.dwjz) || 0;
-      todayPnl = h.shares * (currentNav - yNav.nav);
-      todayChg = yNav.nav > 0 ? ((currentNav - yNav.nav) / yNav.nav * 100) : 0;
+      const currentNav = isMoneyFund ? 1.00 : (parseFloat(nav.gsz) || parseFloat(nav.dwjz) || 0);
+      const yesterdayNavVal = isMoneyFund ? 1.00 : yNav.nav;
+      todayPnl = h.shares * (currentNav - yesterdayNavVal);
+      todayChg = yesterdayNavVal > 0 ? ((currentNav - yesterdayNavVal) / yesterdayNavVal * 100) : 0;
       isEstimated = nav.jzrq !== today;
     } else if(isMarketOpen() && isTradingDay() && navRefreshed && nav && h.value){
       // 降级方案：无昨日净值时使用估算涨跌幅
-      todayChg = parseFloat(nav.gszzl)||0;
+      todayChg = isMoneyFund ? 0 : (parseFloat(nav.gszzl)||0);
       todayPnl = (h.value||0)*todayChg/100;
       isEstimated = nav.jzrq !== today;
     }
