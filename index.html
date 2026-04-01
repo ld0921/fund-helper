@@ -4028,13 +4028,16 @@ async function renderExistingHoldings(){
     // 状态不自动变更：到了确认日期时显示"待确认"提示用户手动确认
     // （因为实际确认时间以支付宝为准，工具无法自动获知）
     const nav=navCache[h.code];
+    // 货币基金特殊处理：单位净值固定为1.00
+    const fundInfo=CURATED_FUNDS.find(f=>f.code===h.code);
+    const isMoneyFund=fundInfo&&(fundInfo.type==='货币型'||fundInfo.cat==='money');
     // 优先使用估算净值gsz，其次使用确认净值dwjz，最后用买入成本
-    const curNav=nav?parseFloat(nav.gsz)||parseFloat(nav.dwjz)||(h.cost||0):(h.cost||0);
+    const curNav=isMoneyFund?1.00:(nav?parseFloat(nav.gsz)||parseFloat(nav.dwjz)||(h.cost||0):(h.cost||0));
     const cost=h.cost||curNav||0;
     if(h.shares && h.shares > 0){
       // 有份额数据：使用份额×净值计算市值（最准确）
-      // 优先使用gsz（估算净值），总市值与支付宝保持一致
-      const navVal = nav ? parseFloat(nav.gsz)||parseFloat(nav.dwjz)||(h.cost||0) : (h.cost||0);
+      // 货币基金单位净值固定1.00，其他基金优先使用gsz（估算净值）
+      const navVal = isMoneyFund ? 1.00 : (nav ? parseFloat(nav.gsz)||parseFloat(nav.dwjz)||(h.cost||0) : (h.cost||0));
       h.value = navVal > 0 ? h.shares * navVal : (h.value||h.amount||0);
     } else {
       // 无份额数据：用买入金额反推（不够准确）
