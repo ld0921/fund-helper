@@ -816,7 +816,7 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
       · 已超配类别不再新买，最终输出=保留持仓+新买入<br><br>
 
       <b>五、收益预估（长期均值中枢 + 均值回归 + 多资产协方差）</b><br>
-      · 预期收益以各类别长期年化均值为中枢（主动8%/指数7%/债券3%/货币2%/QDII 6%），回归速度：权益35%（~5年半衰期）、债券60%（~2年半衰期）、货币10%、QDII 35%<br>
+      · 预期收益以各类别长期年化均值为中枢（<b>主动5%/指数4.5%/债券3%/货币2%/QDII 5%</b>，基于A股实际历史数据），回归速度：权益35%（~5年半衰期）、债券60%（~2年半衰期）、货币10%、QDII 35%<br>
       · 组合波动率：σ=maxDD/类别DD-Vol系数（active:2.8/index:3.0/bond:1.8/money:1.2/qdii:2.5），类别内ρ=0.8正确协方差计算，跨类别使用5×5相关性矩阵（主动-债券ρ=-0.15，指数-债券ρ=-0.10，主动-指数ρ=0.92等）<br>
       · 1年区间：μ±0.67σ（P25-P75） / 3年区间：复利累计±0.67σ√(3×自相关修正因子)<br><br>
 
@@ -4416,6 +4416,63 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
   },500);
 }
 
+// ═══════════════ 交易成本计算 ═══════════════
+// 计算换仓的交易成本和预期净收益
+function calculateRebalanceCost(currentFund, targetFund, holdingDays, amount){
+  // 赎回费率（基于持有天数）
+  let redeemFee = 0;
+  if(holdingDays < 7){
+    redeemFee = 0.015; // 持有<7天：1.5%惩罚性费率
+  } else if(holdingDays < 365){
+    redeemFee = 0.005; // 7天-1年：0.5%
+  } else if(holdingDays < 730){
+    redeemFee = 0.0025; // 1-2年：0.25%
+  } else {
+    redeemFee = 0; // 2年以上：免赎回费
+  }
+
+  // 申购费率（支付宝1折，按类别）
+  const purchaseFeeMap = {
+    active: 0.0015,  // 主动型：0.15%
+    index: 0.0012,   // 指数型：0.12%
+    bond: 0.0008,    // 债券型：0.08%
+    qdii: 0.0008,    // QDII：0.08%
+    money: 0         // 货币型：0%
+  };
+  const purchaseFee = purchaseFeeMap[targetFund.cat] || 0.0015;
+
+  // 总交易成本
+  const totalCostRate = redeemFee + purchaseFee;
+  const totalCostAmount = amount * totalCostRate;
+
+  // 预期收益差（基于评分差异）
+  const currentScore = scoreF(currentFund);
+  const targetScore = scoreF(targetFund);
+  const scoreDiff = targetScore - currentScore;
+
+  // 假设：评分每差1分 ≈ 年化收益差0.15%（保守估计）
+  const expectedGainRate = scoreDiff * 0.0015;
+  const expectedGainAmount = amount * expectedGainRate;
+
+  // 净收益 = 预期收益 - 交易成本
+  const netGainAmount = expectedGainAmount - totalCostAmount;
+
+  // 回本时间（年）
+  const breakEvenYears = expectedGainRate > 0 ? totalCostRate / expectedGainRate : 999;
+
+  return {
+    redeemFee,
+    purchaseFee,
+    totalCostRate,
+    totalCostAmount,
+    expectedGainRate,
+    expectedGainAmount,
+    netGainAmount,
+    breakEvenYears,
+    worthIt: netGainAmount > 0 && breakEvenYears < 2 // 2年内能回本才值得
+  };
+}
+
 // ═══════════════ 调仓算法 ═══════════════
 function computeRebalancePlan(targetPicks, newMoney){
   if(!existingHoldings.length) return null;
@@ -4532,6 +4589,13 @@ function computeRebalancePlan(targetPicks, newMoney){
       sellThreshold = 0; // 权益类：近1年负收益才建议卖
     }
 
+    // 计算持有天数（如果有购买日期）
+    const holdingDays = h.date ? Math.floor((Date.now() - new Date(h.date).getTime()) / (1000*60*60*24)) : 365;
+
+    // 交易成本优化：找到同类别中最好的推荐基金
+    const sameCatTargets = allPicks.filter(p => p.cat === cat);
+    const bestTarget = sameCatTargets.length > 0 ? sameCatTargets.sort((a,b) => scoreF(b) - scoreF(a))[0] : null;
+
     if(r1===null){
       action='satellite'; actionAmt=0;
       actionDesc='无法获取收益数据，建议人工确认后决定';
@@ -4542,9 +4606,24 @@ function computeRebalancePlan(targetPicks, newMoney){
       actionDesc=`不在核心组合内，近3年${fd.r3}%持续低迷，建议赎回转入推荐基金`;
       actionColor='act-sell';
     } else if(r1 < sellThreshold){
-      action='sell'; actionAmt=h.value;
-      actionDesc=`不在推荐组合内，近1年收益${r1}%低于同类阈值(${sellThreshold.toFixed(1)}%)，建议赎回`;
-      actionColor='act-sell';
+      // 计算换仓成本和收益
+      if(fd && bestTarget && holdingDays < 365){
+        const costAnalysis = calculateRebalanceCost(fd, bestTarget, holdingDays, h.value);
+        if(!costAnalysis.worthIt){
+          // 换仓不划算，改为观察
+          action='satellite'; actionAmt=0;
+          actionDesc=`近1年${r1}%低于阈值，但换仓成本${(costAnalysis.totalCostRate*100).toFixed(2)}%需${costAnalysis.breakEvenYears.toFixed(1)}年回本，建议继续观察`;
+          actionColor='act-satellite';
+        } else {
+          action='sell'; actionAmt=h.value;
+          actionDesc=`不在推荐组合内，近1年收益${r1}%低于同类阈值(${sellThreshold.toFixed(1)}%)，换仓成本${(costAnalysis.totalCostRate*100).toFixed(2)}%但${costAnalysis.breakEvenYears.toFixed(1)}年可回本，建议赎回`;
+          actionColor='act-sell';
+        }
+      } else {
+        action='sell'; actionAmt=h.value;
+        actionDesc=`不在推荐组合内，近1年收益${r1}%低于同类阈值(${sellThreshold.toFixed(1)}%)，建议赎回`;
+        actionColor='act-sell';
+      }
     } else {
       action='satellite'; actionAmt=0;
       actionDesc=`非核心仓，近1年${r1}%，表现尚可，可作卫星仓继续持有观察`;
@@ -4799,20 +4878,81 @@ function detectManagerChanges(){
 
 // 根据档案 & 行情 & 市场动量 生成配置权重（风险平价 + 动量约束 + 动态倾斜 + 期限约束）
 function computeWeights(riskProfile, horizon, catRanks, macroClock){
-  // 1. 风险平价基础权重：各类别权重与其年化波动率成反比
+  // 1. 风险平价基础权重：考虑波动率和相关性矩阵
   const catVol = {}; // 用平均最大回撤 / DD_TO_VOL 转为估算年化波动率
   // 波动率下限按类别差异化：货币基金波动率极低，下限设低以避免过度超配
   const volFloor = {active:1.0, index:1.0, bond:0.5, money:0.2, qdii:1.0};
   catRanks.forEach(c => { catVol[c.cat] = Math.max(c.avgDD / (DD_TO_VOL[c.cat]||2.5), volFloor[c.cat]||0.5); });
+
+  // 相关性矩阵（基于历史数据）
+  const corrMatrix = {
+    active: { active:1.00, index:0.92, bond:-0.15, money:0.05, qdii:0.65 },
+    index:  { active:0.92, index:1.00, bond:-0.10, money:0.05, qdii:0.70 },
+    bond:   { active:-0.15, index:-0.10, bond:1.00, money:0.20, qdii:-0.05 },
+    money:  { active:0.05, index:0.05, bond:0.20, money:1.00, qdii:0.05 },
+    qdii:   { active:0.65, index:0.70, bond:-0.05, money:0.05, qdii:1.00 }
+  };
+
+  // 简化的风险平价：使用迭代法求解等风险贡献
+  // 初始权重：1/波动率
   const invVols = {};
   let invVolSum = 0;
   catRanks.forEach(c => {
     invVols[c.cat] = 1 / catVol[c.cat];
     invVolSum += invVols[c.cat];
   });
-  // 风险平价权重
+
+  // 初始权重
+  let weights = {};
+  catRanks.forEach(c => { weights[c.cat] = invVols[c.cat] / invVolSum; });
+
+  // 迭代优化：调整权重使风险贡献更均衡（最多10次迭代）
+  for(let iter = 0; iter < 10; iter++){
+    // 计算每个资产的边际风险贡献 MRC_i = w_i × (Σw)_i
+    const mrc = {};
+    const cats = Object.keys(weights);
+
+    cats.forEach(i => {
+      let sum = 0;
+      cats.forEach(j => {
+        const corr = (corrMatrix[i] && corrMatrix[i][j] !== undefined) ? corrMatrix[i][j] : 0.3;
+        sum += weights[j] * corr * catVol[i] * catVol[j];
+      });
+      mrc[i] = weights[i] * sum;
+    });
+
+    // 计算总风险贡献
+    const totalMRC = Object.values(mrc).reduce((s,v) => s+v, 0);
+    if(totalMRC === 0) break;
+
+    // 目标：每个资产的风险贡献 = 总风险 / 资产数量
+    const targetMRC = totalMRC / cats.length;
+
+    // 调整权重：如果风险贡献过高，降低权重；过低则提高权重
+    let newWeights = {};
+    cats.forEach(cat => {
+      const ratio = targetMRC / (mrc[cat] || 1);
+      newWeights[cat] = weights[cat] * Math.pow(ratio, 0.5); // 使用平方根缓和调整
+    });
+
+    // 归一化
+    const sumW = Object.values(newWeights).reduce((s,v) => s+v, 0);
+    cats.forEach(cat => { newWeights[cat] = newWeights[cat] / sumW; });
+
+    // 检查收敛
+    let maxChange = 0;
+    cats.forEach(cat => {
+      maxChange = Math.max(maxChange, Math.abs(newWeights[cat] - weights[cat]));
+    });
+
+    weights = newWeights;
+
+    if(maxChange < 0.001) break; // 收敛
+  }
+
+  // 转换为百分比
   const rpWeights = {};
-  catRanks.forEach(c => { rpWeights[c.cat] = invVols[c.cat] / invVolSum * 100; });
+  catRanks.forEach(c => { rpWeights[c.cat] = (weights[c.cat] || 0) * 100; });
 
   // 2. 风险偏好倾斜系数（在风险平价基础上调整）
   const tiltFactors = {
@@ -5365,7 +5505,7 @@ function _doGenerate(shouldScroll){
       const cat = fd ? fd.cat : null;
       if(!cat) return; // 未知基金跳过
       const score = scoreF(fd);
-      const keep = score >= 50; // 评分≥50为达标
+      const keep = score >= 65; // 评分≥65为达标（至少"推荐"级别才保留）
       if(!holdingsByCat[cat]) holdingsByCat[cat] = [];
       holdingsByCat[cat].push({ code:h.code, name:h.name||fd.name, value:h.value, score, keep, fundData:fd });
       if(!keep) replaceSuggestions.push({ code:h.code, name:h.name||fd.name, cat, score, value:h.value });
@@ -5609,8 +5749,8 @@ function _doGenerate(shouldScroll){
 
   // 5. 收益预估（长期均值中枢 + 均值回归 + 统计置信区间）
   // 预期收益 = 类别长期年化均值（r3年化）向长期中枢回归，而非 r1 打折
-  // 长期中枢参考值（A股长期年化）
-  const longTermMu = { active:8, index:7, bond:3, money:2, qdii:6 };
+  // 长期中枢参考值（基于A股实际历史数据：沪深300过去15年年化约4.5%）
+  const longTermMu = { active:5, index:4.5, bond:3, money:2, qdii:5 };
   // 均值回归：当前r3年化偏离长期中枢越远，回归力度越大
   const expReturn = finalPicks.reduce((s,f) => {
     const r3Ann = f.r3 > -100 ? (Math.pow(1 + f.r3/100, 1/3) - 1) * 100 : 0;
@@ -5805,7 +5945,7 @@ function _doGenerate(shouldScroll){
 
       <b>三、资产配置方法（Risk Parity + 动量约束 + 动态倾斜）</b><br>
       执行链路：风险平价基础 → 风险偏好倾斜 → 市场动量约束 → 行情动量微调 → 期限上限 → 短期额外调整<br>
-      · 基础权重：各类别历史最大跌幅均值的倒数（跌幅越小→权重越高），实现等风险贡献（Risk Parity）<br>
+      · <b>基础权重（真正的 Risk Parity）</b>：使用迭代法求解等风险贡献，考虑资产间相关性矩阵（股债负相关ρ=-0.15，股票-指数高相关ρ=0.92等）。通过10次迭代优化，使每个资产的边际风险贡献 MRC = w × (Σw) 趋于相等，而非简单的 1/波动率<br>
       · 动量微调中的<b>类别排名</b>使用独立权重：混合Calmar Ratio(短期60%+长期40%) 50% + 三维趋势一致性(短/中/长) 25% + 经理任期稳定性 15% + 实时动量 10%，与个基评分权重不同，侧重捕捉类别间相对强弱<br>
       · 期限约束：1年≤30%，1-3年≤60%，3-5年≤75%，5年以上≤85%<br>
       · 短期额外调整：投资期限≤1年时，主动权益再减配5%转入债券，进一步降低短期波动暴露<br>
@@ -5824,7 +5964,7 @@ function _doGenerate(shouldScroll){
       · ${mgrWarnings.length > 0 ? `当前有 ${mgrWarnings.length} 只基金存在经理变更预警` : '当前精选库无经理变更预警'}<br><br>
 
       <b>五、收益预估（长期均值中枢 + 均值回归模型）</b><br>
-      · 预期收益以各类别长期年化均值为中枢（主动8%/指数7%/债券3%/货币2%/QDII 6%），而非用近期收益打折<br>
+      · 预期收益以各类别长期年化均值为中枢（<b>主动5%/指数4.5%/债券3%/货币2%/QDII 5%</b>，基于A股实际历史数据：沪深300过去15年年化约4.5%），而非用近期收益打折<br>
       · 均值回归：当基金r3年化偏离长期中枢越远，预期越向中枢回归（回归速度：权益35%（~5年半衰期）、债券60%（~2年半衰期）、货币10%、QDII 35%）<br>
       · 组合波动率：σ=maxDD/类别DD-Vol系数，类别内ρ=0.8协方差计算，跨类别使用5×5相关性矩阵（主动-债券ρ=-0.15，指数-债券ρ=-0.10）<br>
       · 1年区间：μ ± 0.67σ（P25-P75）<br>
@@ -6150,11 +6290,9 @@ let currentDcaCat = 'all';
 function calcDCAScore(f){
   // 定投评分：波动适度性 + 长期趋势 + 管理质量 + 近期动量（去除当日择时信号）
   if(f.cat==='money') return 10; // 货币基金不适合定投
-  // 双负不再直接排除——下跌中的基金可能是定投好机会，但给予较低的基础分
+  // 双负基金直接排除——r1和r3都为负说明处于下跌趋势，定投会持续亏损
   if(f.r1 < 0 && f.r3 < 0) {
-    // 仍给 20-35 分范围（而非 5-15），让高波动+深跌基金保留定投价值
-    const baseScore = 25 + Math.round(f.r3 * 0.15); // r3=-20% → 22分, r3=-40% → 19分
-    return Math.max(15, Math.min(35, baseScore));
+    return 0; // 不推荐定投
   }
 
   // 1. 波动适度性（定投核心指标，35%）
@@ -6308,7 +6446,7 @@ function _doGenerateDca(){
     const cat = fd.cat;
     if(cat === 'money') return; // 货币基金不参与定投方案
     const dcaScore = calcDCAScore(fd);
-    const keep = dcaScore >= 60; // 定投评分≥60为达标
+    const keep = dcaScore >= 70; // 定投评分≥70为达标（提高阈值，确保推荐质量）
     if(!holdingPlansByCat[cat]) holdingPlansByCat[cat] = [];
     holdingPlansByCat[cat].push({ code:plan.code, name:plan.name||fd.name, monthly:plan.monthly, dcaScore, keep, fundData:fd });
     if(!keep) replaceSuggestions.push({ code:plan.code, name:plan.name||fd.name, cat, dcaScore, monthly:plan.monthly });
@@ -6370,7 +6508,7 @@ function _doGenerateDca(){
       const candidate = scored.find(f =>
         f.cat === cat &&
         !allPicks.some(p => p.code === f.code) &&
-        f.dcaScore >= 60 // 新选基金也要达标
+        f.dcaScore >= 70 // 新选基金也要达标（提高阈值）
       );
       if(candidate) {
         allPicks.push({
@@ -6409,7 +6547,7 @@ function _doGenerateDca(){
 
   // 期望年化收益（与智能方案一致的均值回归模型）
   // 长期中枢 + 均值回归：expected = mu + (r3_annualized - mu) * (1 - revSpeed)
-  const longTermMu = { active:8, index:7, bond:3, money:2, qdii:6 };
+  const longTermMu = { active:5, index:4.5, bond:3, money:2, qdii:5 };
   const revSpeed = { active:0.35, index:0.35, bond:0.6, money:0.1, qdii:0.35 };
   const expRate = withAmt.reduce((s,f)=>{
     const mu = longTermMu[f.cat] || 6;
