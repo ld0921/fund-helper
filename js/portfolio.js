@@ -1429,17 +1429,27 @@ function _doGenerate(shouldScroll){
   if(replaceSuggestions.length > 0){
     const rebalCard = document.getElementById('rebal-card');
     if(rebalCard){
-      // 过滤出有效的替换建议（排除当前基金，且有更高评分的替换目标）
-      const validReplacements = replaceSuggestions.map(r=>{
-        const catFunds = catRanks.find(c=>c.cat===r.cat);
-        const betterFunds = catFunds ? catFunds.topFunds.filter(f => f.code !== r.code && scoreF(f) > r.score) : [];
-        const bestInCat = betterFunds.length > 0 ? betterFunds[0] : null;
-        return {r, bestInCat};
-      }).filter(item => item.bestInCat !== null);
+      // 先清除旧的替换建议（避免重复渲染）
+      rebalCard.querySelectorAll('.replace-suggestion-block').forEach(el => el.remove());
 
-      if(validReplacements.length === 0) return; // 没有有效的替换建议
+      // 排除已被选为加仓的基金（加仓和替换不能同时出现）
+      const addingCodes = new Set();
+      Object.values(selectedPicks).forEach(picks => {
+        picks.forEach(p => { if(p.method && p.method.includes('加仓')) addingCodes.add(p.code); });
+      });
 
-      const replaceHtml = `<div style="margin-top:14px;padding:12px;background:#fff1f0;border-radius:8px;border-left:3px solid var(--danger)">
+      const validReplacements = replaceSuggestions
+        .filter(r => !addingCodes.has(r.code))
+        .map(r=>{
+          const catFunds = catRanks.find(c=>c.cat===r.cat);
+          const betterFunds = catFunds ? catFunds.topFunds.filter(f => f.code !== r.code && scoreF(f) > r.score) : [];
+          const bestInCat = betterFunds.length > 0 ? betterFunds[0] : null;
+          return {r, bestInCat};
+        }).filter(item => item.bestInCat !== null);
+
+      if(validReplacements.length === 0) return;
+
+      const replaceHtml = `<div class="replace-suggestion-block" style="margin-top:14px;padding:12px;background:#fff1f0;border-radius:8px;border-left:3px solid var(--danger)">
         <div style="font-size:13px;font-weight:600;color:#cf1322;margin-bottom:8px">⚠️ 建议替换的低分基金</div>
         ${validReplacements.map(({r, bestInCat})=>{
           return `<div style="font-size:12px;line-height:1.8;color:#595959;margin-bottom:4px">
