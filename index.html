@@ -2945,6 +2945,7 @@ function buildFundCard(f,sortMode){
       </div>
       <div style="margin-top:6px;display:flex;gap:4px;flex-wrap:wrap">
         ${f.tags.map(t=>`<span style="background:#f5f5f5;color:#595959;padding:1px 7px;border-radius:4px;font-size:11px;display:inline-block">${escHtml(t)}</span>`).join('')}
+        ${getValuationLabel(f.code)}
       </div>
     </div>
     <div class="fund-card-stats">
@@ -3219,13 +3220,24 @@ function getValuationAdj(fundCode){
   const v = INDEX_VALUATION[idxCode];
   if(!v) return 0;
   const pct = v.pePct;
-  if(pct <= 20) return 10;       // 极度低估
-  if(pct <= 30) return 7;        // 低估
-  if(pct <= 40) return 3;        // 略低估
-  if(pct <= 60) return 0;        // 中性
-  if(pct <= 70) return -3;       // 略高估
-  if(pct <= 80) return -7;       // 高估
-  return -10;                    // 极度高估
+  if(pct <= 20) return 10;
+  if(pct <= 30) return 7;
+  if(pct <= 40) return 3;
+  if(pct <= 60) return 0;
+  if(pct <= 70) return -3;
+  if(pct <= 80) return -7;
+  return -10;
+}
+// 获取估值标注文字（用于基金卡片显示）
+function getValuationLabel(fundCode){
+  const idxCode = FUND_VALUATION_MAP[fundCode];
+  if(!idxCode) return '';
+  const v = INDEX_VALUATION[idxCode];
+  if(!v) return '';
+  const adj = getValuationAdj(fundCode);
+  const level = adj >= 7 ? '低估' : adj >= 3 ? '略低估' : adj <= -7 ? '高估' : adj <= -3 ? '略高估' : '中性';
+  const color = adj > 0 ? '#52c41a' : adj < 0 ? '#ff4d4f' : '#8c8c8c';
+  return `<span style="font-size:10px;padding:1px 5px;border-radius:3px;background:${color}15;color:${color};border:1px solid ${color}40" title="PE百分位${v.pePct}%，数据更新于${v.updated}">估值${level}</span>`;
 }
 
 function scoreF(f){
@@ -4920,18 +4932,18 @@ function inferMomentumPhase(catRanks){
   const equityR1 = (getAvgR1('active') + getAvgR1('index')) / 2;
   const bondR1 = getAvgR1('bond');
   const qdiiR1 = getAvgR1('qdii');
-
-  // 用统计阈值替代硬编码数字：基于各类别自身均值±σ判断强弱
-  const equityAvg = (getAvgR1('active') + getAvgR1('index')) / 2;
-  const equityStd = (getStdR1('active') + getStdR1('index')) / 2;
-  const bondAvg = getAvgR1('bond');
   const bondStd = getStdR1('bond');
+  const qdiiStd = getStdR1('qdii');
 
-  const equityStrong = equityR1 > equityAvg + equityStd * 0.3;  // 高于均值0.3σ
-  const equityWeak   = equityR1 < equityAvg - equityStd * 0.3;
-  const bondStrong   = bondR1 > bondAvg + bondStd * 0.3;
-  const bondWeak     = bondR1 < bondAvg - bondStd * 0.3;
-  const qdiiStrong   = qdiiR1 > getAvgR1('qdii') + getStdR1('qdii') * 0.3; // QDII强势信号
+  // 修复：用权益相对债券的强弱判断，而非自比较（自比较永远为false）
+  // 权益强：equityR1 显著高于 bondR1；权益弱：equityR1 显著低于 bondR1
+  const spread = equityR1 - bondR1; // 权益-债券利差
+  const spreadThreshold = Math.max(3, bondStd * 0.5); // 动态阈值，至少3%
+  const equityStrong = spread > spreadThreshold && equityR1 > 0;
+  const equityWeak   = spread < -spreadThreshold || equityR1 < 0;
+  const bondStrong   = bondR1 > 3 && spread < 0;
+  const bondWeak     = bondR1 < 1;
+  const qdiiStrong   = qdiiR1 > equityR1 + qdiiStd * 0.3 && qdiiR1 > 5;
 
   let phase, label, equityMult, bondMult, desc;
 
@@ -6436,7 +6448,8 @@ function calcDCAScore(f){
 
   // 2. 长期趋势（25%）：定投看长期中枢方向，近3年下跌但波动大的基金反而适合定投摊成本
   //    不重度惩罚r3<0——下跌中的优质基金正是定投的黄金窗口
-  const trendScore = f.r3 > 50 ? 25 : f.r3 > 20 ? 22 : f.r3 > 0 ? Math.max(10, 10 + f.r3 * 0.4) : Math.max(5, 12 + f.r3 * 0.2); // 5-25分（r3<0时仍有5-12分基础分）
+  // 长期趋势（25%）：连续函数，消除分档断层
+  const trendScore = Math.max(5, Math.min(25, f.r3 > 0 ? 10 + f.r3 * 0.3 : 12 + f.r3 * 0.2));
 
   // 3. 管理质量（20%）：经理年限 + 星级
   const qualityScore = Math.min(12, (f.mgrYears||0) * 0.8) + Math.min(8, ((f.stars||3) - 1) * 2); // 0-20分
