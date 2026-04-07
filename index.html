@@ -2151,7 +2151,7 @@ function stressTest(allPicks){
     {name:'2023利率上行', shocks:{active:5,index:3,bond:-5,money:2.5,qdii:-8}, prob:0.12},
     {name:'2024小盘暴跌', shocks:{active:-30,index:-10,bond:4,money:2,qdii:-5}, prob:0.08},
     {name:'全球流动性危机', shocks:{active:-35,index:-30,bond:-3,money:1,qdii:-40}, prob:0.03},
-    {name:'温和市场（基准）', shocks:{active:8,index:7,bond:3,money:2,qdii:6}, prob:0.32},
+    {name:'温和市场（基准）', shocks:{active:3.5,index:4,bond:3,money:2,qdii:4.5}, prob:0.32},
   ];
   // 计算各类别平均 maxDD 作为基准
   const catAvgDD = {};
@@ -3170,7 +3170,7 @@ const _catBench = getCatBenchmarks();
 
 // 无风险利率（1年期国债收益率近似）
 // 无风险利率（1年期国债收益率近似）：支持用户自定义，默认1.7%
-const RISK_FREE = (() => { try { const v = localStorage.getItem('riskFreeRate'); if(v !== null) return parseFloat(v); } catch(e){} return 2.0; })();
+const RISK_FREE = (() => { try { const v = localStorage.getItem('riskFreeRate'); if(v !== null) return parseFloat(v); } catch(e){} return 1.7; })();
 
 // ═══════════════ Alpha基准：沪深300近1年收益（自动拉取） ═══════════════
 // 用于主动/QDII基金的超额收益计算，区分基金经理能力与市场Beta
@@ -4937,23 +4937,23 @@ function inferMomentumPhase(catRanks){
 
   if(equityStrong && bondWeak && equityR1 > 10){
     phase = 'overheat'; label = '权益极端强势';
-    equityMult = 1.0; bondMult = 0.8;
+    equityMult = 1.0; bondMult = 0.9;
     desc = '权益涨幅显著高于历史均值且债券走弱，可能存在过热风险。建议控制仓位，警惕回调。';
   } else if(qdiiStrong && equityStrong){
     phase = 'global_bull'; label = '全球权益强势';
-    equityMult = 1.1; bondMult = 0.9;
+    equityMult = 1.08; bondMult = 0.93;
     desc = 'A股与海外权益同步强势，全球风险偏好上升。可适度超配权益和QDII。';
   } else if(equityStrong && !bondWeak){
     phase = 'recovery'; label = '权益强势期';
-    equityMult = 1.15; bondMult = 0.9;
+    equityMult = 1.10; bondMult = 0.93;
     desc = '权益类资产相对强势，动量信号偏多。债券仍有正收益。建议适度超配权益类资产。';
   } else if(equityWeak && bondWeak){
     phase = 'stagflation'; label = '全面弱势期';
-    equityMult = 0.7; bondMult = 0.9;
+    equityMult = 0.85; bondMult = 0.93;
     desc = '权益和债券均表现不佳，市场缺乏明确趋势。防御为主，建议超配货币和短债。';
   } else if(equityWeak && bondStrong){
     phase = 'recession'; label = '债券强势期';
-    equityMult = 0.85; bondMult = 1.2;
+    equityMult = 0.90; bondMult = 1.10;
     desc = '债券相对强势，权益动量偏弱。避险情绪或降息预期驱动。建议超配债券类资产。';
   } else if(qdiiStrong && !equityStrong){
     phase = 'qdii_opp'; label = 'QDII机会期';
@@ -5215,7 +5215,7 @@ function selectFunds(cat, catData, riskProfile, pct, totalAmt){
     if(bench && bench.stdR1 > 0){
       const z = ((f.r1||0) - bench.avgR1) / bench.stdR1;
       if(z > 1)  score -= Math.min(8, (z - 1) * 4);  // 超涨：最多扣8分
-      if(z < -1) score += Math.min(5, (-z - 1) * 2.5); // 超跌：最多加5分（需长期向上）
+      if(z < -1 && (f.r3||0) > 0) score += Math.min(5, (-z - 1) * 2.5); // 超跌加分：仅限r3>0（长期向上的回调），排除双负基金
     }
     return {...f, adjustedScore: score};
   }).sort((a,b) => b.adjustedScore - a.adjustedScore);
