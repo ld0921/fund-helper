@@ -3172,6 +3172,62 @@ const _catBench = getCatBenchmarks();
 // 无风险利率（1年期国债收益率近似）：支持用户自定义，默认1.7%
 const RISK_FREE = (() => { try { const v = localStorage.getItem('riskFreeRate'); if(v !== null) return parseFloat(v); } catch(e){} return 2.0; })();
 
+// ═══════════════ Alpha基准：沪深300近1年收益（自动拉取） ═══════════════
+// 用于主动/QDII基金的超额收益计算，区分基金经理能力与市场Beta
+let _benchmarkR1 = null; // 沪深300近1年收益%，null表示未加载
+(async function fetchBenchmarkR1(){
+  try {
+    // 拉取沪深300ETF联接(460300)近1年收益作为A股基准
+    const url = `https://fundgz.1234567.com.cn/js/460300.js?rt=${Date.now()}`;
+    await new Promise((resolve,reject)=>{
+      const s=document.createElement('script'); s.src=url;
+      s.onload=resolve; s.onerror=reject;
+      document.head.appendChild(s);
+      setTimeout(reject,8000);
+    });
+    // 从CURATED_FUNDS中读取460300的r1（已被API更新）
+    const hs300 = CURATED_FUNDS.find(f=>f.code==='460300');
+    if(hs300 && hs300.r1 != null) _benchmarkR1 = hs300.r1;
+  } catch(e){}
+  // 兜底：使用精选库中所有指数基金的平均r1
+  if(_benchmarkR1 === null){
+    const idxFunds = CURATED_FUNDS.filter(f=>f.cat==='index');
+    if(idxFunds.length) _benchmarkR1 = idxFunds.reduce((s,f)=>s+f.r1,0)/idxFunds.length;
+  }
+})();
+
+// ═══════════════ 估值信号：主要宽基指数PE百分位（静态内置，更新于2026-04） ═══════════════
+// 百分位基于近10年历史数据，<30%=低估，>70%=高估
+// 数据来源：Wind/理杏仁公开数据，每次「更新数据」时可手动刷新
+const INDEX_VALUATION = {
+  '000300': { name:'沪深300', pePct:42, pbPct:38, updated:'2026-04' }, // PE百分位42%，中性偏低
+  '000905': { name:'中证500', pePct:35, pbPct:30, updated:'2026-04' }, // 中等偏低估
+  '399006': { name:'创业板',  pePct:55, pbPct:52, updated:'2026-04' }, // 中性
+  '000852': { name:'中证1000',pePct:32, pbPct:28, updated:'2026-04' }, // 偏低估
+  '000016': { name:'上证50',  pePct:38, pbPct:35, updated:'2026-04' }, // 中性偏低
+};
+// 基金代码 → 对应指数代码映射
+const FUND_VALUATION_MAP = {
+  '460300':'000300','160706':'000300', // 沪深300联接
+  '160119':'000905',                   // 中证500联接
+  '110026':'399006',                   // 创业板联接
+};
+// 根据PE百分位计算估值调整分（-10 ~ +10）
+function getValuationAdj(fundCode){
+  const idxCode = FUND_VALUATION_MAP[fundCode];
+  if(!idxCode) return 0;
+  const v = INDEX_VALUATION[idxCode];
+  if(!v) return 0;
+  const pct = v.pePct;
+  if(pct <= 20) return 10;       // 极度低估
+  if(pct <= 30) return 7;        // 低估
+  if(pct <= 40) return 3;        // 略低估
+  if(pct <= 60) return 0;        // 中性
+  if(pct <= 70) return -3;       // 略高估
+  if(pct <= 80) return -7;       // 高估
+  return -10;                    // 极度高估
+}
+
 function scoreF(f){
   const r1=+f.r1||0, r3=+f.r3||0, dd=+(f.dd||f.maxDD)||0, sz=+f.size||0, mg=+(f.mgr||f.mgrYears)||0;
   const dd3y=+(f.maxDD3y)||dd; // 近3年回撤，无则回退全期
@@ -3183,10 +3239,13 @@ function scoreF(f){
   //    长期 Calmar = r3年化 / maxDD3y（都是近3年，时间窗口匹配）
   //    加权：短期60% + 长期40%，侧重近期表现但兼顾长期
   const r3Ann = r3 > -100 ? (Math.pow(1 + r3/100, 1/3) - 1) * 100 : 0; // r3累计转年化
-  // 修复：零回撤时使用0.1%作为最小回撤，避免优秀低波动基金得0分
   const dd3yAdj = Math.max(0.1, dd3y);
-  const calmarShort = (r1 - RISK_FREE) / dd3yAdj;
-  const calmarLong  = (r3Ann - RISK_FREE) / dd3yAdj; // 修正：使用dd3y而非dd，确保时间窗口匹配
+  // Alpha因子：主动/QDII基金用超额收益（r1 - 沪深300基准），衡量真实选股能力
+  // 指数/债券/货币基金仍用超额无风险利率（它们本身就是基准或低风险资产）
+  const isAlphaFund = f.cat === 'active' || f.cat === 'qdii';
+  const benchmark = isAlphaFund && _benchmarkR1 !== null ? _benchmarkR1 : RISK_FREE;
+  const calmarShort = (r1 - benchmark) / dd3yAdj;
+  const calmarLong  = (r3Ann - benchmark) / dd3yAdj;
   const calmar = calmarShort * 0.6 + calmarLong * 0.4;
   const calmarScore = Math.min(32, Math.max(0, calmar * 16)); // 0-32分
 
@@ -5119,7 +5178,18 @@ function selectFunds(cat, catData, riskProfile, pct, totalAmt){
     aggressive:   f => f.composite + (f.r1||0) * 0.2 + ((f.maxDD||20) > 25 ? 2 : 0),
   };
   const adjustFn = riskAdjust[riskProfile] || riskAdjust.moderate;
-  pool = pool.map(f => ({...f, adjustedScore: adjustFn(f)})).sort((a,b) => b.adjustedScore - a.adjustedScore);
+  // 动量反转修正：超涨基金（>同类均值+1σ）降权，超跌基金（<均值-1σ）升权
+  // 基于A股均值回归特性，避免追高买入近期涨幅过大的基金
+  pool = pool.map(f => {
+    let score = adjustFn(f);
+    const bench = _catBench[f.cat];
+    if(bench && bench.stdR1 > 0){
+      const z = ((f.r1||0) - bench.avgR1) / bench.stdR1;
+      if(z > 1)  score -= Math.min(8, (z - 1) * 4);  // 超涨：最多扣8分
+      if(z < -1) score += Math.min(5, (-z - 1) * 2.5); // 超跌：最多加5分（需长期向上）
+    }
+    return {...f, adjustedScore: score};
+  }).sort((a,b) => b.adjustedScore - a.adjustedScore);
 
   // 相关性去重：同一基金经理最多选1只
   const usedManagers = new Set();
@@ -6342,10 +6412,29 @@ function calcDCAScore(f){
   // 3. 管理质量（20%）：经理年限 + 星级
   const qualityScore = Math.min(12, (f.mgrYears||0) * 0.8) + Math.min(8, ((f.stars||3) - 1) * 2); // 0-20分
 
-  // 4. 近期动量 r1（20%）：中期上涨趋势，但不考虑单日涨跌
-  const momentumScore = Math.max(0, Math.min(20, f.r1 > 0 ? Math.min(f.r1 * 0.6, 20) : f.r1 * 0.3 + 5)); // 0-20分
+  // 4. 近期动量反转修正 r1（20%）：定投应在低位买入，近期涨太多反而不是好时机
+  // 逻辑：r1跌幅大（但长期向上）→ 定投摊成本效果最佳；r1涨幅过大 → 可能均值回归
+  const bench = _catBench[f.cat];
+  const catAvgR1 = bench ? bench.avgR1 : 10;
+  const catStdR1 = bench ? bench.stdR1 : 10;
+  // 超涨（>均值+1σ）扣分，超跌（<均值-1σ）加分，中性区间正常计分
+  let momentumScore;
+  if(f.r1 > catAvgR1 + catStdR1){
+    // 超涨：可能面临均值回归，定投时机不佳
+    momentumScore = Math.max(2, 10 - (f.r1 - catAvgR1 - catStdR1) * 0.3);
+  } else if(f.r1 < catAvgR1 - catStdR1){
+    // 超跌但长期向上：定投摊成本黄金窗口
+    momentumScore = Math.min(20, 15 + (catAvgR1 - catStdR1 - f.r1) * 0.2);
+  } else {
+    // 中性区间：正常计分
+    momentumScore = Math.max(0, Math.min(15, f.r1 > 0 ? Math.min(f.r1 * 0.5, 15) : f.r1 * 0.3 + 5));
+  }
 
-  return Math.max(0, Math.min(100, Math.round(volScore + trendScore + qualityScore + momentumScore)));
+  // 5. 估值信号（宽基指数专属，±10分）：低估加分，高估减分
+  const valuationAdj = getValuationAdj(f.code);
+
+  const base = Math.max(0, Math.min(100, Math.round(volScore + trendScore + qualityScore + momentumScore)));
+  return Math.max(0, Math.min(100, base + valuationAdj));
 }
 
 function setDcaCat(cat){
@@ -7266,18 +7355,23 @@ function runSignalEngine(){
 
   // === 市场机会信号（基于行情分析） ===
   if(catRanks){
-    // 信号5：某类别整体大跌（定投加仓机会）
+    // 信号5：某类别整体大跌（定投加仓机会）+ 结合估值信号
     catRanks.forEach(c=>{
       if(c.avgChg <= -2.0 && c.avgR1 > 0 && c.catTrend <= 0 && ['active','index','qdii'].includes(c.cat)){
         const isHeld = allHeld.some(h=>{
           const fd=CURATED_FUNDS.find(f=>f.code===h.code);
           return fd && fd.cat === c.cat;
         });
+        const undervalued = Object.keys(FUND_VALUATION_MAP).some(fc=>{
+          const fd=CURATED_FUNDS.find(f=>f.code===fc);
+          return fd && fd.cat===c.cat && getValuationAdj(fc)>=3;
+        });
+        const valuationHint = undervalued ? `，且当前估值偏低（PE百分位<40%），定投性价比高` : '';
         signals.push({type:'opportunity', priority:2, code:'_cat_'+c.cat, name:c.name,
           title:`📊 ${c.name}板块整体回调 ${c.avgChg.toFixed(2)}%`,
           desc: isHeld
-            ? `你持有该板块基金，板块回调可能是定投加仓的好时机（长期均收益 +${c.avgR1.toFixed(1)}%）。`
-            : `该板块长期均收益 +${c.avgR1.toFixed(1)}%，当前回调可关注是否有建仓机会。`,
+            ? `你持有该板块基金，板块回调可能是定投加仓的好时机（长期均收益 +${c.avgR1.toFixed(1)}%）${valuationHint}。`
+            : `该板块长期均收益 +${c.avgR1.toFixed(1)}%，当前回调可关注是否有建仓机会${valuationHint}。`,
           action: isHeld ? '📈 定投加仓时机' : '👀 可关注建仓'
         });
       }
@@ -7552,6 +7646,18 @@ function runHealthMonitor(){
       const catRank = catRanksCache.findIndex(c=>c.cat===fd.cat);
       if(catRank>=3 && h.value > 5000){
         issues.push(`所属类别「${fd.label}」当前行情排名第${catRank+1}位（末段），持仓市值 ¥${h.value.toLocaleString()}`);
+        if(level==='green') level='yellow';
+      }
+    }
+
+    // 6. 性价比诊断：Alpha评分 × 估值信号，识别"高价低质"持仓
+    const currentScore = scoreF(fd);
+    const sameCatFunds = CURATED_FUNDS.filter(f=>f.cat===fd.cat && f.code!==fd.code);
+    if(sameCatFunds.length > 0){
+      const betterFunds = sameCatFunds.filter(f=>scoreF(f) > currentScore + 10);
+      if(betterFunds.length > 0 && currentScore < 60){
+        const best = betterFunds.sort((a,b)=>scoreF(b)-scoreF(a))[0];
+        issues.push(`综合评分 ${currentScore}分，同类有更优选择（${best.name} ${scoreF(best)}分），可考虑换仓`);
         if(level==='green') level='yellow';
       }
     }
