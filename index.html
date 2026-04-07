@@ -4491,8 +4491,33 @@ function computeRebalancePlan(targetPicks, newMoney){
 
   // 目标基金：检查是否已持有
   allPicks.forEach(pick=>{
-    // 特殊处理：如果是新买入的条目（isExisting=false），直接使用amt作为买入金额
+    // 特殊处理：如果是新买入的条目（isExisting=false），先检查用户是否实际持有该基金
     if(pick.isExisting === false){
+      const actualHeld = existingHoldings.find(h => h.code === pick.code);
+      if(actualHeld){
+        // 用户实际持有该基金，但评分未达保留阈值，按加仓逻辑处理
+        const currentAmt = actualHeld.value;
+        const targetAmt = pick.amt;
+        const diff = targetAmt - currentAmt;
+        const tol = Math.max(targetAmt * 0.10, 300);
+        let action, actionAmt, actionDesc, actionColor;
+        if(diff > tol){
+          action='buy_more'; actionAmt=diff;
+          actionDesc=`加仓 ¥${diff.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
+          actionColor='act-buy_more';
+        } else if(diff < -tol){
+          action='reduce'; actionAmt=Math.abs(diff);
+          actionDesc=`减仓 ¥${Math.abs(diff).toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
+          actionColor='act-reduce';
+        } else {
+          action='hold'; actionAmt=0;
+          actionDesc='仓位合适，持有';
+          actionColor='act-hold';
+        }
+        actions.push({code:pick.code, name:pick.name, type:pick.type, cat:pick.cat, r1:pick.r1,
+          currentAmt, targetAmt, action, actionAmt, actionDesc, actionColor, manager:pick.manager});
+        return;
+      }
       const actionAmt = pick.amt;
       const actionDesc = `新建仓 ¥${actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
       actions.push({
