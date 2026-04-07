@@ -3277,8 +3277,14 @@ function scoreF(f){
   // 0-22分
 
   // 4. 规模适配性（权重 10%）
-  //    50-500亿最优区间，太小有清盘风险，太大有调仓/流动性困难
-  const sizeScore = sz >= 1000 ? 4 : sz >= 500 ? 7 : sz >= 50 ? 10 : sz >= 10 ? 7 : sz >= 2 ? 4 : 2; // 2-10分
+  //    指数基金：规模越大越好（流动性强、跟踪误差小）
+  //    主动/QDII基金：50-500亿最优，太大调仓困难
+  let sizeScore;
+  if(f.cat === 'index'){
+    sizeScore = sz >= 1000 ? 10 : sz >= 500 ? 10 : sz >= 50 ? 9 : sz >= 10 ? 7 : sz >= 2 ? 4 : 2;
+  } else {
+    sizeScore = sz >= 1000 ? 4 : sz >= 500 ? 7 : sz >= 50 ? 10 : sz >= 10 ? 7 : sz >= 2 ? 4 : 2;
+  }
 
   // 5. 费率优势（权重 12%）
   //    费率是预测基金长期表现的可靠指标，低费率长期复利优势显著
@@ -4593,8 +4599,9 @@ function computeRebalancePlan(targetPicks, newMoney){
     const targetAmt=pick.amt; // 直接使用pick.amt作为目标金额，避免舍入误差
     const diff=pick.newBuyAmt || (targetAmt-currentAmt); // 优先使用newBuyAmt
     // 容忍带差异化：货币/债券5%或¥200，指数10%或¥300，主动/QDII 15%或¥500
-    const tolPct = ['money','bond'].includes(pick.cat) ? 0.05 : pick.cat === 'index' ? 0.10 : 0.15;
-    const tolMin = ['money','bond'].includes(pick.cat) ? 200 : pick.cat === 'index' ? 300 : 500;
+    // 再平衡触发：只有偏离超过阈值才建议调仓，避免频繁换仓产生摩擦成本
+    const tolPct = ['money','bond'].includes(pick.cat) ? 0.10 : pick.cat === 'index' ? 0.15 : 0.20;
+    const tolMin = ['money','bond'].includes(pick.cat) ? 300 : pick.cat === 'index' ? 500 : 800;
     const tol = Math.max(targetAmt * tolPct, tolMin);
     let action,actionAmt,actionDesc,actionColor;
     // 修复：目标仓位为0时不显示"建议新买"
@@ -4613,9 +4620,28 @@ function computeRebalancePlan(targetPicks, newMoney){
       actionDesc=`加仓 ¥${diff.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
       actionColor='act-buy_more';
     } else if(diff<-tol){
-      action='reduce'; actionAmt=Math.abs(diff);
-      actionDesc=`减仓 ¥${Math.abs(diff).toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
-      actionColor='act-reduce';
+      // 持有成本感知：计算换仓净收益，只有划算时才建议减仓
+      const held = existingHoldings.find(h=>h.code===pick.code);
+      const holdingDays = held && held.date ? Math.floor((Date.now()-new Date(held.date).getTime())/86400000) : 365;
+      const fd = CURATED_FUNDS.find(f=>f.code===pick.code);
+      // 找同类最优基金作为换仓目标
+      const sameCat = CURATED_FUNDS.filter(f=>f.cat===pick.cat && f.code!==pick.code);
+      const bestAlt = sameCat.sort((a,b)=>scoreF(b)-scoreF(a))[0];
+      let costWorthIt = true;
+      if(fd && bestAlt && holdingDays < 730){
+        const cost = calculateRebalanceCost(fd, bestAlt, holdingDays, Math.abs(diff));
+        costWorthIt = cost.worthIt;
+        if(!costWorthIt){
+          action='hold'; actionAmt=0;
+          actionDesc=`仓位略超配，但换仓成本${(cost.totalCostRate*100).toFixed(2)}%需${cost.breakEvenYears.toFixed(1)}年回本，建议持有`;
+          actionColor='act-hold';
+        }
+      }
+      if(costWorthIt){
+        action='reduce'; actionAmt=Math.abs(diff);
+        actionDesc=`减仓 ¥${Math.abs(diff).toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
+        actionColor='act-reduce';
+      }
 
       // 检测是否是最近推荐的基金需要大量减仓
       const recentRec = recentRecommends.find(r => r.code === pick.code);
