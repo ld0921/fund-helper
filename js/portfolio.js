@@ -1043,7 +1043,7 @@ function _doGenerate(shouldScroll){
       const keep = score >= 65; // 评分≥65为达标（至少"推荐"级别才保留）
       if(!holdingsByCat[cat]) holdingsByCat[cat] = [];
       holdingsByCat[cat].push({ code:h.code, name:h.name||fd.name, value:h.value, score, keep, fundData:fd });
-      if(!keep) replaceSuggestions.push({ code:h.code, name:h.name||fd.name, cat, score, value:h.value });
+      if(!keep && h.status === 'confirmed') replaceSuggestions.push({ code:h.code, name:h.name||fd.name, cat, score, value:h.value });
     });
   }
 
