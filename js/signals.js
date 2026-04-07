@@ -4,10 +4,9 @@ function runSignalEngine(){
   const allHeld = [];
   existingHoldings.forEach(h=>{
     if(!allHeld.some(x=>x.code===h.code)){
-      const nav = navCache[h.code];
-      const curNav = nav ? parseFloat(nav.gsz)||1 : 1;
-      const cost = h.amount || h.value || 0;
-      const value = h.amount ? (h.amount / (h.cost||curNav) * curNav) : (h.value||0);
+      // 直接使用已计算好的 h.value，避免用 gsz 重新估算导致偏差
+      const cost = h.amount || 0;
+      const value = h.value || h.amount || 0;
       allHeld.push({code:h.code, name:h.name, value, cost});
     }
   });
