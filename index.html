@@ -4859,11 +4859,9 @@ function analyzeCategoryPerf(){
       const calmarShort = dd3y > 0 ? (f.r1 - RISK_FREE) / dd3y : 0;
       const calmarLong  = f.maxDD > 0 ? (r3Ann - RISK_FREE) / f.maxDD : 0;
       const calmar = calmarShort * 0.6 + calmarLong * 0.4;
-      // 趋势一致性：短期(当日)、中期(1年)、长期(3年)
-      const shortDir = todayChg > 0 ? 1 : todayChg < 0 ? -1 : 0;
-      const midDir = f.r1 > 0 ? 1 : f.r1 < 0 ? -1 : 0;
-      const longDir = f.r3 > 0 ? 1 : f.r3 < 0 ? -1 : 0;
-      const trendConsistency = shortDir + midDir + longDir; // -3 to +3
+      // 趋势一致性：加权幅度（短期20% + 中期50% + 长期30%），比纯方向更精准
+      const trendScore = todayChg * 0.2 + f.r1 * 0.5 + r3Ann * 0.3;
+      const trendConsistency = trendScore > 2 ? 3 : trendScore > 0.5 ? 2 : trendScore > 0 ? 1 : trendScore > -0.5 ? -1 : trendScore > -2 ? -2 : -3;
       // 任期稳定性（客观指标）
       const stability = Math.min(f.mgrYears, 15) / 15 * 10; // 0-10
       // 综合评分：Calmar 50% + 趋势一致性 25% + 稳定性 20% + 实时动量 5%
@@ -4891,56 +4889,57 @@ function inferMomentumPhase(catRanks){
   if(!catRanks || catRanks.length < 3) return { phase:'unknown', label:'数据不足', equityMult:1.0, bondMult:1.0 };
 
   const getAvgR1 = cat => { const c = catRanks.find(x=>x.cat===cat); return c ? c.avgR1 : 0; };
-  const getAvgChg = cat => { const c = catRanks.find(x=>x.cat===cat); return c ? c.avgChg : 0; };
+  const getStdR1 = cat => { const c = catRanks.find(x=>x.cat===cat); return c ? c.stdR1 : 10; };
 
   const equityR1 = (getAvgR1('active') + getAvgR1('index')) / 2;
   const bondR1 = getAvgR1('bond');
   const qdiiR1 = getAvgR1('qdii');
-  const moneyR1 = getAvgR1('money');
 
-  // 推断逻辑（基于资产回报强弱，非宏观指标）：
-  // 权益强势期：权益上涨>债券，债券仍正 → 权益动量占优
-  // 权益极端强势：权益强涨，债券走弱 → 权益动量过热
-  // 全面弱势期：权益下跌，债券也弱 → 各类资产缺乏趋势
-  // 债券强势期：权益弱，债券涨 → 避险/降息预期驱动债券动量
+  // 用统计阈值替代硬编码数字：基于各类别自身均值±σ判断强弱
+  const equityAvg = (getAvgR1('active') + getAvgR1('index')) / 2;
+  const equityStd = (getStdR1('active') + getStdR1('index')) / 2;
+  const bondAvg = getAvgR1('bond');
+  const bondStd = getStdR1('bond');
+
+  const equityStrong = equityR1 > equityAvg + equityStd * 0.3;  // 高于均值0.3σ
+  const equityWeak   = equityR1 < equityAvg - equityStd * 0.3;
+  const bondStrong   = bondR1 > bondAvg + bondStd * 0.3;
+  const bondWeak     = bondR1 < bondAvg - bondStd * 0.3;
+  const qdiiStrong   = qdiiR1 > getAvgR1('qdii') + getStdR1('qdii') * 0.3; // QDII强势信号
 
   let phase, label, equityMult, bondMult, desc;
 
-  // 条件判断顺序：更具体的条件优先，避免宽泛条件"吞噬"具体条件
-  // 例如 equityR1=12, bondR1=1 同时满足"强势期"和"极端强势"，应判为后者
-  if(equityR1 > 10 && bondR1 < 3){
-    phase = 'overheat';
-    label = '权益极端强势';
-    equityMult = 1.0;
-    bondMult = 0.8;
-    desc = '权益涨幅较大但债券走弱，可能存在过热风险。建议控制仓位，警惕回调。';
-  } else if(equityR1 > 5 && bondR1 > 0 && equityR1 > bondR1){
-    phase = 'recovery';
-    label = '权益强势期';
-    equityMult = 1.15;
-    bondMult = 0.9;
+  if(equityStrong && bondWeak && equityR1 > 10){
+    phase = 'overheat'; label = '权益极端强势';
+    equityMult = 1.0; bondMult = 0.8;
+    desc = '权益涨幅显著高于历史均值且债券走弱，可能存在过热风险。建议控制仓位，警惕回调。';
+  } else if(qdiiStrong && equityStrong){
+    phase = 'global_bull'; label = '全球权益强势';
+    equityMult = 1.1; bondMult = 0.9;
+    desc = 'A股与海外权益同步强势，全球风险偏好上升。可适度超配权益和QDII。';
+  } else if(equityStrong && !bondWeak){
+    phase = 'recovery'; label = '权益强势期';
+    equityMult = 1.15; bondMult = 0.9;
     desc = '权益类资产相对强势，动量信号偏多。债券仍有正收益。建议适度超配权益类资产。';
-  } else if(equityR1 < 0 && bondR1 < 2){
-    phase = 'stagflation';
-    label = '全面弱势期';
-    equityMult = 0.7;
-    bondMult = 0.9;
+  } else if(equityWeak && bondWeak){
+    phase = 'stagflation'; label = '全面弱势期';
+    equityMult = 0.7; bondMult = 0.9;
     desc = '权益和债券均表现不佳，市场缺乏明确趋势。防御为主，建议超配货币和短债。';
-  } else if(equityR1 < 5 && bondR1 > 3){
-    phase = 'recession';
-    label = '债券强势期';
-    equityMult = 0.85;
-    bondMult = 1.2;
+  } else if(equityWeak && bondStrong){
+    phase = 'recession'; label = '债券强势期';
+    equityMult = 0.85; bondMult = 1.2;
     desc = '债券相对强势，权益动量偏弱。避险情绪或降息预期驱动。建议超配债券类资产。';
+  } else if(qdiiStrong && !equityStrong){
+    phase = 'qdii_opp'; label = 'QDII机会期';
+    equityMult = 0.95; bondMult = 1.0;
+    desc = '海外权益强于A股，全球资产分散配置价值凸显。可适度增加QDII配置。';
   } else {
-    phase = 'transition';
-    label = '信号模糊期';
-    equityMult = 1.0;
-    bondMult = 1.0;
+    phase = 'transition'; label = '信号模糊期';
+    equityMult = 1.0; bondMult = 1.0;
     desc = '各类资产动量信号不明确，无明显趋势方向。建议均衡配置，不做极端倾斜。';
   }
 
-  return { phase, label, equityMult, bondMult, desc, equityR1, bondR1 };
+  return { phase, label, equityMult, bondMult, desc, equityR1, bondR1, qdiiR1 };
 }
 
 // 基金经理变更检测
@@ -5063,6 +5062,10 @@ function computeWeights(riskProfile, horizon, catRanks, macroClock){
     // 滞胀期强制提升货币配置
     if(macroClock.phase === 'stagflation'){
       base.money = Math.max(base.money || 0, 15);
+    }
+    // QDII机会期：适度提升QDII配置
+    if(macroClock.phase === 'qdii_opp' || macroClock.phase === 'global_bull'){
+      if(base.qdii) base.qdii *= 1.2;
     }
     // 重新归一化
     const macroTotal = Object.values(base).reduce((s,v)=>s+v,0);
