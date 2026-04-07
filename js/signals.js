@@ -7,7 +7,7 @@ function runSignalEngine(){
       // 直接使用已计算好的 h.value，避免用 gsz 重新估算导致偏差
       const cost = h.amount || 0;
       const value = h.value || h.amount || 0;
-      allHeld.push({code:h.code, name:h.name, value, cost});
+      allHeld.push({code:h.code, name:h.name, value, cost, status:h.status||'confirmed'});
     }
   });
   dcaPlans.forEach(d=>{ if(!allHeld.some(x=>x.code===d.code)&&d.curval>0){
@@ -86,8 +86,8 @@ function runSignalEngine(){
       });
     }
 
-    // 信号3：持仓亏损超过历史最大回撤的80%
-    if(fd && pnlPct !== null && pnlPct < 0 && fd.maxDD > 0){
+    // 信号3：持仓亏损超过历史最大回撤的80%（仅已确认持仓，待确认成本基准不可靠）
+    if(fd && pnlPct !== null && pnlPct < 0 && fd.maxDD > 0 && h.status === 'confirmed'){
       const ddRatio = -pnlPct / fd.maxDD;
       if(ddRatio > 0.8){
         signals.push({type:'danger', priority:0, code:h.code, name:h.name,
