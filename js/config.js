@@ -1,26 +1,53 @@
-const CURATED_FUNDS = [
-  {code:'005827',name:'易方达蓝筹精选混合',type:'混合型',cat:'active',label:'主动权益',manager:'张坤',mgrYears:13.5,stars:4,risk:'R4',size:310.21,r1:-6.75,r3:-11.51,maxDD:57.9,fee:0.15,vol:0,tags:['消费','医药','白酒'],reason:'张坤代表作，专注消费医药龙头，价值投资体系成熟，历经多轮牛熊考验。持仓集中于白酒、医药等消费核心资产，适合认同价值投资理念的长线投资者。'},
-  {code:'110011',name:'易方达优质精选混合(QDII)',type:'混合型',cat:'active',label:'主动权益',manager:'张坤',mgrYears:13.5,stars:4,risk:'R4',size:113.85,r1:-7.76,r3:-11.28,maxDD:61.2,fee:0.15,vol:0,tags:['消费','白酒','医药'],reason:'张坤管理时间最长的产品（原名易方达中小盘），穿越多轮牛熊，超长任期积累丰富经验。持仓以消费白酒为主，风格稳定，适合长期持有。'},
-  {code:'161005',name:'富国天惠成长混合(LOF)A',type:'混合型',cat:'active',label:'主动权益',manager:'朱少醒',mgrYears:20.4,stars:4,risk:'R4',size:211.02,r1:17.93,r3:10.81,maxDD:65.2,fee:0.15,vol:0,tags:['成长','科技','消费'],reason:'朱少醒管理超20年，国内任职时间最长的基金经理之一。选股覆盖成长与消费，回撤控制能力突出，长期配置价值高。'},
-  {code:'163402',name:'兴全趋势投资混合(LOF)',type:'混合型',cat:'active',label:'主动权益',manager:'杨世进',mgrYears:5.3,stars:5,risk:'R4',size:140.12,r1:33.25,r3:20.83,maxDD:87.7,fee:0.15,vol:0,tags:['均衡','成长','价值'],reason:'经典趋势产品，选股均衡多元，下行风险控制优于同类，适合作为权益基金底仓。'},
-  {code:'003095',name:'中欧医疗健康混合A',type:'混合型',cat:'active',label:'主动权益',manager:'葛兰',mgrYears:10.7,stars:4,risk:'R4',size:138.43,r1:6.86,r3:-22.69,maxDD:68.5,fee:0.15,vol:0,tags:['医疗','创新药','器械'],reason:'医疗健康专精，覆盖创新药、CXO、医疗器械。行业集中度高，波动大，仅适合看好医疗长期需求且能承受高波动的投资者。'},
-  {code:'260108',name:'景顺长城新兴成长混合A',type:'混合型',cat:'active',label:'主动权益',manager:'刘彦春',mgrYears:16.9,stars:4,risk:'R4',size:158.8,r1:-10.97,r3:-30.49,maxDD:77.9,fee:0.15,vol:0,tags:['消费','成长','港股'],reason:'刘彦春深度研究消费成长方向，任职超16年。持仓偏重消费与港股，选股集中度高，波动较大，适合看好消费赛道的长线投资者。'},
-  {code:'460300',name:'华泰柏瑞沪深300ETF联接A',type:'指数型',cat:'index',label:'指数基金',manager:'柳军',mgrYears:16.8,stars:5,risk:'R4',size:4222.58,r1:19.27,r3:26.4,maxDD:46.5,fee:0.12,vol:0,tags:['沪深300','宽基','蓝筹'],reason:'跟踪沪深300ETF(510300)的联接基金A类份额，支持场外申购（支付宝等），跟踪A股核心蓝筹，费率极低，长期定投首选。'},
-  {code:'009051',name:'易方达中证红利ETF联接A',type:'指数型',cat:'index',label:'指数基金',manager:'林伟斌',mgrYears:11.9,stars:5,risk:'R3',size:118.05,r1:12.25,r3:29.45,maxDD:22.5,fee:0.12,vol:0,tags:['高股息','红利','防御'],reason:'跟踪中证红利ETF(515180)的联接基金A类份额，支持场外申购。聚焦高股息低估值标的，防御性强，适合追求稳定现金流的投资者。'},
-  {code:'006327',name:'易方达中证海外互联网50ETF联接A',type:'QDII',cat:'qdii',label:'QDII海外',manager:'余海燕',mgrYears:14.3,stars:5,risk:'R4',size:398.59,r1:-15.1,r3:33.73,maxDD:73.4,fee:0.02,vol:0,tags:['互联网','港股','科技'],reason:'跟踪中概互联ETF(513050)的联接基金A类份额，支持场外申购。覆盖腾讯、阿里、美团等互联网龙头，适合看好中概长期复苏。'},
-  {code:'110026',name:'易方达创业板ETF联接A',type:'指数型',cat:'index',label:'指数基金',manager:'成曦',mgrYears:9.9,stars:5,risk:'R4',size:1004.46,r1:52.72,r3:50.01,maxDD:69.7,fee:0.12,vol:0,tags:['创业板','科技','成长'],reason:'跟踪创业板ETF(159915)的联接基金A类份额，支持场外申购。弹性大，成长股集中，仅适合激进型投资者少量配置。'},
-  {code:'160119',name:'南方中证500ETF联接A',type:'指数型',cat:'index',label:'指数基金',manager:'罗文杰',mgrYears:12.9,stars:5,risk:'R4',size:1446.9,r1:34.17,r3:36.88,maxDD:63.2,fee:0.12,vol:0,tags:['中证500','中盘','成长'],reason:'跟踪中证500ETF(510500)的联接基金A类份额，支持场外申购。覆盖500只中等市值股票，与沪深300互补，成长性更强。'},
-  {code:'160706',name:'嘉实沪深300ETF联接(LOF)A',type:'指数型',cat:'index',label:'指数基金',manager:'刘珈吟',mgrYears:10,stars:5,risk:'R4',size:1971.24,r1:19.24,r3:26.4,maxDD:45.9,fee:0.12,vol:0,tags:['沪深300','宽基','低费率'],reason:'跟踪嘉实沪深300ETF(159919)的联接基金A类份额，支持场外申购。老牌沪深300联接，跟踪精准，适合长期定投。'},
-  {code:'110017',name:'易方达增强回报债券A',type:'债券型',cat:'bond',label:'债券基金',manager:'王晓晨',mgrYears:14.6,stars:5,risk:'R3',size:316.96,r1:5.55,r3:17.39,maxDD:21.1,fee:0.07,vol:0,tags:['信用债','增强','稳健'],reason:'长期业绩位居债基前列，信用债与利率债均衡，适度增强收益，风险控制优秀。'},
-  {code:'000171',name:'易方达裕丰回报债券A',type:'债券型',cat:'bond',label:'债券基金',manager:'张清华',mgrYears:12.2,stars:4,risk:'R3',size:152.65,r1:7.09,r3:16.01,maxDD:26,fee:0.05,vol:0,tags:['债券','增强','稳健'],reason:'债券增强型产品，适合追求稳健收益的投资者，替代银行理财。'},
-  {code:'070009',name:'嘉实超短债债券C',type:'债券型',cat:'bond',label:'债券基金',manager:'王亚洲',mgrYears:10.7,stars:5,risk:'R1',size:63.48,r1:1.54,r3:6.55,maxDD:2.3,fee:0,vol:0,tags:['超短债','流动性','保守'],reason:'持仓期限极短，流动性优异，收益高于货币基金，风险接近零，适合短期过渡资金。'},
-  {code:'000198',name:'天弘余额宝货币',type:'货币型',cat:'money',label:'货币基金',manager:'王登峰',mgrYears:11.8,stars:3,risk:'R1',size:6891.5,r1:1.15,r3:4.62,maxDD:0.0,fee:0,vol:0,tags:['货币','余额宝','流动性'],reason:'余额宝对接货币基金，规模最大，流动性最佳，T+0快速赎回。注意：可能暂停申购，系统将自动推荐替代基金。'},
-  {code:'003003',name:'华夏现金增利货币A/E',type:'货币型',cat:'money',label:'货币基金',manager:'曲波',mgrYears:18.2,stars:3,risk:'R1',size:593.88,r1:1.13,r3:4.57,maxDD:0.0,fee:0,vol:0,tags:['货币','稳健','现金管理'],reason:'华夏基金旗下货币基金，规模较大，收益稳定，支持支付宝申购，适合资金备用仓。'},
-  {code:'161125',name:'易方达标普500指数人民币A',type:'QDII',cat:'qdii',label:'QDII海外',manager:'刘依姗',mgrYears:1.3,stars:4,risk:'R4',size:14.75,r1:13.32,r3:66.24,maxDD:32.9,fee:0.08,vol:0,tags:['美股','标普500','全球配置'],reason:'跟踪标普500，投资苹果微软英伟达等美股核心资产，历史年化约10%+，全球配置首选。'},
-  {code:'270042',name:'广发纳斯达克100ETF联接人民币(QDII)A',type:'QDII',cat:'qdii',label:'QDII海外',manager:'刘杰',mgrYears:12,stars:5,risk:'R5',size:108.44,r1:18.61,r3:88.66,maxDD:31.2,fee:0.08,vol:0,tags:['美股','纳斯达克','科技'],reason:'跟踪纳斯达克100，高度集中科技巨头，弹性极大，长期表现优异，适合激进型配置。'},
-  {code:'040046',name:'华安纳斯达克100ETF联接(QDII)A',type:'QDII',cat:'qdii',label:'QDII海外',manager:'倪斌',mgrYears:7.5,stars:4,risk:'R4',size:55.2,r1:17.03,r3:85.36,maxDD:31.2,fee:0.08,vol:0,tags:['美股','纳斯达克','科技'],reason:'华安旗下纳斯达克100联接基金，管理经验丰富，费率合理，适合配置美股科技赛道的投资者。'},
-  {code:'006479',name:'广发纳斯达克100ETF联接人民币(QDII)C',type:'QDII',cat:'qdii',label:'QDII海外',manager:'刘杰',mgrYears:12,stars:5,risk:'R4',size:65.44,r1:18.38,r3:87.53,maxDD:31.4,fee:0,vol:0,tags:['美股','纳斯达克','联接'],reason:'广发纳斯达克100的C类份额，免申购费收销售服务费，适合短期持有或小额定投。'},
-];
+// 精选基金库：运行时从 curated-details.json 动态加载，初始为空
+let CURATED_FUNDS = [];
+// 记录精选库数据的更新时间（来自 curated-details.json 的 timestamp 字段）
+let _curatedTimestamp = null;
+
+async function loadCuratedFunds() {
+  try {
+    const res = await fetch('data/curated-details.json?_=' + Date.now());
+    const data = await res.json();
+    _curatedTimestamp = data.timestamp || null;
+    const funds = [];
+    Object.entries(data.funds || {}).forEach(([code, f]) => {
+      if (!f.cat) return; // 跳过缺少类别的条目
+      funds.push({
+        code,
+        name: f.name || code,
+        type: f.type || '',
+        cat: f.cat,
+        label: f.label || CAT_NAMES[f.cat] || f.cat,
+        manager: f.manager || '',
+        mgrYears: f.mgrYears || 0,
+        stars: f.stars || 3,
+        risk: f.risk || inferRiskFromDD(f.maxDD, f.cat),
+        size: f.size || 0,
+        r1: f.r1 || 0,
+        r3: f.r3 || 0,
+        maxDD: f.maxDD || 0,
+        maxDD3y: f.maxDD3y || 0,
+        fee: f.fee !== undefined ? f.fee : getDefaultFee(f.cat),
+        vol: 0,
+        tags: f.tags || [],
+        reason: f.reason || '',
+      });
+    });
+    CURATED_FUNDS = funds;
+    console.log(`[精选库] 已加载 ${funds.length} 只基金，数据时间：${_curatedTimestamp}`);
+  } catch (e) {
+    console.warn('[精选库] 加载失败，使用空库', e);
+  }
+}
+
+function inferRiskFromDD(maxDD, cat) {
+  if (cat === 'money') return 'R1';
+  if (cat === 'bond') return maxDD > 5 ? 'R3' : maxDD > 2 ? 'R2' : 'R1';
+  if (maxDD >= 45) return 'R5';
+  if (maxDD >= 30) return 'R4';
+  if (maxDD >= 15) return 'R3';
+  if (maxDD >= 5) return 'R2';
+  return 'R1';
+}
 
 // ═══════════════ 基金元数据增强（风格/行业/流动性风险） ═══════════════
 const FUND_META = {

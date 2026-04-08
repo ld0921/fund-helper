@@ -987,23 +987,27 @@ function resetSmartGenButton(){
 }
 
 function _doGenerate(shouldScroll){
-  // 数据新鲜度守卫：检测 CURATED_FUNDS 是否已被 API 数据覆盖
-  const origFunds = CURATED_FUNDS.filter(f => !f.discovered);
-  const apiUpdatedCount = origFunds.filter(f => f._apiUpdated).length;
+  // 数据新鲜度守卫：检测精选库数据是否超过7天未更新
   const staleNotice = document.getElementById('data-stale-notice');
-  if(apiUpdatedCount < origFunds.length * 0.6){
-    // 超过 60% 的精选基金未被 API 更新，显示警告
+  const isStale = !_curatedTimestamp || (Date.now() - new Date(_curatedTimestamp).getTime()) > 7 * 24 * 60 * 60 * 1000;
+  const isEmpty = CURATED_FUNDS.length === 0;
+  if(isEmpty || isStale){
+    const msg = isEmpty
+      ? '⚠️ <b>精选基金库尚未加载</b>，无法生成方案。请检查网络连接后刷新页面重试。'
+      : `⚠️ <b>基金数据已超过7天未更新</b>（最后更新：${_curatedTimestamp ? new Date(_curatedTimestamp).toLocaleDateString('zh-CN') : '未知'}），推荐结果可能不准确。建议先触发 GitHub Actions 更新数据后再生成方案。`;
     if(!staleNotice){
       const notice = document.createElement('div');
       notice.id = 'data-stale-notice';
       notice.className = 'warning-notice';
-      notice.style.cssText = 'background:#fff1f0;border-left-color:#ff4d4f;color:#a8071a;font-weight:500';
-      notice.innerHTML = '⚠️ <b>部分基金数据可能未更新</b>，当前方案基于可用数据生成。如需最新数据，请检查网络连接后重新生成方案。';
+      notice.style.cssText = 'background:#fff1f0;border-left:4px solid #ff4d4f;padding:10px 14px;border-radius:6px;color:#a8071a;font-weight:500;margin-bottom:12px';
+      notice.innerHTML = msg;
       const resultEl = document.getElementById('portfolio-result');
       if(resultEl) resultEl.insertBefore(notice, resultEl.firstChild);
     } else {
+      staleNotice.innerHTML = msg;
       staleNotice.style.display = '';
     }
+    if(isEmpty) return; // 库为空时直接中止，无法生成方案
   } else {
     if(staleNotice) staleNotice.style.display = 'none';
   }

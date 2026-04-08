@@ -6,13 +6,8 @@ const fs = require('fs');
 const path = require('path');
 const https = require('https');
 
-// 精选库21只基金代码
-const CURATED_CODES = [
-  '005827','110011','161005','163402','003095','260108',
-  '510300','515180','513050','159915','510500','159919',
-  '110017','000171','070009','000198','003003',
-  '161125','270042','040046','006479',
-];
+// 固定保留的基金代码（货币/超短债等特殊品种，全市场扫描不覆盖）
+const FIXED_CODES = ['000198','003003','070009'];
 
 const CATEGORIES = [
   { ft: 'gp',   cat: 'active', label: '股票型', type: '股票型' },
@@ -216,6 +211,47 @@ function inferRiskLevel(maxDD, cat) {
   return 'R1';
 }
 
+// 根据基金数据自动生成标签
+function autoTags(f) {
+  const tags = [];
+  const cat = f.cat || '';
+  const name = f.name || '';
+  if (cat === 'money') return ['货币', '流动性', '现金管理'];
+  if (cat === 'bond') {
+    if (f.maxDD && f.maxDD < 3) tags.push('超短债');
+    else tags.push('债券');
+    tags.push('稳健');
+    return tags;
+  }
+  if (cat === 'qdii') {
+    if (/纳斯达克|纳指/.test(name)) tags.push('纳斯达克', '美股', '科技');
+    else if (/标普|S&P/.test(name)) tags.push('标普500', '美股', '全球配置');
+    else if (/互联|中概/.test(name)) tags.push('互联网', '港股', '科技');
+    else tags.push('海外', 'QDII', '全球配置');
+    return tags;
+  }
+  // 指数/主动
+  if (/沪深300|300/.test(name)) tags.push('沪深300', '宽基', '蓝筹');
+  else if (/中证500|500/.test(name)) tags.push('中证500', '中盘', '成长');
+  else if (/创业板/.test(name)) tags.push('创业板', '科技', '成长');
+  else if (/红利|股息/.test(name)) tags.push('高股息', '红利', '防御');
+  else if (/医疗|医药|健康/.test(name)) tags.push('医疗', '医药', '行业');
+  else if (/科技|信息|半导体/.test(name)) tags.push('科技', '成长', '行业');
+  else if (/消费/.test(name)) tags.push('消费', '成长', '价值');
+  else tags.push(cat === 'index' ? '指数' : '主动权益', '均衡');
+  return tags;
+}
+
+// 根据基金数据自动生成推荐理由
+function autoReason(f) {
+  const r1Str = f.r1 !== undefined ? `近1年收益 ${f.r1 > 0 ? '+' : ''}${f.r1}%` : '';
+  const r3Str = f.r3 !== undefined ? `近3年 ${f.r3 > 0 ? '+' : ''}${f.r3}%` : '';
+  const mgrStr = f.mgrYears > 0 ? `基金经理${f.manager || ''}任职 ${f.mgrYears} 年` : '';
+  const ddStr = f.maxDD > 0 ? `历史最大回撤 ${f.maxDD}%` : '';
+  const parts = [r1Str, r3Str, mgrStr, ddStr].filter(Boolean);
+  return parts.join('，') + '。由全市场扫描自动入选。';
+}
+
 async function main() {
   console.log('开始拉取全市场基金排名数据…');
   const result = { timestamp: new Date().toISOString(), categories: {} };
@@ -290,17 +326,50 @@ async function main() {
   fs.writeFileSync(outPath, JSON.stringify(result, null, 2), 'utf-8');
   console.log(`\n完成！共 ${totalFunds} 只基金，已写入 ${outPath}`);
 
-  // ═══ 精选库基金详情预拉取 ═══
-  console.log(`\n开始预拉取 ${CURATED_CODES.length} 只精选库基金详情…`);
+  // ═══ 从全市场扫描结果构建动态精选库 ═══
+  // 收集所有类别的候选基金（已含详情），合并去重
+  const dynamicCodes = new Set(FIXED_CODES);
+  for (const catKey of Object.keys(result.categories)) {
+    const catFunds = result.categories[catKey].funds || [];
+    catFunds.forEach(f => dynamicCodes.add(f.code));
+  }
+  // 构建 code→fund 快速查找表（来自全市场扫描）
+  const scannedMap = {};
+  for (const catKey of Object.keys(result.categories)) {
+    (result.categories[catKey].funds || []).forEach(f => { scannedMap[f.code] = f; });
+  }
+
+  console.log(`\n开始构建动态精选库（${dynamicCodes.size} 只候选基金）…`);
   const curatedResult = { timestamp: new Date().toISOString(), funds: {} };
   let curatedDone = 0;
 
-  for (const code of CURATED_CODES) {
+  for (const code of dynamicCodes) {
     try {
-      const detail = await fetchFundDetail(code);
-      const r3 = await fetchFundR3(code);
+      // 已有扫描数据的基金直接复用，只补充 r3（扫描阶段未拉取）
+      const base = scannedMap[code];
+      let detail = null;
+      let r3 = null;
+
+      if (base && base.maxDD > 0) {
+        // 已有完整详情，只补 r3
+        r3 = await fetchFundR3(code);
+        detail = { r1: base.r1, maxDD: base.maxDD, maxDD3y: base.maxDD3y,
+          manager: base.manager, mgrYears: base.mgrYears, star: base.stars, fundSize: base.size };
+      } else {
+        // 固定基金（货币/超短债）需单独拉取
+        detail = await fetchFundDetail(code);
+        r3 = await fetchFundR3(code);
+      }
+
       if (detail) {
-        const entry = {};
+        const f = base || {};
+        const entry = {
+          name: f.name || '',
+          type: f.type || '',
+          cat: f.cat || '',
+          label: f.label || '',
+          risk: f.risk || '',
+        };
         if (detail.r1 !== undefined && isFinite(detail.r1)) entry.r1 = detail.r1;
         if (r3 !== null) entry.r3 = r3;
         if (detail.maxDD > 0 && detail.maxDD <= 100) entry.maxDD = detail.maxDD;
@@ -309,18 +378,23 @@ async function main() {
         if (detail.mgrYears > 0) entry.mgrYears = detail.mgrYears;
         if (detail.star >= 1 && detail.star <= 5) entry.stars = detail.star;
         if (detail.fundSize > 0) entry.size = Math.round(detail.fundSize * 100) / 100;
+
+        // 自动生成 reason 和 tags
+        entry.tags = autoTags(entry);
+        entry.reason = autoReason(entry);
+
         curatedResult.funds[code] = entry;
         curatedDone++;
       }
     } catch (e) {
       console.warn(`    精选库详情失败 ${code}: ${e.message}`);
     }
-    await sleep(300);
+    await sleep(150);
   }
 
   const curatedPath = path.join(outDir, 'curated-details.json');
   fs.writeFileSync(curatedPath, JSON.stringify(curatedResult, null, 2), 'utf-8');
-  console.log(`精选库详情完成！${curatedDone}/${CURATED_CODES.length} 只成功，已写入 ${curatedPath}`);
+  console.log(`精选库详情完成！${curatedDone}/${dynamicCodes.size} 只成功，已写入 ${curatedPath}`);
 }
 
 main().catch(e => { console.error(e); process.exit(1); });

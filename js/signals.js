@@ -487,6 +487,9 @@ function runHealthMonitor(){
 
 // ═══════════════ 初始化（异步：IndexedDB → 渲染） ═══════════════
 (async function init(){
+  // 0. 加载动态精选库（必须在渲染前完成）
+  await loadCuratedFunds();
+
   // 1. 从 localStorage 迁移到 IndexedDB（首次）
   try { await FundDB.migrateFromLocalStorage(); } catch(e){ console.warn('迁移失败',e); }
 
