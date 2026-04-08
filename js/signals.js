@@ -487,8 +487,8 @@ function runHealthMonitor(){
 
 // ═══════════════ 初始化（异步：IndexedDB → 渲染） ═══════════════
 (async function init(){
-  // 0. 加载动态精选库（必须在渲染前完成）
-  await loadCuratedFunds();
+  // 0. 加载动态精选库（与后续步骤并行，不阻塞 session 恢复）
+  loadCuratedFunds();
 
   // 1. 从 localStorage 迁移到 IndexedDB（首次）
   try { await FundDB.migrateFromLocalStorage(); } catch(e){ console.warn('迁移失败',e); }
@@ -557,26 +557,36 @@ function runHealthMonitor(){
   // 4. 备份提醒和登录状态恢复统一在 Supabase session 检查后处理
   // （避免 session 异步恢复前 _currentUser 还是 null 导致误弹备份提醒）
 
-  // 4.5 Supabase 登录状态恢复（未登录则强制弹出登录框）
+  // 4.5 Supabase 登录状态恢复
   if(_supa){
-    _supa.auth.getSession().then(({data:{session}}) => {
-      if(session && session.user){
-        _currentUser = session.user;
-        updateAuthUI();
-        FundDB.onSync(_debounce(pushToCloud, 2000));
-        pullFromCloud().then(()=>{
-          if(localStorage.getItem('_syncPending')) pushToCloud();
-        });
-      } else {
-        // 未登录：强制弹出登录框
-        showAuthModal();
-      }
-    }).catch(e => { console.warn('auth session check failed:', e); showAuthModal(); });
-    // 监听登录状态变化（如 token 刷新、其他 tab 登出等）
+    // onAuthStateChange 的 INITIAL_SESSION 事件是最可靠的登录状态来源
+    // getSession 在 token 刷新期间可能返回 null，不能直接用来判断未登录
+    let _sessionResolved = false;
     _supa.auth.onAuthStateChange((event, session) => {
-      if(event === 'SIGNED_OUT'){ _currentUser = null; updateAuthUI(); }
-      else if(session?.user){ _currentUser = session.user; updateAuthUI(); }
+      if(event === 'INITIAL_SESSION'){
+        _sessionResolved = true;
+        if(session?.user){
+          _currentUser = session.user;
+          updateAuthUI();
+          FundDB.onSync(_debounce(pushToCloud, 2000));
+          pullFromCloud().then(()=>{ if(localStorage.getItem('_syncPending')) pushToCloud(); });
+        } else {
+          showAuthModal();
+        }
+      } else if(event === 'SIGNED_IN' && session?.user){
+        _currentUser = session.user; updateAuthUI();
+      } else if(event === 'SIGNED_OUT'){
+        _currentUser = null; updateAuthUI();
+      }
     });
+    // 兜底：3秒后若 INITIAL_SESSION 未触发（极少数情况），回退到 getSession
+    setTimeout(()=>{
+      if(_sessionResolved) return;
+      _supa.auth.getSession().then(({data:{session}})=>{
+        if(session?.user){ _currentUser=session.user; updateAuthUI(); FundDB.onSync(_debounce(pushToCloud,2000)); }
+        else showAuthModal();
+      }).catch(()=>showAuthModal());
+    }, 3000);
   }
 
   // 5. iOS 安装引导
