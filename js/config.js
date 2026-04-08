@@ -80,13 +80,13 @@ async function loadCuratedFunds() {
 
 function updateCuratedStatus(count, timestamp, isError = false) {
   const statusEl = document.getElementById('curated-update-status');
-  const statusElBottom = document.getElementById('curated-update-status-bottom');
+  const statusElModal = document.getElementById('curated-update-status-modal');
   const cardEl = document.getElementById('curated-status-card');
 
   if (isError) {
     const errorHtml = '<span style="color:#ff4d4f">❌ 数据加载失败</span>';
     if(statusEl) statusEl.innerHTML = errorHtml;
-    if(statusElBottom) statusElBottom.innerHTML = errorHtml;
+    if(statusElModal) statusElModal.innerHTML = errorHtml;
     if(cardEl) {
       cardEl.style.background = 'linear-gradient(135deg,#fff1f0,#ffccc7)';
       cardEl.style.borderColor = '#ffa39e';
@@ -102,10 +102,10 @@ function updateCuratedStatus(count, timestamp, isError = false) {
 
   if (isStale) {
     // 数据过期：警告样式
-    const warnHtml = `<span style="color:#d46b08">⚠️ 数据已过期（上次更新 ${dateStr}）</span>`;
+    const warnHtml = `<span style="color:#d46b08">⚠️ ${dateStr} · ${count} 只基金（已过期）</span>`;
     const warnDetail = `上次更新：${dateStr}（已超7天）<br><span style="color:#d46b08;font-weight:600">⚠️ 建议先更新数据再生成方案</span><br><span style="font-size:11px;color:#8c8c8c">GitHub Actions 每周日自动更新，或手动触发 workflow</span>`;
     if(statusEl) statusEl.innerHTML = warnDetail;
-    if(statusElBottom) statusElBottom.innerHTML = warnHtml;
+    if(statusElModal) statusElModal.innerHTML = warnHtml;
     if(cardEl) {
       cardEl.style.background = 'linear-gradient(135deg,#fffbe6,#fff7e6)';
       cardEl.style.borderColor = '#ffd591';
@@ -115,7 +115,7 @@ function updateCuratedStatus(count, timestamp, isError = false) {
     const okHtml = `<span style="color:#52c41a">✅ ${dateStr} · ${count} 只基金</span>`;
     const okDetail = `上次更新：${dateStr}<br><span style="color:#52c41a;font-weight:600">✅ 数据正常，共 ${count} 只精选基金</span><br><span style="font-size:11px;color:#8c8c8c">智能方案将从此库中推荐最优组合</span>`;
     if(statusEl) statusEl.innerHTML = okDetail;
-    if(statusElBottom) statusElBottom.innerHTML = okHtml;
+    if(statusElModal) statusElModal.innerHTML = okHtml;
     if(cardEl) {
       cardEl.style.background = 'linear-gradient(135deg,#f6ffed,#f0f9ff)';
       cardEl.style.borderColor = '#b7eb8f';

@@ -201,7 +201,7 @@
         <div style="font-size:13px;font-weight:600;color:#389e0d;margin-bottom:4px">📊 精选基金库</div>
         <div id="curated-update-status" style="font-size:12px;color:#595959;line-height:1.6">加载中...</div>
       </div>
-      <button onclick="document.querySelector('#fund-library-details').open=true;document.querySelector('#fund-library-details').scrollIntoView({behavior:'smooth',block:'start'})" style="padding:6px 12px;font-size:12px;background:var(--card);border:1px solid var(--border);border-radius:6px;cursor:pointer;color:var(--text);white-space:nowrap">查看精选库 →</button>
+      <button onclick="openFundLibraryModal()" style="padding:8px 16px;font-size:13px;font-weight:600;background:var(--primary);color:#fff;border:none;border-radius:6px;cursor:pointer;white-space:nowrap;transition:all .2s" onmouseover="this.style.background='var(--primary-dark)'" onmouseout="this.style.background='var(--primary)'">查看精选库</button>
     </div>
   </div>
 
@@ -468,32 +468,6 @@
     </div>
 
   </div><!-- /portfolio-result -->
-
-  <!-- 精选基金库（折叠，供参考浏览） -->
-  <details class="card" id="fund-library-details" style="padding:0;overflow:hidden">
-    <summary style="padding:14px 16px;list-style:none;display:flex;align-items:center;gap:8px;cursor:pointer">
-      <span class="icon icon-blue">📊</span>
-      <span style="font-size:14px;font-weight:600">精选基金库</span>
-      <span style="margin-left:auto;font-size:11px;color:var(--muted)" id="curated-update-status-bottom"></span>
-    </summary>
-    <div style="padding:0 16px 16px">
-      <div style="padding:6px 0;font-size:11px;color:var(--muted);line-height:1.6">
-        📋 由 GitHub Actions 每周从全市场自动筛选，智能方案从此库中选基。
-      </div>
-      <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center">
-        <span style="font-size:12px;color:var(--muted)">排序：</span>
-        <button class="chip active" id="sort-mode-score" onclick="setSortMode('score')">📊 综合评分</button>
-        <button class="chip" id="sort-mode-dca" onclick="setSortMode('dca')">📈 定投推荐</button>
-        <span style="margin-left:auto;font-size:12px;color:var(--muted)" id="dca-rank-time"></span>
-      </div>
-      <div id="dca-sort-notice" style="display:none;margin-bottom:10px" class="notice">
-        💡 定投最适合「波动大、长期向上」的资产。排名综合考虑：波动收益比 × 长期趋势 × 管理质量 × 近期动量。
-      </div>
-      <div class="chip-row" id="cat-filter"></div>
-      <div id="market-grid"></div>
-      <div style="margin-top:10px;font-size:11px;color:var(--muted)">⚠️ 以上为参考性推荐，不构成投资建议。基金投资有风险，请根据自身风险承受能力决策。</div>
-    </div>
-  </details>
 
 </div>
 
@@ -2071,21 +2045,110 @@ function renderMarketGrid(){
 }
 function setCategory(cat){
   currentCat=cat;
-  document.querySelectorAll('#cat-filter .chip').forEach(c=>c.classList.toggle('active',c.getAttribute('onclick')?.includes(`'${cat}'`)));
+  document.querySelectorAll('#cat-filter .chip, #cat-filter-modal .chip').forEach(c=>c.classList.toggle('active',c.getAttribute('onclick')?.includes(`'${cat}'`)));
   const grid=document.getElementById('market-grid');
-  grid.classList.add('fading');
-  setTimeout(()=>{renderMarketGrid();grid.classList.remove('fading');},150);
+  const gridModal=document.getElementById('market-grid-modal');
+  if(grid){ grid.classList.add('fading'); setTimeout(()=>{renderMarketGrid();grid.classList.remove('fading');},150); }
+  if(gridModal){ gridModal.classList.add('fading'); setTimeout(()=>{renderMarketGridModal();gridModal.classList.remove('fading');},150); }
 }
 function setSortMode(mode){
   currentSortMode=mode;
-  document.getElementById('sort-mode-score').classList.toggle('active',mode==='score');
-  document.getElementById('sort-mode-dca').classList.toggle('active',mode==='dca');
-  const dcaNotice=document.getElementById('dca-sort-notice');
-  if(dcaNotice) dcaNotice.style.display=mode==='dca'?'':'none';
+  ['sort-mode-score','sort-mode-score-modal'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.classList.toggle('active',mode==='score');
+  });
+  ['sort-mode-dca','sort-mode-dca-modal'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.classList.toggle('active',mode==='dca');
+  });
+  ['dca-sort-notice','dca-sort-notice-modal'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.style.display=mode==='dca'?'':'none';
+  });
   const grid=document.getElementById('market-grid');
-  grid.classList.add('fading');
-  setTimeout(()=>{renderMarketGrid();grid.classList.remove('fading');},150);
-  renderMarketGrid();
+  const gridModal=document.getElementById('market-grid-modal');
+  if(grid){ grid.classList.add('fading'); setTimeout(()=>{renderMarketGrid();grid.classList.remove('fading');},150); }
+  if(gridModal){ gridModal.classList.add('fading'); setTimeout(()=>{renderMarketGridModal();gridModal.classList.remove('fading');},150); }
+  if(grid) renderMarketGrid();
+  if(gridModal) renderMarketGridModal();
+}
+
+// 精选基金库弹窗控制
+function openFundLibraryModal(){
+  document.getElementById('fund-library-modal').style.display='flex';
+  document.body.style.overflow='hidden';
+  renderMarketGridModal();
+  // 同步状态显示
+  const statusEl=document.getElementById('curated-update-status');
+  const statusModalEl=document.getElementById('curated-update-status-modal');
+  if(statusEl && statusModalEl) statusModalEl.innerHTML=statusEl.innerHTML;
+}
+function closeFundLibraryModal(){
+  document.getElementById('fund-library-modal').style.display='none';
+  document.body.style.overflow='';
+}
+function renderMarketGridModal(){
+  const gridEl=document.getElementById('market-grid-modal');
+  const filterEl=document.getElementById('cat-filter-modal');
+  if(!gridEl) return;
+
+  // 复用现有逻辑
+  let list=CURATED_FUNDS.filter(f=>currentCat==='all'||f.cat===currentCat);
+  if(currentSortMode==='score') list.sort((a,b)=>scoreF(b)-scoreF(a));
+  if(currentSortMode==='dca'){
+    if(currentCat!=='money') list=list.filter(f=>f.cat!=='money');
+    list.sort((a,b)=>calcDCAScore(b)-calcDCAScore(a));
+  }
+
+  const isMobile = window.innerWidth <= 600;
+  if(!list.length){
+    gridEl.innerHTML='<div class="empty">暂无该类别基金</div>';
+  } else if(!isMobile){
+    // 桌面端：按类别分组
+    const groups={};
+    list.forEach(f=>{ if(!groups[f.cat]) groups[f.cat]=[]; groups[f.cat].push(f); });
+    const CAT_ORDER=['active','index','bond','qdii','money'];
+    const CAT_LABELS={active:'主动权益',index:'指数基金',bond:'债券基金',money:'货币基金',qdii:'QDII海外'};
+    gridEl.innerHTML=CAT_ORDER.filter(c=>groups[c]&&groups[c].length).map(cat=>{
+      const funds=groups[cat];
+      const visible=funds.slice(0,3);
+      const hidden=funds.slice(3);
+      return `<div style="margin-bottom:16px">
+        <div style="font-size:14px;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:6px">
+          ${CAT_LABELS[cat]||cat} <span style="font-size:12px;color:var(--muted);font-weight:400">(${funds.length}只)</span>
+        </div>
+        <div class="fund-grid">${visible.map(f=>buildFundCard(f,currentSortMode)).join('')}</div>
+        ${hidden.length?`<div class="fund-grid" id="fold-modal-${cat}" style="display:none">${hidden.map(f=>buildFundCard(f,currentSortMode)).join('')}</div>
+        <div style="text-align:center;margin-top:8px" id="fold-btn-modal-${cat}">
+          <button class="btn btn-ghost btn-sm" onclick="document.getElementById('fold-modal-${cat}').style.display='';this.parentElement.style.display='none'" style="font-size:12px">展开更多 ${hidden.length} 只 ▼</button>
+        </div>`:''}
+      </div>`;
+    }).join('');
+  } else {
+    // 手机端
+    const visible=list.slice(0,6);
+    const hidden=list.slice(6);
+    gridEl.innerHTML=`<div class="fund-grid">${visible.map(f=>buildFundCard(f,currentSortMode)).join('')}</div>
+    ${hidden.length?`<div class="fund-grid" id="fold-modal-list" style="display:none">${hidden.map(f=>buildFundCard(f,currentSortMode)).join('')}</div>
+    <div style="text-align:center;margin-top:8px" id="fold-btn-modal-list">
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('fold-modal-list').style.display='';this.parentElement.style.display='none'" style="font-size:12px">展开更多 ${hidden.length} 只 ▼</button>
+    </div>`:''}`;
+  }
+
+  // 渲染分类筛选
+  const countSource = currentSortMode==='dca' ? CURATED_FUNDS.filter(f=>f.cat!=='money') : CURATED_FUNDS;
+  const catCounts={all:countSource.length};
+  countSource.forEach(f=>{ catCounts[f.cat]=(catCounts[f.cat]||0)+1; });
+  if(currentSortMode==='dca' && !catCounts['money']){
+    catCounts['money'] = CURATED_FUNDS.filter(f=>f.cat==='money').length;
+  }
+  const cats=[
+    {key:'all',label:'全部'},{key:'active',label:'主动权益'},{key:'index',label:'指数基金'},
+    {key:'bond',label:'债券基金'},{key:'money',label:'货币基金'},{key:'qdii',label:'QDII海外'}
+  ];
+  if(filterEl) filterEl.innerHTML=cats.map(c=>
+    `<button class="chip${currentCat===c.key?' active':''}" onclick="setCategory('${c.key}')">${c.label} (${catCounts[c.key]||0})</button>`
+  ).join('');
 }
 // updateNavCard 已移至 js/nav.js
 
@@ -2374,5 +2437,41 @@ if('serviceWorker' in navigator){
 }
 </script>
 <button class="back-top" id="back-top" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+
+<!-- 精选基金库弹窗 -->
+<div class="modal-mask" id="fund-library-modal" style="display:none" onclick="if(event.target===this)closeFundLibraryModal()">
+  <div class="modal-box" style="max-width:900px;width:90%;max-height:85vh;overflow:hidden;display:flex;flex-direction:column">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="icon icon-blue">📊</span>
+        <span style="font-size:16px;font-weight:600">精选基金库</span>
+        <span style="font-size:12px;color:var(--muted)" id="curated-update-status-modal"></span>
+      </div>
+      <button onclick="closeFundLibraryModal()" style="background:none;border:none;color:var(--muted);font-size:24px;cursor:pointer;line-height:1;padding:0;width:28px;height:28px">&times;</button>
+    </div>
+    <div style="padding:16px 20px;font-size:12px;color:var(--muted);line-height:1.6;border-bottom:1px solid var(--border)">
+      📋 由 GitHub Actions 每周从全市场自动筛选，智能方案从此库中选基。
+    </div>
+    <div style="padding:12px 20px;border-bottom:1px solid var(--border)">
+      <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center;flex-wrap:wrap">
+        <span style="font-size:12px;color:var(--muted)">排序：</span>
+        <button class="chip active" id="sort-mode-score-modal" onclick="setSortMode('score')">📊 综合评分</button>
+        <button class="chip" id="sort-mode-dca-modal" onclick="setSortMode('dca')">📈 定投推荐</button>
+        <span style="margin-left:auto;font-size:12px;color:var(--muted)" id="dca-rank-time-modal"></span>
+      </div>
+      <div id="dca-sort-notice-modal" style="display:none;margin-bottom:10px" class="notice">
+        💡 定投最适合「波动大、长期向上」的资产。排名综合考虑：波动收益比 × 长期趋势 × 管理质量 × 近期动量。
+      </div>
+      <div class="chip-row" id="cat-filter-modal"></div>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:16px 20px">
+      <div id="market-grid-modal"></div>
+    </div>
+    <div style="padding:12px 20px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);text-align:center">
+      ⚠️ 以上为参考性推荐，不构成投资建议。基金投资有风险，请根据自身风险承受能力决策。
+    </div>
+  </div>
+</div>
+
 </body>
 </html>

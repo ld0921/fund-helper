@@ -17,7 +17,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue'
 .tab-short{display:none}.tab-full{display:inline}
 @media(max-width:600px){.tab-short{display:inline}.tab-full{display:none}}
 .tab:hover{color:var(--primary)}.tab.active{color:var(--primary);border-bottom-color:var(--primary)}
-.content{padding:14px;padding-left:calc(14px + env(safe-area-inset-left));padding-right:calc(14px + env(safe-area-inset-right));max-width:1600px;margin:0 auto}
+.content{padding:14px;padding-left:calc(14px + env(safe-area-inset-left));padding-right:calc(14px + env(safe-area-inset-right));max-width:1200px;margin:0 auto}
 .panel{display:none}.panel.active{display:block}
 .card{background:#fff;border-radius:var(--radius);padding:18px;margin-bottom:14px;box-shadow:0 1px 6px rgba(0,0,0,.07)}
 .card-title{font-size:15px;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
