@@ -565,7 +565,7 @@
         <div style="font-size:12px;color:var(--muted);line-height:1.5">获取最新净值，查看今日收益与盈亏数据</div>
       </div>
     </div>
-    <button class="btn btn-primary" id="refresh-nav-btn" onclick="refreshHoldingsNav()" style="font-size:14px;padding:12px 20px;width:100%;background:linear-gradient(135deg,#1890ff,#096dd9);border:none;box-shadow:0 2px 6px rgba(24,144,255,.3)">🔄 立即刷新</button>
+    <button class="btn btn-primary" id="refresh-nav-btn" onclick="refreshHoldingsNav(true)" style="font-size:14px;padding:12px 20px;width:100%;background:linear-gradient(135deg,#1890ff,#096dd9);border:none;box-shadow:0 2px 6px rgba(24,144,255,.3)">🔄 立即刷新</button>
     <div id="last-update-time" style="text-align:center;font-size:12px;color:var(--muted);margin-top:8px"></div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid #f0f0f0">
       <div style="text-align:center">
@@ -2358,7 +2358,7 @@ async function autoRefreshOnLoad(){
   // 如果距离上次刷新超过30分钟，且在交易时间内，自动刷新
   if(diff > 30 * 60 * 1000 && isMarketOpen()){
     console.log('自动刷新净值数据...');
-    setTimeout(() => refreshHoldingsNav(), 2000); // 延迟2秒，避免阻塞页面加载
+    setTimeout(() => refreshHoldingsNav(false), 2000); // 延迟2秒，避免阻塞页面加载，不显示toast
   }
 }
 

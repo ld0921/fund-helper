@@ -660,7 +660,7 @@ function runHealthMonitor(){
     console.log('[自动刷新] 持仓净值数据已过期，自动刷新中...');
     // 延迟2秒后自动刷新，避免阻塞页面加载
     setTimeout(()=>{
-      refreshHoldingsNav(true); // 只刷新持仓基金，静默模式
+      refreshHoldingsNav(false); // 只刷新持仓基金，静默模式，不显示toast
     }, 2000);
   }
 
@@ -680,11 +680,11 @@ function runHealthMonitor(){
   setInterval(()=>{
     if(document.hidden) return; // 页面不可见（后台/息屏）时跳过，节省电量和流量
     if(existingHoldings.length === 0) return; // 无持仓时不刷新
-    refreshHoldingsNav(true); // 只刷新持仓基金
+    refreshHoldingsNav(false); // 只刷新持仓基金，不显示toast
   }, 5 * 60 * 1000);
   // 页面从后台恢复时立即刷新一次
   document.addEventListener('visibilitychange', ()=>{
-    if(!document.hidden && existingHoldings.length > 0) refreshHoldingsNav(true);
+    if(!document.hidden && existingHoldings.length > 0) refreshHoldingsNav(false);
   });
 })();
 

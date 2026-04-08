@@ -784,7 +784,7 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
           </div>
         </div>
         <div style="text-align:center;margin-top:14px">
-          <button class="btn btn-primary" onclick="refreshHoldingsNav(false)" style="font-size:14px;padding:10px 24px">
+          <button class="btn btn-primary" onclick="refreshHoldingsNav(true)" style="font-size:14px;padding:10px 24px">
             🔄 立即刷新持仓净值
           </button>
         </div>

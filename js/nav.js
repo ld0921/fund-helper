@@ -44,79 +44,7 @@ function updateNavCard(code,data){
 }
 
 // 核心：刷新持仓基金净值（只刷新用户持有的基金）
-function refreshHoldingsNav(silent){
-  if(silent===undefined) silent=false;
-
-  // 收集所有持仓基金代码（去重）
-  const holdingCodes = new Set();
-  existingHoldings.forEach(h => holdingCodes.add(h.code));
-  dcaPlans.forEach(d => holdingCodes.add(d.code));
-
-  const codes = Array.from(holdingCodes);
-  if(codes.length === 0){
-    console.log('[刷新净值] 无持仓，跳过刷新');
-    return;
-  }
-
-  const total = codes.length;
-  let done = 0;
-
-  console.log(`[刷新净值] 开始刷新 ${total} 只持仓基金`);
-
-  // 重置进度条
-  const banner=document.getElementById('auto-banner');
-  const bar=document.getElementById('progress-bar');
-  const countEl=document.getElementById('banner-count');
-  const textEl=document.getElementById('banner-text');
-  if(!silent){
-    banner.className=''; // show, loading style
-    bar.style.width='0%';
-    textEl.textContent='⏳ 正在更新持仓净值…';
-    countEl.textContent=`0 / ${total}`;
-  }
-
-  codes.forEach(code => fetchNav(code, data => {
-    if(data){
-      navCache[code] = {...data, fundcode: code};
-    }
-    done++;
-    const pct = Math.round(done/total*100);
-    if(!silent){
-      bar.style.width = pct+'%';
-      countEl.textContent = `${done} / ${total}`;
-    }
-
-    if(done === total){
-      // 全部加载完成
-      navRefreshed = true;
-      FundDB.set('navCache', navCache);
-      FundDB.set('lastNavRefreshTime', Date.now());
-
-      const now = new Date();
-      const timeStr = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
-      const successCount = codes.filter(c => navCache[c]).length;
-
-      if(!silent){
-        textEl.textContent = `✅ 已更新 ${successCount}/${total} 只持仓基金净值`;
-        banner.className = 'done';
-        setTimeout(()=>{ banner.className='hidden'; }, 3000);
-      }
-
-      console.log(`[刷新净值] 完成，成功 ${successCount}/${total}`);
-
-      // 每次刷新净值后都检查是否需要更新昨日净值
-      updateYesterdayNav();
-
-      // 刷新相关显示
-      renderExistingHoldings();
-      runHealthMonitor();
-      renderTodayOverview();
-      runSignalEngine();
-      checkRefreshReminder();
-      updateLastRefreshTime();
-    }
-  }));
-}
+// 此函数已移至下方，与东方财富网数据合并逻辑整合
 
 // 核心：自动加载净值 → 自动生成方案（刷新全部精选库基金，用于生成方案）
 function refreshAllNav(autoGenerate, silent){
@@ -190,8 +118,12 @@ function refreshAllNav(autoGenerate, silent){
     }
   }));
 }
-async function refreshHoldingsNav(){
-  if(!existingHoldings.length){ showToast('暂无持仓数据','info'); return; }
+async function refreshHoldingsNav(showToastOnEmpty = false){
+  if(!existingHoldings.length){
+    if(showToastOnEmpty) showToast('暂无持仓数据','info');
+    console.log('[刷新净值] 无持仓，跳过刷新');
+    return;
+  }
   const btn = document.getElementById('refresh-nav-btn');
   if(btn){ btn.textContent='⏳ 刷新中...'; btn.disabled=true; }
 
