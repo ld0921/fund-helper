@@ -1050,9 +1050,10 @@ function _doGenerate(shouldScroll){
       const cat = fd ? fd.cat : null;
       if(!cat) return; // 未知基金跳过
       const score = scoreF(fd);
-      const keep = score >= 65; // 评分≥65为达标（至少"推荐"级别才保留）
+      const keep = score >= 60; // 修复问题3：降低保留阈值到60分，与持仓诊断保持一致（60分以上为"表现正常"）
       if(!holdingsByCat[cat]) holdingsByCat[cat] = [];
       holdingsByCat[cat].push({ code:h.code, name:h.name||fd.name, value:h.value, score, keep, fundData:fd });
+      // 只有评分<60且已确认的持仓才建议替换
       if(!keep && h.status === 'confirmed') replaceSuggestions.push({ code:h.code, name:h.name||fd.name, cat, score, value:h.value });
     });
   }
