@@ -11,12 +11,20 @@ const _LEGACY_FUND_META = {
   '163402':{name:'兴全趋势投资混合',cat:'active',type:'混合型',fee:0.15},
   '003095':{name:'中欧医疗健康混合A',cat:'active',type:'混合型',fee:0.15},
   '260108':{name:'景顺长城新兴成长混合A',cat:'active',type:'混合型',fee:0.15},
+  // 联接基金代码
   '460300':{name:'华泰柏瑞沪深300ETF联接A',cat:'index',type:'指数型',fee:0.012},
   '009051':{name:'易方达中证红利ETF联接A',cat:'index',type:'指数型',fee:0.012},
-  '006327':{name:'易方达中证海外互联网ETF联接A',cat:'qdii',type:'QDII',fee:0.02},
   '110026':{name:'易方达创业板ETF联接A',cat:'index',type:'指数型',fee:0.012},
   '160119':{name:'南方中证500ETF联接A',cat:'index',type:'指数型',fee:0.012},
   '160706':{name:'嘉实沪深300ETF联接A',cat:'index',type:'指数型',fee:0.012},
+  // ETF 场内代码（旧数据用的是ETF代码）
+  '510300':{name:'华泰柏瑞沪深300ETF',cat:'index',type:'指数型',fee:0.012},
+  '515180':{name:'易方达中证红利ETF',cat:'index',type:'指数型',fee:0.012},
+  '513050':{name:'易方达中证海外互联网ETF',cat:'qdii',type:'QDII',fee:0.02},
+  '159915':{name:'易方达创业板ETF',cat:'index',type:'指数型',fee:0.012},
+  '510500':{name:'南方中证500ETF',cat:'index',type:'指数型',fee:0.012},
+  '159919':{name:'嘉实沪深300ETF',cat:'index',type:'指数型',fee:0.012},
+  // 债券/货币/QDII
   '110017':{name:'易方达增强回报债券A',cat:'bond',type:'债券型',fee:0.07},
   '000171':{name:'易方达裕丰回报债券A',cat:'bond',type:'债券型',fee:0.05},
   '070009':{name:'嘉实超短债债券C',cat:'bond',type:'债券型',fee:0},
@@ -26,6 +34,7 @@ const _LEGACY_FUND_META = {
   '270042':{name:'广发纳斯达克100ETF联接A',cat:'qdii',type:'QDII',fee:0.08},
   '040046':{name:'华安纳斯达克100ETF联接A',cat:'qdii',type:'QDII',fee:0.08},
   '006479':{name:'广发纳斯达克100ETF联接C',cat:'qdii',type:'QDII',fee:0},
+  '006327':{name:'易方达中证海外互联网ETF联接A',cat:'qdii',type:'QDII',fee:0.02},
 };
 
 async function loadCuratedFunds() {
