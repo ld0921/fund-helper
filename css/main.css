@@ -7,7 +7,7 @@ input[type="number"]{-moz-appearance:textfield}
   --bg:#f0f2f5;--card:#fff;--border:#e8e8e8;--text:#262626;--muted:#8c8c8c;
   --radius:12px;
 }
-body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;min-height:-webkit-fill-available;-webkit-text-size-adjust:100%}
+body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;min-height:-webkit-fill-available;-webkit-text-size-adjust:100%;overscroll-behavior:none}
 .header{background:linear-gradient(135deg,#1677ff 0%,#0050d0 100%);color:#fff;padding:18px 20px;padding-top:calc(18px + env(safe-area-inset-top));box-shadow:0 2px 12px rgba(22,119,255,.35);position:sticky;top:0;z-index:101}
 .header h1{font-size:19px;font-weight:700;letter-spacing:.5px}
 .header p{font-size:12px;opacity:.75;margin-top:3px}
