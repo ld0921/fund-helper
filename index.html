@@ -1359,8 +1359,18 @@ function switchTab(i){
   document.querySelectorAll('.tab').forEach((t,j)=>t.classList.toggle('active',i===j));
   document.querySelectorAll('.panel').forEach((p,j)=>p.classList.toggle('active',i===j));
   window.scrollTo({top:0});
-  if(i===2){ renderExistingHoldings(); renderDcaPlans(); renderTodayOverview(); runSignalEngine(); }
-  if(i===3){ runHealthMonitor(); renderDiagnostics(); renderDiagMarket(); }
+  // 只有在有持仓数据时才执行相关渲染
+  if(i===2 && existingHoldings.length > 0){
+    renderExistingHoldings();
+    renderDcaPlans();
+    renderTodayOverview();
+    runSignalEngine();
+  }
+  if(i===3 && existingHoldings.length > 0){
+    runHealthMonitor();
+    renderDiagnostics();
+    renderDiagMarket();
+  }
 }
 
 // ═══════════════ JSONP净值队列 ═══════════════
