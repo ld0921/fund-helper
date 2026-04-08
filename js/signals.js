@@ -560,42 +560,55 @@ function runHealthMonitor(){
   // 4.5 Supabase 登录状态恢复
   if(_supa){
     let _sessionResolved = false;
-    // 先尝试 getSession（有缓存时立即返回，无需网络）
-    _supa.auth.getSession().then(({data:{session}}) => {
-      if(_sessionResolved) return; // onAuthStateChange 已处理
-      _sessionResolved = true;
-      if(session?.user){
-        _currentUser = session.user;
-        updateAuthUI();
-        FundDB.onSync(_debounce(pushToCloud, 2000));
-        pullFromCloud().then(()=>{ if(localStorage.getItem('_syncPending')) pushToCloud(); });
-      } else {
-        // session 为 null 时等 500ms，给 token 刷新一个机会
-        setTimeout(()=>{
-          if(!_currentUser) showAuthModal();
-        }, 500);
-      }
-    }).catch(()=>{ if(!_sessionResolved){ _sessionResolved=true; showAuthModal(); } });
 
-    // 监听登录状态变化（token 刷新、其他 tab 登出等）
+    // 监听登录状态变化（优先处理，避免 getSession 误判）
     _supa.auth.onAuthStateChange((event, session) => {
-      if(event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION'){
-        if(session?.user && !_currentUser){
-          _sessionResolved = true;
+      console.log('[Auth] onAuthStateChange:', event, session?.user?.email);
+
+      if(event === 'INITIAL_SESSION'){
+        _sessionResolved = true;
+        if(session?.user){
           _currentUser = session.user;
           updateAuthUI();
           FundDB.onSync(_debounce(pushToCloud, 2000));
           pullFromCloud().then(()=>{ if(localStorage.getItem('_syncPending')) pushToCloud(); });
-        } else if(session?.user){
-          _currentUser = session.user; updateAuthUI();
-        } else if(event === 'INITIAL_SESSION'){
+        } else {
+          // 只有在 INITIAL_SESSION 确认无 session 时才显示登录弹窗
+          setTimeout(()=>{ if(!_currentUser) showAuthModal(); }, 500);
+        }
+      } else if(event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED'){
+        if(session?.user){
           _sessionResolved = true;
-          if(!_currentUser) showAuthModal();
+          _currentUser = session.user;
+          updateAuthUI();
+          if(event === 'SIGNED_IN'){
+            FundDB.onSync(_debounce(pushToCloud, 2000));
+            pullFromCloud().then(()=>{ if(localStorage.getItem('_syncPending')) pushToCloud(); });
+          }
         }
       } else if(event === 'SIGNED_OUT'){
-        _currentUser = null; updateAuthUI();
+        _currentUser = null;
+        updateAuthUI();
       }
     });
+
+    // getSession 作为备用（onAuthStateChange 可能不触发 INITIAL_SESSION）
+    setTimeout(()=>{
+      if(!_sessionResolved){
+        _supa.auth.getSession().then(({data:{session}}) => {
+          if(_sessionResolved) return;
+          _sessionResolved = true;
+          if(session?.user){
+            _currentUser = session.user;
+            updateAuthUI();
+            FundDB.onSync(_debounce(pushToCloud, 2000));
+            pullFromCloud().then(()=>{ if(localStorage.getItem('_syncPending')) pushToCloud(); });
+          } else {
+            setTimeout(()=>{ if(!_currentUser) showAuthModal(); }, 500);
+          }
+        }).catch(()=>{ if(!_sessionResolved){ _sessionResolved=true; showAuthModal(); } });
+      }
+    }, 100);
   }
 
   // 5. iOS 安装引导
