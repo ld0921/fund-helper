@@ -549,12 +549,9 @@ async function renderExistingHoldings(){
   const dataAge = lastRefreshTime ? Date.now() - lastRefreshTime : Infinity;
   const isDataStale = dataAge > 30 * 60 * 1000; // 超过30分钟视为过期
 
+  // 刷新横幅已废弃，统一在收益总览卡片中显示刷新提示
   if(refreshBanner){
-    if(existingHoldings.length > 0 && isDataStale){
-      refreshBanner.style.display = ''; // 有持仓且数据过期时显示
-    } else {
-      refreshBanner.style.display = 'none'; // 无持仓或数据新鲜时隐藏
-    }
+    refreshBanner.style.display = 'none';
   }
 
   // 获取昨日净值数据
@@ -772,15 +769,15 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
         </div>
         <div style="font-size:13px;color:#d46b08;line-height:1.8;margin-bottom:12px">
           净值数据已过期（${refreshTimeStr ? '上次更新：' + refreshTimeStr : '未刷新'}），收益数据可能不准确。<br>
-          系统正在自动刷新中，请稍候...
+          请点击下方按钮刷新净值数据。
         </div>
         <div style="padding:12px;background:rgba(255,255,255,0.6);border-radius:8px;border:1px solid #ffd591">
           <div style="font-size:13px;color:#8c8c8c;margin-bottom:8px">📊 自动刷新策略</div>
           <div style="font-size:12px;color:#595959;line-height:1.8">
-            • 页面加载时：如数据超过30分钟自动刷新<br>
+            • 登录后：如数据超过30分钟自动刷新<br>
             • 交易时段：每5分钟自动刷新一次<br>
             • 页面恢复：从后台切回时立即刷新<br>
-            • 只刷新持仓基金，速度更快
+            • 只刷新持仓基金，速度快（约3-5秒）
           </div>
         </div>
         <div style="text-align:center;margin-top:14px">

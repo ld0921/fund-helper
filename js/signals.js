@@ -547,18 +547,7 @@ function runHealthMonitor(){
   document.getElementById('eh-date').valueAsDate=new Date();
   document.getElementById('dp-start').valueAsDate=new Date();
 
-  // 3.1 自动获取所有持仓基金的净值数据
-  if(existingHoldings.length > 0){
-    existingHoldings.forEach(h => {
-      fetchNav(h.code, data => {
-        if(data) {
-          navCache[h.code] = {...data, fundcode: h.code};
-          FundDB.set('navCache', navCache);
-          renderExistingHoldings();
-        }
-      });
-    });
-  }
+  // 3.1 自动获取净值逻辑已移至 checkAndAutoRefresh()，在云端数据同步完成后执行
 
   // 3.2 数据迁移：如果旧 holdings 数组有数据，合并到 existingHoldings
   if(holdings && holdings.length){
@@ -601,7 +590,11 @@ function runHealthMonitor(){
           _currentUser = session.user;
           updateAuthUI();
           FundDB.onSync(_debounce(pushToCloud, 2000));
-          pullFromCloud().then(()=>{ if(localStorage.getItem('_syncPending')) pushToCloud(); });
+          pullFromCloud().then(async ()=>{
+            if(localStorage.getItem('_syncPending')) pushToCloud();
+            // 云端数据同步完成后，检查是否需要自动刷新净值
+            await checkAndAutoRefresh();
+          });
         } else {
           // 只有在 INITIAL_SESSION 确认无 session 时才显示登录弹窗
           setTimeout(()=>{ if(!_currentUser) showAuthModal(); }, 500);
@@ -613,7 +606,11 @@ function runHealthMonitor(){
           updateAuthUI();
           if(event === 'SIGNED_IN'){
             FundDB.onSync(_debounce(pushToCloud, 2000));
-            pullFromCloud().then(()=>{ if(localStorage.getItem('_syncPending')) pushToCloud(); });
+            pullFromCloud().then(async ()=>{
+              if(localStorage.getItem('_syncPending')) pushToCloud();
+              // 云端数据同步完成后，检查是否需要自动刷新净值
+              await checkAndAutoRefresh();
+            });
           }
         }
       } else if(event === 'SIGNED_OUT'){
@@ -625,14 +622,18 @@ function runHealthMonitor(){
     // getSession 作为备用（onAuthStateChange 可能不触发 INITIAL_SESSION）
     setTimeout(()=>{
       if(!_sessionResolved){
-        _supa.auth.getSession().then(({data:{session}}) => {
+        _supa.auth.getSession().then(async ({data:{session}}) => {
           if(_sessionResolved) return;
           _sessionResolved = true;
           if(session?.user){
             _currentUser = session.user;
             updateAuthUI();
             FundDB.onSync(_debounce(pushToCloud, 2000));
-            pullFromCloud().then(()=>{ if(localStorage.getItem('_syncPending')) pushToCloud(); });
+            pullFromCloud().then(async ()=>{
+              if(localStorage.getItem('_syncPending')) pushToCloud();
+              // 云端数据同步完成后，检查是否需要自动刷新净值
+              await checkAndAutoRefresh();
+            });
           } else {
             setTimeout(()=>{ if(!_currentUser) showAuthModal(); }, 500);
           }
@@ -651,18 +652,8 @@ function runHealthMonitor(){
   // 6. 请求通知权限（延迟10秒，不打扰用户）
   requestNotificationPermission();
 
-  // 7. 自动刷新持仓净值数据（如果数据过期或有持仓）
-  const lastRefreshTime = await FundDB.get('lastNavRefreshTime') || 0;
-  const dataAge = Date.now() - lastRefreshTime;
-  const needRefresh = existingHoldings.length > 0 && (dataAge > 30 * 60 * 1000); // 超过30分钟
-
-  if(needRefresh){
-    console.log('[自动刷新] 持仓净值数据已过期，自动刷新中...');
-    // 延迟2秒后自动刷新，避免阻塞页面加载
-    setTimeout(()=>{
-      refreshHoldingsNav(false); // 只刷新持仓基金，静默模式，不显示toast
-    }, 2000);
-  }
+  // 7. 自动刷新逻辑移到登录状态恢复后执行（确保使用云端最新数据）
+  // 见下方 onAuthStateChange 回调中的处理
 
   // 8. 页面加载后先拉取基金详情，再加载全市场扫描缓存
   //    净值获取推迟到用户点击「生成方案」时触发，避免进入即加载
@@ -687,6 +678,33 @@ function runHealthMonitor(){
     if(!document.hidden && existingHoldings.length > 0) refreshHoldingsNav(false);
   });
 })();
+
+// ═══════════════ 自动刷新检查函数 ═══════════════
+async function checkAndAutoRefresh(){
+  if(existingHoldings.length === 0){
+    console.log('[自动刷新] 无持仓数据，跳过刷新');
+    return;
+  }
+
+  const lastRefreshTime = await FundDB.get('lastNavRefreshTime') || 0;
+  const dataAge = Date.now() - lastRefreshTime;
+  const needRefresh = dataAge > 30 * 60 * 1000; // 超过30分钟
+
+  if(needRefresh){
+    console.log('[自动刷新] 持仓净值数据已过期，自动刷新中...');
+    // 延迟1秒后自动刷新，确保页面已完全加载
+    setTimeout(()=>{
+      refreshHoldingsNav(false); // 只刷新持仓基金，静默模式，不显示toast
+    }, 1000);
+  } else {
+    console.log('[自动刷新] 净值数据仍然新鲜，无需刷新');
+    // 即使不刷新，也要触发一次渲染，确保显示最新数据
+    renderExistingHoldings();
+    runHealthMonitor();
+    renderTodayOverview();
+    runSignalEngine();
+  }
+}
 
 // ═══════════════ 持仓诊断：主动调仓建议 ═══════════════
 function renderDiagnostics(){
