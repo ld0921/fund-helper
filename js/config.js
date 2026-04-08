@@ -3,6 +3,31 @@ let CURATED_FUNDS = [];
 // 记录精选库数据的更新时间（来自 curated-details.json 的 timestamp 字段）
 let _curatedTimestamp = null;
 
+// 旧格式 curated-details.json 兼容映射（无 cat 字段时使用）
+const _LEGACY_FUND_META = {
+  '005827':{name:'易方达蓝筹精选混合',cat:'active',type:'混合型',fee:0.15},
+  '110011':{name:'易方达优质精选混合',cat:'active',type:'混合型',fee:0.15},
+  '161005':{name:'富国天惠成长混合A',cat:'active',type:'混合型',fee:0.15},
+  '163402':{name:'兴全趋势投资混合',cat:'active',type:'混合型',fee:0.15},
+  '003095':{name:'中欧医疗健康混合A',cat:'active',type:'混合型',fee:0.15},
+  '260108':{name:'景顺长城新兴成长混合A',cat:'active',type:'混合型',fee:0.15},
+  '460300':{name:'华泰柏瑞沪深300ETF联接A',cat:'index',type:'指数型',fee:0.012},
+  '009051':{name:'易方达中证红利ETF联接A',cat:'index',type:'指数型',fee:0.012},
+  '006327':{name:'易方达中证海外互联网ETF联接A',cat:'qdii',type:'QDII',fee:0.02},
+  '110026':{name:'易方达创业板ETF联接A',cat:'index',type:'指数型',fee:0.012},
+  '160119':{name:'南方中证500ETF联接A',cat:'index',type:'指数型',fee:0.012},
+  '160706':{name:'嘉实沪深300ETF联接A',cat:'index',type:'指数型',fee:0.012},
+  '110017':{name:'易方达增强回报债券A',cat:'bond',type:'债券型',fee:0.07},
+  '000171':{name:'易方达裕丰回报债券A',cat:'bond',type:'债券型',fee:0.05},
+  '070009':{name:'嘉实超短债债券C',cat:'bond',type:'债券型',fee:0},
+  '000198':{name:'天弘余额宝货币',cat:'money',type:'货币型',fee:0},
+  '003003':{name:'华夏现金增利货币A',cat:'money',type:'货币型',fee:0},
+  '161125':{name:'易方达标普500指数A',cat:'qdii',type:'QDII',fee:0.08},
+  '270042':{name:'广发纳斯达克100ETF联接A',cat:'qdii',type:'QDII',fee:0.08},
+  '040046':{name:'华安纳斯达克100ETF联接A',cat:'qdii',type:'QDII',fee:0.08},
+  '006479':{name:'广发纳斯达克100ETF联接C',cat:'qdii',type:'QDII',fee:0},
+};
+
 async function loadCuratedFunds() {
   try {
     const res = await fetch('data/curated-details.json?_=' + Date.now());
@@ -10,23 +35,25 @@ async function loadCuratedFunds() {
     _curatedTimestamp = data.timestamp || null;
     const funds = [];
     Object.entries(data.funds || {}).forEach(([code, f]) => {
-      if (!f.cat) return; // 跳过缺少类别的条目
+      const legacy = _LEGACY_FUND_META[code] || {};
+      const cat = f.cat || legacy.cat;
+      if (!cat) return;
       funds.push({
         code,
-        name: f.name || code,
-        type: f.type || '',
-        cat: f.cat,
-        label: f.label || CAT_NAMES[f.cat] || f.cat,
+        name: f.name || legacy.name || code,
+        type: f.type || legacy.type || '',
+        cat,
+        label: f.label || CAT_NAMES[cat] || cat,
         manager: f.manager || '',
         mgrYears: f.mgrYears || 0,
         stars: f.stars || 3,
-        risk: f.risk || inferRiskFromDD(f.maxDD, f.cat),
+        risk: f.risk || inferRiskFromDD(f.maxDD, cat),
         size: f.size || 0,
         r1: f.r1 || 0,
         r3: f.r3 || 0,
         maxDD: f.maxDD || 0,
         maxDD3y: f.maxDD3y || 0,
-        fee: f.fee !== undefined ? f.fee : getDefaultFee(f.cat),
+        fee: f.fee !== undefined ? f.fee : (legacy.fee !== undefined ? legacy.fee : getDefaultFee(cat)),
         vol: 0,
         tags: f.tags || [],
         reason: f.reason || '',
