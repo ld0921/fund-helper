@@ -612,4 +612,115 @@ function runHealthMonitor(){
   });
 })();
 
+// ═══════════════ 持仓诊断：主动调仓建议 ═══════════════
+function renderDiagnostics(){
+  const wrap = document.getElementById('diagnostics-rebal-wrap');
+  const emptyEl = document.getElementById('diag-empty');
+  if(!wrap) return;
+
+  if(!existingHoldings.length){
+    wrap.innerHTML = '';
+    if(emptyEl) emptyEl.style.display = '';
+    return;
+  }
+  if(emptyEl) emptyEl.style.display = 'none';
+
+  const suggestions = [];
+  existingHoldings.forEach(h=>{
+    const fd = CURATED_FUNDS.find(f=>f.code===h.code);
+    if(!fd) return;
+    const currentScore = scoreF(fd);
+    const sameCat = CURATED_FUNDS.filter(f=>f.cat===fd.cat && f.code!==fd.code);
+    const better = sameCat.filter(f=>scoreF(f) > currentScore + 15).sort((a,b)=>scoreF(b)-scoreF(a));
+    if(!better.length) return;
+    const best = better[0];
+    const bestScore = scoreF(best);
+    const pnlPct = h.cost>0 ? (h.value-h.cost)/h.cost*100 : null;
+    suggestions.push({ holding:h, fd, currentScore, best, bestScore, pnlPct });
+  });
+
+  if(!suggestions.length){
+    wrap.innerHTML = `<div class="card"><div class="card-title"><span class="icon icon-blue">🔄</span>调仓建议</div><div style="padding:16px 0;text-align:center;color:var(--muted);font-size:13px">✅ 当前持仓均为同类最优选择，无需调仓</div></div>`;
+    return;
+  }
+
+  const rows = suggestions.map(s=>{
+    const pnlStr = s.pnlPct!==null ? `持仓${s.pnlPct>=0?'+':''}${s.pnlPct.toFixed(1)}%` : '';
+    const redeemTip = s.pnlPct!==null && s.pnlPct < 0 ? '（当前亏损，换仓需承担浮亏）' : '';
+    return `<div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap">
+      <div style="flex:1;min-width:200px">
+        <div style="font-size:13px;font-weight:600;margin-bottom:4px">
+          <span style="color:var(--danger)">${escHtml(s.fd.name)}</span>
+          <span style="color:var(--muted);font-size:11px;margin-left:4px">${s.currentScore}分</span>
+          <span style="margin:0 6px;color:var(--muted)">→</span>
+          <span style="color:var(--success)">${escHtml(s.best.name)}</span>
+          <span style="color:var(--muted);font-size:11px;margin-left:4px">${s.bestScore}分</span>
+        </div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.6">
+          评分差 +${s.bestScore-s.currentScore}分 · ${pnlStr}${redeemTip}<br>
+          ${escHtml(s.best.name)}：近1年${s.best.r1>0?'+':''}${s.best.r1}%，近3年${s.best.r3>0?'+':''}${s.best.r3}%，经理任期${s.best.mgrYears}年
+        </div>
+      </div>
+      <div style="flex-shrink:0;font-size:12px;font-weight:600;color:var(--warning);padding:3px 8px;background:#fff7e6;border-radius:6px;white-space:nowrap">🔄 建议换仓</div>
+    </div>`;
+  }).join('');
+
+  wrap.innerHTML = `<div class="card" style="padding:0;overflow:hidden">
+    <div style="padding:14px 16px;border-bottom:1px solid var(--border)">
+      <div class="card-title" style="margin:0"><span class="icon icon-red">🔄</span>主动调仓建议 · ${suggestions.length} 条</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px">同类基金中有评分高出15分以上的更优选择</div>
+    </div>
+    ${rows}
+    <div style="padding:10px 14px;font-size:11px;color:var(--muted);background:#fafafa">⚠️ 换仓前请评估赎回费和持有天数，持有2年以上通常免赎回费。</div>
+  </div>`;
+}
+
+// ═══════════════ 持仓诊断：市场行情概览 ═══════════════
+function renderDiagMarket(){
+  const catRanks = analyzeCategoryPerf();
+  // 复用行情表格渲染，但输出到诊断Tab的独立容器
+  const tableEl = document.getElementById('diag-market-table');
+  const mobileEl = document.getElementById('diag-market-mobile');
+  const summaryEl = document.getElementById('diag-market-summary');
+  if(!tableEl) return;
+
+  // 判断是否有实时净值
+  const chgAvailable = Object.keys(navCache).length > 0;
+
+  // 桌面表格
+  tableEl.innerHTML = `<thead><tr><th>类别</th><th>今日均涨跌</th><th>近1年均收益</th><th>近3年均收益</th><th>性价比(Calmar)</th><th>趋势</th></tr></thead>
+  <tbody>${catRanks.map((c,i)=>{
+    const chgText = chgAvailable ? `<span class="${c.avgChg>=0?'up':'down'}">${c.avgChg>=0?'+':''}${c.avgChg.toFixed(2)}%</span>` : '<span style="color:var(--muted)">—</span>';
+    const trendIcon = c.catTrend>=2?'🔥强势':c.catTrend>=0?'➡️平稳':'❄️弱势';
+    return `<tr><td><b>${i+1}. ${escHtml(c.name)}</b></td><td>${chgText}</td>
+      <td class="${c.avgR1>=0?'up':'down'}">${c.avgR1>=0?'+':''}${c.avgR1.toFixed(1)}%</td>
+      <td class="${c.avgR3>=0?'up':'down'}">${c.avgR3>=0?'+':''}${c.avgR3.toFixed(1)}%</td>
+      <td>${c.avgCalmar.toFixed(2)}</td><td>${trendIcon}</td></tr>`;
+  }).join('')}</tbody>`;
+
+  // 移动端卡片
+  if(mobileEl){
+    const isMobile = window.innerWidth < 640;
+    mobileEl.style.display = isMobile ? '' : 'none';
+    tableEl.closest('.table-wrap').style.display = isMobile ? 'none' : '';
+    if(isMobile){
+      mobileEl.innerHTML = catRanks.map((c,i)=>{
+        const chgText = chgAvailable ? `<span class="${c.avgChg>=0?'up':'down'}">${c.avgChg>=0?'+':''}${c.avgChg.toFixed(2)}%</span>` : '—';
+        return `<div class="market-card">
+          <div class="market-card-row"><span style="font-size:15px;font-weight:700">${i+1}. ${escHtml(c.name)}</span>${chgText}</div>
+          <div class="market-card-row" style="margin-top:8px">
+            <div><span class="market-card-label">近1年均收益</span><div class="market-card-val ${c.avgR1>=0?'up':'down'}">${c.avgR1>=0?'+':''}${c.avgR1.toFixed(1)}%</div></div>
+            <div><span class="market-card-label">性价比</span><div class="market-card-val">${c.avgCalmar.toFixed(2)}</div></div>
+            <div><span class="market-card-label">趋势</span><div style="font-size:13px">${c.catTrend>=2?'🔥强势':c.catTrend>=0?'➡️平稳':'❄️弱势'}</div></div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  if(summaryEl) summaryEl.textContent = chgAvailable
+    ? `数据更新于 ${new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})}，基于精选库实时净值计算`
+    : '净值数据未加载，今日涨跌暂不可用。点击「生成方案」可触发净值更新。';
+}
+
 // ═══════════════ 新手引导 ═══════════════

@@ -184,7 +184,7 @@
 
 <div class="tabs">
   <div class="tab active" onclick="switchTab(0)">🎯 <span class="tab-full">智能方案</span><span class="tab-short">方案</span></div>
-  <div class="tab" onclick="switchTab(1)">🔍 <span class="tab-full">基金探索</span><span class="tab-short">探索</span></div>
+  <div class="tab" onclick="switchTab(1)">🏥 <span class="tab-full">持仓诊断</span><span class="tab-short">诊断</span></div>
   <div class="tab" onclick="switchTab(2)">📈 <span class="tab-full">定投专区</span><span class="tab-short">定投</span></div>
   <div class="tab" onclick="switchTab(3)">💼 <span class="tab-full">我的资产</span><span class="tab-short">资产</span><span class="tab-badge" id="asset-tab-badge"></span></div>
 </div>
@@ -352,7 +352,7 @@
 
   <!-- 精选基金库、自定义评分已移至「基金探索」Tab；已有持仓已移至「我的资产」Tab -->
   <div style="font-size:12px;color:var(--muted);line-height:1.8;margin-bottom:4px">
-      💼 如需录入已有持仓获取个性化调仓建议，请前往 <a href="javascript:void(0)" onclick="switchTab(3)" style="color:var(--primary);font-weight:500;text-decoration:underline">我的资产</a>。浏览精选基金请前往 <a href="javascript:void(0)" onclick="switchTab(1)" style="color:var(--primary);font-weight:500;text-decoration:underline">基金探索</a>。
+  💼 如需录入已有持仓获取个性化调仓建议，请前往 <a href="javascript:void(0)" onclick="switchTab(3)" style="color:var(--primary);font-weight:500;text-decoration:underline">我的资产</a>。持仓诊断请前往 <a href="javascript:void(0)" onclick="switchTab(1)" style="color:var(--primary);font-weight:500;text-decoration:underline">持仓诊断</a>。
   </div>
 
   <!-- 结果区域（初始隐藏） -->
@@ -458,65 +458,61 @@
 
   </div><!-- /portfolio-result -->
 
+  <!-- 精选基金库（折叠，供参考浏览） -->
+  <details class="card" style="padding:0;overflow:hidden">
+    <summary style="padding:14px 16px;list-style:none;display:flex;align-items:center;gap:8px;cursor:pointer">
+      <span class="icon icon-blue">📊</span>
+      <span style="font-size:14px;font-weight:600">精选基金库</span>
+      <span style="margin-left:auto;font-size:11px;color:var(--muted)" id="detail-update-time"></span>
+      <button id="btn-update-all" class="btn" onclick="event.preventDefault();updateAllData()" style="font-size:12px;padding:5px 12px;background:linear-gradient(135deg,#52c41a,#389e0d);color:#fff;border:none;font-weight:600">🔄 更新数据</button>
+    </summary>
+    <div style="padding:0 16px 16px">
+      <span style="font-size:12px;color:var(--muted)" id="nav-update-time"></span>
+      <div style="padding:6px 0;font-size:11px;color:var(--muted);line-height:1.6">
+        📋 由 GitHub Actions 每周从全市场自动筛选的优质基金库，智能方案从此库中选基。
+        <span style="font-size:11px;color:#722ed1" id="scan-status"></span>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center">
+        <span style="font-size:12px;color:var(--muted)">排序：</span>
+        <button class="chip active" id="sort-mode-score" onclick="setSortMode('score')">📊 综合评分</button>
+        <button class="chip" id="sort-mode-dca" onclick="setSortMode('dca')">📈 定投推荐</button>
+        <span style="margin-left:auto;font-size:12px;color:var(--muted)" id="dca-rank-time"></span>
+      </div>
+      <div id="dca-sort-notice" style="display:none;margin-bottom:10px" class="notice">
+        💡 定投最适合「波动大、长期向上」的资产。排名综合考虑：波动收益比 × 长期趋势 × 管理质量 × 近期动量。
+      </div>
+      <div class="chip-row" id="cat-filter"></div>
+      <div id="market-grid"></div>
+      <div style="margin-top:10px;font-size:11px;color:var(--muted)">⚠️ 以上为参考性推荐，不构成投资建议。基金投资有风险，请根据自身风险承受能力决策。</div>
+    </div>
+  </details>
+
 </div>
 
-<!-- ===================== 面板1: 基金探索 ===================== -->
+<!-- ===================== 面板1: 持仓诊断 ===================== -->
 <div class="panel" id="panel1">
 
-  <!-- 精选基金库（从Panel0移入，不再折叠） -->
-  <div class="card" style="margin-bottom:0">
-    <div class="card-title" style="flex-wrap:wrap;gap:8px">
-      <span class="icon icon-blue">📊</span>
-      <span style="font-size:15px;font-weight:600" id="curated-title">精选基金库</span>
-      <span style="margin-left:auto;font-size:11px;color:var(--muted)" id="detail-update-time"></span>
-      <button id="btn-update-all" class="btn" onclick="updateAllData()" style="font-size:13px;padding:8px 16px;background:linear-gradient(135deg,#52c41a,#389e0d);color:#fff;border:none;box-shadow:0 2px 6px rgba(82,196,26,.3);font-weight:600" title="更新精选库详情 + 加载全市场优质基金">🔄 更新数据</button>
+  <!-- 区块A：持仓健康诊断（复用 runHealthMonitor 输出） -->
+  <div id="health-monitor-wrap"></div>
+
+  <!-- 区块B：主动调仓建议 -->
+  <div id="diagnostics-rebal-wrap"></div>
+
+  <!-- 区块C：市场行情概览 -->
+  <div class="card" id="diag-market-card">
+    <div class="card-title"><span class="icon icon-blue">📊</span>市场行情概览</div>
+    <div class="table-wrap" id="diag-market-desktop">
+      <table class="market-table" id="diag-market-table"></table>
     </div>
+    <div id="diag-market-mobile" style="display:none"></div>
+    <div id="diag-market-summary" style="margin-top:12px;padding:12px;background:#f8f9fc;border-radius:8px;font-size:13px;line-height:1.8"></div>
   </div>
-  <div class="card" style="border-top-left-radius:0;border-top-right-radius:0">
-    <span style="font-size:12px;color:var(--muted)" id="nav-update-time"></span>
-    <div style="padding:6px 0;font-size:11px;color:var(--muted);line-height:1.6">
-      📋 <b>精选库：</b>21只经过人工验证的代表性基金。点击「更新数据」可刷新最新收益/回撤数据，并加载由 GitHub Actions 每周从近2万只基金中筛选的 Top10 优质基金。
-      <span style="font-size:11px;color:#722ed1" id="scan-status"></span>
-    </div>
 
-    <!-- 排序切换：综合评分 / 定投推荐 -->
-    <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center">
-      <span style="font-size:12px;color:var(--muted)">排序方式：</span>
-      <button class="chip active" id="sort-mode-score" onclick="setSortMode('score')">📊 综合评分</button>
-      <button class="chip" id="sort-mode-dca" onclick="setSortMode('dca')">📈 定投推荐</button>
-      <span style="margin-left:auto;font-size:12px;color:var(--muted)" id="dca-rank-time"></span>
-    </div>
-    <!-- 定投排序说明（仅定投模式显示） -->
-    <div id="dca-sort-notice" style="display:none;margin-bottom:10px" class="notice">
-      💡 定投最适合「波动大、长期向上」的资产——市场下跌时自动摊低成本。排名综合考虑：波动收益比 × 长期趋势 × 管理质量 × 近期动量。
-    </div>
-
-    <div class="chip-row" id="cat-filter"></div>
-    <div id="market-grid"></div>
-  </div>
-  <div class="warning-notice">⚠️ <b>免责声明：</b>以上为参考性推荐，不构成投资建议。收益率、回撤等数据由天天基金网API实时拉取（每24小时自动更新），实际以最新行情为准。基金投资有风险，请根据自身风险承受能力决策。</div>
-
-  <!-- 快速评分（输入代码自动拉取） -->
-  <div class="card">
-    <div class="card-title"><span class="icon icon-blue">🔎</span>基金快速评分</div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.6">输入任意基金的6位代码，自动拉取数据并评分。可评估不在精选库中的基金。</div>
-    <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
-      <div class="form-item" style="flex:1;min-width:140px">
-        <label>基金代码</label>
-        <input id="f-code" placeholder="输入6位代码" maxlength="6" inputmode="numeric" style="font-size:18px;font-weight:600;letter-spacing:2px">
-      </div>
-      <button class="btn btn-primary" id="f-fetch-btn" onclick="fetchAndScoreFund()" style="height:40px;white-space:nowrap">🔍 查询评分</button>
-    </div>
-    <div id="f-fetch-status" style="margin-top:10px;font-size:12px;color:var(--muted);display:none"></div>
-    <!-- 评分结果内嵌 -->
-    <div id="fund-result-section" style="display:none;margin-top:14px;border-top:1px solid var(--border);padding-top:14px">
-      <div style="font-size:13px;font-weight:600;margin-bottom:10px">📋 评分结果</div>
-      <div class="table-wrap mobile-cards">
-        <table><thead><tr><th>基金名称</th><th>代码</th><th>类型</th><th>1年收益</th><th>3年收益</th><th>最大跌幅</th><th>评分</th><th>推荐</th><th>操作</th></tr></thead>
-        <tbody id="fund-list"></tbody></table>
-        <div id="fund-cards" class="mobile-card-list"></div>
-      </div>
-    </div>
+  <!-- 无持仓空状态 -->
+  <div id="diag-empty" style="display:none" class="empty-state" style="margin-top:40px">
+    <div class="empty-icon">🏥</div>
+    <div class="empty-text">暂无持仓数据<br>请先在「我的资产」录入持仓，系统将自动分析</div>
+    <button class="btn btn-ghost btn-sm" onclick="switchTab(3)">前往录入持仓</button>
   </div>
 
 </div>
@@ -865,9 +861,6 @@
     </div>
     <div id="dp-summary" style="display:none;margin-top:10px;padding:10px 14px;background:#f6ffed;border-radius:8px;font-size:13px"></div>
   </div>
-  <!-- 持仓健康诊断（动态渲染） -->
-  <div id="health-monitor-wrap"></div>
-
   <!-- 数据备份管理（仅未登录时显示，已登录数据自动同步到云端） -->
   <div class="card" id="backup-section" style="margin-bottom:calc(14px + env(safe-area-inset-bottom))">
     <div class="card-title">💾 数据管理</div>
@@ -1396,8 +1389,8 @@ function switchTab(i){
   document.querySelectorAll('.tab').forEach((t,j)=>t.classList.toggle('active',i===j));
   document.querySelectorAll('.panel').forEach((p,j)=>p.classList.toggle('active',i===j));
   window.scrollTo({top:0});
-  // 切换到资产Tab时刷新持仓相关模块
-  if(i===3){ renderExistingHoldings(); renderDcaPlans(); runHealthMonitor(); renderTodayOverview(); runSignalEngine(); }
+  if(i===1){ runHealthMonitor(); renderDiagnostics(); renderDiagMarket(); }
+  if(i===3){ renderExistingHoldings(); renderDcaPlans(); renderTodayOverview(); runSignalEngine(); }
 }
 
 // ═══════════════ JSONP净值队列 ═══════════════
