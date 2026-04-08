@@ -38,7 +38,14 @@ function runSignalEngine(){
     const fd = CURATED_FUNDS.find(f=>f.code===h.code);
     const nav = navCache[h.code];
     if(!nav) return;
-    const chg = parseFloat(nav.gszzl)||0;
+
+    // 验证数据日期：只有今日数据才计算涨跌信号
+    const today = new Date().toISOString().slice(0,10);
+    const navDate = nav.gztime ? nav.gztime.slice(0,10) : (nav.jzrq || '');
+    const isToday = navDate === today;
+
+    // 只有今日数据且市场开盘时才使用涨跌幅
+    const chg = isToday && isMarketOpen() ? (parseFloat(nav.gszzl)||0) : 0;
     const pnlPct = h.cost > 0 ? (h.value-h.cost)/h.cost*100 : null;
 
     // 信号1：持仓基金大跌，可能是加仓机会或风险预警
@@ -266,7 +273,8 @@ function renderSignalBanner(signals){
   // 有危险信号且内容变化时才自动弹出（避免切Tab重复打扰）
   if(dangerCount > 0){
     const dangerHash = signals.filter(s=>s.type==='danger'||s.type==='warning').map(s=>s.code+s.title).join('|');
-    if(dangerHash !== _lastDangerHash){
+    const lastReadHash = localStorage.getItem('_lastReadSignalHash') || '';
+    if(dangerHash !== _lastDangerHash && dangerHash !== lastReadHash){
       _lastDangerHash = dangerHash;
       openSignalModal();
     }

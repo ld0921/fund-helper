@@ -874,6 +874,11 @@ function closeSignalModal(){
   if(!modal) return;
   modal.classList.remove('show');
   setTimeout(()=>{ modal.style.display='none'; }, 200);
+
+  // 标记当前信号为已读，避免重复弹出
+  if(typeof _lastDangerHash !== 'undefined' && _lastDangerHash){
+    localStorage.setItem('_lastReadSignalHash', _lastDangerHash);
+  }
 }
 
 function openNotificationGuide(){
