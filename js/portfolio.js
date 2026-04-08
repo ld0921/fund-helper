@@ -910,7 +910,8 @@ async function generateSmartPortfolio(){
 
     if(done===total){
       const now=new Date();
-      document.getElementById('nav-update-time').textContent=`净值更新于 ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+      const navTimeEl = document.getElementById('nav-update-time');
+      if(navTimeEl) navTimeEl.textContent=`净值更新于 ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
 
       // 数据加载完成，展示策略执行步骤
       const iconEl=document.getElementById('gen-loading-icon');
