@@ -835,8 +835,6 @@
   </div>
 </div>
 
-</div>
-
 <!-- ===================== 面板3: 持仓诊断 ===================== -->
 <div class="panel" id="panel3">
 
@@ -864,6 +862,8 @@
   </div>
 
 </div>
+
+</div><!-- /content -->
 
 <script>
 // ═══════════════ Supabase 云端同步 ═══════════════
@@ -2075,7 +2075,9 @@ function setSortMode(mode){
 
 // 精选基金库弹窗控制
 function openFundLibraryModal(){
-  document.getElementById('fund-library-modal').style.display='flex';
+  const modal = document.getElementById('fund-library-modal');
+  modal.style.display='flex';
+  setTimeout(()=>modal.classList.add('show'), 10);
   document.body.style.overflow='hidden';
   renderMarketGridModal();
   // 同步状态显示
@@ -2084,7 +2086,9 @@ function openFundLibraryModal(){
   if(statusEl && statusModalEl) statusModalEl.innerHTML=statusEl.innerHTML;
 }
 function closeFundLibraryModal(){
-  document.getElementById('fund-library-modal').style.display='none';
+  const modal = document.getElementById('fund-library-modal');
+  modal.classList.remove('show');
+  setTimeout(()=>modal.style.display='none', 200);
   document.body.style.overflow='';
 }
 function renderMarketGridModal(){
