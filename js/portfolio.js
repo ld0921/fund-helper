@@ -374,7 +374,7 @@ function renderRebalancePlan(plan){
       <div class="rebal-amts">
         <div class="rebal-amt"><div class="rebal-amt-val">¥${a.currentAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}</div><div class="rebal-amt-lbl">当前持仓</div></div>
         <div class="rebal-arrow">→</div>
-        <div class="rebal-amt"><div class="rebal-amt-val" style="color:var(--primary)">¥${a.targetAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}</div><div class="rebal-amt-lbl">目标仓位</div></div>
+        <div class="rebal-amt"><div class="rebal-amt-val" style="color:var(--primary)">¥${Math.max(0, a.targetAmt).toLocaleString('zh-CN',{maximumFractionDigits:0})}</div><div class="rebal-amt-lbl">目标仓位</div></div>
         <div class="rebal-amt"><div class="rebal-amt-val" style="color:${a.action==='sell'||a.action==='reduce'?'var(--danger)':a.action==='buy'||a.action==='buy_more'?'var(--success)':'var(--muted)'}">${a.actionAmt>0?(a.action==='sell'||a.action==='reduce'?'-':'+')+'¥'+a.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0}):'--'}</div><div class="rebal-amt-lbl">调仓金额</div></div>
       </div>
       <div class="rebal-op" style="font-size:12px;color:var(--muted);min-width:120px">${escHtml(a.actionDesc)}</div>
@@ -1081,23 +1081,15 @@ function _doGenerate(shouldScroll){
     const newMoneyForCat = totalGap > 0 ? Math.round(totalAmt * gap / totalGap) : 0;
 
     // 已保留基金纳入推荐
-    const keptPicks = kept.map(h=>{
-      // 修复问题2：计算该基金的目标金额
-      // 如果该类别需要减仓（gap < 0），按比例分配目标金额
-      const catTargetAmt = portfolioTotal * (weights[cd.cat]||0) / 100;
-      const keptTotalValue = kept.reduce((s,k)=>s+k.value,0);
-      const targetAmtForFund = keptTotalValue > 0 ? (h.value / keptTotalValue * catTargetAmt) : h.value;
-
-      return {
-        ...h.fundData,
-        pct: Math.round(targetAmtForFund / portfolioTotal * 100),
-        amt: Math.round(targetAmtForFund),
-        role: '已持有·保留',
-        method: '继续持有',
-        methodClass: 'method-hold',
-        isExisting: true,
-      };
-    });
+    const keptPicks = kept.map(h=>({
+      ...h.fundData,
+      pct: Math.round(h.value / portfolioTotal * 100),
+      amt: h.value,
+      role: '已持有·保留',
+      method: '继续持有',
+      methodClass: 'method-hold',
+      isExisting: true,
+    }));
 
     // 新买入的基金（从候选池中选，排除已持有的）
     let newPicks = [];
