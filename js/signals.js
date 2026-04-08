@@ -234,47 +234,46 @@ function renderSignalBanner(signals){
   const bell = document.getElementById('signal-bell');
   const badge = document.getElementById('signal-badge');
   const titleEl = document.getElementById('signal-modal-title');
-  const listEl = document.getElementById('signal-modal-list');
 
-  if(!signals.length){
-    // 无信号：铃铛保留，隐藏角标，清空列表
+  // 保存当前信号到全局变量，供弹窗使用
+  window._currentSignals = signals;
+
+  // 获取已读消息列表
+  let readSignals = JSON.parse(localStorage.getItem('_readSignals') || '[]');
+
+  // 清理过期的已读消息（超过24小时）
+  const now = Date.now();
+  readSignals = readSignals.filter(s => (now - s.readTime) < 24 * 60 * 60 * 1000);
+  localStorage.setItem('_readSignals', JSON.stringify(readSignals));
+
+  // 计算未读信号数量
+  const readHashes = new Set(readSignals.map(s => s.hash));
+  const unreadSignals = signals.filter(signal => {
+    const hash = signal.code + signal.title;
+    return !readHashes.has(hash);
+  });
+
+  if(unreadSignals.length === 0){
+    // 无未读信号：隐藏角标
     if(badge) badge.style.display = 'none';
-    if(titleEl) titleEl.textContent = '📡 智能监控 · 暂无信号';
-    if(listEl) listEl.innerHTML = '<div style="padding:40px 20px;text-align:center;color:var(--muted);font-size:13px">✅ 当前没有需要关注的信号<br>系统会持续监控您的持仓和市场动态</div>';
-    return;
+    if(titleEl) titleEl.textContent = '📡 智能监控 · 暂无新消息';
+  } else {
+    // 显示角标数字（仅显示未读数量）
+    if(badge){
+      badge.style.display = '';
+      badge.textContent = unreadSignals.length > 99 ? '99+' : unreadSignals.length;
+    }
+    if(titleEl) titleEl.textContent = `📡 智能监控 · ${unreadSignals.length} 条新消息`;
   }
 
-  // 显示角标数字
-  if(badge){ badge.style.display = ''; badge.textContent = signals.length > 99 ? '99+' : signals.length; }
+  // 渲染信号列表（在弹窗打开时调用）
+  renderSignalLists();
 
-  const dangerCount = signals.filter(s=>s.type==='danger'||s.type==='warning').length;
-
-  if(titleEl) titleEl.textContent = `📡 智能监控 · ${signals.length} 条信号`;
-
-  const typeColors = {
-    danger: {bg:'#fff1f0', border:'#ffa39e', color:'#cf1322'},
-    warning: {bg:'#fff7e6', border:'#ffd591', color:'#ad6800'},
-    opportunity: {bg:'#f6ffed', border:'#b7eb8f', color:'#237804'},
-    success: {bg:'#f6ffed', border:'#b7eb8f', color:'#237804'},
-    info: {bg:'#e6f4ff', border:'#91caff', color:'#0958d9'},
-  };
-
-  if(listEl) listEl.innerHTML = signals.map(s => {
-    const tc = typeColors[s.type] || typeColors.info;
-    return `<div style="padding:12px 18px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:10px">
-      <div style="flex:1;min-width:0">
-        <div style="font-size:13px;font-weight:600;color:${tc.color};margin-bottom:3px">${escHtml(s.title)}</div>
-        <div style="font-size:12px;color:var(--muted);line-height:1.6">${escHtml(s.desc)}</div>
-      </div>
-      <div style="flex-shrink:0;font-size:12px;font-weight:600;color:${tc.color};padding:3px 8px;background:${tc.bg};border-radius:6px;white-space:nowrap">${escHtml(s.action)}</div>
-    </div>`;
-  }).join('');
-
-  // 有危险信号且内容变化时才自动弹出（避免切Tab重复打扰）
+  // 有危险信号且是新信号时才自动弹出
+  const dangerCount = unreadSignals.filter(s=>s.type==='danger'||s.type==='warning').length;
   if(dangerCount > 0){
-    const dangerHash = signals.filter(s=>s.type==='danger'||s.type==='warning').map(s=>s.code+s.title).join('|');
-    const lastReadHash = localStorage.getItem('_lastReadSignalHash') || '';
-    if(dangerHash !== _lastDangerHash && dangerHash !== lastReadHash){
+    const dangerHash = unreadSignals.filter(s=>s.type==='danger'||s.type==='warning').map(s=>s.code+s.title).join('|');
+    if(dangerHash !== _lastDangerHash){
       _lastDangerHash = dangerHash;
       openSignalModal();
     }

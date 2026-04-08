@@ -106,7 +106,19 @@
       <span style="font-size:15px;font-weight:700" id="signal-modal-title">📡 智能监控信号</span>
       <button onclick="closeSignalModal()" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;line-height:1">&times;</button>
     </div>
-    <div id="signal-modal-list" style="overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1"></div>
+    <!-- Tab切换 -->
+    <div style="display:flex;border-bottom:1px solid var(--border);background:#fafafa">
+      <button id="signal-tab-unread" onclick="switchSignalTab('unread')" style="flex:1;padding:10px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--primary);border-bottom:2px solid var(--primary)">
+        新消息 <span id="signal-unread-count" style="display:inline-block;min-width:18px;height:18px;line-height:18px;text-align:center;background:#ff4d4f;color:#fff;border-radius:9px;font-size:11px;padding:0 5px;margin-left:4px">0</span>
+      </button>
+      <button id="signal-tab-read" onclick="switchSignalTab('read')" style="flex:1;padding:10px;border:none;background:none;cursor:pointer;font-size:13px;color:var(--muted);border-bottom:2px solid transparent">
+        已读消息
+      </button>
+    </div>
+    <!-- 未读消息列表 -->
+    <div id="signal-unread-list" style="overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1"></div>
+    <!-- 已读消息列表 -->
+    <div id="signal-read-list" style="overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;display:none"></div>
   </div>
 </div>
 
@@ -865,9 +877,70 @@
 function openSignalModal(){
   const modal=document.getElementById('signal-modal');
   if(modal){ modal.style.display='flex'; requestAnimationFrame(()=>modal.classList.add('show')); }
-  // 查看后清除角标
+
+  // 打开弹窗时，将所有未读消息标记为已读
+  markAllSignalsAsRead();
+
+  // 隐藏小红点
   const badge=document.getElementById('signal-badge');
   if(badge) badge.style.display='none';
+
+  // 默认显示未读Tab
+  switchSignalTab('unread');
+}
+
+function switchSignalTab(tab){
+  const unreadTab = document.getElementById('signal-tab-unread');
+  const readTab = document.getElementById('signal-tab-read');
+  const unreadList = document.getElementById('signal-unread-list');
+  const readList = document.getElementById('signal-read-list');
+
+  if(tab === 'unread'){
+    unreadTab.style.color = 'var(--primary)';
+    unreadTab.style.borderBottomColor = 'var(--primary)';
+    readTab.style.color = 'var(--muted)';
+    readTab.style.borderBottomColor = 'transparent';
+    unreadList.style.display = '';
+    readList.style.display = 'none';
+  } else {
+    unreadTab.style.color = 'var(--muted)';
+    unreadTab.style.borderBottomColor = 'transparent';
+    readTab.style.color = 'var(--primary)';
+    readTab.style.borderBottomColor = 'var(--primary)';
+    unreadList.style.display = 'none';
+    readList.style.display = '';
+  }
+}
+
+function markAllSignalsAsRead(){
+  // 获取当前所有信号
+  const currentSignals = window._currentSignals || [];
+  if(!currentSignals.length) return;
+
+  // 获取已读消息列表
+  let readSignals = JSON.parse(localStorage.getItem('_readSignals') || '[]');
+
+  // 清理过期的已读消息（超过24小时）
+  const now = Date.now();
+  readSignals = readSignals.filter(s => (now - s.readTime) < 24 * 60 * 60 * 1000);
+
+  // 将当前信号添加到已读列表
+  currentSignals.forEach(signal => {
+    const signalHash = signal.code + signal.title;
+    if(!readSignals.find(s => s.hash === signalHash)){
+      readSignals.push({
+        hash: signalHash,
+        signal: signal,
+        readTime: now
+      });
+    }
+  });
+
+  // 保存到localStorage
+  localStorage.setItem('_readSignals', JSON.stringify(readSignals));
+
+  // 重新渲染信号列表
+  renderSignalLists();
 }
 function closeSignalModal(){
   const modal=document.getElementById('signal-modal');
@@ -875,10 +948,91 @@ function closeSignalModal(){
   modal.classList.remove('show');
   setTimeout(()=>{ modal.style.display='none'; }, 200);
 
-  // 标记当前信号为已读，避免重复弹出
-  if(typeof _lastDangerHash !== 'undefined' && _lastDangerHash){
-    localStorage.setItem('_lastReadSignalHash', _lastDangerHash);
+  // 不再需要保存已读状态，因为打开弹窗时已经标记为已读
+}
+
+function renderSignalLists(){
+  const currentSignals = window._currentSignals || [];
+  const readSignals = JSON.parse(localStorage.getItem('_readSignals') || '[]');
+
+  // 清理过期的已读消息
+  const now = Date.now();
+  const validReadSignals = readSignals.filter(s => (now - s.readTime) < 24 * 60 * 60 * 1000);
+  if(validReadSignals.length !== readSignals.length){
+    localStorage.setItem('_readSignals', JSON.stringify(validReadSignals));
   }
+
+  // 计算未读信号（当前信号中不在已读列表的）
+  const readHashes = new Set(validReadSignals.map(s => s.hash));
+  const unreadSignals = currentSignals.filter(signal => {
+    const hash = signal.code + signal.title;
+    return !readHashes.has(hash);
+  });
+
+  // 渲染未读列表
+  const unreadList = document.getElementById('signal-unread-list');
+  const unreadCount = document.getElementById('signal-unread-count');
+  if(unreadList){
+    if(unreadSignals.length === 0){
+      unreadList.innerHTML = '<div style="padding:40px 20px;text-align:center;color:var(--muted);font-size:13px">✅ 暂无新消息<br>系统会持续监控您的持仓和市场动态</div>';
+    } else {
+      unreadList.innerHTML = renderSignalItems(unreadSignals);
+    }
+  }
+  if(unreadCount){
+    unreadCount.textContent = unreadSignals.length;
+    unreadCount.style.display = unreadSignals.length > 0 ? 'inline-block' : 'none';
+  }
+
+  // 渲染已读列表
+  const readList = document.getElementById('signal-read-list');
+  if(readList){
+    if(validReadSignals.length === 0){
+      readList.innerHTML = '<div style="padding:40px 20px;text-align:center;color:var(--muted);font-size:13px">📭 暂无已读消息<br>已读消息保留24小时后自动清除</div>';
+    } else {
+      // 按时间倒序排列
+      const sortedReadSignals = validReadSignals.sort((a, b) => b.readTime - a.readTime);
+      readList.innerHTML = sortedReadSignals.map(item => {
+        const timeStr = formatReadTime(item.readTime);
+        return renderSignalItem(item.signal, timeStr);
+      }).join('');
+    }
+  }
+}
+
+function renderSignalItems(signals){
+  return signals.map(s => renderSignalItem(s)).join('');
+}
+
+function renderSignalItem(signal, timeStr){
+  const typeColors = {
+    danger: {bg:'#fff1f0', border:'#ffa39e', color:'#cf1322'},
+    warning: {bg:'#fff7e6', border:'#ffd591', color:'#ad6800'},
+    opportunity: {bg:'#f6ffed', border:'#b7eb8f', color:'#237804'},
+    success: {bg:'#f6ffed', border:'#b7eb8f', color:'#237804'},
+    info: {bg:'#e6f4ff', border:'#91caff', color:'#0958d9'},
+  };
+  const tc = typeColors[signal.type] || typeColors.info;
+  return `<div style="padding:12px 18px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:10px">
+    <div style="flex:1;min-width:0">
+      <div style="font-size:13px;font-weight:600;color:${tc.color};margin-bottom:3px">${escHtml(signal.title)}</div>
+      <div style="font-size:12px;color:var(--muted);line-height:1.6">${escHtml(signal.desc)}</div>
+      ${timeStr ? `<div style="font-size:10px;color:var(--muted);margin-top:4px">已读时间: ${timeStr}</div>` : ''}
+    </div>
+    <div style="flex-shrink:0;font-size:12px;font-weight:600;color:${tc.color};padding:3px 8px;background:${tc.bg};border-radius:6px;white-space:nowrap">${escHtml(signal.action)}</div>
+  </div>`;
+}
+
+function formatReadTime(timestamp){
+  const date = new Date(timestamp);
+  const now = new Date();
+  const diff = now - date;
+
+  if(diff < 60 * 1000) return '刚刚';
+  if(diff < 60 * 60 * 1000) return Math.floor(diff / 60 / 1000) + '分钟前';
+  if(diff < 24 * 60 * 60 * 1000) return Math.floor(diff / 60 / 60 / 1000) + '小时前';
+
+  return date.toLocaleString('zh-CN', {month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit'});
 }
 
 function openNotificationGuide(){
