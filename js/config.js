@@ -70,20 +70,56 @@ async function loadCuratedFunds() {
     });
     CURATED_FUNDS = funds;
     console.log(`[精选库] 已加载 ${funds.length} 只基金，数据时间：${_curatedTimestamp}`);
-    // 更新页面上的精选库状态显示
-    const statusEl = document.getElementById('curated-update-status');
-    if(statusEl && _curatedTimestamp){
-      const d = new Date(_curatedTimestamp);
-      const dateStr = d.toLocaleDateString('zh-CN', {month:'numeric', day:'numeric'});
-      const isStale = (Date.now() - d.getTime()) > 7 * 24 * 60 * 60 * 1000;
-      statusEl.innerHTML = isStale
-        ? `<span style="color:#faad14">⚠️ 上次更新 ${dateStr}（已超7天）</span>`
-        : `<span style="color:#52c41a">✅ 上次更新 ${dateStr} · ${funds.length} 只基金</span>`;
-    }
+    // 更新页面上的精选库状态显示（顶部和底部）
+    updateCuratedStatus(funds.length, _curatedTimestamp);
   } catch (e) {
     console.warn('[精选库] 加载失败，使用空库', e);
-    const statusEl = document.getElementById('curated-update-status');
-    if(statusEl) statusEl.innerHTML = '<span style="color:#ff4d4f">❌ 数据加载失败</span>';
+    updateCuratedStatus(0, null, true);
+  }
+}
+
+function updateCuratedStatus(count, timestamp, isError = false) {
+  const statusEl = document.getElementById('curated-update-status');
+  const statusElBottom = document.getElementById('curated-update-status-bottom');
+  const cardEl = document.getElementById('curated-status-card');
+
+  if (isError) {
+    const errorHtml = '<span style="color:#ff4d4f">❌ 数据加载失败</span>';
+    if(statusEl) statusEl.innerHTML = errorHtml;
+    if(statusElBottom) statusElBottom.innerHTML = errorHtml;
+    if(cardEl) {
+      cardEl.style.background = 'linear-gradient(135deg,#fff1f0,#ffccc7)';
+      cardEl.style.borderColor = '#ffa39e';
+    }
+    return;
+  }
+
+  if (!timestamp) return;
+
+  const d = new Date(timestamp);
+  const dateStr = d.toLocaleDateString('zh-CN', {month:'numeric', day:'numeric'});
+  const isStale = (Date.now() - d.getTime()) > 7 * 24 * 60 * 60 * 1000;
+
+  if (isStale) {
+    // 数据过期：警告样式
+    const warnHtml = `<span style="color:#d46b08">⚠️ 数据已过期（上次更新 ${dateStr}）</span>`;
+    const warnDetail = `上次更新：${dateStr}（已超7天）<br><span style="color:#d46b08;font-weight:600">⚠️ 建议先更新数据再生成方案</span><br><span style="font-size:11px;color:#8c8c8c">GitHub Actions 每周日自动更新，或手动触发 workflow</span>`;
+    if(statusEl) statusEl.innerHTML = warnDetail;
+    if(statusElBottom) statusElBottom.innerHTML = warnHtml;
+    if(cardEl) {
+      cardEl.style.background = 'linear-gradient(135deg,#fffbe6,#fff7e6)';
+      cardEl.style.borderColor = '#ffd591';
+    }
+  } else {
+    // 数据正常：成功样式
+    const okHtml = `<span style="color:#52c41a">✅ ${dateStr} · ${count} 只基金</span>`;
+    const okDetail = `上次更新：${dateStr}<br><span style="color:#52c41a;font-weight:600">✅ 数据正常，共 ${count} 只精选基金</span><br><span style="font-size:11px;color:#8c8c8c">智能方案将从此库中推荐最优组合</span>`;
+    if(statusEl) statusEl.innerHTML = okDetail;
+    if(statusElBottom) statusElBottom.innerHTML = okHtml;
+    if(cardEl) {
+      cardEl.style.background = 'linear-gradient(135deg,#f6ffed,#f0f9ff)';
+      cardEl.style.borderColor = '#b7eb8f';
+    }
   }
 }
 

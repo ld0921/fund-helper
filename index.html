@@ -194,6 +194,17 @@
 <!-- ===================== 面板0: 智能方案（合并精选+AI规划） ===================== -->
 <div class="panel active" id="panel0">
 
+  <!-- 精选库状态（置顶显示） -->
+  <div class="card" id="curated-status-card" style="background:linear-gradient(135deg,#f6ffed,#f0f9ff);border:1px solid #b7eb8f;margin-bottom:12px">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <div style="flex:1;min-width:200px">
+        <div style="font-size:13px;font-weight:600;color:#389e0d;margin-bottom:4px">📊 精选基金库</div>
+        <div id="curated-update-status" style="font-size:12px;color:#595959;line-height:1.6">加载中...</div>
+      </div>
+      <button onclick="document.querySelector('#fund-library-details').open=true;document.querySelector('#fund-library-details').scrollIntoView({behavior:'smooth',block:'start'})" style="padding:6px 12px;font-size:12px;background:var(--card);border:1px solid var(--border);border-radius:6px;cursor:pointer;color:var(--text);white-space:nowrap">查看精选库 →</button>
+    </div>
+  </div>
+
   <!-- 今日概览（有持仓时自动显示） -->
   <div class="today-overview" id="today-overview" style="display:none">
     <div style="font-size:14px;font-weight:600;margin-bottom:10px">📊 今日概览</div>
@@ -459,11 +470,11 @@
   </div><!-- /portfolio-result -->
 
   <!-- 精选基金库（折叠，供参考浏览） -->
-  <details class="card" style="padding:0;overflow:hidden">
+  <details class="card" id="fund-library-details" style="padding:0;overflow:hidden">
     <summary style="padding:14px 16px;list-style:none;display:flex;align-items:center;gap:8px;cursor:pointer">
       <span class="icon icon-blue">📊</span>
       <span style="font-size:14px;font-weight:600">精选基金库</span>
-      <span style="margin-left:auto;font-size:11px;color:var(--muted)" id="curated-update-status"></span>
+      <span style="margin-left:auto;font-size:11px;color:var(--muted)" id="curated-update-status-bottom"></span>
     </summary>
     <div style="padding:0 16px 16px">
       <div style="padding:6px 0;font-size:11px;color:var(--muted);line-height:1.6">
