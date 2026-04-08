@@ -184,9 +184,9 @@
 
 <div class="tabs">
   <div class="tab active" onclick="switchTab(0)">🎯 <span class="tab-full">智能方案</span><span class="tab-short">方案</span></div>
-  <div class="tab" onclick="switchTab(1)">🏥 <span class="tab-full">持仓诊断</span><span class="tab-short">诊断</span></div>
-  <div class="tab" onclick="switchTab(2)">📈 <span class="tab-full">定投专区</span><span class="tab-short">定投</span></div>
-  <div class="tab" onclick="switchTab(3)">💼 <span class="tab-full">我的资产</span><span class="tab-short">资产</span><span class="tab-badge" id="asset-tab-badge"></span></div>
+  <div class="tab" onclick="switchTab(1)">📈 <span class="tab-full">定投专区</span><span class="tab-short">定投</span></div>
+  <div class="tab" onclick="switchTab(2)">💼 <span class="tab-full">我的资产</span><span class="tab-short">资产</span><span class="tab-badge" id="asset-tab-badge"></span></div>
+  <div class="tab" onclick="switchTab(3)">🏥 <span class="tab-full">持仓诊断</span><span class="tab-short">诊断</span></div>
 </div>
 
 <div class="content">
@@ -209,7 +209,7 @@
       <b>① 设置你的情况</b>（下方填写金额和风险偏好）→ <b>② 点击生成方案</b>（自动拉取最新数据）→ <b>③ 按步骤执行</b>
     </div>
     <div style="font-size:12px;color:var(--muted);line-height:1.6">💡 如已有持仓，请先去
-      <a href="javascript:void(0)" onclick="switchTab(3);this.closest('.card').style.display='none'" style="color:var(--primary);font-weight:500;text-decoration:underline">我的资产</a>
+      <a href="javascript:void(0)" onclick="switchTab(2);this.closest('.card').style.display='none'" style="color:var(--primary);font-weight:500;text-decoration:underline">我的资产</a>
       录入持仓，方案将自动融合您的已有基金。
     </div>
   </div>
@@ -352,7 +352,7 @@
 
   <!-- 精选基金库、自定义评分已移至「基金探索」Tab；已有持仓已移至「我的资产」Tab -->
   <div style="font-size:12px;color:var(--muted);line-height:1.8;margin-bottom:4px">
-  💼 如需录入已有持仓获取个性化调仓建议，请前往 <a href="javascript:void(0)" onclick="switchTab(3)" style="color:var(--primary);font-weight:500;text-decoration:underline">我的资产</a>。持仓诊断请前往 <a href="javascript:void(0)" onclick="switchTab(1)" style="color:var(--primary);font-weight:500;text-decoration:underline">持仓诊断</a>。
+  💼 如需录入已有持仓获取个性化调仓建议，请前往 <a href="javascript:void(0)" onclick="switchTab(2)" style="color:var(--primary);font-weight:500;text-decoration:underline">我的资产</a>。持仓诊断请前往 <a href="javascript:void(0)" onclick="switchTab(3)" style="color:var(--primary);font-weight:500;text-decoration:underline">持仓诊断</a>。
   </div>
 
   <!-- 结果区域（初始隐藏） -->
@@ -489,8 +489,8 @@
 
 </div>
 
-<!-- ===================== 面板1: 持仓诊断 ===================== -->
-<div class="panel" id="panel1">
+<!-- ===================== 面板3: 持仓诊断 ===================== -->
+<div class="panel" id="panel3">
 
   <!-- 区块A：持仓健康诊断（复用 runHealthMonitor 输出） -->
   <div id="health-monitor-wrap"></div>
@@ -512,13 +512,13 @@
   <div id="diag-empty" style="display:none" class="empty-state" style="margin-top:40px">
     <div class="empty-icon">🏥</div>
     <div class="empty-text">暂无持仓数据<br>请先在「我的资产」录入持仓，系统将自动分析</div>
-    <button class="btn btn-ghost btn-sm" onclick="switchTab(3)">前往录入持仓</button>
+    <button class="btn btn-ghost btn-sm" onclick="switchTab(2)">前往录入持仓</button>
   </div>
 
 </div>
 
-<!-- ===================== 面板2: 定投专区 ===================== -->
-<div class="panel" id="panel2">
+<!-- ===================== 面板1: 定投专区 ===================== -->
+<div class="panel" id="panel1">
 
   <!-- AI定投方案 -->
   <div class="card">
@@ -596,8 +596,8 @@
 
 </div>
 
-<!-- ===================== 面板3: 我的资产 ===================== -->
-<div class="panel" id="panel3">
+<!-- ===================== 面板2: 我的资产 ===================== -->
+<div class="panel" id="panel2">
 
   <div class="chip-row" id="asset-subnav" style="position:sticky;top:46px;z-index:50;background:var(--bg);padding:8px 0">
     <button class="chip active" onclick="scrollToSection('eh-section')">持仓</button>
@@ -1389,8 +1389,8 @@ function switchTab(i){
   document.querySelectorAll('.tab').forEach((t,j)=>t.classList.toggle('active',i===j));
   document.querySelectorAll('.panel').forEach((p,j)=>p.classList.toggle('active',i===j));
   window.scrollTo({top:0});
-  if(i===1){ runHealthMonitor(); renderDiagnostics(); renderDiagMarket(); }
-  if(i===3){ renderExistingHoldings(); renderDcaPlans(); renderTodayOverview(); runSignalEngine(); }
+  if(i===2){ renderExistingHoldings(); renderDcaPlans(); renderTodayOverview(); runSignalEngine(); }
+  if(i===3){ runHealthMonitor(); renderDiagnostics(); renderDiagMarket(); }
 }
 
 // ═══════════════ JSONP净值队列 ═══════════════
