@@ -2377,6 +2377,13 @@ if(document.readyState === 'loading'){
   document.addEventListener('DOMContentLoaded', () => {
     showFirstTimeGuide();
     autoRefreshOnLoad();
+    const h = document.querySelector('.header');
+    const tabs = document.querySelector('.tabs');
+    const subnav = document.getElementById('asset-subnav');
+    if(h && tabs){
+      tabs.style.top = h.offsetHeight + 'px';
+      if(subnav) subnav.style.top = (h.offsetHeight + tabs.offsetHeight) + 'px';
+    }
   });
 } else {
   showFirstTimeGuide();
