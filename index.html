@@ -211,20 +211,6 @@
     <div class="ov-row" id="today-overview-content"></div>
   </div>
 
-  <!-- 快速开始引导 -->
-  <div class="card" id="welcome-card" style="position:relative;background:linear-gradient(135deg,#e6f4ff,#f0f5ff);border:1px solid #91caff">
-    <button onclick="this.parentElement.style.display='none';localStorage.setItem('_welcomeDismissed','1')" style="position:absolute;right:10px;top:10px;background:none;border:none;color:#0958d9;font-size:18px;cursor:pointer;line-height:1">&times;</button>
-    <div style="font-size:16px;font-weight:700;color:#0958d9;margin-bottom:8px">👋 欢迎使用基金理财助手</div>
-    <div style="font-size:13px;color:#595959;line-height:1.8;margin-bottom:12px">
-      只需3步即可获得专属投资方案：<br>
-      <b>① 设置你的情况</b>（下方填写金额和风险偏好）→ <b>② 点击生成方案</b>（自动拉取最新数据）→ <b>③ 按步骤执行</b>
-    </div>
-    <div style="font-size:12px;color:var(--muted);line-height:1.6">💡 如已有持仓，请先去
-      <a href="javascript:void(0)" onclick="switchTab(2);this.closest('.card').style.display='none'" style="color:var(--primary);font-weight:500;text-decoration:underline">我的资产</a>
-      录入持仓，方案将自动融合您的已有基金。
-    </div>
-  </div>
-
   <!-- 投资设置（紧凑布局） -->
   <div class="card">
     <!-- 金额：输入框 + 快捷标签一行 -->
