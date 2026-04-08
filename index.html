@@ -556,12 +556,12 @@
     </div>
   </div>
 
-  <!-- 刷新净值提示 -->
-  <div id="refresh-banner" style="margin:12px 0;padding:16px;background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.08);border:1px solid #e8e8e8">
+  <!-- 刷新净值提示（数据过期时显示） -->
+  <div id="refresh-banner" style="display:none;margin:12px 0;padding:16px;background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.08);border:1px solid #e8e8e8">
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
       <div style="width:48px;height:48px;background:linear-gradient(135deg,#1890ff,#096dd9);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">📊</div>
       <div style="flex:1">
-        <div style="font-size:15px;color:var(--text);font-weight:600;margin-bottom:4px">刷新净值数据</div>
+        <div style="font-size:15px;color:var(--text);font-weight:600;margin-bottom:4px">刷新持仓净值</div>
         <div style="font-size:12px;color:var(--muted);line-height:1.5">获取最新净值，查看今日收益与盈亏数据</div>
       </div>
     </div>
@@ -569,8 +569,8 @@
     <div id="last-update-time" style="text-align:center;font-size:12px;color:var(--muted);margin-top:8px"></div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid #f0f0f0">
       <div style="text-align:center">
-        <div style="font-size:11px;color:var(--muted);margin-bottom:2px">数据来源</div>
-        <div style="font-size:12px;font-weight:600;color:var(--text)">天天基金</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:2px">刷新范围</div>
+        <div style="font-size:12px;font-weight:600;color:var(--text)">仅持仓基金</div>
       </div>
       <div style="text-align:center">
         <div style="font-size:11px;color:var(--muted);margin-bottom:2px">更新频率</div>
@@ -583,7 +583,8 @@
     </div>
     <div style="margin-top:12px;padding:8px 12px;background:#f5f5f5;border-radius:6px;font-size:11px;color:var(--muted);line-height:1.6">
       💡 <span style="color:#1890ff;font-weight:600">实时估算</span>：交易时段内基金公司实时估算的净值，供参考<br>
-      📊 <span style="color:#52c41a;font-weight:600">确认净值</span>：每日收盘后公布的官方净值，次日可见
+      📊 <span style="color:#52c41a;font-weight:600">确认净值</span>：每日收盘后公布的官方净值，次日可见<br>
+      ⚡ <span style="color:#722ed1;font-weight:600">自动刷新</span>：系统每5分钟自动刷新，无需手动操作
     </div>
   </div>
 

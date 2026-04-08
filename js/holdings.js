@@ -513,6 +513,7 @@ async function renderExistingHoldings(){
   const list=document.getElementById('eh-list');
   const empty=document.getElementById('eh-empty');
   const summary=document.getElementById('eh-summary');
+  const refreshBanner=document.getElementById('refresh-banner');
 
   // 自动合并相同基金代码的已确认持仓
   const codeMap = new Map();
@@ -541,6 +542,19 @@ async function renderExistingHoldings(){
     // 合并后清空昨日净值数据，强制重新计算
     await FundDB.set('yesterdayNav', {});
     await FundDB.set('yesterdayPnl', {});
+  }
+
+  // 检查数据新鲜度，控制刷新横幅显示
+  const lastRefreshTime = await FundDB.get('lastNavRefreshTime');
+  const dataAge = lastRefreshTime ? Date.now() - lastRefreshTime : Infinity;
+  const isDataStale = dataAge > 30 * 60 * 1000; // 超过30分钟视为过期
+
+  if(refreshBanner){
+    if(existingHoldings.length > 0 && isDataStale){
+      refreshBanner.style.display = ''; // 有持仓且数据过期时显示
+    } else {
+      refreshBanner.style.display = 'none'; // 无持仓或数据新鲜时隐藏
+    }
   }
 
   // 获取昨日净值数据
@@ -766,12 +780,12 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
             • 页面加载时：如数据超过30分钟自动刷新<br>
             • 交易时段：每5分钟自动刷新一次<br>
             • 页面恢复：从后台切回时立即刷新<br>
-            • 手动刷新：点击下方按钮立即更新
+            • 只刷新持仓基金，速度更快
           </div>
         </div>
         <div style="text-align:center;margin-top:14px">
-          <button class="btn btn-primary" onclick="refreshAllNav(false, false)" style="font-size:14px;padding:10px 24px">
-            🔄 立即刷新净值数据
+          <button class="btn btn-primary" onclick="refreshHoldingsNav(false)" style="font-size:14px;padding:10px 24px">
+            🔄 立即刷新持仓净值
           </button>
         </div>
       </div>
