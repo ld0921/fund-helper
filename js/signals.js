@@ -1,5 +1,18 @@
 // ═══ 信号引擎与健康监控模块 ═══
 function runSignalEngine(){
+  // 检查净值数据新鲜度：如果缓存数据超过1天，不运行信号引擎（避免使用过期数据）
+  const lastRefreshTime = localStorage.getItem('lastNavRefreshTime');
+  if(lastRefreshTime){
+    const age = Date.now() - parseInt(lastRefreshTime);
+    if(age > 24 * 60 * 60 * 1000){ // 超过24小时
+      console.warn('[信号引擎] 净值数据已过期，跳过信号生成');
+      return;
+    }
+  } else if(Object.keys(navCache).length === 0){
+    // 没有任何净值数据
+    return;
+  }
+
   // 合并所有持仓来源
   const allHeld = [];
   existingHoldings.forEach(h=>{
@@ -289,6 +302,23 @@ function requestNotificationPermission(){
 
 // ═══════════════ 持仓健康诊断（动态阈值 + 集中度分析） ═══════════════
 function runHealthMonitor(){
+  // 检查净值数据新鲜度：如果缓存数据超过1天，不运行健康监控（避免使用过期数据）
+  const lastRefreshTime = localStorage.getItem('lastNavRefreshTime');
+  if(lastRefreshTime){
+    const age = Date.now() - parseInt(lastRefreshTime);
+    if(age > 24 * 60 * 60 * 1000){ // 超过24小时
+      console.warn('[健康监控] 净值数据已过期，跳过诊断');
+      const wrap = document.getElementById('health-monitor-wrap');
+      if(wrap) wrap.innerHTML = '';
+      return;
+    }
+  } else if(Object.keys(navCache).length === 0){
+    // 没有任何净值数据
+    const wrap = document.getElementById('health-monitor-wrap');
+    if(wrap) wrap.innerHTML = '';
+    return;
+  }
+
   const wrap = document.getElementById('health-monitor-wrap');
   // 合并 existingHoldings + dcaPlans
   const allHeld = [];
