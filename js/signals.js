@@ -651,7 +651,20 @@ function runHealthMonitor(){
   // 6. 请求通知权限（延迟10秒，不打扰用户）
   requestNotificationPermission();
 
-  // 7. 页面加载后先拉取基金详情，再加载全市场扫描缓存
+  // 7. 自动刷新净值数据（如果数据过期或有持仓）
+  const lastRefreshTime = await FundDB.get('lastNavRefreshTime') || 0;
+  const dataAge = Date.now() - lastRefreshTime;
+  const needRefresh = existingHoldings.length > 0 && (dataAge > 30 * 60 * 1000); // 超过30分钟
+
+  if(needRefresh){
+    console.log('[自动刷新] 净值数据已过期，自动刷新中...');
+    // 延迟2秒后自动刷新，避免阻塞页面加载
+    setTimeout(()=>{
+      refreshAllNav(false, false); // 静默刷新，不显示toast
+    }, 2000);
+  }
+
+  // 8. 页面加载后先拉取基金详情，再加载全市场扫描缓存
   //    净值获取推迟到用户点击「生成方案」时触发，避免进入即加载
   refreshFundDetails(false).then(()=>{
     return scanMarketFunds(false).catch(()=>{});
@@ -663,14 +676,15 @@ function runHealthMonitor(){
     showGlobalError('⚠️ 基金数据更新失败，当前使用缓存数据，方案可能不够准确', 10000);
   });
 
-  // 8. 每5分钟自动重刷净值 + 重新生成方案（静默模式，仅页面可见时执行）
+  // 9. 每5分钟自动重刷净值 + 重新生成方案（静默模式，仅页面可见时执行）
   setInterval(()=>{
     if(document.hidden) return; // 页面不可见（后台/息屏）时跳过，节省电量和流量
+    if(existingHoldings.length === 0) return; // 无持仓时不刷新
     refreshAllNav(true, true);
   }, 5 * 60 * 1000);
   // 页面从后台恢复时立即刷新一次
   document.addEventListener('visibilitychange', ()=>{
-    if(!document.hidden) refreshAllNav(true, true);
+    if(!document.hidden && existingHoldings.length > 0) refreshAllNav(true, true);
   });
 })();
 
