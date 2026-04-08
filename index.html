@@ -1963,13 +1963,15 @@ function buildFundCard(f,sortMode){
 }
 
 function renderMarketGrid(){
+  const gridEl=document.getElementById('market-grid');
+  if(!gridEl) return; // 元素不存在时直接返回（精选库已改为弹窗）
+
   let list=currentCat==='all'?[...CURATED_FUNDS]:CURATED_FUNDS.filter(f=>f.cat===currentCat);
   // 定投排序模式：排除货币基金（除非专门筛选），按DCA评分降序
   if(currentSortMode==='dca'){
     if(currentCat!=='money') list=list.filter(f=>f.cat!=='money');
     list.sort((a,b)=>calcDCAScore(b)-calcDCAScore(a));
   }
-  const gridEl=document.getElementById('market-grid');
   const isMobile = window.innerWidth <= 600;
 
   if(!list.length){
