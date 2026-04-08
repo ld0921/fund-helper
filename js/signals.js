@@ -266,8 +266,10 @@ function renderSignalBanner(signals){
     if(titleEl) titleEl.textContent = `📡 智能监控 · ${unreadSignals.length} 条新消息`;
   }
 
-  // 渲染信号列表（在弹窗打开时调用）
-  renderSignalLists();
+  // 渲染信号列表（检查函数是否存在）
+  if(typeof window.renderSignalLists === 'function'){
+    window.renderSignalLists();
+  }
 
   // 有危险信号且是新信号时才自动弹出
   const dangerCount = unreadSignals.filter(s=>s.type==='danger'||s.type==='warning').length;
