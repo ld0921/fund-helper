@@ -878,15 +878,11 @@ function openSignalModal(){
   const modal=document.getElementById('signal-modal');
   if(modal){ modal.style.display='flex'; requestAnimationFrame(()=>modal.classList.add('show')); }
 
-  // 打开弹窗时，将所有未读消息标记为已读
-  markAllSignalsAsRead();
-
-  // 隐藏小红点
-  const badge=document.getElementById('signal-badge');
-  if(badge) badge.style.display='none';
-
   // 默认显示未读Tab
   switchSignalTab('unread');
+
+  // 先渲染信号列表，让用户看到未读消息
+  renderSignalLists();
 }
 
 function switchSignalTab(tab){
@@ -948,7 +944,12 @@ function closeSignalModal(){
   modal.classList.remove('show');
   setTimeout(()=>{ modal.style.display='none'; }, 200);
 
-  // 不再需要保存已读状态，因为打开弹窗时已经标记为已读
+  // 关闭弹窗时，将所有未读消息标记为已读
+  markAllSignalsAsRead();
+
+  // 隐藏小红点
+  const badge=document.getElementById('signal-badge');
+  if(badge) badge.style.display='none';
 }
 
 function renderSignalLists(){
