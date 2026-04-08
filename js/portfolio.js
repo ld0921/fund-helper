@@ -987,10 +987,15 @@ function resetSmartGenButton(){
 }
 
 function _doGenerate(shouldScroll){
+  // 精选库未加载时等待后重试（loadCuratedFunds 异步，可能尚未完成）
+  if(CURATED_FUNDS.length === 0){
+    setTimeout(()=>_doGenerate(shouldScroll), 500);
+    return;
+  }
   // 数据新鲜度守卫：检测精选库数据是否超过7天未更新
   const staleNotice = document.getElementById('data-stale-notice');
   const isStale = !_curatedTimestamp || (Date.now() - new Date(_curatedTimestamp).getTime()) > 7 * 24 * 60 * 60 * 1000;
-  const isEmpty = CURATED_FUNDS.length === 0;
+  const isEmpty = false;
   if(isEmpty || isStale){
     const msg = isEmpty
       ? '⚠️ <b>精选基金库尚未加载</b>，无法生成方案。请检查网络连接后刷新页面重试。'

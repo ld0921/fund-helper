@@ -34,8 +34,20 @@ async function loadCuratedFunds() {
     });
     CURATED_FUNDS = funds;
     console.log(`[精选库] 已加载 ${funds.length} 只基金，数据时间：${_curatedTimestamp}`);
+    // 更新页面上的精选库状态显示
+    const statusEl = document.getElementById('curated-update-status');
+    if(statusEl && _curatedTimestamp){
+      const d = new Date(_curatedTimestamp);
+      const dateStr = d.toLocaleDateString('zh-CN', {month:'numeric', day:'numeric'});
+      const isStale = (Date.now() - d.getTime()) > 7 * 24 * 60 * 60 * 1000;
+      statusEl.innerHTML = isStale
+        ? `<span style="color:#faad14">⚠️ 上次更新 ${dateStr}（已超7天）</span>`
+        : `<span style="color:#52c41a">✅ 上次更新 ${dateStr} · ${funds.length} 只基金</span>`;
+    }
   } catch (e) {
     console.warn('[精选库] 加载失败，使用空库', e);
+    const statusEl = document.getElementById('curated-update-status');
+    if(statusEl) statusEl.innerHTML = '<span style="color:#ff4d4f">❌ 数据加载失败</span>';
   }
 }
 
