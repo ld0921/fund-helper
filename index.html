@@ -489,33 +489,6 @@
 
 </div>
 
-<!-- ===================== 面板3: 持仓诊断 ===================== -->
-<div class="panel" id="panel3">
-
-  <!-- 区块A：持仓健康诊断（复用 runHealthMonitor 输出） -->
-  <div id="health-monitor-wrap"></div>
-
-  <!-- 区块B：主动调仓建议 -->
-  <div id="diagnostics-rebal-wrap"></div>
-
-  <!-- 区块C：市场行情概览 -->
-  <div class="card" id="diag-market-card">
-    <div class="card-title"><span class="icon icon-blue">📊</span>市场行情概览</div>
-    <div class="table-wrap" id="diag-market-desktop">
-      <table class="market-table" id="diag-market-table"></table>
-    </div>
-    <div id="diag-market-mobile" style="display:none"></div>
-    <div id="diag-market-summary" style="margin-top:12px;padding:12px;background:#f8f9fc;border-radius:8px;font-size:13px;line-height:1.8"></div>
-  </div>
-
-  <!-- 无持仓空状态 -->
-  <div id="diag-empty" style="display:none" class="empty-state" style="margin-top:40px">
-    <div class="empty-icon">🏥</div>
-    <div class="empty-text">暂无持仓数据<br>请先在「我的资产」录入持仓，系统将自动分析</div>
-    <button class="btn btn-ghost btn-sm" onclick="switchTab(2)">前往录入持仓</button>
-  </div>
-
-</div>
 
 <!-- ===================== 面板1: 定投专区 ===================== -->
 <div class="panel" id="panel1">
@@ -879,6 +852,34 @@
     <div id="backup-status" style="font-size:12px;color:var(--muted)"></div>
   </div>
 </div>
+
+</div>
+
+<!-- ===================== 面板3: 持仓诊断 ===================== -->
+<div class="panel" id="panel3">
+
+  <!-- 区块A：持仓健康诊断 -->
+  <div id="health-monitor-wrap"></div>
+
+  <!-- 区块B：主动调仓建议 -->
+  <div id="diagnostics-rebal-wrap"></div>
+
+  <!-- 区块C：市场行情概览 -->
+  <div class="card" id="diag-market-card">
+    <div class="card-title"><span class="icon icon-blue">📊</span>市场行情概览</div>
+    <div class="table-wrap" id="diag-market-desktop">
+      <table class="market-table" id="diag-market-table"></table>
+    </div>
+    <div id="diag-market-mobile" style="display:none"></div>
+    <div id="diag-market-summary" style="margin-top:12px;padding:12px;background:#f8f9fc;border-radius:8px;font-size:13px;line-height:1.8"></div>
+  </div>
+
+  <!-- 无持仓空状态 -->
+  <div id="diag-empty" style="display:none" class="empty-state">
+    <div class="empty-icon">🏥</div>
+    <div class="empty-text">暂无持仓数据<br>请先在「我的资产」录入持仓，系统将自动分析</div>
+    <button class="btn btn-ghost btn-sm" onclick="switchTab(2)">前往录入持仓</button>
+  </div>
 
 </div>
 
