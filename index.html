@@ -2121,7 +2121,7 @@ function renderFundList(){
   const tb=document.getElementById('fund-list');
   const cardsEl=document.getElementById('fund-cards');
   const section=document.getElementById('fund-result-section');
-  if(!funds.length){tb.innerHTML='';if(cardsEl)cardsEl.innerHTML='';if(section)section.style.display='none';return;}
+  if(!tb) return; // 快速评分区块已移除时跳过
   if(section) section.style.display='';
   tb.innerHTML=funds.map((f,i)=>{ const sc=scoreF(f),cl=scoreColor(sc);
     return`<tr><td><b>${escHtml(f.name)}</b></td><td><code>${escHtml(f.code)}</code></td><td>${typeTag(f.type)}</td>
