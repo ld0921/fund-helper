@@ -263,49 +263,27 @@ function computeRebalancePlan(targetPicks, newMoney){
   const order={sell:0,reduce:1,reduce_gentle:1.5,buy:2,buy_more:3,hold:4,satellite:5};
   actions.sort((a,b)=>(order[a.action]??9)-(order[b.action]??9));
 
-  // 修复：将减持释放的资金重新分配到买入操作中，确保资金平衡
-  // 1. 先计算减持释放的资金
+  // 计算减持释放的资金
   const sellTotal = actions.filter(a=>a.action==='sell').reduce((s,a)=>s+a.actionAmt,0);
   const reduceTotal = actions.filter(a=>a.action==='reduce'||a.action==='reduce_gentle').reduce((s,a)=>s+a.actionAmt,0);
   const totalRelease = sellTotal + reduceTotal;
-  const totalAvailable = newMoney + totalRelease; // 可用总额 = 新增资金 + 减持释放
 
-  // 2. 按比例重新分配买入金额，使买入总额 = 可用总额
+  // 资金平衡校验：买入总额应 ≈ 新增资金 + 减持释放
+  // targetAmt 来自 AI方案的 pick.amt，actionAmt = targetAmt - currentAmt
+  // 正常情况下无需重新分配，因为 AI 方案的目标总额 = existTotal + newMoney
+  // 仅在累积误差超过阈值时做微调（将差额分摊到最大买入操作）
   const buyActions = actions.filter(a=>['buy','buy_more'].includes(a.action));
-  const currentBuyTotal = buyActions.reduce((s,a)=>s+a.actionAmt,0);
-  if(buyActions.length > 0 && Math.abs(currentBuyTotal - totalAvailable) > 1){
-    if(currentBuyTotal > 0){
-      // 按各买入操作原比例重新分配
-      const scale = totalAvailable / currentBuyTotal;
-      let allocated = 0;
-      buyActions.forEach((a, i) => {
-        if(i < buyActions.length - 1){
-          a.actionAmt = Math.round(a.actionAmt * scale);
-          allocated += a.actionAmt;
-        } else {
-          // 最后一个用减法兜底，避免四舍五入累积误差
-          a.actionAmt = totalAvailable - allocated;
-        }
-        a.targetAmt = a.currentAmt + a.actionAmt;
-        // 更新描述
-        if(a.action === 'buy'){
-          a.actionDesc = `新建仓 ¥${a.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
-        } else {
-          a.actionDesc = `加仓 ¥${a.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
-        }
-      });
+  const actualBuyTotal = buyActions.reduce((s,a)=>s+a.actionAmt,0);
+  const totalAvailable = newMoney + totalRelease;
+  if(buyActions.length > 0 && Math.abs(actualBuyTotal - totalAvailable) > 10){
+    const diff = totalAvailable - actualBuyTotal;
+    const maxBuy = [...buyActions].sort((a,b)=>b.actionAmt-a.actionAmt)[0];
+    maxBuy.actionAmt += diff;
+    maxBuy.targetAmt = maxBuy.currentAmt + maxBuy.actionAmt;
+    if(maxBuy.action === 'buy'){
+      maxBuy.actionDesc = `新建仓 ¥${maxBuy.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
     } else {
-      // 所有买入金额为0的极端情况，平均分配
-      const each = Math.round(totalAvailable / buyActions.length);
-      let allocated = 0;
-      buyActions.forEach((a, i) => {
-        a.actionAmt = i < buyActions.length - 1 ? each : totalAvailable - allocated;
-        allocated += a.actionAmt;
-        a.targetAmt = a.currentAmt + a.actionAmt;
-        a.actionDesc = a.action === 'buy'
-          ? `新建仓 ¥${a.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`
-          : `加仓 ¥${a.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
-      });
+      maxBuy.actionDesc = `加仓 ¥${maxBuy.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
     }
   }
 
@@ -1841,7 +1819,6 @@ function renderAllocGroups(selectedPicks, weights){
           <div class="alloc-item-pct" style="color:${g.color}">${f.pct}%</div>
           <div class="alloc-item-amt">¥${Math.round(f.amt).toLocaleString()}</div>
           <div class="alloc-item-method">${methodLabel(f.method)}</div>
-          <button class="btn btn-sm" style="background:var(--primary);color:#fff;font-size:11px;padding:2px 8px" onclick="copyCode('${f.code}');showToast('已复制 ${f.code}，请打开支付宝搜索购买。买入后回到「资产」页录入持仓','success',4000)">复制代码</button>
         </div>`;
       }).join('')}</div>
     </div>`;
