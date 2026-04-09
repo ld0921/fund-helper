@@ -13,7 +13,7 @@ function runSignalEngine(){
     return;
   }
 
-  // 合并所有持仓来源
+  // 合并所有持仓来源（修复：使用 execLog 计算准确成本）
   const allHeld = [];
   existingHoldings.forEach(h=>{
     if(!allHeld.some(x=>x.code===h.code)){
@@ -23,10 +23,21 @@ function runSignalEngine(){
       allHeld.push({code:h.code, name:h.name, value, cost, status:h.status||'confirmed'});
     }
   });
-  dcaPlans.forEach(d=>{ if(!allHeld.some(x=>x.code===d.code)&&d.curval>0){
-    const months=d.start?Math.max(0,Math.floor((new Date()-new Date(d.start))/30/86400000)):0;
-    allHeld.push({code:d.code,name:d.name,value:d.curval,cost:d.monthly*months});
-  }});
+  dcaPlans.forEach(d=>{
+    if(!allHeld.some(x=>x.code===d.code) && d.curval>0){
+      // 使用 execLog 计算准确成本
+      const executedCount = d.execLog ? Object.keys(d.execLog).filter(k => d.execLog[k]).length : 0;
+      let cost;
+      if(executedCount > 0){
+        cost = executedCount * d.monthly;
+      } else {
+        // 如果没有 execLog，回退到估算
+        const months = d.start ? Math.max(0, Math.floor((new Date()-new Date(d.start))/30/86400000)) : 0;
+        cost = d.monthly * months;
+      }
+      allHeld.push({code:d.code, name:d.name, value:d.curval, cost:cost});
+    }
+  });
 
   if(!allHeld.length && !CURATED_FUNDS.length) return;
 
@@ -309,7 +320,7 @@ function requestNotificationPermission(){
   }
 }
 
-// ═══════════════ 持仓健康诊断（动态阈值 + 集中度分析） ═══════════════
+// ═══════════════ 持仓健康诊断（动态阈值 + 集中度分析 + 区分持仓/定投） ═══════════════
 function runHealthMonitor(){
   // 检查净值数据新鲜度：如果缓存数据超过1天，不运行健康监控（避免使用过期数据）
   const lastRefreshTime = localStorage.getItem('lastNavRefreshTime');
@@ -329,23 +340,48 @@ function runHealthMonitor(){
   }
 
   const wrap = document.getElementById('health-monitor-wrap');
-  // 合并 existingHoldings + dcaPlans
-  const allHeld = [];
+
+  // 分别收集持仓和定投计划
+  const holdings = [];
+  const dcaHoldings = [];
+
   existingHoldings.forEach(h=>{
-    if(!allHeld.some(x=>x.code===h.code)){
+    if(!holdings.some(x=>x.code===h.code)){
       const nav = navCache[h.code];
       const curNav = nav ? parseFloat(nav.gsz)||1 : 1;
       const cost = h.amount || h.value || 0;
       const value = h.amount ? (h.amount / (h.cost||curNav) * curNav) : (h.value||0);
-      allHeld.push({code:h.code, name:h.name, value, cost, source:'existing'});
+      holdings.push({code:h.code, name:h.name, value, cost, source:'existing'});
     }
   });
-  dcaPlans.forEach(d=>{ if(!allHeld.some(x=>x.code===d.code)&&d.curval>0){
-    const months=d.start?Math.max(0,Math.floor((new Date()-new Date(d.start))/30/86400000)):0;
-    allHeld.push({code:d.code,name:d.name,value:d.curval,cost:d.monthly*months,source:'dca'});
-  }});
 
-  if(!allHeld.length){ wrap.innerHTML=''; return; }
+  dcaPlans.forEach(d=>{
+    if(holdings.some(x=>x.code===d.code)) return; // 已在持仓中，不重复
+    if(!d.curval || d.curval <= 0) return; // 无市值数据
+
+    // 使用 execLog 计算准确成本
+    const executedCount = d.execLog ? Object.keys(d.execLog).filter(k => d.execLog[k]).length : 0;
+    let cost;
+    if(executedCount > 0){
+      cost = executedCount * d.monthly;
+    } else {
+      // 如果没有 execLog，回退到估算
+      const months = d.start ? Math.max(0, Math.floor((new Date()-new Date(d.start))/30/86400000)) : 0;
+      cost = d.monthly * months;
+    }
+
+    dcaHoldings.push({
+      code: d.code,
+      name: d.name,
+      value: d.curval,
+      cost: cost,
+      source: 'dca',
+      monthly: d.monthly,
+      paused: d.paused || false
+    });
+  });
+
+  if(!holdings.length && !dcaHoldings.length){ wrap.innerHTML=''; return; }
 
   // 计算各类别统计（均值 + 标准差，用于动态阈值）
   const catStats = {};
@@ -358,10 +394,13 @@ function runHealthMonitor(){
   });
 
   const catRanksCache = Object.keys(navCache).length>0 ? analyzeCategoryPerf() : null;
+  const allHeld = [...holdings, ...dcaHoldings];
   const totalPortValue = allHeld.reduce((s,h)=>s+h.value,0);
 
-  const alerts = [];
-  const okList = [];
+  const holdingAlerts = [];
+  const holdingOkList = [];
+  const dcaAlerts = [];
+  const dcaOkList = [];
 
   // 集中度检查
   const catConcentration = {};
@@ -371,8 +410,8 @@ function runHealthMonitor(){
     catConcentration[cat] = (catConcentration[cat]||0) + h.value;
   });
 
-  // 单只基金集中度 + 表现综合诊断（合并为一条，避免同一基金出现多行）
-  allHeld.forEach(h=>{
+  // ========== 诊断持仓基金（短期视角，严格标准） ==========
+  holdings.forEach(h=>{
     const fd = CURATED_FUNDS.find(f=>f.code===h.code);
     const nav = navCache[h.code];
     const todayChg = nav ? parseFloat(nav.gszzl)||0 : null;
@@ -393,12 +432,11 @@ function runHealthMonitor(){
         level = 'red';
       }
       if(issues.length){
-        alerts.push({code:h.code,name:h.name,level, desc:issues.join('；')+'。', action:level==='red'?'🔴 建议减仓':'🟡 需分散'});
+        holdingAlerts.push({code:h.code,name:h.name,level, desc:issues.join('；')+'。', action:level==='red'?'🔴 建议减仓':'🟡 需分散', source:'existing'});
       } else {
-        // 不在精选库但无明显问题的基金，也要显示在列表中
-        okList.push({code:h.code,name:h.name,level:'green',
+        holdingOkList.push({code:h.code,name:h.name,level:'green',
           desc:`该基金不在精选库中，无法进行详细诊断。${pnlPct!==null?`当前${pnlPct>=0?'盈利':'亏损'} ${Math.abs(pnlPct).toFixed(1)}%。`:''} ${todayChg!==null?`今日 ${todayChg>0?'+':''}${todayChg.toFixed(2)}%。`:''}建议自行评估。`,
-          action:'🟢 持有'});
+          action:'🟢 持有', source:'existing'});
       }
       return;
     }
@@ -422,7 +460,7 @@ function runHealthMonitor(){
       level = 'red';
     }
 
-    // 3. 当前亏损占最大回撤比例
+    // 当前亏损占最大回撤比例
     if(pnlPct !== null && pnlPct < 0 && fd.maxDD > 0){
       const ddRatio = (-pnlPct / fd.maxDD * 100);
       if(ddRatio > 80){
@@ -434,13 +472,13 @@ function runHealthMonitor(){
       }
     }
 
-    // 4. 今日大跌
+    // 今日大跌
     if(todayChg!==null && todayChg < -2){
       issues.push(`今日下跌 ${todayChg.toFixed(2)}%，关注是否有负面消息驱动`);
       if(level==='green') level='yellow';
     }
 
-    // 5. 类别行情末位且仓位大
+    // 类别行情末位且仓位大
     if(catRanksCache){
       const catRank = catRanksCache.findIndex(c=>c.cat===fd.cat);
       if(catRank>=3 && h.value > 5000){
@@ -449,11 +487,10 @@ function runHealthMonitor(){
       }
     }
 
-    // 6. 性价比诊断：Alpha评分 × 估值信号，识别"高价低质"持仓
+    // 性价比诊断
     const currentScore = scoreF(fd);
     const sameCatFunds = CURATED_FUNDS.filter(f=>f.cat===fd.cat && f.code!==fd.code);
 
-    // 评分 < 60 为不及格，必须标记为问题（与智能方案标准统一）
     if(currentScore < 60){
       if(sameCatFunds.length > 0){
         const betterFunds = sameCatFunds.filter(f=>scoreF(f) > currentScore + 10);
@@ -470,7 +507,6 @@ function runHealthMonitor(){
         if(level==='green') level='yellow';
       }
     } else if(sameCatFunds.length > 0){
-      // 评分及格但有明显更优选择
       const betterFunds = sameCatFunds.filter(f=>scoreF(f) > currentScore + 15);
       if(betterFunds.length > 0){
         const best = betterFunds.sort((a,b)=>scoreF(b)-scoreF(a))[0];
@@ -489,47 +525,185 @@ function runHealthMonitor(){
       const advice = level==='red'
         ? `建议考虑减仓或换入${fd.cat==='active'?'指数基金等':'同类更优基金'}，释放资金重新配置。`
         : '建议持续观察，若1个月内未改善可考虑调仓。';
-      alerts.push({code:h.code,name:h.name,level,
+      holdingAlerts.push({code:h.code,name:h.name,level,
         desc: issues.join('；') + '。' + advice,
-        action: actionMap[level]});
+        action: actionMap[level], source:'existing'});
     } else {
-      okList.push({code:h.code,name:h.name,level:'green',
+      holdingOkList.push({code:h.code,name:h.name,level:'green',
         desc:`表现正常。近1年 ${fd.r1>0?'+':''}${fd.r1}%，同类均值 ${stats.avgR1.toFixed(1)}%。${todayChg!==null?`今日 ${todayChg>0?'+':''}${todayChg.toFixed(2)}%。`:''}继续持有。`,
-        action:'🟢 持有'});
+        action:'🟢 持有', source:'existing'});
+    }
+  });
+
+  // ========== 诊断定投基金（长期视角，宽松标准） ==========
+  dcaHoldings.forEach(h=>{
+    const fd = CURATED_FUNDS.find(f=>f.code===h.code);
+    const nav = navCache[h.code];
+    const todayChg = nav ? parseFloat(nav.gszzl)||0 : null;
+    const pnlPct = h.cost>0 ? (h.value-h.cost)/h.cost*100 : null;
+    const pct = totalPortValue > 0 ? h.value / totalPortValue * 100 : 0;
+    const issues = [];
+    let level = 'green';
+
+    // 定投计划状态提示
+    const statusHint = h.paused ? '（已暂停）' : `（每月¥${h.monthly}）`;
+
+    if(!fd){
+      if(pnlPct!==null && pnlPct < -25){
+        issues.push(`定投亏损 ${pnlPct.toFixed(1)}%，已超过-25%预警线${statusHint}。该基金不在精选库`);
+        level = 'red';
+      }
+      if(issues.length){
+        dcaAlerts.push({code:h.code,name:h.name,level, desc:issues.join('；')+'。', action:level==='red'?'🔴 考虑暂停':'🟡 关注', source:'dca'});
+      } else {
+        dcaOkList.push({code:h.code,name:h.name,level:'green',
+          desc:`该基金不在精选库中，无法进行详细诊断${statusHint}。${pnlPct!==null?`当前${pnlPct>=0?'盈利':'亏损'} ${Math.abs(pnlPct).toFixed(1)}%。`:''} ${todayChg!==null?`今日 ${todayChg>0?'+':''}${todayChg.toFixed(2)}%。`:''}建议自行评估。`,
+          action:'🟢 继续定投', source:'dca'});
+      }
+      return;
+    }
+
+    const stats = catStats[fd.cat];
+    if(!stats) return;
+
+    // 定投专用：更宽松的动态阈值（Z < -2.5σ 才标红，Z < -1.5σ 才标黄）
+    const zScore = (fd.r1 - stats.avgR1) / stats.stdR1;
+    if(zScore < -2.5){
+      issues.push(`近1年收益 ${fd.r1>0?'+':''}${fd.r1}%，严重落后同类均值 ${stats.avgR1.toFixed(1)}%（${Math.abs(zScore).toFixed(1)}σ）${statusHint}`);
+      level = 'red';
+    } else if(zScore < -1.5){
+      issues.push(`近1年收益 ${fd.r1>0?'+':''}${fd.r1}%，落后同类均值 ${stats.avgR1.toFixed(1)}%${statusHint}`);
+      if(level!=='red') level = 'yellow';
+    }
+
+    // 定投专用：结构性亏损（r1 < -10% 且 r3 < -15%，比持仓更宽松）
+    if(fd.r1 < -10 && fd.r3 < -15){
+      issues.push(`近1年(${fd.r1}%)和近3年(${fd.r3}%)均严重亏损，长期趋势不佳${statusHint}`);
+      level = 'red';
+    }
+
+    // 定投专用：当前亏损占最大回撤比例（阈值提高到100%才标红，70%标黄）
+    // 定投在下跌中摊低成本是正常策略，不应过早预警
+    if(pnlPct !== null && pnlPct < 0 && fd.maxDD > 0){
+      const ddRatio = (-pnlPct / fd.maxDD * 100);
+      if(ddRatio > 100){
+        issues.push(`当前亏损 ${pnlPct.toFixed(1)}%，已超过历史最大跌幅(${fd.maxDD}%)${statusHint}`);
+        if(level !== 'red') level = 'red';
+      } else if(ddRatio > 70){
+        issues.push(`当前亏损 ${pnlPct.toFixed(1)}%，占历史最大跌幅(${fd.maxDD}%)的 ${ddRatio.toFixed(0)}%${statusHint}`);
+        if(level === 'green') level = 'yellow';
+      }
+    }
+
+    // 定投专用：今日大跌不作为预警（定投就是要在下跌时买入）
+    // 只在极端情况（-5%以上）才提示关注
+    if(todayChg!==null && todayChg < -5){
+      issues.push(`今日大幅下跌 ${todayChg.toFixed(2)}%，可能是加仓良机${statusHint}`);
+      // 不改变 level，仅作为信息提示
+    }
+
+    // 定投专用：性价比诊断（评分 < 50 才标记问题，比持仓更宽松）
+    const currentScore = scoreF(fd);
+    const dcaScore = calcDCAScore(fd);
+    const sameCatFunds = CURATED_FUNDS.filter(f=>f.cat===fd.cat && f.code!==fd.code);
+
+    if(currentScore < 50){
+      if(sameCatFunds.length > 0){
+        const betterFunds = sameCatFunds.filter(f=>scoreF(f) > currentScore + 20);
+        if(betterFunds.length > 0){
+          const best = betterFunds.sort((a,b)=>scoreF(b)-scoreF(a))[0];
+          issues.push(`综合评分 ${currentScore}分（较低），同类有更优选择（${best.name} ${scoreF(best)}分）${statusHint}。定投评分 ${dcaScore}分`);
+          level = 'yellow';
+        }
+      }
+    } else if(dcaScore < 60 && sameCatFunds.length > 0){
+      // 定投评分不及格，提示但不强制要求换基
+      const betterDcaFunds = sameCatFunds.filter(f=>calcDCAScore(f) > dcaScore + 15);
+      if(betterDcaFunds.length > 0){
+        const best = betterDcaFunds.sort((a,b)=>calcDCAScore(b)-calcDCAScore(a))[0];
+        issues.push(`定投评分 ${dcaScore}分（不及格），同类有更适合定投的基金（${best.name} ${calcDCAScore(best)}分）${statusHint}`);
+        if(level==='green') level='yellow';
+      }
+    }
+
+    const actionMap = {
+      red: '🔴 考虑暂停',
+      yellow: '🟡 关注观察',
+      green: '🟢 继续定投',
+    };
+
+    if(issues.length>0){
+      const advice = level==='red'
+        ? `定投是长期策略，但该基金长期表现不佳。建议${h.paused?'重新评估是否恢复':'暂停定投'}，或换入同类更优基金。`
+        : '定投需要耐心，短期波动是正常的。建议持续观察，若3个月内未改善可考虑调整。';
+      dcaAlerts.push({code:h.code,name:h.name,level,
+        desc: issues.join('；') + '。' + advice,
+        action: actionMap[level], source:'dca'});
+    } else {
+      dcaOkList.push({code:h.code,name:h.name,level:'green',
+        desc:`定投表现良好${statusHint}。近1年 ${fd.r1>0?'+':''}${fd.r1}%，同类均值 ${stats.avgR1.toFixed(1)}%。定投评分 ${dcaScore}分。${todayChg!==null?`今日 ${todayChg>0?'+':''}${todayChg.toFixed(2)}%。`:''}坚持定投。`,
+        action:'🟢 继续定投', source:'dca'});
     }
   });
 
   // 类别集中度预警（独立条目）
+  const catAlerts = [];
   Object.keys(catConcentration).forEach(cat=>{
     if(cat === 'other') return;
     const catPct = totalPortValue > 0 ? catConcentration[cat] / totalPortValue * 100 : 0;
     if(catPct > 60){
       const catName = CAT_NAMES[cat] || cat;
-      alerts.push({code:'_cat_'+cat,name:`${catName}类别`,level:'yellow',
+      catAlerts.push({code:'_cat_'+cat,name:`${catName}类别`,level:'yellow',
         desc:`${catName}类别占总持仓 ${catPct.toFixed(1)}%，超过60%警戒线。建议分散到其他类别。`,
-        action:'🟡 需分散'});
+        action:'🟡 需分散', source:'category'});
     }
   });
 
-  if(!alerts.length && !okList.length){ wrap.innerHTML=''; return; }
+  // 合并所有诊断结果
+  const allAlerts = [...holdingAlerts, ...dcaAlerts, ...catAlerts];
+  const allOkList = [...holdingOkList, ...dcaOkList];
 
-  const redCount = alerts.filter(a=>a.level==='red').length;
-  const yellowCount = alerts.filter(a=>a.level==='yellow').length;
+  if(!allAlerts.length && !allOkList.length){ wrap.innerHTML=''; return; }
+
+  const redCount = allAlerts.filter(a=>a.level==='red').length;
+  const yellowCount = allAlerts.filter(a=>a.level==='yellow').length;
   const headerClass = redCount>0?'':'alert-green';
   const headerIcon = redCount>0?'🔴':yellowCount>0?'🟡':'✅';
   const headerMsg = redCount>0?`发现 ${redCount} 项高风险预警，${yellowCount} 项关注信号`:
     yellowCount>0?`发现 ${yellowCount} 项关注信号，其余持仓表现良好`:'所有持仓表现良好，当前策略合理';
 
-  const renderItem = a => `<div class="health-item">
-    <div class="health-dot health-${a.level}"></div>
-    <div class="health-fund">
-      <div class="health-name">${escHtml(a.name)} <code style="font-size:10px;color:var(--muted)">${escHtml(a.code)}</code></div>
-      <div class="health-desc">${escHtml(a.desc)}</div>
-    </div>
-    <div class="health-action" style="color:${a.level==='red'?'var(--danger)':a.level==='yellow'?'var(--warning)':'var(--success)'}">${escHtml(a.action)}</div>
-  </div>`;
+  const renderItem = (a, showSourceLabel) => {
+    const sourceLabel = showSourceLabel && a.source === 'dca' ? '<span style="font-size:10px;padding:2px 6px;background:#e6f7ff;color:#1890ff;border-radius:4px;margin-left:6px">定投</span>' : '';
+    return `<div class="health-item">
+      <div class="health-dot health-${a.level}"></div>
+      <div class="health-fund">
+        <div class="health-name">${escHtml(a.name)} <code style="font-size:10px;color:var(--muted)">${escHtml(a.code)}</code>${sourceLabel}</div>
+        <div class="health-desc">${escHtml(a.desc)}</div>
+      </div>
+      <div class="health-action" style="color:${a.level==='red'?'var(--danger)':a.level==='yellow'?'var(--warning)':'var(--success)'}">${escHtml(a.action)}</div>
+    </div>`;
+  };
 
-  const hasIssues = alerts.length > 0;
+  const hasIssues = allAlerts.length > 0;
+
+  // 分组渲染：持仓基金 / 定投基金
+  let contentHtml = '';
+
+  if(holdingAlerts.length > 0 || holdingOkList.length > 0){
+    contentHtml += `<div style="padding:10px 14px;background:#f0f5ff;border-bottom:1px solid #d6e4ff;font-size:12px;font-weight:600;color:#1890ff">📊 持仓基金诊断（${holdings.length}只）</div>`;
+    contentHtml += [...holdingAlerts, ...holdingOkList].map(a => renderItem(a, false)).join('');
+  }
+
+  if(dcaAlerts.length > 0 || dcaOkList.length > 0){
+    contentHtml += `<div style="padding:10px 14px;background:#f6ffed;border-bottom:1px solid #b7eb8f;font-size:12px;font-weight:600;color:#52c41a">📈 定投基金诊断（${dcaHoldings.length}只）</div>`;
+    contentHtml += [...dcaAlerts, ...dcaOkList].map(a => renderItem(a, false)).join('');
+  }
+
+  if(catAlerts.length > 0){
+    contentHtml += `<div style="padding:10px 14px;background:#fff7e6;border-bottom:1px solid #ffd591;font-size:12px;font-weight:600;color:#d48806">⚖️ 资产配置诊断</div>`;
+    contentHtml += catAlerts.map(a => renderItem(a, false)).join('');
+  }
+
   wrap.innerHTML=`<details class="card ${headerClass} alert-card" style="padding:0;overflow:hidden;cursor:pointer" ${hasIssues?'open':''}>
     <summary style="padding:14px 16px;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:8px">
       <div style="flex:1">
@@ -539,9 +713,9 @@ function runHealthMonitor(){
       <span class="toggle-arrow" style="font-size:12px;color:var(--primary);flex-shrink:0"></span>
     </summary>
     <div style="border-top:1px solid #f0f0f0">
-    ${[...alerts,...okList].map(renderItem).join('')}
+    ${contentHtml}
     <div style="padding:8px 14px;font-size:11px;color:var(--muted);background:#fafafa">
-      💡 诊断基于同类基金对比 + 持仓集中度分析。${Object.keys(navCache).length>0?'已融合实时行情数据':'建议等待净值加载后刷新'}。
+      💡 持仓基金采用短期视角（严格标准），定投基金采用长期视角（宽松标准）。${Object.keys(navCache).length>0?'已融合实时行情数据':'建议等待净值加载后刷新'}。
     </div>
     </div>
   </details>`;
