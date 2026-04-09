@@ -691,23 +691,80 @@ function runHealthMonitor(){
 
   const hasIssues = allAlerts.length > 0;
 
-  // 分组渲染：持仓基金 / 定投基金
+  // 分组渲染：持仓基金 / 定投基金（各自可折叠）
+  const holdingRedCount = holdingAlerts.filter(a=>a.level==='red').length;
+  const holdingYellowCount = holdingAlerts.filter(a=>a.level==='yellow').length;
+  const dcaRedCount = dcaAlerts.filter(a=>a.level==='red').length;
+  const dcaYellowCount = dcaAlerts.filter(a=>a.level==='yellow').length;
+
+  const holdingSummary = holdingRedCount>0 ? `${holdingRedCount} 项预警` : holdingYellowCount>0 ? `${holdingYellowCount} 项关注` : `${holdingOkList.length} 只表现良好`;
+  const dcaSummary = dcaRedCount>0 ? `${dcaRedCount} 项预警` : dcaYellowCount>0 ? `${dcaYellowCount} 项关注` : `${dcaOkList.length} 只适配良好`;
+
   let contentHtml = '';
 
   if(holdingAlerts.length > 0 || holdingOkList.length > 0){
-    contentHtml += `<div style="padding:10px 14px;background:#f0f5ff;border-bottom:1px solid #d6e4ff;font-size:12px;font-weight:600;color:#1890ff">📊 持仓基金诊断（${holdings.length}只）</div>`;
-    contentHtml += [...holdingAlerts, ...holdingOkList].map(a => renderItem(a, false)).join('');
+    const holdingHasIssues = holdingAlerts.length > 0;
+    contentHtml += `<details style="border-bottom:1px solid #e8e8e8" ${holdingHasIssues?'open':''}>
+      <summary style="padding:10px 14px;background:#f0f5ff;border-bottom:1px solid #d6e4ff;font-size:12px;font-weight:600;color:#1890ff;cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between">
+        <span>📊 持仓基金诊断（${holdings.length}只）</span>
+        <span style="font-size:11px;font-weight:400;color:#8c8c8c">${holdingSummary} · 点击展开/收起</span>
+      </summary>
+      <div>${[...holdingAlerts, ...holdingOkList].map(a => renderItem(a, false)).join('')}</div>
+    </details>`;
   }
 
   if(dcaAlerts.length > 0 || dcaOkList.length > 0){
-    contentHtml += `<div style="padding:10px 14px;background:#d9f7be;border-bottom:1px solid #95de64;font-size:12px;font-weight:600;color:#389e0d">📈 定投基金诊断（${dcaHoldings.length}只）</div>`;
-    contentHtml += [...dcaAlerts, ...dcaOkList].map(a => renderItem(a, false)).join('');
+    const dcaHasIssues = dcaAlerts.length > 0;
+    contentHtml += `<details style="border-bottom:1px solid #e8e8e8" ${dcaHasIssues?'open':''}>
+      <summary style="padding:10px 14px;background:#d9f7be;border-bottom:1px solid #95de64;font-size:12px;font-weight:600;color:#389e0d;cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between">
+        <span>📈 定投基金诊断（${dcaHoldings.length}只）</span>
+        <span style="font-size:11px;font-weight:400;color:#8c8c8c">${dcaSummary} · 点击展开/收起</span>
+      </summary>
+      <div>${[...dcaAlerts, ...dcaOkList].map(a => renderItem(a, false)).join('')}</div>
+    </details>`;
   }
 
   if(catAlerts.length > 0){
     contentHtml += `<div style="padding:10px 14px;background:#fff7e6;border-bottom:1px solid #ffd591;font-size:12px;font-weight:600;color:#d48806">⚖️ 资产配置诊断</div>`;
     contentHtml += catAlerts.map(a => renderItem(a, false)).join('');
   }
+
+  // 诊断策略说明
+  const strategyHtml = `<details style="border-top:1px solid #f0f0f0">
+    <summary style="padding:8px 14px;font-size:11px;color:var(--muted);background:#fafafa;cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between">
+      <span>💡 持仓基金采用短期视角（严格标准），定投基金采用长期视角（宽松标准）。${Object.keys(navCache).length>0?'已融合实时行情数据':'建议等待净值加载后刷新'}。</span>
+      <span style="color:var(--primary);flex-shrink:0;font-size:11px">诊断策略说明 ▸</span>
+    </summary>
+    <div style="padding:10px 14px;background:#fafafa;font-size:11px;color:#595959;line-height:1.8;border-top:1px dashed #e8e8e8">
+      <div style="margin-bottom:8px"><b style="color:#1890ff">📊 持仓基金诊断（短期严格标准）</b></div>
+      <div style="padding-left:12px;margin-bottom:10px">
+        适用于已买入的基金，侧重<b>短期风险控制与及时止损</b>。<br>
+        · 集中度检查：单只基金占总持仓超过 40% 触发预警<br>
+        · 同类对比：基于 Z-Score 动态阈值，落后同类 1σ 以上关注，2σ 以上预警<br>
+        · 结构性亏损：近1年与近3年均为负收益时标红<br>
+        · 回撤监控：当前亏损达历史最大回撤 50%/80% 时逐级预警<br>
+        · 今日异动：单日跌幅超过 -2% 触发关注<br>
+        · 性价比评分：综合评分（scoreF）不及格且同类有更优选择时建议换仓
+      </div>
+      <div style="margin-bottom:8px"><b style="color:#389e0d">📈 定投基金诊断（长期宽松标准）</b></div>
+      <div style="padding-left:12px;margin-bottom:10px">
+        适用于定投计划中的基金，侧重<b>长期趋势与定投适配性</b>。<br>
+        · 定投适配度：基于 calcDCAScore 评估波动适度性、长期趋势、管理质量等<br>
+        · 长期趋势：近3年收益低于 -15% 时才触发严重预警（定投允许短期下跌摊成本）<br>
+        · 回撤容忍：阈值放宽至 70%/100%（定投本身就是下跌买入策略）<br>
+        · 同类对比：Z-Score 阈值放宽至 -1.5σ/-2.5σ<br>
+        · 今日异动：仅 -5% 以上极端大跌才提示（定投不关注日波动）<br>
+        · 定投评分：综合评分与定投专属评分双重参考，推荐更适合定投的替代标的
+      </div>
+      <div style="margin-bottom:8px"><b style="color:#d48806">⚖️ 资产配置诊断</b></div>
+      <div style="padding-left:12px;margin-bottom:10px">
+        · 检测某一类别基金占总持仓超过 60% 的集中风险，建议分散配置
+      </div>
+      <div style="color:#8c8c8c;border-top:1px dashed #e8e8e8;padding-top:6px;margin-top:4px">
+        ⏱ 诊断频率：每次刷新净值后自动运行 · 净值数据超过24小时未刷新则暂停诊断 · 数据来源：精选基金库 + 实时行情
+      </div>
+    </div>
+  </details>`;
 
   wrap.innerHTML=`<details class="card ${headerClass} alert-card" style="padding:0;overflow:hidden;cursor:pointer" ${hasIssues?'open':''}>
     <summary style="padding:14px 16px;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:8px">
@@ -719,9 +776,7 @@ function runHealthMonitor(){
     </summary>
     <div style="border-top:1px solid #f0f0f0">
     ${contentHtml}
-    <div style="padding:8px 14px;font-size:11px;color:var(--muted);background:#fafafa">
-      💡 持仓基金采用短期视角（严格标准），定投基金采用长期视角（宽松标准）。${Object.keys(navCache).length>0?'已融合实时行情数据':'建议等待净值加载后刷新'}。
-    </div>
+    ${strategyHtml}
     </div>
   </details>`;
 }
