@@ -131,7 +131,7 @@ function computeRebalancePlan(targetPicks, newMoney){
       action='buy_more'; actionAmt=pick.newBuyAmt;
       actionDesc=`加仓 ¥${pick.newBuyAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
       actionColor='act-buy_more';
-    } else if(diff>tol){
+    } else if(diff>tol && diff > 0){ // 修复问题3：强制检查diff>0，避免负数加仓
       action='buy_more'; actionAmt=diff;
       actionDesc=`加仓 ¥${diff.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
       actionColor='act-buy_more';
@@ -279,12 +279,16 @@ function computeRebalancePlan(targetPicks, newMoney){
     }
   }
 
+  // 修复问题1和2：计算资金流动并显示
   const summary={
     existTotal, newMoney, totalPortfolio,
     sellAmt:  actions.filter(a=>a.action==='sell').reduce((s,a)=>s+a.actionAmt,0),
     reduceAmt:actions.filter(a=>a.action==='reduce'||a.action==='reduce_gentle').reduce((s,a)=>s+a.actionAmt,0),
-    buyAmt:   newMoney, // 直接使用用户输入的新增资金
+    buyAmt:   actions.filter(a=>['buy','buy_more'].includes(a.action)).reduce((s,a)=>s+a.actionAmt,0),
   };
+  summary.totalRelease = summary.sellAmt + summary.reduceAmt;
+  summary.flowBalance = summary.newMoney + summary.totalRelease - summary.buyAmt;
+
   return {actions,summary};
 }
 
@@ -293,12 +297,33 @@ function renderRebalancePlan(plan){
   document.getElementById('rebal-card').style.display='block';
   const {summary,actions}=plan;
   const releaseAmt=summary.sellAmt+summary.reduceAmt;
-  document.getElementById('rebal-summary').innerHTML=`
+
+  // 修复问题1和2：显示资金流动总览
+  let summaryHtml = `
     <div class="rebal-sum-item"><div class="rebal-sum-val">¥${summary.existTotal.toLocaleString('zh-CN',{maximumFractionDigits:0})}</div><div class="rebal-sum-lbl">当前持仓总值</div></div>
     <div class="rebal-sum-item"><div class="rebal-sum-val">¥${summary.newMoney.toLocaleString('zh-CN',{maximumFractionDigits:0})}</div><div class="rebal-sum-lbl">新增可投资金</div></div>
     <div class="rebal-sum-item"><div class="rebal-sum-val" style="color:var(--primary)">¥${summary.totalPortfolio.toLocaleString('zh-CN',{maximumFractionDigits:0})}</div><div class="rebal-sum-lbl">总目标组合规模</div></div>
     <div class="rebal-sum-item"><div class="rebal-sum-val" style="color:var(--danger)">¥${releaseAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}</div><div class="rebal-sum-lbl">建议减持释放</div></div>
     <div class="rebal-sum-item"><div class="rebal-sum-val" style="color:var(--success)">¥${summary.buyAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}</div><div class="rebal-sum-lbl">建议买入总额</div></div>`;
+
+  document.getElementById('rebal-summary').innerHTML = summaryHtml;
+
+  // 增加资金流动说明
+  if(releaseAmt > 0 || summary.newMoney > 0){
+    const totalAvailable = summary.newMoney + releaseAmt;
+    const flowBalance = summary.flowBalance || 0;
+    const flowHtml = `<div style="margin-top:12px;padding:10px 14px;background:#e6f7ff;border-radius:8px;border-left:3px solid var(--primary)">
+      <div style="font-size:12px;font-weight:600;color:var(--primary);margin-bottom:6px">💰 资金流动说明</div>
+      <div style="font-size:11px;color:#595959;line-height:1.8">
+        ${releaseAmt > 0 ? `• 减持释放：¥${releaseAmt.toLocaleString()} （卖出 ¥${summary.sellAmt.toLocaleString()} + 减仓 ¥${summary.reduceAmt.toLocaleString()}）<br>` : ''}
+        • 新增资金：¥${summary.newMoney.toLocaleString()}<br>
+        • 可用总额：¥${totalAvailable.toLocaleString()}<br>
+        • 建议买入：¥${summary.buyAmt.toLocaleString()}<br>
+        ${Math.abs(flowBalance) > 1 ? `• 结余：¥${flowBalance.toLocaleString()}（${flowBalance > 0 ? '可继续投资或留作备用金' : '需补充资金'}）` : '• 资金刚好用完，无结余'}
+      </div>
+    </div>`;
+    document.getElementById('rebal-summary').insertAdjacentHTML('afterend', flowHtml);
+  }
 
   const actionIcons={sell:'🔴',reduce:'🟠',reduce_gentle:'🟡',buy:'🟢',buy_more:'🔵',hold:'⚪',satellite:'🟣'};
   const actionLabels={sell:'建议卖出',reduce:'建议减仓',reduce_gentle:'温和调整',buy:'建议新买',buy_more:'建议加仓',hold:'建议持有',satellite:'观察持仓'};
@@ -1041,7 +1066,7 @@ function _doGenerate(shouldScroll){
   const portfolioTotal = existTotal + totalAmt; // 总资产 = 已有 + 新资金
   const hasHoldings = existTotal > 0;
 
-  // 分析已有持仓：按类别分组 + 质量评估
+  // 分析已有持仓：按类别分组 + 质量评估（修复问题4：使用最新净值计算市值）
   const holdingsByCat = {}; // { cat: [{code,name,value,score,keep,fundData}] }
   const replaceSuggestions = []; // 建议替换的低分基金
   if(hasHoldings){
@@ -1049,12 +1074,18 @@ function _doGenerate(shouldScroll){
       const fd = CURATED_FUNDS.find(f=>f.code===h.code);
       const cat = fd ? fd.cat : null;
       if(!cat) return; // 未知基金跳过
+
+      // 使用最新净值计算当前市值
+      const nav = navCache[h.code];
+      const curNav = nav ? parseFloat(nav.gsz)||1 : 1;
+      const currentValue = h.amount ? (h.amount / (h.cost||curNav) * curNav) : (h.value||0);
+
       const score = scoreF(fd);
       const keep = score >= 60; // 评分≥60为达标（60分及格线，与持仓诊断标准统一）
       if(!holdingsByCat[cat]) holdingsByCat[cat] = [];
-      holdingsByCat[cat].push({ code:h.code, name:h.name||fd.name, value:h.value, score, keep, fundData:fd });
+      holdingsByCat[cat].push({ code:h.code, name:h.name||fd.name, value:currentValue, score, keep, fundData:fd });
       // 只有评分<60且已确认的持仓才建议替换
-      if(!keep && h.status === 'confirmed') replaceSuggestions.push({ code:h.code, name:h.name||fd.name, cat, score, value:h.value });
+      if(!keep && h.status === 'confirmed') replaceSuggestions.push({ code:h.code, name:h.name||fd.name, cat, score, value:currentValue });
     });
   }
 
@@ -1403,10 +1434,13 @@ function _doGenerate(shouldScroll){
       ⚠️ <b>收益预估仅供参考，不构成收益承诺。</b>模型局限：①预期收益基于各类别长期年化中枢+均值回归模型，历史不代表未来；②波动率由maxDD按类别系数(DD_TO_VOL)转换，使用5×5相关性矩阵(含股债负相关)计算组合方差；③正态分布假设会低估极端尾部风险；④3年投影考虑了收益自相关修正。实际收益可能大幅偏离上述区间。P5极端情景年化可能达 ${expReturnP5.toFixed(1)}%。
     </div>`;
 
-  // 7. 副标题
+  // 7. 副标题（修复问题6：明确显示总资产构成）
   const riskNames={conservative:'保守型',moderate:'稳健型',balanced:'平衡型',aggressive:'进取型'};
   const horizonNames={1:'1年',2:'1-3年',5:'3-5年',10:'5年+'};
-  document.getElementById('plan-subtitle').textContent=`${riskNames[riskP]} · ${horizonNames[horizon]} · ¥${totalAmt.toLocaleString()}`;
+  const subtitleText = existTotal > 0
+    ? `${riskNames[riskP]} · ${horizonNames[horizon]} · 总资产 ¥${portfolioTotal.toLocaleString()}（已有 ¥${existTotal.toLocaleString()} + 新增 ¥${totalAmt.toLocaleString()}）`
+    : `${riskNames[riskP]} · ${horizonNames[horizon]} · ¥${totalAmt.toLocaleString()}`;
+  document.getElementById('plan-subtitle').textContent = subtitleText;
 
   // 8. 渲染配置方案
   renderAllocGroups(selectedPicks, weights);
