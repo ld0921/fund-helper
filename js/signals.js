@@ -356,8 +356,7 @@ function runHealthMonitor(){
   });
 
   dcaPlans.forEach(d=>{
-    if(holdings.some(x=>x.code===d.code)) return; // 已在持仓中，不重复
-    if(!d.curval || d.curval <= 0) return; // 无市值数据
+    if(dcaHoldings.some(x=>x.code===d.code)) return; // 同一定投计划不重复
 
     // 使用 execLog 计算准确成本
     const executedCount = d.execLog ? Object.keys(d.execLog).filter(k => d.execLog[k]).length : 0;
@@ -373,7 +372,7 @@ function runHealthMonitor(){
     dcaHoldings.push({
       code: d.code,
       name: d.name,
-      value: d.curval,
+      value: d.curval || 0,
       cost: cost,
       source: 'dca',
       monthly: d.monthly,
@@ -394,17 +393,22 @@ function runHealthMonitor(){
   });
 
   const catRanksCache = Object.keys(navCache).length>0 ? analyzeCategoryPerf() : null;
-  const allHeld = [...holdings, ...dcaHoldings];
-  const totalPortValue = allHeld.reduce((s,h)=>s+h.value,0);
+  // 集中度和总市值计算时去重（同一基金不重复计入）
+  const uniqueHeld = [];
+  const seenCodes = new Set();
+  [...holdings, ...dcaHoldings].forEach(h=>{
+    if(!seenCodes.has(h.code)){ seenCodes.add(h.code); uniqueHeld.push(h); }
+  });
+  const totalPortValue = uniqueHeld.reduce((s,h)=>s+h.value,0);
 
   const holdingAlerts = [];
   const holdingOkList = [];
   const dcaAlerts = [];
   const dcaOkList = [];
 
-  // 集中度检查
+  // 集中度检查（去重后计算，避免同一基金双重计入）
   const catConcentration = {};
-  allHeld.forEach(h=>{
+  uniqueHeld.forEach(h=>{
     const fd = CURATED_FUNDS.find(f=>f.code===h.code);
     const cat = fd ? fd.cat : 'other';
     catConcentration[cat] = (catConcentration[cat]||0) + h.value;
@@ -708,7 +712,7 @@ function runHealthMonitor(){
   wrap.innerHTML=`<details class="card ${headerClass} alert-card" style="padding:0;overflow:hidden;cursor:pointer" ${hasIssues?'open':''}>
     <summary style="padding:14px 16px;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:8px">
       <div style="flex:1">
-        <div class="alert-card-title" style="margin-bottom:2px">${headerIcon} 持仓健康诊断 · ${allHeld.length} 只基金</div>
+        <div class="alert-card-title" style="margin-bottom:2px">${headerIcon} 持仓健康诊断 · ${holdings.length + dcaHoldings.length} 只基金</div>
         <div style="font-size:12px;color:var(--muted)">${headerMsg}</div>
       </div>
       <span class="toggle-arrow" style="font-size:12px;color:var(--primary);flex-shrink:0"></span>
