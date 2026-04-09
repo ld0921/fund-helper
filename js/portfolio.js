@@ -1488,7 +1488,11 @@ function _doGenerate(shouldScroll){
         .filter(r => !addingCodes.has(r.code))
         .map(r=>{
           const catFunds = catRanks.find(c=>c.cat===r.cat);
-          const betterFunds = catFunds ? catFunds.topFunds.filter(f => f.code !== r.code && scoreF(f) > r.score) : [];
+          // 替换目标必须：1) ≥60分（及格线） 2) 比原基金高≥10分（有明显优势）
+          const betterFunds = catFunds ? catFunds.topFunds.filter(f => {
+            const targetScore = scoreF(f);
+            return f.code !== r.code && targetScore >= 60 && targetScore >= r.score + 10;
+          }) : [];
           const bestInCat = betterFunds.length > 0 ? betterFunds[0] : null;
           return {r, bestInCat};
         }).filter(item => item.bestInCat !== null);

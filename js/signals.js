@@ -667,10 +667,11 @@ function runHealthMonitor(){
 
   const redCount = allAlerts.filter(a=>a.level==='red').length;
   const yellowCount = allAlerts.filter(a=>a.level==='yellow').length;
+  const greenCount = allOkList.length;
   const headerClass = redCount>0?'':'alert-green';
   const headerIcon = redCount>0?'🔴':yellowCount>0?'🟡':'✅';
   const headerMsg = redCount>0?`发现 ${redCount} 项高风险预警，${yellowCount} 项关注信号`:
-    yellowCount>0?`发现 ${yellowCount} 项关注信号，其余持仓表现良好`:'所有持仓表现良好，当前策略合理';
+    yellowCount>0?`发现 ${yellowCount} 项关注信号，${greenCount} 只表现良好`:`所有 ${greenCount} 只基金表现良好，当前策略合理`;
 
   const renderItem = (a, showSourceLabel) => {
     const sourceLabel = showSourceLabel && a.source === 'dca' ? '<span style="font-size:10px;padding:2px 6px;background:#e6f7ff;color:#1890ff;border-radius:4px;margin-left:6px">定投</span>' : '';
