@@ -700,7 +700,7 @@ function runHealthMonitor(){
   }
 
   if(dcaAlerts.length > 0 || dcaOkList.length > 0){
-    contentHtml += `<div style="padding:10px 14px;background:#f6ffed;border-bottom:1px solid #b7eb8f;font-size:12px;font-weight:600;color:#52c41a">📈 定投基金诊断（${dcaHoldings.length}只）</div>`;
+    contentHtml += `<div style="padding:10px 14px;background:#d9f7be;border-bottom:1px solid #95de64;font-size:12px;font-weight:600;color:#389e0d">📈 定投基金诊断（${dcaHoldings.length}只）</div>`;
     contentHtml += [...dcaAlerts, ...dcaOkList].map(a => renderItem(a, false)).join('');
   }
 
