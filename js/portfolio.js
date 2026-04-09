@@ -113,7 +113,8 @@ function computeRebalancePlan(targetPicks, newMoney){
     const held=existingHoldings.find(h=>h.code===pick.code);
     const currentAmt=held?held.value:0;
     const targetAmt=pick.amt; // 直接使用pick.amt作为目标金额
-    const diff=pick.newBuyAmt || (targetAmt-currentAmt); // 优先使用newBuyAmt
+    // 修复：targetAmt为0时强制减仓，不被newBuyAmt污染
+    const diff = targetAmt === 0 ? -currentAmt : (pick.newBuyAmt || (targetAmt-currentAmt));
     // 容忍带差异化：货币/债券5%或¥200，指数10%或¥300，主动/QDII 15%或¥500
     // 再平衡触发：只有偏离超过阈值才建议调仓，避免频繁换仓产生摩擦成本
     const tolPct = ['money','bond'].includes(pick.cat) ? 0.10 : pick.cat === 'index' ? 0.15 : 0.20;
@@ -262,32 +263,61 @@ function computeRebalancePlan(targetPicks, newMoney){
   const order={sell:0,reduce:1,reduce_gentle:1.5,buy:2,buy_more:3,hold:4,satellite:5};
   actions.sort((a,b)=>(order[a.action]??9)-(order[b.action]??9));
 
-  // 修复问题1：校验确保所有买入操作的金额总和等于用户输入的新增资金
+  // 修复：将减持释放的资金重新分配到买入操作中，确保资金平衡
+  // 1. 先计算减持释放的资金
+  const sellTotal = actions.filter(a=>a.action==='sell').reduce((s,a)=>s+a.actionAmt,0);
+  const reduceTotal = actions.filter(a=>a.action==='reduce'||a.action==='reduce_gentle').reduce((s,a)=>s+a.actionAmt,0);
+  const totalRelease = sellTotal + reduceTotal;
+  const totalAvailable = newMoney + totalRelease; // 可用总额 = 新增资金 + 减持释放
+
+  // 2. 按比例重新分配买入金额，使买入总额 = 可用总额
   const buyActions = actions.filter(a=>['buy','buy_more'].includes(a.action));
-  const actualBuyTotal = buyActions.reduce((s,a)=>s+a.actionAmt,0);
-  if(Math.abs(actualBuyTotal - newMoney) > 1 && buyActions.length > 0){ // 容忍1元误差
-    const diff = newMoney - actualBuyTotal;
-    // 将差额加到金额最大的买入操作上
-    const maxBuyAction = [...buyActions].sort((a,b)=>b.actionAmt-a.actionAmt)[0];
-    maxBuyAction.actionAmt += diff;
-    maxBuyAction.targetAmt += diff;
-    // 更新描述
-    if(maxBuyAction.action === 'buy'){
-      maxBuyAction.actionDesc = `新建仓 ¥${maxBuyAction.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
+  const currentBuyTotal = buyActions.reduce((s,a)=>s+a.actionAmt,0);
+  if(buyActions.length > 0 && Math.abs(currentBuyTotal - totalAvailable) > 1){
+    if(currentBuyTotal > 0){
+      // 按各买入操作原比例重新分配
+      const scale = totalAvailable / currentBuyTotal;
+      let allocated = 0;
+      buyActions.forEach((a, i) => {
+        if(i < buyActions.length - 1){
+          a.actionAmt = Math.round(a.actionAmt * scale);
+          allocated += a.actionAmt;
+        } else {
+          // 最后一个用减法兜底，避免四舍五入累积误差
+          a.actionAmt = totalAvailable - allocated;
+        }
+        a.targetAmt = a.currentAmt + a.actionAmt;
+        // 更新描述
+        if(a.action === 'buy'){
+          a.actionDesc = `新建仓 ¥${a.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
+        } else {
+          a.actionDesc = `加仓 ¥${a.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
+        }
+      });
     } else {
-      maxBuyAction.actionDesc = `加仓 ¥${maxBuyAction.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
+      // 所有买入金额为0的极端情况，平均分配
+      const each = Math.round(totalAvailable / buyActions.length);
+      let allocated = 0;
+      buyActions.forEach((a, i) => {
+        a.actionAmt = i < buyActions.length - 1 ? each : totalAvailable - allocated;
+        allocated += a.actionAmt;
+        a.targetAmt = a.currentAmt + a.actionAmt;
+        a.actionDesc = a.action === 'buy'
+          ? `新建仓 ¥${a.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`
+          : `加仓 ¥${a.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
+      });
     }
   }
 
-  // 修复问题1和2：计算资金流动并显示
+  // 计算资金流动摘要
   const summary={
     existTotal, newMoney, totalPortfolio,
-    sellAmt:  actions.filter(a=>a.action==='sell').reduce((s,a)=>s+a.actionAmt,0),
-    reduceAmt:actions.filter(a=>a.action==='reduce'||a.action==='reduce_gentle').reduce((s,a)=>s+a.actionAmt,0),
-    buyAmt:   actions.filter(a=>['buy','buy_more'].includes(a.action)).reduce((s,a)=>s+a.actionAmt,0),
+    sellAmt: sellTotal,
+    reduceAmt: reduceTotal,
+    buyAmt: buyActions.reduce((s,a)=>s+a.actionAmt,0),
   };
-  summary.totalRelease = summary.sellAmt + summary.reduceAmt;
-  summary.flowBalance = summary.newMoney + summary.totalRelease - summary.buyAmt;
+  summary.totalRelease = totalRelease;
+  summary.flowBalance = newMoney + totalRelease - summary.buyAmt;
 
   return {actions,summary};
 }
@@ -400,7 +430,7 @@ function renderRebalancePlan(plan){
         <div class="rebal-amt"><div class="rebal-amt-val">¥${a.currentAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}</div><div class="rebal-amt-lbl">当前持仓</div></div>
         <div class="rebal-arrow">→</div>
         <div class="rebal-amt"><div class="rebal-amt-val" style="color:var(--primary)">¥${Math.max(0, a.targetAmt).toLocaleString('zh-CN',{maximumFractionDigits:0})}</div><div class="rebal-amt-lbl">目标仓位</div></div>
-        <div class="rebal-amt"><div class="rebal-amt-val" style="color:${a.action==='sell'||a.action==='reduce'?'var(--danger)':a.action==='buy'||a.action==='buy_more'?'var(--success)':'var(--muted)'}">${a.actionAmt>0?(a.action==='sell'||a.action==='reduce'?'-':'+')+'¥'+a.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0}):'--'}</div><div class="rebal-amt-lbl">调仓金额</div></div>
+        <div class="rebal-amt"><div class="rebal-amt-val" style="color:${['sell','reduce','reduce_gentle'].includes(a.action)?'var(--danger)':['buy','buy_more'].includes(a.action)?'var(--success)':'var(--muted)'}">${a.actionAmt>0?(['sell','reduce','reduce_gentle'].includes(a.action)?'-':'+')+'\u00A5'+a.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0}):'--'}</div><div class="rebal-amt-lbl">调仓金额</div></div>
       </div>
       <div class="rebal-op" style="font-size:12px;color:var(--muted);min-width:120px">${escHtml(a.actionDesc)}</div>
     </div>`}).join('');
