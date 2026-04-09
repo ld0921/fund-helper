@@ -1050,7 +1050,7 @@ function _doGenerate(shouldScroll){
       const cat = fd ? fd.cat : null;
       if(!cat) return; // 未知基金跳过
       const score = scoreF(fd);
-      const keep = score >= 60; // 修复问题3：降低保留阈值到60分，与持仓诊断保持一致（60分以上为"表现正常"）
+      const keep = score >= 60; // 评分≥60为达标（60分及格线，与持仓诊断标准统一）
       if(!holdingsByCat[cat]) holdingsByCat[cat] = [];
       holdingsByCat[cat].push({ code:h.code, name:h.name||fd.name, value:h.value, score, keep, fundData:fd });
       // 只有评分<60且已确认的持仓才建议替换

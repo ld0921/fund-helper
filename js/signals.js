@@ -452,9 +452,27 @@ function runHealthMonitor(){
     // 6. 性价比诊断：Alpha评分 × 估值信号，识别"高价低质"持仓
     const currentScore = scoreF(fd);
     const sameCatFunds = CURATED_FUNDS.filter(f=>f.cat===fd.cat && f.code!==fd.code);
-    if(sameCatFunds.length > 0){
-      const betterFunds = sameCatFunds.filter(f=>scoreF(f) > currentScore + 10);
-      if(betterFunds.length > 0 && currentScore < 60){
+
+    // 评分 < 60 为不及格，必须标记为问题（与智能方案标准统一）
+    if(currentScore < 60){
+      if(sameCatFunds.length > 0){
+        const betterFunds = sameCatFunds.filter(f=>scoreF(f) > currentScore + 10);
+        if(betterFunds.length > 0){
+          const best = betterFunds.sort((a,b)=>scoreF(b)-scoreF(a))[0];
+          issues.push(`综合评分 ${currentScore}分（不及格），同类有更优选择（${best.name} ${scoreF(best)}分），建议换仓`);
+          level = 'yellow';
+        } else {
+          issues.push(`综合评分 ${currentScore}分（不及格），建议关注或考虑换入同类更优基金`);
+          if(level==='green') level='yellow';
+        }
+      } else {
+        issues.push(`综合评分 ${currentScore}分（不及格），建议关注基金表现`);
+        if(level==='green') level='yellow';
+      }
+    } else if(sameCatFunds.length > 0){
+      // 评分及格但有明显更优选择
+      const betterFunds = sameCatFunds.filter(f=>scoreF(f) > currentScore + 15);
+      if(betterFunds.length > 0){
         const best = betterFunds.sort((a,b)=>scoreF(b)-scoreF(a))[0];
         issues.push(`综合评分 ${currentScore}分，同类有更优选择（${best.name} ${scoreF(best)}分），可考虑换仓`);
         if(level==='green') level='yellow';
