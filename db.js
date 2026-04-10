@@ -84,53 +84,6 @@ const FundDB = (function(){
     }));
   }
 
-  function exportAll(){
-    return getAll().then(data => {
-      data._exportTime = new Date().toISOString();
-      data._version = 1;
-      const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `fund-helper-backup-${new Date().toISOString().slice(0,10)}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      // Record last export timestamp
-      return set('_lastExport', Date.now());
-    });
-  }
-
-  function importAll(jsonStr){
-    return open().then(db => {
-      let data;
-      try { data = JSON.parse(jsonStr); } catch(e){ return Promise.reject(new Error('JSON 格式无效')); }
-      // Schema 验证：数组字段必须是数组，navCache 必须是对象
-      for(const key of DATA_KEYS){
-        if(data[key] === undefined) continue;
-        if(key === 'navCache'){
-          if(typeof data[key] !== 'object' || Array.isArray(data[key])){ return Promise.reject(new Error(`备份数据格式错误：${key} 应为对象`)); }
-        } else {
-          if(!Array.isArray(data[key])){ return Promise.reject(new Error(`备份数据格式错误：${key} 应为数组`)); }
-        }
-      }
-      const tx = db.transaction(STORE_NAME, 'readwrite');
-      const store = tx.objectStore(STORE_NAME);
-      const promises = DATA_KEYS.map(key => {
-        if(data[key] !== undefined){
-          return new Promise((resolve, reject) => {
-            const req = store.put(data[key], key);
-            req.onsuccess = () => resolve();
-            req.onerror = e => reject(e.target.error);
-          });
-        }
-        return Promise.resolve();
-      });
-      return Promise.all(promises);
-    });
-  }
-
   // Migrate from localStorage to IndexedDB (one-time)
   function migrateFromLocalStorage(){
     return open().then(db => {
@@ -160,15 +113,5 @@ const FundDB = (function(){
     });
   }
 
-  // Check if backup reminder is needed (>7 days since last export)
-  function checkBackupReminder(){
-    return Promise.all([get('_lastExport'), get('_lastDataChange')]).then(([lastExport, lastChange]) => {
-      if(!lastChange) return false; // no data changes yet
-      if(!lastExport) return true;  // never exported
-      const daysSince = (Date.now() - lastExport) / (1000*60*60*24);
-      return daysSince > 7;
-    });
-  }
-
-  return { open, get, set, getAll, getSyncData, exportAll, importAll, migrateFromLocalStorage, checkBackupReminder, onSync, get _syncCallback(){ return _syncCallback; }, DATA_KEYS, SYNC_KEYS };
+  return { open, get, set, getAll, getSyncData, migrateFromLocalStorage, onSync, get _syncCallback(){ return _syncCallback; }, DATA_KEYS, SYNC_KEYS };
 })();

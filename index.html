@@ -815,23 +815,6 @@
     </div>
     <div id="dp-summary" style="display:none;margin-top:10px;padding:10px 14px;background:#f6ffed;border-radius:8px;font-size:13px"></div>
   </div>
-  <!-- 数据备份管理（仅未登录时显示，已登录数据自动同步到云端） -->
-  <div class="card" id="backup-section" style="margin-bottom:calc(14px + env(safe-area-inset-bottom))">
-    <div class="card-title">💾 数据管理</div>
-    <div id="backup-logged-in" style="display:none">
-      <p style="font-size:13px;color:var(--success);margin-bottom:8px">✅ 已登录，数据自动同步到云端，无需手动备份。</p>
-      <div style="font-size:12px;color:var(--muted)">如需导出本地数据副本，仍可使用下方按钮。</div>
-    </div>
-    <p id="backup-offline-tip" style="font-size:13px;color:var(--muted);margin-bottom:14px">数据存储在本地浏览器中，登录账号可自动云端同步。也可手动导出备份。</p>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
-      <button class="btn btn-primary" onclick="doExportBackup()">📤 导出备份文件</button>
-      <label class="btn btn-outline" style="cursor:pointer;margin:0">
-        📥 导入备份文件
-        <input type="file" accept=".json" onchange="doImportBackup(event)" style="display:none">
-      </label>
-    </div>
-    <div id="backup-status" style="font-size:12px;color:var(--muted)"></div>
-  </div>
 </div>
 
 <!-- ===================== 面板3: 持仓诊断 ===================== -->
@@ -1393,30 +1376,6 @@ let existingHoldings = [];
 let dcaPlans = [];
 let navCache = {};
 
-// 数据备份/恢复函数
-function doExportBackup(){
-  FundDB.exportAll().then(()=>{
-    document.getElementById('backup-status').textContent='✅ 备份已导出 — '+new Date().toLocaleString('zh-CN');
-    document.getElementById('backup-reminder').style.display='none';
-  });
-}
-function doImportBackup(e){
-  const file=e.target.files[0]; if(!file) return;
-  const reader=new FileReader();
-  reader.onload=function(){
-    if(!confirm('导入将覆盖当前数据，确定继续？')) return;
-    FundDB.importAll(reader.result).then(()=>FundDB.getAll()).then(data=>{
-      funds=data.funds||[]; holdings=data.holdings||[]; existingHoldings=data.existingHoldings||[]; dcaPlans=data.dcaPlans||[]; navCache=data.navCache||{};
-      renderAll(); renderMarketGrid();
-      document.getElementById('backup-status').textContent='✅ 数据已恢复 — '+new Date().toLocaleString('zh-CN');
-      // 刷新基金详情（备份中的缓存可能已过期）
-      refreshFundDetails(false).then(()=>scanMarketFunds(false).catch(()=>{}));
-      showToast('数据已恢复，正在刷新基金详情…','success');
-    }).catch(err=>showToast('导入失败: '+err.message,'error'));
-  };
-  reader.readAsText(file);
-  e.target.value='';
-}
 function renderAll(){
   renderFundList(); renderExistingHoldings(); renderDcaPlans(); renderDcaRanking(); runHealthMonitor();
 }

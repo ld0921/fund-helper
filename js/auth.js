@@ -136,10 +136,6 @@ function updateAuthUI(){
   } else {
     area.innerHTML = `<button class="btn btn-sm" onclick="showAuthModal()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.25);font-size:13px;padding:6px 16px;border-radius:18px;font-weight:600;transition:all .2s" onmouseover="this.style.background='rgba(255,255,255,.25)'" onmouseout="this.style.background='rgba(255,255,255,.15)'">登录</button>`;
   }
-  const loggedInTip = document.getElementById('backup-logged-in');
-  const offlineTip = document.getElementById('backup-offline-tip');
-  if(loggedInTip) loggedInTip.style.display = _currentUser ? '' : 'none';
-  if(offlineTip) offlineTip.style.display = _currentUser ? 'none' : '';
 }
 
 function updateSyncStatus(status){
