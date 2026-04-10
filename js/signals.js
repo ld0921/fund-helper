@@ -978,60 +978,161 @@ function renderDiagnostics(){
   const emptyEl = document.getElementById('diag-empty');
   if(!wrap) return;
 
-  if(!existingHoldings.length){
+  // 合并普通持仓 + 定投计划（去重，持仓优先）
+  const evalList = [];
+  existingHoldings.forEach(h=>{
+    const curNav = navCache[h.code] ? parseFloat(navCache[h.code].gsz)||1 : 1;
+    const cost = h.amount || h.value || 0;
+    const value = h.amount ? (h.amount / (h.cost||curNav) * curNav) : (h.value||0);
+    evalList.push({ code:h.code, name:h.name, value, cost, source:'existing', paused:false });
+  });
+  (typeof dcaPlans !== 'undefined' ? dcaPlans : []).forEach(d=>{
+    if(evalList.some(x=>x.code===d.code)) return; // 已在持仓中
+    if(!d.curval || d.curval <= 0) return;
+    const executedCount = d.execLog ? Object.keys(d.execLog).filter(k => d.execLog[k]).length : 0;
+    let cost;
+    if(executedCount > 0){
+      cost = executedCount * d.monthly;
+    } else {
+      const months = d.start ? Math.max(0, Math.floor((new Date()-new Date(d.start))/30/86400000)) : 0;
+      cost = d.monthly * months;
+    }
+    evalList.push({ code:d.code, name:d.name, value:d.curval, cost, source:'dca', paused:d.paused||false, monthly:d.monthly });
+  });
+
+  if(!evalList.length){
     wrap.innerHTML = '';
     if(emptyEl) emptyEl.style.display = '';
     return;
   }
   if(emptyEl) emptyEl.style.display = 'none';
 
+  // 计算各类别统计（与健康监控一致），用于判断是否"严重落后同类"
+  const catStats = {};
+  ['active','index','bond','money','qdii'].forEach(cat=>{
+    const fs=CURATED_FUNDS.filter(f=>f.cat===cat);
+    if(!fs.length) return;
+    const avgR1 = fs.reduce((s,f)=>s+f.r1,0)/fs.length;
+    const stdR1 = Math.sqrt(fs.reduce((s,f)=>s+(f.r1-avgR1)**2,0)/fs.length)||1;
+    catStats[cat] = { avgR1, stdR1, count:fs.length };
+  });
+
   const suggestions = [];
-  existingHoldings.forEach(h=>{
+  evalList.forEach(h=>{
     const fd = CURATED_FUNDS.find(f=>f.code===h.code);
     if(!fd) return;
     const currentScore = scoreF(fd);
     const sameCat = CURATED_FUNDS.filter(f=>f.cat===fd.cat && f.code!==fd.code);
-    const better = sameCat.filter(f=>scoreF(f) > currentScore + 15).sort((a,b)=>scoreF(b)-scoreF(a));
-    if(!better.length) return;
-    const best = better[0];
-    const bestScore = scoreF(best);
     const pnlPct = h.cost>0 ? (h.value-h.cost)/h.cost*100 : null;
-    suggestions.push({ holding:h, fd, currentScore, best, bestScore, pnlPct });
+
+    // 与健康监控保持一致的"问题定投/持仓"判定
+    const stats = catStats[fd.cat];
+    const zScore = stats ? (fd.r1 - stats.avgR1) / stats.stdR1 : 0;
+    const isStructuralLoss = fd.r1 < -10 && fd.r3 < -15;
+    const isSeverelyLagging = stats && zScore < -2.5;
+    const ddOverflow = pnlPct !== null && pnlPct < 0 && fd.maxDD > 0 && (-pnlPct / fd.maxDD * 100) > 100;
+    const isProblem = isStructuralLoss || isSeverelyLagging || ddOverflow || currentScore < 60;
+
+    // 找同类最优
+    const sortedSameCat = sameCat.slice().sort((a,b)=>scoreF(b)-scoreF(a));
+    const betterThan15 = sortedSameCat.filter(f=>scoreF(f) > currentScore + 15);
+
+    let best = null, reason = '';
+    if(betterThan15.length){
+      best = betterThan15[0];
+      reason = 'score15'; // 同类有高15分以上更优
+    } else if(isProblem && sortedSameCat.length){
+      // 标红但同类没有高15分更优 → 仍取同类最高作为候选，避免与健康监控矛盾
+      const topCandidate = sortedSameCat[0];
+      if(scoreF(topCandidate) > currentScore){
+        best = topCandidate;
+        reason = 'problem'; // 基金本身有问题，同类相对更优但差距不大
+      } else {
+        reason = 'noAlt'; // 本基金就是同类第一或并列最高
+      }
+    }
+
+    if(!best && reason !== 'noAlt') return;
+    suggestions.push({
+      holding:h, fd, currentScore,
+      best, bestScore: best ? scoreF(best) : null,
+      pnlPct, source:h.source, reason, isProblem
+    });
   });
 
-  if(!suggestions.length){
-    wrap.innerHTML = `<div class="card"><div class="card-title"><span class="icon icon-blue">🔄</span>调仓建议</div><div style="padding:16px 0;text-align:center;color:var(--muted);font-size:13px">✅ 当前持仓均为同类最优选择，无需调仓</div></div>`;
+  // 拆分：需要换仓的（有 best）和"本基金已是同类最优但表现不佳"的
+  const rebalList = suggestions.filter(s=>s.best);
+  const noAltList = suggestions.filter(s=>!s.best && s.reason === 'noAlt');
+
+  if(!rebalList.length && !noAltList.length){
+    wrap.innerHTML = `<div class="card"><div class="card-title"><span class="icon icon-blue">🔄</span>调仓建议</div><div style="padding:16px 0;text-align:center;color:var(--muted);font-size:13px">✅ 当前持仓与定投均为同类最优选择，无需调仓</div></div>`;
     return;
   }
 
-  const rows = suggestions.map(s=>{
-    const pnlStr = s.pnlPct!==null ? `持仓${s.pnlPct>=0?'+':''}${s.pnlPct.toFixed(1)}%` : '';
+  const sourceBadge = src => src === 'dca'
+    ? '<span style="font-size:10px;padding:2px 6px;background:#e6f7ff;color:#1890ff;border-radius:4px;margin-left:6px">定投</span>'
+    : '<span style="font-size:10px;padding:2px 6px;background:#f0f5ff;color:#2f54eb;border-radius:4px;margin-left:6px">持仓</span>';
+
+  const rows = rebalList.map(s=>{
+    const pnlStr = s.pnlPct!==null ? `${s.source==='dca'?'定投':'持仓'}${s.pnlPct>=0?'+':''}${s.pnlPct.toFixed(1)}%` : '';
     const redeemTip = s.pnlPct!==null && s.pnlPct < 0 ? '（当前亏损，换仓需承担浮亏）' : '';
+    const actionLabel = s.source === 'dca'
+      ? (s.reason === 'problem' ? '⏸️ 暂停并换入' : '🔄 换入定投')
+      : '🔄 建议换仓';
+    const gapNote = s.reason === 'problem'
+      ? `当前基金近期表现不佳（${s.isProblem?'严重落后同类/结构性亏损':'评分偏低'}），同类相对更优`
+      : `评分差 +${s.bestScore-s.currentScore}分`;
     return `<div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap">
       <div style="flex:1;min-width:200px">
         <div style="font-size:13px;font-weight:600;margin-bottom:4px">
           <span style="color:var(--danger)">${escHtml(s.fd.name)}</span>
-          <span style="color:var(--muted);font-size:11px;margin-left:4px">${s.currentScore}分</span>
+          <span style="color:var(--muted);font-size:11px;margin-left:4px">${s.currentScore}分</span>${sourceBadge(s.source)}
           <span style="margin:0 6px;color:var(--muted)">→</span>
           <span style="color:var(--success)">${escHtml(s.best.name)}</span>
           <span style="color:var(--muted);font-size:11px;margin-left:4px">${s.bestScore}分</span>
         </div>
         <div style="font-size:12px;color:var(--muted);line-height:1.6">
-          评分差 +${s.bestScore-s.currentScore}分 · ${pnlStr}${redeemTip}<br>
+          ${gapNote} · ${pnlStr}${redeemTip}<br>
           ${escHtml(s.best.name)}：近1年${s.best.r1>0?'+':''}${s.best.r1}%，近3年${s.best.r3>0?'+':''}${s.best.r3}%，经理任期${s.best.mgrYears}年
         </div>
       </div>
-      <div style="flex-shrink:0;font-size:12px;font-weight:600;color:var(--warning);padding:3px 8px;background:#fff7e6;border-radius:6px;white-space:nowrap">🔄 建议换仓</div>
+      <div style="flex-shrink:0;font-size:12px;font-weight:600;color:var(--warning);padding:3px 8px;background:#fff7e6;border-radius:6px;white-space:nowrap">${actionLabel}</div>
     </div>`;
   }).join('');
 
+  // "同类已是最优但本基金表现不佳"的提示（避免与健康监控矛盾的关键）
+  const noAltRows = noAltList.map(s=>{
+    const pnlStr = s.pnlPct!==null ? `${s.source==='dca'?'定投':'持仓'}${s.pnlPct>=0?'+':''}${s.pnlPct.toFixed(1)}%` : '';
+    const advice = s.source === 'dca'
+      ? '建议暂停定投并观察，或转投其他类别（如债券/货币基金）'
+      : '建议减仓或转投其他类别，释放资金重新配置';
+    return `<div style="padding:12px 16px;border-bottom:1px solid var(--border)">
+      <div style="font-size:13px;font-weight:600;margin-bottom:4px">
+        <span style="color:var(--danger)">${escHtml(s.fd.name)}</span>
+        <span style="color:var(--muted);font-size:11px;margin-left:4px">${s.currentScore}分</span>${sourceBadge(s.source)}
+      </div>
+      <div style="font-size:12px;color:var(--muted);line-height:1.6">
+        ⚠️ 本基金近期表现不佳，但同类精选库内暂无显著更优选择 · ${pnlStr}<br>
+        ${advice}
+      </div>
+    </div>`;
+  }).join('');
+
+  const totalCount = rebalList.length + noAltList.length;
+  const headerHint = rebalList.length && noAltList.length
+    ? `${rebalList.length} 条换仓建议 · ${noAltList.length} 条同类无更优提示`
+    : rebalList.length
+      ? '同类基金中有评分更优的选择'
+      : '本基金近期表现不佳，但同类暂无显著更优';
+
   wrap.innerHTML = `<div class="card" style="padding:0;overflow:hidden">
     <div style="padding:14px 16px;border-bottom:1px solid var(--border)">
-      <div class="card-title" style="margin:0"><span class="icon icon-red">🔄</span>主动调仓建议 · ${suggestions.length} 条</div>
-      <div style="font-size:12px;color:var(--muted);margin-top:4px">同类基金中有评分高出15分以上的更优选择</div>
+      <div class="card-title" style="margin:0"><span class="icon icon-red">🔄</span>主动调仓建议 · ${totalCount} 条</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px">${headerHint}</div>
     </div>
     ${rows}
-    <div style="padding:10px 14px;font-size:11px;color:var(--muted);background:#fafafa">⚠️ 换仓前请评估赎回费和持有天数，持有2年以上通常免赎回费。</div>
+    ${noAltRows}
+    <div style="padding:10px 14px;font-size:11px;color:var(--muted);background:#fafafa">⚠️ 换仓前请评估赎回费和持有天数，持有2年以上通常免赎回费。定投基金暂停后建议评估是否转投其他类别。</div>
   </div>`;
 }
 
