@@ -277,9 +277,6 @@ tr:last-child td{border-bottom:none}
   /* 表单输入优化 */
   input[type="text"],input[type="number"],input[type="date"],select{min-height:44px;font-size:16px;padding:0 12px}
 
-  /* 交易历史卡片优化 */
-  #transaction-list > div{padding:14px;gap:10px}
-
   /* 持仓卡片复选框优化 */
   .eh-checkbox{width:20px;height:20px;margin-top:2px}
 }

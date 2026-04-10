@@ -331,44 +331,6 @@ async function addTransaction(type, fundCode, fundName, amount, shares = 0, arri
   // 只保留最近100条记录
   if(transactions.length > 100) transactions.length = 100;
   await FundDB.set('transactions', transactions);
-  renderTransactionHistory();
-}
-
-async function renderTransactionHistory(){
-  const transactions = await FundDB.get('transactions') || [];
-  const list = document.getElementById('transaction-list');
-  const empty = document.getElementById('transaction-empty');
-
-  if(!transactions.length){
-    list.style.display = 'none';
-    empty.style.display = 'block';
-    return;
-  }
-
-  list.style.display = 'block';
-  empty.style.display = 'none';
-
-  // 只显示最近20条
-  const recent = transactions.slice(0, 20);
-  list.innerHTML = recent.map(t => {
-    const typeLabel = t.type === 'buy' ? '买入' : '赎回';
-    const typeColor = t.type === 'buy' ? '#52c41a' : '#ff4d4f';
-    const amountText = t.shares > 0 ? `¥${t.amount.toFixed(2)} (${t.shares.toFixed(4)}份)` : `¥${t.amount.toFixed(2)}`;
-
-    return `<div style="padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px">
-      <div style="width:40px;height:40px;border-radius:8px;background:${typeColor}15;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">
-        ${t.type === 'buy' ? '📥' : '📤'}
-      </div>
-      <div style="flex:1;min-width:0">
-        <div style="font-size:13px;font-weight:600;margin-bottom:2px">${escHtml(t.fundName)}</div>
-        <div style="font-size:11px;color:var(--muted)">${t.fundCode} · ${t.date}</div>
-      </div>
-      <div style="text-align:right">
-        <div style="font-size:13px;font-weight:600;color:${typeColor}">${typeLabel}</div>
-        <div style="font-size:11px;color:var(--muted)">${amountText}</div>
-      </div>
-    </div>`;
-  }).join('');
 }
 
 function clearExistingHoldings(){

@@ -806,7 +806,6 @@ function runHealthMonitor(){
   // 3. 渲染
   renderMarketGrid();
   renderAll();
-  renderTransactionHistory();
   checkDcaReminder();
   checkHoldingConfirmReminder();
   checkRedeemArrivalReminder();
