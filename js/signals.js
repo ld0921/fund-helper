@@ -704,10 +704,13 @@ function runHealthMonitor(){
 
   if(holdingAlerts.length > 0 || holdingOkList.length > 0){
     const holdingHasIssues = holdingAlerts.length > 0;
-    contentHtml += `<details style="border-bottom:1px solid #e8e8e8" ${holdingHasIssues?'open':''}>
-      <summary style="padding:10px 14px;background:#f0f5ff;border-bottom:1px solid #d6e4ff;font-size:12px;font-weight:600;color:#1890ff;cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between">
-        <span>📊 持仓基金诊断（${holdings.length}只）</span>
-        <span style="font-size:11px;font-weight:400;color:#8c8c8c">${holdingSummary} · 点击展开/收起</span>
+    contentHtml += `<details class="diag-section" ${holdingHasIssues?'open':''}>
+      <summary class="diag-header diag-header-holding">
+        <span class="diag-header-left">📊 持仓基金诊断（${holdings.length}只）</span>
+        <span class="diag-header-right">
+          <span class="diag-badge">${holdingSummary}</span>
+          <span class="diag-chevron">▸</span>
+        </span>
       </summary>
       <div>${[...holdingAlerts, ...holdingOkList].map(a => renderItem(a, false)).join('')}</div>
     </details>`;
@@ -715,25 +718,39 @@ function runHealthMonitor(){
 
   if(dcaAlerts.length > 0 || dcaOkList.length > 0){
     const dcaHasIssues = dcaAlerts.length > 0;
-    contentHtml += `<details style="border-bottom:1px solid #e8e8e8" ${dcaHasIssues?'open':''}>
-      <summary style="padding:10px 14px;background:#d9f7be;border-bottom:1px solid #95de64;font-size:12px;font-weight:600;color:#389e0d;cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between">
-        <span>📈 定投基金诊断（${dcaHoldings.length}只）</span>
-        <span style="font-size:11px;font-weight:400;color:#8c8c8c">${dcaSummary} · 点击展开/收起</span>
+    contentHtml += `<details class="diag-section" ${dcaHasIssues?'open':''}>
+      <summary class="diag-header diag-header-dca">
+        <span class="diag-header-left">📈 定投基金诊断（${dcaHoldings.length}只）</span>
+        <span class="diag-header-right">
+          <span class="diag-badge">${dcaSummary}</span>
+          <span class="diag-chevron">▸</span>
+        </span>
       </summary>
       <div>${[...dcaAlerts, ...dcaOkList].map(a => renderItem(a, false)).join('')}</div>
     </details>`;
   }
 
   if(catAlerts.length > 0){
-    contentHtml += `<div style="padding:10px 14px;background:#fff7e6;border-bottom:1px solid #ffd591;font-size:12px;font-weight:600;color:#d48806">⚖️ 资产配置诊断</div>`;
-    contentHtml += catAlerts.map(a => renderItem(a, false)).join('');
+    contentHtml += `<details class="diag-section" open>
+      <summary class="diag-header diag-header-alloc">
+        <span class="diag-header-left">⚖️ 资产配置诊断</span>
+        <span class="diag-header-right">
+          <span class="diag-badge">${catAlerts.length} 项提示</span>
+          <span class="diag-chevron">▸</span>
+        </span>
+      </summary>
+      <div>${catAlerts.map(a => renderItem(a, false)).join('')}</div>
+    </details>`;
   }
 
   // 诊断策略说明
-  const strategyHtml = `<details style="border-top:1px solid #f0f0f0">
-    <summary style="padding:8px 14px;font-size:11px;color:var(--muted);background:#fafafa;cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between">
-      <span>💡 持仓基金采用短期视角（严格标准），定投基金采用长期视角（宽松标准）。${Object.keys(navCache).length>0?'已融合实时行情数据':'建议等待净值加载后刷新'}。</span>
-      <span style="color:var(--primary);flex-shrink:0;font-size:11px">诊断策略说明 ▸</span>
+  const strategyHtml = `<details class="diag-section">
+    <summary class="diag-header diag-header-info" style="font-size:11px;padding:10px 16px">
+      <span class="diag-header-left">💡 持仓基金采用短期视角（严格标准），定投基金采用长期视角（宽松标准）。${Object.keys(navCache).length>0?'已融合实时行情数据':'建议等待净值加载后刷新'}。</span>
+      <span class="diag-header-right">
+        <span style="color:var(--primary);font-size:11px">诊断策略说明</span>
+        <span class="diag-chevron" style="width:18px;height:18px;font-size:10px">▸</span>
+      </span>
     </summary>
     <div style="padding:10px 14px;background:#fafafa;font-size:11px;color:#595959;line-height:1.8;border-top:1px dashed #e8e8e8">
       <div style="margin-bottom:8px"><b style="color:#1890ff">📊 持仓基金诊断（短期严格标准）</b></div>
