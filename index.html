@@ -585,6 +585,81 @@
     <div id="sip-table-wrap" style="margin-top:14px"></div>
   </div>
 
+  <!-- 我的定投计划 -->
+  <div class="card" id="dp-section">
+    <div class="card-title">
+      <span class="icon icon-green">📅</span>我的定投计划
+      <span style="font-size:12px;color:var(--muted);font-weight:400;margin-left:4px">— 记录每月自动扣款的定投基金</span>
+    </div>
+    <div class="form-grid" style="margin-bottom:10px">
+      <div class="form-item" style="grid-column:1/-1">
+        <label>搜索基金（输入名称或6位代码）</label>
+        <input id="dp-search" placeholder="如：沪深300 或 510300" oninput="smartFundSearch('dp',this.value)" list="dp-datalist" autocomplete="off">
+        <datalist id="dp-datalist"></datalist>
+        <input type="hidden" id="dp-code"><input type="hidden" id="dp-name">
+      </div>
+      <div class="form-item" id="dp-matched" style="display:none;grid-column:1/-1">
+        <div style="font-size:13px;padding:8px 12px;background:var(--primary-bg);border-radius:6px;display:flex;align-items:center;gap:8px">
+          <span style="font-weight:600" id="dp-matched-name"></span>
+          <code style="font-size:11px;color:var(--muted)" id="dp-matched-code"></code>
+          <button onclick="clearFundMatch('dp')" style="margin-left:auto;background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px">&times;</button>
+        </div>
+      </div>
+      <div class="form-item"><label>每月定投金额(元)</label><input id="dp-monthly" type="number" placeholder="如：500"></div>
+      <div class="form-item"><label>开始定投日期</label><input id="dp-start" type="date"></div>
+      <div class="form-item">
+        <label>每月扣款日</label>
+        <select id="dp-deduct-day">
+          <option value="1">每月1号</option>
+          <option value="5">每月5号</option>
+          <option value="10" selected>每月10号</option>
+          <option value="15">每月15号</option>
+          <option value="20">每月20号</option>
+          <option value="25">每月25号</option>
+          <option value="28">每月28号</option>
+        </select>
+      </div>
+      <div class="form-item"><label>当前持仓市值(元)</label><input id="dp-curval" type="number" placeholder="最新估值，可不填"></div>
+      <div class="form-item"><label>基金类型</label>
+        <select id="dp-type"><option>股票型</option><option>混合型</option><option>债券型</option><option>指数型</option><option>货币型</option><option>QDII</option></select>
+      </div>
+    </div>
+    <div class="action-bar">
+      <button class="btn btn-primary btn-sm" onclick="addDcaPlan()">＋ 添加定投计划</button>
+      <button class="btn btn-danger btn-sm" onclick="clearDcaPlans()">清空全部</button>
+    </div>
+
+    <!-- 定投日提醒横幅 -->
+    <div id="dca-reminder" style="display:none;margin-top:12px;background:#fff7e6;border:1px solid #ffd591;border-radius:8px;padding:12px 14px;font-size:13px;color:#ad6800">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:20px">🔔</span>
+        <div style="flex:1">
+          <div style="font-weight:600;margin-bottom:4px" id="dca-reminder-title">今日定投日提醒</div>
+          <div style="font-size:12px;color:#8c6800" id="dca-reminder-desc"></div>
+        </div>
+        <button class="btn btn-sm" style="background:#faad14;color:#fff;border:none;white-space:nowrap" onclick="dismissDcaReminder()">知道了</button>
+      </div>
+    </div>
+
+    <details open style="margin-top:12px">
+      <summary style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:14px 16px;user-select:none;list-style:none;gap:8px">
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:600">定投计划列表</div>
+        </div>
+        <span class="toggle-arrow" style="font-size:12px;color:var(--primary);flex-shrink:0"></span>
+      </summary>
+      <div style="border-top:1px solid #f0f0f0">
+      <div id="dp-list" style="margin-top:8px;border:1px solid var(--border);border-radius:10px;overflow:hidden;display:none"></div>
+      </div>
+    </details>
+    <div id="dp-empty" class="empty-state" style="margin-top:8px">
+      <div class="empty-icon">📅</div>
+      <div class="empty-text">暂无定投计划<br>添加后将自动同步至持仓统计</div>
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('dp-search').focus()">＋ 创建第一个定投计划</button>
+    </div>
+    <div id="dp-summary" style="display:none;margin-top:10px;padding:10px 14px;background:#f6ffed;border-radius:8px;font-size:13px"></div>
+  </div>
+
   <!-- 定投跟踪 -->
   <div class="card" id="dca-tracker-card" style="display:none">
     <div class="card-title"><span class="icon icon-purple">📅</span>定投跟踪</div>
@@ -598,11 +673,6 @@
 
 <!-- ===================== 面板2: 我的资产 ===================== -->
 <div class="panel" id="panel2">
-
-  <div class="chip-row" id="asset-subnav" style="position:sticky;top:46px;z-index:50;background:var(--bg);padding:8px 0">
-    <button class="chip active" onclick="scrollToSection('eh-section')">持仓</button>
-    <button class="chip" onclick="scrollToSection('dp-section')">定投</button>
-  </div>
 
   <!-- 非交易日提示 -->
   <div id="non-trading-day-banner" style="display:none;margin:12px 0;padding:12px 16px;background:#fff7e6;border-radius:8px;border-left:4px solid #faad14">
@@ -768,80 +838,6 @@
     </div>
   </div>
 
-  <!-- 我的定投计划（从Panel1移入） -->
-  <div class="card" id="dp-section">
-    <div class="card-title">
-      <span class="icon icon-green">📅</span>我的定投计划
-      <span style="font-size:12px;color:var(--muted);font-weight:400;margin-left:4px">— 记录每月自动扣款的定投基金</span>
-    </div>
-    <div class="form-grid" style="margin-bottom:10px">
-      <div class="form-item" style="grid-column:1/-1">
-        <label>搜索基金（输入名称或6位代码）</label>
-        <input id="dp-search" placeholder="如：沪深300 或 510300" oninput="smartFundSearch('dp',this.value)" list="dp-datalist" autocomplete="off">
-        <datalist id="dp-datalist"></datalist>
-        <input type="hidden" id="dp-code"><input type="hidden" id="dp-name">
-      </div>
-      <div class="form-item" id="dp-matched" style="display:none;grid-column:1/-1">
-        <div style="font-size:13px;padding:8px 12px;background:var(--primary-bg);border-radius:6px;display:flex;align-items:center;gap:8px">
-          <span style="font-weight:600" id="dp-matched-name"></span>
-          <code style="font-size:11px;color:var(--muted)" id="dp-matched-code"></code>
-          <button onclick="clearFundMatch('dp')" style="margin-left:auto;background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px">&times;</button>
-        </div>
-      </div>
-      <div class="form-item"><label>每月定投金额(元)</label><input id="dp-monthly" type="number" placeholder="如：500"></div>
-      <div class="form-item"><label>开始定投日期</label><input id="dp-start" type="date"></div>
-      <div class="form-item">
-        <label>每月扣款日</label>
-        <select id="dp-deduct-day">
-          <option value="1">每月1号</option>
-          <option value="5">每月5号</option>
-          <option value="10" selected>每月10号</option>
-          <option value="15">每月15号</option>
-          <option value="20">每月20号</option>
-          <option value="25">每月25号</option>
-          <option value="28">每月28号</option>
-        </select>
-      </div>
-      <div class="form-item"><label>当前持仓市值(元)</label><input id="dp-curval" type="number" placeholder="最新估值，可不填"></div>
-      <div class="form-item"><label>基金类型</label>
-        <select id="dp-type"><option>股票型</option><option>混合型</option><option>债券型</option><option>指数型</option><option>货币型</option><option>QDII</option></select>
-      </div>
-    </div>
-    <div class="action-bar">
-      <button class="btn btn-primary btn-sm" onclick="addDcaPlan()">＋ 添加定投计划</button>
-      <button class="btn btn-danger btn-sm" onclick="clearDcaPlans()">清空全部</button>
-    </div>
-
-    <!-- 定投日提醒横幅 -->
-    <div id="dca-reminder" style="display:none;margin-top:12px;background:#fff7e6;border:1px solid #ffd591;border-radius:8px;padding:12px 14px;font-size:13px;color:#ad6800">
-      <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:20px">🔔</span>
-        <div style="flex:1">
-          <div style="font-weight:600;margin-bottom:4px" id="dca-reminder-title">今日定投日提醒</div>
-          <div style="font-size:12px;color:#8c6800" id="dca-reminder-desc"></div>
-        </div>
-        <button class="btn btn-sm" style="background:#faad14;color:#fff;border:none;white-space:nowrap" onclick="dismissDcaReminder()">知道了</button>
-      </div>
-    </div>
-
-    <details open style="margin-top:12px">
-      <summary style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:14px 16px;user-select:none;list-style:none;gap:8px">
-        <div style="flex:1">
-          <div style="font-size:13px;font-weight:600">定投计划列表</div>
-        </div>
-        <span class="toggle-arrow" style="font-size:12px;color:var(--primary);flex-shrink:0"></span>
-      </summary>
-      <div style="border-top:1px solid #f0f0f0">
-      <div id="dp-list" style="margin-top:8px;border:1px solid var(--border);border-radius:10px;overflow:hidden;display:none"></div>
-      </div>
-    </details>
-    <div id="dp-empty" class="empty-state" style="margin-top:8px">
-      <div class="empty-icon">📅</div>
-      <div class="empty-text">暂无定投计划<br>添加后将自动同步至持仓统计</div>
-      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('dp-search').focus()">＋ 创建第一个定投计划</button>
-    </div>
-    <div id="dp-summary" style="display:none;margin-top:10px;padding:10px 14px;background:#f6ffed;border-radius:8px;font-size:13px"></div>
-  </div>
 </div>
 
 <!-- ===================== 面板3: 持仓诊断 ===================== -->
@@ -1218,50 +1214,6 @@ window.addEventListener('scroll',function(){
     if(dx<0&&current<tabs.length-1) switchTab(current+1); // 左滑→下一个Tab
     else if(dx>0&&current>0) switchTab(current-1); // 右滑→上一个Tab
   },{passive:true});
-})();
-
-// ═══════════════ 资产Tab子导航滚动 ═══════════════
-const _subnavSections = ['eh-section','dp-section'];
-let _subnavScrolling = false; // 防止点击触发滚动时 observer 回调覆盖
-
-function scrollToSection(id){
-  const el=document.getElementById(id);
-  if(!el) return;
-  const tabs=document.querySelector('.tabs');
-  const subnav=document.getElementById('asset-subnav');
-  const offset=(tabs?tabs.offsetHeight:0)+(subnav?subnav.offsetHeight:0)+8;
-  const top=el.getBoundingClientRect().top+window.pageYOffset-offset;
-  _subnavScrolling = true;
-  window.scrollTo({top,behavior:'smooth'});
-  // 手动设置高亮
-  _highlightSubnav(id);
-  setTimeout(()=>{ _subnavScrolling = false; }, 800);
-}
-
-function _highlightSubnav(sectionId){
-  const chips = document.querySelectorAll('#asset-subnav .chip');
-  const idx = _subnavSections.indexOf(sectionId);
-  chips.forEach((c,i) => c.classList.toggle('active', i === idx));
-}
-
-// IntersectionObserver：滚动时自动高亮最近可见的 section
-(function(){
-  if(!('IntersectionObserver' in window)) return;
-  const obs = new IntersectionObserver(entries => {
-    if(_subnavScrolling) return;
-    entries.forEach(entry => {
-      if(entry.isIntersecting){
-        _highlightSubnav(entry.target.id);
-      }
-    });
-  }, { rootMargin: '-100px 0px -60% 0px', threshold: 0 });
-  // 延迟到 DOM 就绪后观察
-  setTimeout(()=>{
-    _subnavSections.forEach(id => {
-      const el = document.getElementById(id);
-      if(el) obs.observe(el);
-    });
-  }, 500);
 })();
 
 // ═══════════════ 基金智能搜索（合并代码+名称为一个输入框） ═══════════════
@@ -2539,10 +2491,8 @@ if(document.readyState === 'loading'){
     autoRefreshOnLoad();
     const h = document.querySelector('.header');
     const tabs = document.querySelector('.tabs');
-    const subnav = document.getElementById('asset-subnav');
     if(h && tabs){
       tabs.style.top = h.offsetHeight + 'px';
-      if(subnav) subnav.style.top = (h.offsetHeight + tabs.offsetHeight) + 'px';
     }
   });
 } else {

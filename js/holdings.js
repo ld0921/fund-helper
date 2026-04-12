@@ -616,7 +616,9 @@ async function renderExistingHoldings(){
             const diffDays=Math.ceil((confirmDay-today)/(1000*60*60*24));
             return `<span style="font-size:11px;color:var(--warning)">⏳确认中 · 预计${h.confirmDate||'--'}确认${diffDays>0?` (还有${diffDays}天)`:''}<br><span style="font-size:10px;color:var(--muted)">确认前不计入总资产</span></span>`;
           })());
-    const sourceTag = h.source==='dca' ? '<span style="font-size:10px;padding:1px 5px;border-radius:3px;background:#f9f0ff;color:#722ed1">定投</span>' : '';
+    const sourceTag = h.source==='dca'
+      ? '<span style="font-size:10px;padding:2px 6px;border-radius:3px;background:#f9f0ff;color:#722ed1;border:1px solid #d3adf7;font-weight:500">📅 定投</span>'
+      : '<span style="font-size:10px;padding:2px 6px;border-radius:3px;background:#e6f4ff;color:#1677ff;border:1px solid #91caff;font-weight:500">💰 直购</span>';
     const nav = navCache[h.code];
     const yNav = yesterdayNav[h.code];
 
@@ -902,7 +904,7 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
               const pnlStr=d.cost>0?`${d.pnl>=0?'+':''}¥${Math.abs(d.pnl).toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2})}`:'--';
               const todayStr=d.todayChg!==null?`<div>${d.todayChg>=0?'+':''}${parseFloat(d.todayChg).toFixed(2)}%${d.isEstimated?'<span style="font-size:9px;padding:1px 4px;border-radius:2px;background:#e6f7ff;color:#1890ff;margin-left:2px">实时估算</span>':''}</div>${d.todayPnl!==null?`<div style="font-size:10px">${d.todayPnl>=0?'+':''}¥${Math.abs(d.todayPnl).toFixed(2)}</div>`:''}`:'--';
               const todayClass=d.todayChg!==null?(d.todayChg>=0?'up':'down'):'';
-              const srcTag=d.source==='dca'?'<span style="font-size:9px;padding:1px 4px;border-radius:2px;background:#f9f0ff;color:#722ed1;margin-left:3px">定投</span>':'';
+              const srcTag=d.source==='dca'?'<span style="font-size:9px;padding:1px 4px;border-radius:2px;background:#f9f0ff;color:#722ed1;border:1px solid #d3adf7;margin-left:3px">📅 定投</span>':'<span style="font-size:9px;padding:1px 4px;border-radius:2px;background:#e6f4ff;color:#1677ff;border:1px solid #91caff;margin-left:3px">💰 直购</span>';
               const today=new Date().toISOString().slice(0,10);
               const dateTag=d.jzrq&&d.jzrq!==today?`<span style="font-size:9px;padding:1px 4px;border-radius:2px;background:#fff7e6;color:#d48806;margin-left:3px">${d.jzrq.slice(5)}</span>`:'';
               return `<tr style="${idx===details.length-1?'':'border-bottom:1px solid var(--border)'}">
