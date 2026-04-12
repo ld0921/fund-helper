@@ -475,7 +475,6 @@ async function renderExistingHoldings(){
   const list=document.getElementById('eh-list');
   const empty=document.getElementById('eh-empty');
   const summary=document.getElementById('eh-summary');
-  const refreshBanner=document.getElementById('refresh-banner');
 
   // 自动合并相同基金代码的已确认持仓
   const codeMap = new Map();
@@ -509,12 +508,7 @@ async function renderExistingHoldings(){
   // 检查数据新鲜度，控制刷新横幅显示
   const lastRefreshTime = await FundDB.get('lastNavRefreshTime');
   const dataAge = lastRefreshTime ? Date.now() - lastRefreshTime : Infinity;
-  const isDataStale = dataAge > 30 * 60 * 1000; // 超过30分钟视为过期
-
-  // 刷新横幅已废弃，统一在收益总览卡片中显示刷新提示
-  if(refreshBanner){
-    refreshBanner.style.display = 'none';
-  }
+  const isDataStale = dataAge > 30 * 60 * 1000;
 
   // 获取昨日净值数据
   const yesterdayNav = await FundDB.get('yesterdayNav') || {};
@@ -879,7 +873,7 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
           <div style="padding:12px;background:${navRefreshed&&todayPnl!==0?(todayPnl>=0?'linear-gradient(135deg,#fff1f0,#fff2f0)':'linear-gradient(135deg,#f6ffed,#f0fff4)'):'linear-gradient(135deg,#fafafa,#f5f5f5)'};border-radius:8px;border:1px solid ${navRefreshed&&todayPnl!==0?(todayPnl>=0?'#ffccc7':'#b7eb8f'):'#d9d9d9'}">
             <div style="font-size:13px;color:${navRefreshed&&todayPnl!==0?(todayPnl>=0?'#cf1322':'#389e0d'):'#8c8c8c'};margin-bottom:4px">实时盈亏${!isTradingDay()?'(非交易日)':(navRefreshed&&navCount>0?'':'(待刷新)')}</div>
             <div style="font-size:20px;font-weight:700;color:${navRefreshed&&todayPnl!==0?(todayPnl>=0?'#cf1322':'#389e0d'):'#8c8c8c'}">${!isTradingDay()?'--':(navRefreshed?(todayPnl>=0?'+':'')+'¥'+Math.abs(todayPnl).toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2}):'--')}</div>
-            ${refreshTimeStr?`<div style="font-size:10px;color:var(--muted);margin-top:4px">📊 更新: ${refreshTimeStr}</div>`:''}
+            ${refreshTimeStr?`<div style="font-size:10px;color:var(--muted);margin-top:4px">📊 更新: ${refreshTimeStr} <button onclick="refreshHoldingsNav(true)" style="margin-left:4px;padding:1px 6px;font-size:10px;background:none;border:1px solid #d9d9d9;border-radius:3px;color:var(--primary);cursor:pointer">刷新</button></div>`:''}
             <div style="font-size:10px;color:var(--muted);margin-top:4px;line-height:1.5">
               ⚡ 自动刷新: 登录后自动 / 每5分钟 / 切回页面时
             </div>

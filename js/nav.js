@@ -118,9 +118,9 @@ function refreshAllNav(autoGenerate, silent){
     }
   }));
 }
-async function refreshHoldingsNav(showToastOnEmpty = false){
+async function refreshHoldingsNav(showToast_ = false){
   if(!existingHoldings.length){
-    if(showToastOnEmpty) showToast('暂无持仓数据','info');
+    if(showToast_) showToast('暂无持仓数据','info');
     console.log('[刷新净值] 无持仓，跳过刷新');
     return;
   }
@@ -196,17 +196,18 @@ async function refreshHoldingsNav(showToastOnEmpty = false){
         updateYesterdayNav();
 
         renderExistingHoldings(); runHealthMonitor(); renderTodayOverview();
-        checkRefreshReminder(); // 更新刷新提醒显示
         updateLastRefreshTime(); // 更新时间显示
         if(btn){ btn.textContent='🔄 刷新净值数据'; btn.disabled=false; }
 
-        // 检查市场时间，显示相应提示
-        const hour2 = now.getHours();
-        const minute2 = now.getMinutes();
-        if(hour2 < 9 || (hour2 === 9 && minute2 < 30)){
-          showToast('市场未开盘(9:30开盘)，今日收益数据暂不可用','info');
-        } else {
-          showToast(`已刷新 ${total} 只基金净值`,'success');
+        // 只在用户手动刷新时显示 toast
+        if(showToast_){
+          const hour2 = now.getHours();
+          const minute2 = now.getMinutes();
+          if(hour2 < 9 || (hour2 === 9 && minute2 < 30)){
+            showToast('市场未开盘(9:30开盘)，今日收益数据暂不可用','info');
+          } else {
+            showToast(`已刷新 ${total} 只基金净值`,'success');
+          }
         }
       }
     });

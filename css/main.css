@@ -530,9 +530,6 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
   /* 按钮触摸优化 */
   .btn{min-height:44px;font-size:14px}
   .btn-sm{min-height:38px;font-size:13px}
-  /* 刷新横幅移动端优化 */
-  #refresh-banner{padding:16px;margin:16px 0}
-  #refresh-banner button{font-size:15px;padding:12px 20px}
   /* 持仓列表移动端优化 */
   .eh-row{padding:8px;margin-bottom:6px}
   .eh-fund-name{font-size:15px}
