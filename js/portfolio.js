@@ -666,19 +666,27 @@ function selectFunds(cat, catData, riskProfile, pct, totalAmt){
     return {...f, adjustedScore: score};
   }).sort((a,b) => b.adjustedScore - a.adjustedScore);
 
-  // 相关性去重：同一基金经理最多选1只
+  // 相关性去重：同一基金经理最多选1只 + 标签去重（自适应）
   const usedManagers = new Set();
   const deduped = [];
+  // 预检标签多样性：如果类别内标签过于同质化，降低标签去重力度
+  const uniqueTagSets = new Set(pool.map(f => JSON.stringify((f.tags||[]).sort())));
+  const tagDiversity = uniqueTagSets.size; // 有几种不同的标签组合
+  // 标签组合 <= 2种时视为同质化（如 active 只有"主动权益均衡"和"科技成长行业"）
+  const skipTagDedup = tagDiversity <= 2;
+
   pool.forEach(f => {
     if(usedManagers.has(f.manager) && deduped.length > 0) return; // 同经理跳过（首只除外）
-    // 标签重叠检查：与已选基金标签重叠 >50% 则跳过
-    const fTags = new Set(f.tags||[]);
-    let tooSimilar = false;
-    deduped.forEach(sel => {
-      const overlap = (sel.tags||[]).filter(t => fTags.has(t)).length;
-      if(fTags.size > 0 && overlap / fTags.size > 0.5) tooSimilar = true;
-    });
-    if(tooSimilar && deduped.length > 0) return;
+    // 标签重叠检查：标签同质化时跳过此检查，避免整个类别只选1只
+    if(!skipTagDedup){
+      const fTags = new Set(f.tags||[]);
+      let tooSimilar = false;
+      deduped.forEach(sel => {
+        const overlap = (sel.tags||[]).filter(t => fTags.has(t)).length;
+        if(fTags.size > 0 && overlap / fTags.size > 0.5) tooSimilar = true;
+      });
+      if(tooSimilar && deduped.length > 0) return;
+    }
     usedManagers.add(f.manager);
     deduped.push(f);
   });
