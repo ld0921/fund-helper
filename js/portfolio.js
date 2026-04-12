@@ -316,11 +316,13 @@ function renderRebalancePlan(plan){
 
   document.getElementById('rebal-summary').innerHTML = summaryHtml;
 
-  // 增加资金流动说明
+  // 增加资金流动说明（先清除上一次生成的）
+  const oldFlow = document.getElementById('rebal-flow-info');
+  if(oldFlow) oldFlow.remove();
   if(releaseAmt > 0 || summary.newMoney > 0){
     const totalAvailable = summary.newMoney + releaseAmt;
     const flowBalance = summary.flowBalance || 0;
-    const flowHtml = `<div style="margin-top:12px;padding:10px 14px;background:#e6f7ff;border-radius:8px;border-left:3px solid var(--primary)">
+    const flowHtml = `<div id="rebal-flow-info" style="margin-top:12px;padding:10px 14px;background:#e6f7ff;border-radius:8px;border-left:3px solid var(--primary)">
       <div style="font-size:12px;font-weight:600;color:var(--primary);margin-bottom:6px">💰 资金流动说明</div>
       <div style="font-size:11px;color:#595959;line-height:1.8">
         ${releaseAmt > 0 ? `• 减持释放：¥${releaseAmt.toLocaleString()} （卖出 ¥${summary.sellAmt.toLocaleString()} + 减仓 ¥${summary.reduceAmt.toLocaleString()}）<br>` : ''}
