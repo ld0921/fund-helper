@@ -693,6 +693,8 @@ async function renderExistingHoldings(){
 
   // 渲染收益总览卡片
   renderPortfolioOverview(confirmedHoldings, totalCost, totalVal, totalPnl, totalPnlPct, pendingTotal);
+  // 同步更新定投收益统计（定投专区）
+  if(typeof renderDcaPnlSummary === 'function') renderDcaPnlSummary();
 }
 
 function scrollToFirstPending(){
@@ -836,6 +838,21 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
     return {name:h.name, code:h.code, cost, value:(h.value||0), pnl, pct, todayChg, todayPnl, isEstimated, source:h.source, shares:h.shares||0, date:h.date, jzrq:nav?.jzrq};
   }).sort((a,b)=>(b.value||0)-(a.value||0)); // 按市值降序
 
+  // 按来源拆分收益：直购 vs 定投
+  const dcaH = holdings.filter(h => h.source === 'dca');
+  const directH = holdings.filter(h => h.source !== 'dca');
+  const dcaCost = dcaH.reduce((s,h) => s + (h.amount||0), 0);
+  const dcaVal = dcaH.reduce((s,h) => s + (h.value||0), 0);
+  const dcaDiv = dcaH.reduce((s,h) => s + (h.totalCashDividend||0), 0);
+  const dcaPnl = dcaCost > 0 ? (dcaVal + dcaDiv - dcaCost) : 0;
+  const dcaPnlPct = dcaCost > 0 ? (dcaPnl / dcaCost * 100) : 0;
+  const directCost = directH.reduce((s,h) => s + (h.amount||0), 0);
+  const directVal = directH.reduce((s,h) => s + (h.value||0), 0);
+  const directDiv = directH.reduce((s,h) => s + (h.totalCashDividend||0), 0);
+  const directPnl = directCost > 0 ? (directVal + directDiv - directCost) : 0;
+  const directPnlPct = directCost > 0 ? (directPnl / directCost * 100) : 0;
+  const hasBothSources = dcaH.length > 0 && directH.length > 0;
+
   el.style.display='';
   el.innerHTML=`
     <div class="card">
@@ -854,6 +871,10 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
             <div style="font-size:13px;color:${totalPnl>=0?'#cf1322':'#389e0d'};margin-bottom:4px">累计盈亏</div>
             <div style="font-size:20px;font-weight:700;color:${totalPnl>=0?'#cf1322':'#389e0d'}">${totalPnl>=0?'+':''}¥${Math.abs(totalPnl).toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
             <div style="font-size:14px;font-weight:600;color:${totalPnl>=0?'#cf1322':'#389e0d'};margin-top:2px">${totalPnl>=0?'+':''}${totalPnlPct.toFixed(1)}%</div>
+            ${hasBothSources ? `<div style="margin-top:8px;padding:6px 8px;background:rgba(255,255,255,0.6);border-radius:6px;font-size:11px;line-height:1.8">
+              <div style="display:flex;justify-content:space-between;align-items:center"><span style="color:#1677ff">💰 直购</span><span class="${directPnl>=0?'up':'down'}" style="font-weight:600">${directPnl>=0?'+':''}¥${Math.abs(directPnl).toLocaleString('zh-CN',{maximumFractionDigits:2})} (${directPnl>=0?'+':''}${directPnlPct.toFixed(1)}%)</span></div>
+              <div style="display:flex;justify-content:space-between;align-items:center"><span style="color:#722ed1">📅 定投</span><span class="${dcaPnl>=0?'up':'down'}" style="font-weight:600">${dcaPnl>=0?'+':''}¥${Math.abs(dcaPnl).toLocaleString('zh-CN',{maximumFractionDigits:2})} (${dcaPnl>=0?'+':''}${dcaPnlPct.toFixed(1)}%)</span></div>
+            </div>` : ''}
           </div>
           <div style="padding:12px;background:${navRefreshed&&todayPnl!==0?(todayPnl>=0?'linear-gradient(135deg,#fff1f0,#fff2f0)':'linear-gradient(135deg,#f6ffed,#f0fff4)'):'linear-gradient(135deg,#fafafa,#f5f5f5)'};border-radius:8px;border:1px solid ${navRefreshed&&todayPnl!==0?(todayPnl>=0?'#ffccc7':'#b7eb8f'):'#d9d9d9'}">
             <div style="font-size:13px;color:${navRefreshed&&todayPnl!==0?(todayPnl>=0?'#cf1322':'#389e0d'):'#8c8c8c'};margin-bottom:4px">实时盈亏${!isTradingDay()?'(非交易日)':(navRefreshed&&navCount>0?'':'(待刷新)')}</div>

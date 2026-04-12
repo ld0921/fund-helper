@@ -1,34 +1,4 @@
 // ═══ 定投专区模块 ═══
-function calcSIP(){
-  const amount=parseFloat(document.getElementById('sip-amount').value)||0;
-  const freq=parseInt(document.getElementById('sip-freq').value);
-  const years=parseInt(document.getElementById('sip-years').value)||5;
-  const rate=parseFloat(document.getElementById('sip-rate').value)/100;
-  const init=parseFloat(document.getElementById('sip-init').value)||0;
-  if(!amount||!rate){showToast('请填写投入金额和预期收益率','error');return;}
-  const periods=years*freq, rPer=rate/freq;
-  let totalCost=init, totalValue=init;
-  const sipData=[], labels=[], costArr=[], valArr=[];
-  for(let i=1;i<=periods;i++){
-    totalValue=(totalValue+amount)*(1+rPer); totalCost+=amount;
-    if(i%freq===0||i===periods){
-      const yr=Math.ceil(i/freq); labels.push(`第${yr}年`);
-      costArr.push(+(totalCost+init).toFixed(2)); valArr.push(+totalValue.toFixed(2));
-      sipData.push({year:yr,cost:totalCost+init,value:totalValue});
-    }
-  }
-  const fv=totalValue,fc=totalCost+init,profit=fv-fc,pct=((fv-fc)/fc*100).toFixed(2);
-  document.getElementById('sip-stats').innerHTML=`
-    <div class="stat-card"><div class="stat-val">¥${(amount*freq/12).toLocaleString('zh-CN',{maximumFractionDigits:0})}</div><div class="stat-label">月均投入</div></div>
-    <div class="stat-card"><div class="stat-val">¥${fc.toLocaleString('zh-CN',{maximumFractionDigits:0})}</div><div class="stat-label">总投入本金</div></div>
-    <div class="stat-card"><div class="stat-val" style="color:var(--primary)">¥${fv.toLocaleString('zh-CN',{maximumFractionDigits:0})}</div><div class="stat-label">预期总资产</div></div>
-    <div class="stat-card"><div class="stat-val ${profit>=0?'up':'down'}">¥${profit.toLocaleString('zh-CN',{maximumFractionDigits:0})}</div><div class="stat-label">预期收益</div></div>
-    <div class="stat-card"><div class="stat-val" style="color:${pct>=0?'var(--success)':'var(--danger)'}">${pct>=0?'+':''}${pct}%</div><div class="stat-label">累计收益率</div></div>`;
-  if(sipChartInst) { try{sipChartInst.destroy();}catch(e){} sipChartInst=null; }
-  sipChartInst=new Chart(document.getElementById('sipChart'),{type:'bar',data:{labels,datasets:[{label:'投入本金',data:costArr,backgroundColor:'#bae0ff',borderRadius:4},{label:'预期市值',data:valArr,backgroundColor:'#1677ff',borderRadius:4}]},options:{plugins:{legend:{position:'bottom'}},scales:{y:{ticks:{callback:v=>'¥'+(v/10000).toFixed(0)+'万'}}},responsive:true,maintainAspectRatio:true}});
-  document.getElementById('sip-table-wrap').innerHTML=`<details><summary style="cursor:pointer;font-size:13px;color:var(--primary);margin-bottom:8px">查看逐年明细 <span class="toggle-arrow" style="font-size:12px"></span></summary><div class="table-wrap"><table><thead><tr><th>年份</th><th>累计投入</th><th>预期市值</th><th>累计收益</th><th>收益率</th></tr></thead><tbody>${sipData.map(d=>{const p=d.value-d.cost,pc=(p/d.cost*100).toFixed(1);return`<tr><td>第${d.year}年</td><td>¥${d.cost.toLocaleString('zh-CN',{maximumFractionDigits:0})}</td><td style="color:var(--primary)">¥${d.value.toLocaleString('zh-CN',{maximumFractionDigits:0})}</td><td class="up">+¥${p.toLocaleString('zh-CN',{maximumFractionDigits:0})}</td><td class="up">+${pc}%</td></tr>`;}).join('')}</tbody></table></div></details>`;
-  document.getElementById('sip-result').style.display='block';
-}
 
 // ═══════════════ 面板2: 定投推荐榜 ═══════════════
 // calcDCAScore 已移至 js/score.js
@@ -420,13 +390,6 @@ function _doGenerateDca(){
     </div>`;
 
   resultEl.innerHTML = html;
-  // 自动同步参数到收益测算
-  document.getElementById('sip-amount').value = totalBudget;
-  document.getElementById('sip-rate').value = expRate.toFixed(1);
-  document.getElementById('sip-years').value = years;
-  calcSIP();
-  const hintEl=document.getElementById('sip-synced-hint');
-  if(hintEl){hintEl.style.display='inline';setTimeout(()=>hintEl.style.display='none',5000);}
 }
 
 function importDcaAiToPlan(planArr){
@@ -754,6 +717,7 @@ function renderDcaPlans(){
   const pausedCount=dcaPlans.length-activeCount;
   summaryEl.innerHTML=`📅 共 <b>${dcaPlans.length}</b> 项定投计划${pausedCount>0?`（${pausedCount}项已暂停）`:''}，每月合计 <b>¥${totalMonthly.toLocaleString()}</b>${totalCurval>0?`，总持仓市值约 <b>¥${totalCurval.toLocaleString()}</b>`:''}。已自动同步至已有持仓与持仓统计。<div style="font-size:11px;color:var(--muted);margin-top:6px">💡 每月扣款后，工具会自动按期数估算累计投入。如需精确跟踪，可在持仓中更新确认份额。</div>`;
   renderDcaTracker();
+  renderDcaPnlSummary();
   // 更新定投预算提示
   updateDcaBudgetHint();
 }
@@ -847,6 +811,79 @@ function importFromDcaPlans(){
   renderExistingHoldings(); runHealthMonitor();
   if(added>0) showToast(`已从定投计划导入 ${added} 条持仓`,'success');
   else showToast('定投计划中的基金已全部在已有持仓中','info');
+}
+
+// ═══════════════ 定投收益统计（基于实际持仓数据） ═══════════════
+function renderDcaPnlSummary(){
+  const el = document.getElementById('dca-pnl-summary');
+  if(!el) return;
+
+  const dcaHoldings = existingHoldings.filter(h => h.source === 'dca' && h.status === 'confirmed');
+  if(!dcaHoldings.length){
+    el.innerHTML = '';
+    return;
+  }
+
+  const totalCost = dcaHoldings.reduce((s,h) => s + (h.amount||0), 0);
+  const totalVal = dcaHoldings.reduce((s,h) => s + (h.value||0), 0);
+  const totalCashDiv = dcaHoldings.reduce((s,h) => s + (h.totalCashDividend||0), 0);
+  const totalPnl = totalCost > 0 ? (totalVal + totalCashDiv - totalCost) : 0;
+  const totalPnlPct = totalCost > 0 ? (totalPnl / totalCost * 100) : 0;
+  const pnlColor = totalPnl >= 0 ? '#cf1322' : '#389e0d';
+  const pnlBg = totalPnl >= 0 ? '#fff1f0' : '#f6ffed';
+  const pnlBorder = totalPnl >= 0 ? '#ffccc7' : '#b7eb8f';
+
+  const details = dcaHoldings.map(h => {
+    const cost = h.amount || 0;
+    const cashDiv = h.totalCashDividend || 0;
+    const pnl = cost > 0 ? (h.value + cashDiv - cost) : 0;
+    const pct = cost > 0 ? (pnl / cost * 100) : 0;
+    return { name: h.name, code: h.code, cost, value: h.value||0, pnl, pct };
+  }).sort((a,b) => b.value - a.value);
+
+  el.innerHTML = `
+    <div class="card">
+      <div class="card-title"><span class="icon icon-purple">📊</span>定投收益统计</div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px">
+        <div style="padding:10px 12px;background:#f0f5ff;border-radius:8px;border:1px solid #adc6ff">
+          <div style="font-size:12px;color:#2f54eb;margin-bottom:4px">累计投入</div>
+          <div style="font-size:18px;font-weight:700;color:#1d39c4">¥${totalCost.toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
+        </div>
+        <div style="padding:10px 12px;background:#e6f7ff;border-radius:8px;border:1px solid #91d5ff">
+          <div style="font-size:12px;color:#096dd9;margin-bottom:4px">当前市值</div>
+          <div style="font-size:18px;font-weight:700;color:#0050b3">¥${totalVal.toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
+        </div>
+        <div style="padding:10px 12px;background:${pnlBg};border-radius:8px;border:1px solid ${pnlBorder}">
+          <div style="font-size:12px;color:${pnlColor};margin-bottom:4px">定投收益${totalCashDiv > 0 ? '(含分红)' : ''}</div>
+          <div style="font-size:18px;font-weight:700;color:${pnlColor}">${totalPnl>=0?'+':''}¥${Math.abs(totalPnl).toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
+        </div>
+        <div style="padding:10px 12px;background:${pnlBg};border-radius:8px;border:1px solid ${pnlBorder}">
+          <div style="font-size:12px;color:${pnlColor};margin-bottom:4px">收益率</div>
+          <div style="font-size:18px;font-weight:700;color:${pnlColor}">${totalPnl>=0?'+':''}${totalPnlPct.toFixed(2)}%</div>
+        </div>
+      </div>
+      ${details.length > 0 ? `
+      <details>
+        <summary style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;font-size:13px;color:var(--primary);font-weight:500;padding:8px 0">
+          各定投基金收益明细 <span class="toggle-arrow" style="font-size:12px"></span>
+        </summary>
+        <div class="table-wrap" style="margin-top:8px">
+          <table style="width:100%;font-size:12px">
+            <thead><tr><th style="text-align:left">基金名称</th><th style="text-align:right">投入</th><th style="text-align:right">市值</th><th style="text-align:right">盈亏</th><th style="text-align:right">收益率</th></tr></thead>
+            <tbody>${details.map(d => `<tr>
+              <td style="font-weight:500;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(d.name)}</td>
+              <td style="text-align:right;color:var(--muted)">¥${d.cost.toLocaleString('zh-CN',{maximumFractionDigits:0})}</td>
+              <td style="text-align:right">¥${d.value.toLocaleString('zh-CN',{maximumFractionDigits:0})}</td>
+              <td style="text-align:right" class="${d.pnl>=0?'up':'down'}">${d.pnl>=0?'+':''}¥${Math.abs(d.pnl).toLocaleString('zh-CN',{maximumFractionDigits:2})}</td>
+              <td style="text-align:right;font-weight:600" class="${d.pnl>=0?'up':'down'}">${d.pnl>=0?'+':''}${d.pct.toFixed(1)}%</td>
+            </tr>`).join('')}</tbody>
+          </table>
+        </div>
+      </details>` : ''}
+      <div style="margin-top:8px;font-size:11px;color:var(--muted);line-height:1.5">
+        💡 数据基于已导入到持仓的定投基金（标记为"📅 定投"），收益 = 当前市值 + 累计分红 - 买入成本。请先在持仓中确认份额以获得准确数据。
+      </div>
+    </div>`;
 }
 
 // ═══════════════ 智能买卖信号引擎（均衡型灵敏度） ═══════════════

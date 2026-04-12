@@ -566,24 +566,8 @@
     </details>
   </div>
 
-  <!-- 收益测算 -->
-  <div class="card">
-    <div class="card-title"><span class="icon icon-orange">📈</span>定投收益测算</div>
-    <div class="form-grid">
-      <div class="form-item"><label>每期投入金额(元)</label><input id="sip-amount" type="number" value="1000"></div>
-      <div class="form-item"><label>投入频率</label><select id="sip-freq"><option value="12">每月</option><option value="4">每季</option><option value="52">每周</option></select></div>
-      <div class="form-item"><label>投资年限(年)</label><input id="sip-years" type="number" value="5" min="1" max="40"></div>
-      <div class="form-item"><label>预期年化收益率(%)</label><input id="sip-rate" type="number" value="8" step="0.5" inputmode="decimal"></div>
-      <div class="form-item"><label>已有本金(元)</label><input id="sip-init" type="number" value="0"></div>
-    </div>
-    <div class="action-bar"><button class="btn btn-primary" onclick="calcSIP()">开始测算</button></div>
-  </div>
-  <div class="card" id="sip-result" style="display:none">
-    <div class="card-title"><span class="icon icon-orange">📊</span>收益预测结果 <span id="sip-synced-hint" style="display:none;font-size:11px;color:var(--success);font-weight:400">✓ 参数已从AI定投方案同步</span></div>
-    <div class="stat-row" id="sip-stats"></div>
-    <div class="chart-wrap"><canvas id="sipChart"></canvas></div>
-    <div id="sip-table-wrap" style="margin-top:14px"></div>
-  </div>
+  <!-- 定投收益统计（基于实际持仓数据） -->
+  <div id="dca-pnl-summary"></div>
 
   <!-- 我的定投计划 -->
   <div class="card" id="dp-section">
@@ -1360,7 +1344,7 @@ function renderAll(){
 }
 let currentCat = 'all';
 let currentSortMode = 'score'; // 'score' or 'dca'
-let portfolioPieInst = null, sipChartInst = null;
+let portfolioPieInst = null;
 let navRefreshed = false; // 标记是否已刷新净值数据
 
 // ═══════════════ 标签切换 ═══════════════
