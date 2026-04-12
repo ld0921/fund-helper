@@ -195,11 +195,13 @@ function _doGenerateDca(){
       if(!catData) return;
 
       // 构建排除已选基金的候选池，叠加定投评分兜底过滤
+      // 阈值按类别差异化：权益类60分，债券/指数波动小天然低分，放宽到45分
+      const dcaScoreThreshold = ['bond'].includes(cat) ? 45 : ['index'].includes(cat) ? 50 : 60;
       const filteredCatData = {
         ...catData,
         topFunds: catData.topFunds.filter(f =>
           !allPicks.some(p => p.code === f.code) &&
-          calcDCAScore(f) >= 60
+          calcDCAScore(f) >= dcaScoreThreshold
         )
       };
 
