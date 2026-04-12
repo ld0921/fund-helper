@@ -212,11 +212,9 @@ function _doGenerateDca(){
       const fundPicks = selectFunds(cat, filteredCatData, risk, catPct, totalBudget);
 
       fundPicks.forEach(fp => {
-        // selectFunds 返回的 amt 是按总额计算的一次性金额，转为月投金额
-        const monthlyAmt = Math.max(100, Math.round(fp.amt / 100) * 100);
         allPicks.push({
           ...fp,
-          monthly: monthlyAmt,
+          monthly: 0, // 先占位，后续统一按比例分配月投金额
           dcaScore: calcDCAScore(fp),
           action: 'new',
           actionLabel: '+ 新增定投',
@@ -226,26 +224,37 @@ function _doGenerateDca(){
     }
   });
 
-  // 6. 调整月投金额，确保总额等于总预算
-  let totalAllocated = allPicks.reduce((s,p) => s + p.monthly, 0);
-  if(totalAllocated !== totalBudget && allPicks.length > 0) {
-    const diff = totalBudget - totalAllocated;
-    // 优先调整新增的基金
-    const adjustable = allPicks.filter(p => p.action === 'new');
-    if(adjustable.length > 0) {
-      const perFund = Math.round(diff / adjustable.length / 100) * 100;
-      adjustable.forEach(p => p.monthly += perFund);
-    } else {
-      // 如果没有新增的，调整第一只
-      allPicks[0].monthly += diff;
-    }
+  // 6. 按比例分配月投金额（一次性计算，确保总额精确等于 totalBudget）
+  const newPart = allPicks.filter(p => p.action === 'new');
+  const keptTotal = allPicks.filter(p => p.action === 'keep').reduce((s,p) => s + p.monthly, 0);
+  const newBudget = totalBudget - keptTotal; // 新增基金可分配的月投额度
+
+  if(newPart.length > 0 && newBudget > 0) {
+    // 用 selectFunds 返回的 pct 作为比例基准
+    const totalPct = newPart.reduce((s,p) => s + (p.pct||1), 0);
+    let remaining = newBudget;
+    // 先按比例分配（取整到百元）
+    newPart.forEach((p, i) => {
+      if(i < newPart.length - 1) {
+        p.monthly = Math.max(100, Math.round(newBudget * (p.pct||1) / totalPct / 100) * 100);
+        remaining -= p.monthly;
+      } else {
+        // 最后一只拿剩余额度，确保总额精确
+        p.monthly = Math.max(100, remaining);
+      }
+    });
   }
 
-  // 7. 计算百分比
+  // 7. 重新计算百分比（基于最终月投金额）
   const finalTotal = allPicks.reduce((s,p) => s + p.monthly, 0);
   allPicks.forEach(p => {
     p.pct = Math.round(p.monthly / finalTotal * 100);
   });
+  // 修正百分比舍入误差
+  const pctSum = allPicks.reduce((s,p) => s + p.pct, 0);
+  if(pctSum !== 100 && allPicks.length > 0) {
+    allPicks.sort((a,b) => b.monthly - a.monthly)[0].pct += (100 - pctSum);
+  }
 
   const withAmt = allPicks;
 
