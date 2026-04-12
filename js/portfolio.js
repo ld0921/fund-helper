@@ -581,7 +581,8 @@ function computeWeights(riskProfile, horizon, catRanks, macroClock){
   }
 
   // 5. 投资期限约束（权益类上限）
-  const equityCap = { 1:30, 2:60, 5:75, 10:85 }[horizon] || 60;
+  // 期限越长允许越多权益敞口
+  const equityCap = horizon >= 10 ? 85 : horizon >= 5 ? 75 : horizon >= 3 ? 65 : horizon >= 2 ? 60 : 30;
   const equityCats = ['active','index','qdii'];
   let equityTotal = equityCats.reduce((s,c) => s + (base[c]||0), 0);
   if(equityTotal > equityCap){
@@ -727,8 +728,9 @@ function selectFunds(cat, catData, riskProfile, pct, totalAmt){
     if(pct * coreRatio > maxSingleFundPct) coreRatio = maxSingleFundPct / pct;
     perPick = [Math.round(pct*coreRatio), pct - Math.round(pct*coreRatio)];
   } else {
-    // 单只基金时，确保不超过30%
-    perPick = [Math.min(pct, maxSingleFundPct)];
+    // 单只基金时，不做上限截断（30%上限在类别间已由computeWeights控制）
+    // 截断会导致权重凭空消失（如 pct=40 截断到30，10%无去处）
+    perPick = [pct];
   }
 
   return picks.map((f,i)=>({
