@@ -731,79 +731,115 @@ function selectFunds(cat, catData, riskProfile, pct, totalAmt){
   }));
 }
 
-// 生成执行步骤（融合已有持仓）
-function buildSteps(weights, picks, totalAmt, monthly, riskProfile, horizon){
-  const allPicks = Object.values(picks).flat();
-  const keptFunds = allPicks.filter(f=>f.isExisting);
-  const newFunds = allPicks.filter(f=>!f.isExisting);
-
-  // 将已持有基金分为两组：需要加仓的和只需持有的
-  const addPositionFunds = keptFunds.filter(f=>f.newBuyAmt && f.newBuyAmt > 0);
-  const holdOnlyFunds = keptFunds.filter(f=>!f.newBuyAmt || f.newBuyAmt <= 0);
-
-  const immediateFunds = newFunds.filter(f=>['money','bond'].includes(f.cat));
-  const equityFunds    = newFunds.filter(f=>['active','index','qdii'].includes(f.cat));
-  const immediateAmt   = immediateFunds.reduce((s,f)=>s+f.amt,0);
-  const equityAmt      = equityFunds.reduce((s,f)=>s+f.amt,0);
-
+// 基于调仓建议生成分步执行步骤（确保与调仓完全一致）
+function buildStepsFromRebalPlan(rebalPlan, riskProfile, horizon){
   const steps = [];
 
-  // 只需持有的基金
-  if(holdOnlyFunds.length){
+  // 无持仓时的简单模式（rebalPlan 为 null）
+  if(!rebalPlan){
     steps.push({
-      title:`✅ 继续持有 ${holdOnlyFunds.length} 只达标基金`,
-      desc:`${holdOnlyFunds.map(f=>{
-        const held = existingHoldings.find(h=>h.code===f.code);
-        const currentAmt = held ? held.value : 0;
-        return `「${f.name}」(¥${currentAmt.toLocaleString()})`;
-      }).join('、')}。这些基金评分达标，保持现有仓位即可。`
+      title:'💡 暂无持仓，请按配置方案直接买入',
+      desc:'在支付宝中搜索上方推荐的基金代码逐一购买即可。权益类建议分2-3次买入，间隔1-2周。'
+    });
+    steps.push({
+      title:'📅 每半年检视并再平衡',
+      desc:'每半年定期检查各基金表现，若某类资产偏离目标权重超过15%（相对偏离），需调整。'
+    });
+    return steps;
+  }
+
+  const {actions, summary} = rebalPlan;
+
+  // 1. 卖出/减仓（先卖后买，资金释放）
+  const sellActions = actions.filter(a => a.action === 'sell');
+  const reduceActions = actions.filter(a => a.action === 'reduce' || a.action === 'reduce_gentle');
+  if(sellActions.length || reduceActions.length){
+    const totalRelease = summary.sellAmt + summary.reduceAmt;
+    const sellDesc = sellActions.map(a => `「${a.name}」(${a.code}) 赎回 ¥${a.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`);
+    const reduceDesc = reduceActions.map(a => `「${a.name}」(${a.code}) 减仓 ¥${a.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`);
+    const allDesc = [...sellDesc, ...reduceDesc];
+    steps.push({
+      title:`💰 赎回/减仓 ${allDesc.length} 只基金，释放 ¥${totalRelease.toLocaleString('zh-CN',{maximumFractionDigits:0})}`,
+      desc:`${allDesc.join('；')}。<br>⏰ 赎回资金T+1~T+3到账（QDII可能需要T+7），到账后再执行买入操作。赎回费：持有<7天=1.5%，7天~1年≈0.5%，>2年=0%。`
     });
   }
 
-  // 需要加仓的基金
-  if(addPositionFunds.length){
-    const addPositionAmt = addPositionFunds.reduce((s,f)=>s+(f.newBuyAmt||0),0);
+  // 2. 继续持有
+  const holdActions = actions.filter(a => a.action === 'hold');
+  if(holdActions.length){
     steps.push({
-      title:`📈 加仓 ${addPositionFunds.length} 只已持有基金 ¥${addPositionAmt.toLocaleString()}`,
-      desc:`${addPositionFunds.map(f=>{
-        const held = existingHoldings.find(h=>h.code===f.code);
-        const currentAmt = held ? held.value : 0;
-        return `「${f.name}」(${f.code})：当前¥${currentAmt.toLocaleString()}，建议加仓¥${(f.newBuyAmt||0).toLocaleString()}`;
-      }).join('、')}。这些基金表现良好，建议增加配置。`
+      title:`✅ 继续持有 ${holdActions.length} 只基金`,
+      desc:`${holdActions.map(a => `「${a.name}」(¥${a.currentAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})})`).join('、')}。仓位合适，保持现有配置即可。`
     });
   }
-  if(immediateFunds.length){
+
+  // 3. 加仓已有基金
+  const addActions = actions.filter(a => a.action === 'buy_more');
+  if(addActions.length){
+    const addTotal = addActions.reduce((s,a) => s + a.actionAmt, 0);
     steps.push({
-      title:`💰 买入稳健底仓 ¥${immediateAmt.toLocaleString()}`,
-      desc:`在支付宝搜索基金代码直接购买：${immediateFunds.map(f=>`「${f.name}」(${f.code})`).join('、')}。这部分资金安全稳定，作为组合的基础保障。`
+      title:`📈 加仓 ${addActions.length} 只已有基金 ¥${addTotal.toLocaleString('zh-CN',{maximumFractionDigits:0})}`,
+      desc:`${addActions.map(a => `「${a.name}」(${a.code}) 加仓 ¥${a.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`).join('；')}。在支付宝搜索基金代码购买。`
     });
   }
-  if(equityFunds.length){
+
+  // 4. 新建仓
+  const buyActions = actions.filter(a => a.action === 'buy');
+  if(buyActions.length){
+    const buyTotal = buyActions.reduce((s,a) => s + a.actionAmt, 0);
+    const bondMoney = buyActions.filter(a => ['bond','money'].includes(a.cat));
+    const equity = buyActions.filter(a => ['active','index','qdii'].includes(a.cat));
+    let desc = '';
+    if(bondMoney.length){
+      desc += `稳健底仓：${bondMoney.map(a => `「${a.name}」(${a.code}, ¥${a.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})})`).join('、')}，可一次性买入。`;
+    }
+    if(equity.length){
+      if(desc) desc += '<br>';
+      desc += `权益基金：${equity.map(a => `「${a.name}」(${a.code}, ¥${a.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})})`).join('、')}，建议分2-3次买入，间隔1-2周。`;
+      desc += '<br>注意：QDII基金可能有单日限购额度，大额需分多日买入。';
+    }
     steps.push({
-      title:`📊 分批买入权益基金 ¥${equityAmt.toLocaleString()}`,
-      desc:`在支付宝搜索基金代码购买：${equityFunds.map(f=>`「${f.name}」(${f.code}, ¥${f.amt.toLocaleString()})`).join('、')}。建议分2-3次买入，间隔1-2周。注意：QDII基金有单日限购额度（各基金不同，请在支付宝基金详情页查看具体限额），大额需分多日买入。<br>⏰ 注意：卖出的资金T+1到账后才能用于购买，请先操作赎回，到账后再执行买入。`
+      title:`🛒 新建仓 ${buyActions.length} 只基金 ¥${buyTotal.toLocaleString('zh-CN',{maximumFractionDigits:0})}`,
+      desc
     });
   }
-  if(!newFunds.length && keptFunds.length){
+
+  // 5. 卫星仓观察
+  const satActions = actions.filter(a => a.action === 'satellite');
+  if(satActions.length){
     steps.push({
-      title:'💡 当前持仓已覆盖目标配置',
-      desc:'您的已有持仓已基本符合目标配比，新资金可按各类别缺口比例小额加仓，或等待下次再平衡时机。'
+      title:`👀 ${satActions.length} 只非核心仓继续观察`,
+      desc:`${satActions.map(a => `「${a.name}」(¥${a.currentAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})})`).join('、')}。这些基金不在核心推荐中但表现尚可，可作为卫星仓继续持有。`
     });
   }
+
+  // 6. 再平衡+止损
   steps.push({
-    title:`📅 每半年检视并再平衡`,
-    desc:`每半年定期检查各基金表现，若某类资产偏离目标权重超过15%（相对偏离），需卖出高配部分、补仓低配部分。`
+    title:'📅 每半年检视并再平衡',
+    desc:'每半年定期检查各基金表现，若某类资产偏离目标权重超过15%（相对偏离），需卖出高配部分、补仓低配部分。'
   });
   steps.push({
     title:'🛡️ 设置止损/止盈纪律',
-    desc:`建议：单只基金亏损超过${riskProfile==='conservative'?15:riskProfile==='moderate'?20:25}%时降仓；组合整体收益达到${riskProfile==='conservative'?20:riskProfile==='moderate'?30:50}%时考虑部分止盈。止损线不宜过紧，正常市场波动中过早止损反而锁定亏损。`
+    desc:`建议：单只基金亏损超过${riskProfile==='conservative'?15:riskProfile==='moderate'?20:25}%时降仓；组合整体收益达到${riskProfile==='conservative'?20:riskProfile==='moderate'?30:50}%时考虑部分止盈。`
   });
-  if(!allPicks.some(f=>f.cat==='money')){
-    steps.push({
-      title:'💡 想要定投？',
-      desc:'如果你希望每月定期投入，请切换到「定投专区」Tab，那里有专门的定投推荐和方案生成。'
-    });
+
+  return steps;
+}
+
+// 旧版 buildSteps 保留兼容（无持仓时回退使用）
+function buildSteps(weights, picks, totalAmt, monthly, riskProfile, horizon){
+  const allPicks = Object.values(picks).flat();
+  const newFunds = allPicks.filter(f=>!f.isExisting);
+  const immediateFunds = newFunds.filter(f=>['money','bond'].includes(f.cat));
+  const equityFunds = newFunds.filter(f=>['active','index','qdii'].includes(f.cat));
+  const steps = [];
+  if(immediateFunds.length){
+    steps.push({title:`💰 买入稳健底仓 ¥${immediateFunds.reduce((s,f)=>s+f.amt,0).toLocaleString()}`, desc:`${immediateFunds.map(f=>`「${f.name}」(${f.code})`).join('、')}。`});
   }
+  if(equityFunds.length){
+    steps.push({title:`📊 分批买入权益基金 ¥${equityFunds.reduce((s,f)=>s+f.amt,0).toLocaleString()}`, desc:`${equityFunds.map(f=>`「${f.name}」(${f.code}, ¥${f.amt.toLocaleString()})`).join('、')}。建议分2-3次买入。`});
+  }
+  steps.push({title:'📅 每半年检视并再平衡', desc:'定期检查，偏离目标权重超过15%时调整。'});
   return steps;
 }
 
@@ -1465,19 +1501,15 @@ function _doGenerate(shouldScroll){
   renderStyleExposure(styleExposure, finalPicks);
   renderStressTest(stressResults, totalAmt);
 
-  // 11. 执行步骤
-  const steps=buildSteps(weights,selectedPicks,totalAmt,monthly,riskP,horizon);
+  // 11. 调仓建议（先于执行步骤生成，以便步骤引用调仓数据）
+  const rebalPlan = computeRebalancePlan(selectedPicks, totalAmt);
+  renderRebalancePlan(rebalPlan);
+
+  // 12. 执行步骤（基于调仓建议生成，确保与调仓一致）
+  const steps = buildStepsFromRebalPlan(rebalPlan, riskP, horizon);
   document.getElementById('step-list').innerHTML=steps.map((s,i)=>
     `<li class="step-item"><div class="step-num">${i+1}</div><div class="step-content"><div class="step-title">${s.title}</div><div class="step-desc">${s.desc}</div></div></li>`
   ).join('');
-
-  // 12. 定投测算（如有月定投）
-  // 12. 定投测算已移至独立的「定投专区」Tab
-
-  // 13. 调仓建议（有已有持仓时）
-  // 修复问题1：使用更新后的selectedPicks（已同步finalPicks的调整）
-  const rebalPlan = computeRebalancePlan(selectedPicks, totalAmt);
-  renderRebalancePlan(rebalPlan);
 
   // 13.5 低分基金替换建议
   if(replaceSuggestions.length > 0){
