@@ -98,8 +98,9 @@ function generateDcaAiPlan(){
 
     const algoSteps = [
       {icon:'📊',text:'分析已有定投计划，评估基金质量'},
-      {icon:'⚖️',text:'按风险偏好计算类别配置权重'},
-      {icon:'🔍',text:'智能选基（定投评分+类别分散）'},
+      {icon:'📡',text:'市场行情分析（资产动量信号）'},
+      {icon:'⚖️',text:'Risk Parity 动态权重计算'},
+      {icon:'🔍',text:'多因子智能选基（去重+核心卫星）'},
       {icon:'💰',text:'优化金额分配，确保预算平衡'},
       {icon:'📈',text:'计算预期收益（均值回归模型）'},
       {icon:'✅',text:'生成专属定投方案'}
@@ -163,25 +164,26 @@ function _doGenerateDca(){
     if(!keep) replaceSuggestions.push({ code:plan.code, name:plan.name||fd.name, cat, dcaScore, monthly:plan.monthly });
   });
 
-  // 2. 按定投评分过滤候选池（排除货币）
-  let pool = CURATED_FUNDS.filter(f=>f.cat!=='money');
-  if(risk==='conservative') pool = pool.filter(f=>['R1','R2','R3'].includes(f.risk));
-  else if(risk==='moderate') pool = pool.filter(f=>['R1','R2','R3','R4'].includes(f.risk));
+  // 2. 行情分析 + 市场动量信号（复用智能推荐模块）
+  const catRanks = analyzeCategoryPerf();
+  const macroClock = inferMomentumPhase(catRanks);
 
-  const scored = pool.map(f=>({...f, dcaScore:calcDCAScore(f)})).sort((a,b)=>b.dcaScore-a.dcaScore);
+  // 3. 动态权重计算（Risk Parity + 动量约束 + 期限约束）
+  const dynamicWeights = computeWeights(risk, years, catRanks, macroClock);
 
-  // 3. 按风险权重计算目标分配
-  const riskWeightMap = {
-    conservative: {bond:0.4, index:0.3, active:0.2, qdii:0.1},
-    moderate:     {index:0.35, active:0.3, qdii:0.2, bond:0.15},
-    balanced:     {active:0.35, index:0.3, qdii:0.25, bond:0.1},
-    aggressive:   {active:0.4, qdii:0.35, index:0.25, bond:0},
-  }[risk];
+  // 定投不含货币基金，将money权重按比例分配给其他类别
+  const moneyW = dynamicWeights.money || 0;
+  const dcaCats = ['active','index','bond','qdii'];
+  const nonMoneyTotal = dcaCats.reduce((s,c) => s + (dynamicWeights[c]||0), 0);
+  const riskWeightMap = {};
+  dcaCats.forEach(c => {
+    const base = dynamicWeights[c] || 0;
+    riskWeightMap[c] = nonMoneyTotal > 0 ? (base + moneyW * base / nonMoneyTotal) / 100 : 0;
+  });
 
   // 4. 计算每个类别的缺口
-  // 关键修复：用户输入的预算是"追加预算"，总预算 = 已有 + 追加
+  // 用户输入的预算是"追加预算"，总预算 = 已有 + 追加
   const totalBudget = totalExistingMonthly + budget;
-  const dcaCats = ['active','index','bond','qdii'];
   const catGap = {};
   const catKept = {};
   dcaCats.forEach(cat => {
@@ -193,7 +195,12 @@ function _doGenerateDca(){
   });
   const totalGap = Object.values(catGap).reduce((s,v) => s + v, 0);
 
-  // 5. 智能选基（融合已有计划）
+  // 替换建议用的候选池（按定投评分排名）
+  const dcaScoredPool = CURATED_FUNDS.filter(f => f.cat !== 'money')
+    .map(f => ({...f, dcaScore: calcDCAScore(f)}))
+    .sort((a,b) => b.dcaScore - a.dcaScore);
+
+  // 5. 智能选基（融合已有计划，复用 selectFunds 多因子算法）
   const allPicks = [];
 
   dcaCats.forEach(cat => {
@@ -212,24 +219,38 @@ function _doGenerateDca(){
       });
     });
 
-    // B. 为缺口选择新基金
-    if(gap > 100) { // 缺口至少100元才选新基金
-      const newMonthly = Math.floor(gap / 100) * 100; // 向下取整，避免超出预算
-      // 从候选池中选择该类别评分最高的基金（排除已有的）
-      const candidate = scored.find(f =>
-        f.cat === cat &&
-        !allPicks.some(p => p.code === f.code) &&
-        f.dcaScore >= 70 // 新选基金也要达标（提高阈值）
-      );
-      if(candidate) {
+    // B. 为缺口使用 selectFunds 多因子选基（经理去重+标签过滤+核心卫星+动量反转）
+    if(gap > 100) {
+      const catData = catRanks.find(cr => cr.cat === cat);
+      if(!catData) return;
+
+      // 构建排除已选基金的候选池，叠加定投评分兜底过滤
+      const filteredCatData = {
+        ...catData,
+        topFunds: catData.topFunds.filter(f =>
+          !allPicks.some(p => p.code === f.code) &&
+          calcDCAScore(f) >= 60
+        )
+      };
+
+      // 计算该类别在总预算中的百分比（selectFunds 需要）
+      const catPct = Math.round(gap / totalBudget * 100);
+      if(catPct < 1 || filteredCatData.topFunds.length === 0) return;
+
+      const fundPicks = selectFunds(cat, filteredCatData, risk, catPct, totalBudget);
+
+      fundPicks.forEach(fp => {
+        // selectFunds 返回的 amt 是按总额计算的一次性金额，转为月投金额
+        const monthlyAmt = Math.max(100, Math.round(fp.amt / 100) * 100);
         allPicks.push({
-          ...candidate,
-          monthly: newMonthly,
+          ...fp,
+          monthly: monthlyAmt,
+          dcaScore: calcDCAScore(fp),
           action: 'new',
           actionLabel: '+ 新增定投',
           isExisting: false
         });
-      }
+      });
     }
   });
 
@@ -301,6 +322,19 @@ function _doGenerateDca(){
     </div>`;
   }
 
+  // 市场动量信号展示（仅在有明确信号时显示）
+  if(macroClock && macroClock.phase !== 'transition' && macroClock.phase !== 'unknown') {
+    const phaseColors = {
+      recovery:'#52c41a', global_bull:'#1677ff', overheat:'#ff4d4f',
+      recession:'#faad14', stagflation:'#ff4d4f', qdii_opp:'#722ed1'
+    };
+    html += `<div style="background:#f9f0ff;border:1px solid #d3adf7;border-radius:10px;padding:12px 14px;margin-bottom:12px;font-size:13px;line-height:1.8">
+      <div style="color:#531dab;font-weight:600;margin-bottom:4px">📡 市场动量信号：<span style="color:${phaseColors[macroClock.phase]||'#531dab'}">${macroClock.label}</span></div>
+      <div style="color:#595959">${macroClock.desc}</div>
+      <div style="color:#8c8c8c;font-size:11px;margin-top:4px">权重已根据市场信号动态调整（权益×${macroClock.equityMult.toFixed(2)}，债券×${macroClock.bondMult.toFixed(2)}）</div>
+    </div>`;
+  }
+
   html += `
     <div style="background:#f0f8ff;border-radius:10px;padding:14px;margin-bottom:12px;display:flex;gap:16px;flex-wrap:wrap;text-align:center">
       <div style="flex:1;min-width:90px"><div style="font-size:20px;font-weight:700;color:var(--primary)">¥${totalBudget.toLocaleString()}/月</div><div style="font-size:11px;color:var(--muted)">每月总定投</div></div>
@@ -367,7 +401,7 @@ function _doGenerateDca(){
       </div>
       <div style="border:1px solid #ffc53d;border-radius:10px;padding:12px;background:#fffbe6">
         ${replaceSuggestions.map(s => {
-          const replacement = scored.find(f => f.cat === s.cat && !withAmt.some(p => p.code === f.code) && f.dcaScore >= 60);
+          const replacement = dcaScoredPool.find(f => f.cat === s.cat && !withAmt.some(p => p.code === f.code) && f.dcaScore >= 60);
           return `<div style="font-size:12px;line-height:1.8;color:#7c5800;margin-bottom:8px">
             <b>${s.name}</b>（${s.code}）当前月投¥${s.monthly} · 评分${s.dcaScore}分
             ${replacement ? `<br>→ 建议替换为 <b>${replacement.name}</b>（${replacement.code}，评分${replacement.dcaScore}分）` : '<br>→ 建议暂停或减少投入'}
@@ -379,7 +413,7 @@ function _doGenerateDca(){
 
   html += `
     <div style="margin-top:10px;padding:10px 14px;background:#fffbe6;border-radius:8px;font-size:12px;color:#7c5800;line-height:1.7">
-      💡 <b>方案说明（${riskNames[risk]}·${years}年）：</b>以上为${withAmt.length}只基金的月定投分配，预期加权年化收益约 <b>${expRate.toFixed(1)}%</b>，${years}年后预估收益 <b>+¥${Math.round(profit).toLocaleString()}</b>（收益率 +${((profit/totalCost)*100).toFixed(1)}%）。${keepPicks.length > 0 ? `已保留${keepPicks.length}只达标的现有定投计划。` : ''}定投建议每月固定日期执行，坚持不懈效果最佳。<br><span style="color:#ad6800">⚠️ 预期收益基于历史数据经均值回归折扣估算，仅供参考，不构成收益承诺。</span>
+      💡 <b>方案说明（${riskNames[risk]}·${years}年）：</b>基于 Risk Parity 动态权重 + 市场动量信号 + 多因子选基算法生成。配置${withAmt.length}只基金，预期加权年化收益约 <b>${expRate.toFixed(1)}%</b>，${years}年后预估收益 <b>+¥${Math.round(profit).toLocaleString()}</b>（收益率 +${((profit/totalCost)*100).toFixed(1)}%）。${keepPicks.length > 0 ? `已保留${keepPicks.length}只达标的现有定投计划。` : ''}权重已根据当前市场状态${macroClock ? '（'+macroClock.label+'）' : ''}动态调整。定投建议每月固定日期执行，坚持不懈效果最佳。<br><span style="color:#ad6800">⚠️ 预期收益基于历史数据经均值回归折扣估算，仅供参考，不构成收益承诺。</span>
     </div>
     <div style="margin-top:8px">
       ${newPicks.length > 0 ? `<button class="btn btn-primary btn-sm" id="dca-import-btn" onclick="importDcaAiToPlan()">⬇ 一键加入${newPicks.length}只新增定投</button>` : '<div style="text-align:center;padding:10px;color:var(--success);font-size:13px">✓ 您的定投计划已经很完善，继续保持即可</div>'}

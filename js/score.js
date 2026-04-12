@@ -128,9 +128,11 @@ function recommend(s){
 function calcDCAScore(f){
   // 定投评分：波动适度性 + 长期趋势 + 管理质量 + 近期动量（去除当日择时信号）
   if(f.cat==='money') return 10; // 货币基金不适合定投
-  // 双负基金直接排除——r1和r3都为负说明处于下跌趋势，定投会持续亏损
+  // 双负基金大幅降分但不完全排除：周期性行业基金可能处于底部区间，仍有定投价值
+  // 跌幅越深扣分越重，但保留最低分的可能性（让selectFunds的反转修正有机会评估）
   if(f.r1 < 0 && f.r3 < 0) {
-    return 0; // 不推荐定投
+    const penalty = Math.min(60, Math.abs(f.r1) * 0.5 + Math.abs(f.r3) * 0.3);
+    return Math.max(0, 30 - Math.round(penalty));
   }
 
   // 1. 波动适度性（定投核心指标，35%）
