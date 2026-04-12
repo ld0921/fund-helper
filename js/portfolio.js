@@ -1505,8 +1505,7 @@ function _doGenerate(shouldScroll){
           return {r, bestInCat};
         }).filter(item => item.bestInCat !== null);
 
-      if(validReplacements.length === 0) return;
-
+      if(validReplacements.length > 0){
       const replaceHtml = `<div class="replace-suggestion-block" style="margin-top:14px;padding:12px;background:#fff1f0;border-radius:8px;border-left:3px solid var(--danger)">
         <div style="font-size:13px;font-weight:600;color:#cf1322;margin-bottom:8px">⚠️ 建议替换的低分基金</div>
         ${validReplacements.map(({r, bestInCat})=>{
@@ -1519,6 +1518,7 @@ function _doGenerate(shouldScroll){
       </div>`;
       rebalCard.insertAdjacentHTML('beforeend', replaceHtml);
       rebalCard.style.display = '';
+      }
     }
   }
 
