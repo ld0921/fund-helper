@@ -189,6 +189,7 @@ async function refreshHoldingsNav(showToast_ = false){
       done++;
       if(done === total){
         navRefreshed = true;
+        _navFreshThisSession = true;
         FundDB.set('navCache', navCache);
         FundDB.set('lastNavRefreshTime', Date.now());
 

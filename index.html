@@ -1320,6 +1320,7 @@ let currentCat = 'all';
 let currentSortMode = 'score'; // 'score' or 'dca'
 let portfolioPieInst = null;
 let navRefreshed = false; // 标记是否已刷新净值数据
+let _navFreshThisSession = false; // 本次session是否实际刷新过净值（区别于IndexedDB旧缓存）
 
 // ═══════════════ 标签切换 ═══════════════
 // ═══════════════ 今日概览 ═══════════════
@@ -1356,10 +1357,10 @@ async function renderTodayOverview(){
   const totalPnl=totalCost>0?totalValue-totalCost:0;
   const totalPnlPct=totalCost>0?(totalPnl/totalCost*100):0;
 
-  // 今日涨跌 - 使用昨日净值精确计算，与收益总览(renderPortfolioOverview)保持一致
+  // 今日涨跌 - 仅在本次session实际刷新过净值后才计算，避免用旧缓存算出错误数据
   const yesterdayNav = await FundDB.get('yesterdayNav') || {};
   let todayChg=0, navCount=0, isEstimated=false;
-  if(isTradingDay() && isMarketOpen() && navRefreshed){
+  if(isTradingDay() && isMarketOpen() && _navFreshThisSession){
     const today=new Date().toISOString().slice(0,10);
     allHeld.forEach(h=>{
       const nav=navCache[h.code];
