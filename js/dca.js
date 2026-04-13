@@ -616,7 +616,6 @@ function showHoldingsHelp(){
       <div style="font-size:14px;font-weight:700;margin-bottom:10px;color:var(--primary)">2️⃣ 净值刷新</div>
       <div style="padding-left:12px;border-left:3px solid #e6f4ff">
         <p style="margin:0 0 6px"><b>自动刷新：</b>每5分钟自动刷新 / 页面切回时自动刷新 / 登录后数据过期自动刷新</p>
-        <p style="margin:0 0 6px"><b>手动刷新：</b>点击「我的资产」中的「立即刷新」按钮</p>
         <p style="margin:0">交易日9:30后可查看盘中估算净值，收盘后使用确认净值</p>
       </div>
     </div>
