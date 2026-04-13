@@ -103,7 +103,7 @@ function updateCuratedStatus(count, timestamp, isError = false) {
   if (isStale) {
     // 数据过期：警告样式
     const warnHtml = `<span style="color:#d46b08">⚠️ ${dateStr} · ${count} 只基金（已过期）</span>`;
-    const warnDetail = `上次更新：${dateStr}（已超7天）<br><span style="color:#d46b08;font-weight:600">⚠️ 建议先更新数据再生成方案</span><br><span style="font-size:11px;color:#8c8c8c">GitHub Actions 每周日自动更新，或手动触发 workflow</span>`;
+    const warnDetail = `上次更新：${dateStr}（已超7天）<br><span style="color:#d46b08;font-weight:600">⚠️ 建议先更新数据再生成方案</span><br><span style="font-size:11px;color:#8c8c8c">GitHub Actions 每周一、四自动更新，或手动触发 workflow</span>`;
     if(statusEl) statusEl.innerHTML = warnDetail;
     if(statusElModal) statusElModal.innerHTML = warnHtml;
     if(cardEl) {
