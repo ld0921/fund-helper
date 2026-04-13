@@ -852,7 +852,7 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
     <div class="card">
       <div class="card-title">
         <span class="icon icon-green">💰</span>收益总览
-        <button onclick="showProfitExplanation()" style="margin-left:6px;padding:2px 8px;font-size:11px;background:var(--primary-bg);color:var(--primary);border:1px solid var(--primary);border-radius:4px;cursor:pointer" title="收益指标说明">?</button>
+        <button onclick="showProfitExplanation()" class="help-btn" title="收益指标说明">?</button>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
         <div style="display:flex;flex-direction:column;gap:8px">

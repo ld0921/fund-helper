@@ -44,6 +44,17 @@
   </div>
 </div>
 
+<!-- 帮助说明弹窗（通用） -->
+<div class="modal-mask" id="help-modal" style="display:none" onclick="if(event.target===this)closeHelpModal()">
+  <div class="modal-box" style="max-width:520px;max-height:85vh;overflow:hidden;display:flex;flex-direction:column;padding:0">
+    <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+      <span style="font-size:16px;font-weight:700" id="help-modal-title"></span>
+      <button onclick="closeHelpModal()" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;line-height:1">&times;</button>
+    </div>
+    <div id="help-modal-content" style="overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;padding:20px;font-size:13px;line-height:1.8;color:var(--text)"></div>
+  </div>
+</div>
+
 <!-- 登录/注册弹窗 -->
 <div class="modal-mask" id="auth-modal" style="display:none" onclick="if(event.target===this)hideAuthModal()">
   <div class="modal-box" style="max-width:340px;position:relative">
@@ -676,7 +687,7 @@
   <div class="card" id="eh-section">
     <div class="card-title">
       <span class="icon icon-red">💼</span>我的持仓
-      <button onclick="showHoldingsHelp()" style="margin-left:6px;padding:2px 8px;font-size:11px;background:var(--primary-bg);color:var(--primary);border:1px solid var(--primary);border-radius:4px;cursor:pointer" title="查看使用说明">?</button>
+      <button onclick="showHoldingsHelp()" class="help-btn" title="查看使用说明">?</button>
       <span class="card-desc" style="font-size:12px;color:var(--muted);font-weight:400;margin-left:4px">记录在支付宝购买的基金，自动跟踪市值和盈亏</span>
       <span class="card-actions" style="margin-left:auto">
         <button class="btn btn-ghost btn-sm" onclick="importFromDcaPlans()">从定投导入</button>
@@ -2382,29 +2393,38 @@ async function showFirstTimeGuide(){
 点击"确定"开始使用，点击"取消"查看详细说明`);
 
     if(!result){
-      alert(`📖 详细使用说明
-
-🎯 核心功能：
-• 我的资产：记录持仓，跟踪收益
-• 智能方案：AI生成投资组合建议
-• 定投专区：定投方案和收益测算
-• 基金探索：查看精选基金详情
-
-💼 如何添加持仓？
-1. 在"我的资产"tab搜索基金
-2. 填写买入金额和日期
-3. 推荐填写"持有份额"（在支付宝查看）
-4. 点击"添加持仓"
-
-📊 如何查看收益？
-1. 点击"刷新净值数据"按钮
-2. 等待数据加载完成
-3. 查看今日收益和累计盈亏
-
-⚠️ 重要提示：
-• 本工具数据来源于第三方，可能与支付宝有细微差异
-• 所有数据仅供参考，实际收益以支付宝为准
-• 基金投资有风险，请谨慎决策`);
+      showHelpModal('📖 详细使用说明', `
+        <div style="margin-bottom:20px">
+          <div style="font-size:14px;font-weight:700;margin-bottom:10px;color:var(--primary)">🎯 核心功能</div>
+          <div style="padding-left:12px;border-left:3px solid #e6f4ff">
+            <p style="margin:0 0 6px"><b>我的资产：</b>记录持仓，跟踪收益</p>
+            <p style="margin:0 0 6px"><b>智能方案：</b>AI生成投资组合建议</p>
+            <p style="margin:0 0 6px"><b>定投专区：</b>定投方案和收益测算</p>
+            <p style="margin:0"><b>基金探索：</b>查看精选基金详情</p>
+          </div>
+        </div>
+        <div style="margin-bottom:20px">
+          <div style="font-size:14px;font-weight:700;margin-bottom:10px;color:var(--primary)">💼 如何添加持仓？</div>
+          <div style="padding-left:12px;border-left:3px solid #e6f4ff">
+            <p style="margin:0 0 6px">1. 在「我的资产」tab搜索基金</p>
+            <p style="margin:0 0 6px">2. 填写买入金额和日期</p>
+            <p style="margin:0 0 6px">3. 推荐填写「持有份额」（在支付宝查看）</p>
+            <p style="margin:0">4. 点击「添加持仓」</p>
+          </div>
+        </div>
+        <div style="margin-bottom:20px">
+          <div style="font-size:14px;font-weight:700;margin-bottom:10px;color:var(--primary)">📊 如何查看收益？</div>
+          <div style="padding-left:12px;border-left:3px solid #e6f4ff">
+            <p style="margin:0 0 6px">1. 点击「刷新净值数据」按钮</p>
+            <p style="margin:0 0 6px">2. 等待数据加载完成</p>
+            <p style="margin:0">3. 查看今日收益和累计盈亏</p>
+          </div>
+        </div>
+        <div style="background:#fff7e6;border:1px solid #ffd591;border-radius:8px;padding:12px">
+          <div style="font-size:13px;font-weight:700;margin-bottom:6px;color:#ad6800">⚠️ 重要提示</div>
+          <p style="margin:0;font-size:12px;line-height:1.6">本工具数据来源于第三方，可能与支付宝有细微差异<br>所有数据仅供参考，实际收益以支付宝为准<br>基金投资有风险，请谨慎决策</p>
+        </div>
+      `);
     }
 
     await FundDB.set('hasSeenGuide', true);

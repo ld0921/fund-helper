@@ -584,80 +584,115 @@ async function checkRedeemArrivalReminder(){
   }
 }
 
+// 通用帮助弹窗
+function showHelpModal(title, contentHtml){
+  const modal=document.getElementById('help-modal');
+  if(!modal) return;
+  document.getElementById('help-modal-title').textContent=title;
+  document.getElementById('help-modal-content').innerHTML=contentHtml;
+  modal.style.display='flex';
+  requestAnimationFrame(()=>modal.classList.add('show'));
+}
+function closeHelpModal(){
+  const modal=document.getElementById('help-modal');
+  if(!modal) return;
+  modal.classList.remove('show');
+  setTimeout(()=>{ modal.style.display='none'; }, 200);
+}
+
 // 显示持仓使用帮助
 function showHoldingsHelp(){
-  alert(`📖 我的持仓使用说明
-
-1️⃣ 添加持仓
-• 在搜索框输入基金名称或6位代码
-• 填写买入金额、日期（份额可选但推荐填写）
-• 选择买入时间（15:00前/后，影响确认日期）
-• 点击"添加持仓"
-
-2️⃣ 净值刷新
-• 自动刷新：每5分钟自动刷新 / 页面切回时自动刷新 / 登录后数据过期自动刷新
-• 手动刷新：点击"我的资产"中的"立即刷新"按钮
-• 交易日9:30后可查看盘中估算净值，收盘后使用确认净值
-
-3️⃣ 确认份额
-• 基金买入后需T+1（15:00前）或T+2（15:00后）确认
-• 确认日到达后点击"📌 待确认"输入实际份额
-• 在支付宝→财富→基金→持仓中查看确认份额
-• 同基金多次买入确认后会自动合并
-
-4️⃣ 数据说明
-• 数据来源：天天基金网（实时估算） + 东方财富网（确认净值）
-• 可能与支付宝有细微差异（数据源不同）
-• 所有数据仅供参考，以支付宝为准`);
+  showHelpModal('📖 我的持仓使用说明', `
+    <div style="margin-bottom:20px">
+      <div style="font-size:14px;font-weight:700;margin-bottom:10px;color:var(--primary)">1️⃣ 添加持仓</div>
+      <div style="padding-left:12px;border-left:3px solid #e6f4ff">
+        <p style="margin:0 0 6px">在搜索框输入基金名称或6位代码</p>
+        <p style="margin:0 0 6px">填写买入金额、日期（份额可选但推荐填写）</p>
+        <p style="margin:0 0 6px">选择买入时间（15:00前/后，影响确认日期）</p>
+        <p style="margin:0">点击「添加持仓」</p>
+      </div>
+    </div>
+    <div style="margin-bottom:20px">
+      <div style="font-size:14px;font-weight:700;margin-bottom:10px;color:var(--primary)">2️⃣ 净值刷新</div>
+      <div style="padding-left:12px;border-left:3px solid #e6f4ff">
+        <p style="margin:0 0 6px"><b>自动刷新：</b>每5分钟自动刷新 / 页面切回时自动刷新 / 登录后数据过期自动刷新</p>
+        <p style="margin:0 0 6px"><b>手动刷新：</b>点击「我的资产」中的「立即刷新」按钮</p>
+        <p style="margin:0">交易日9:30后可查看盘中估算净值，收盘后使用确认净值</p>
+      </div>
+    </div>
+    <div style="margin-bottom:20px">
+      <div style="font-size:14px;font-weight:700;margin-bottom:10px;color:var(--primary)">3️⃣ 确认份额</div>
+      <div style="padding-left:12px;border-left:3px solid #e6f4ff">
+        <p style="margin:0 0 6px">基金买入后需T+1（15:00前）或T+2（15:00后）确认</p>
+        <p style="margin:0 0 6px">确认日到达后点击「📌 待确认」输入实际份额</p>
+        <p style="margin:0 0 6px">在支付宝→财富→基金→持仓中查看确认份额</p>
+        <p style="margin:0">同基金多次买入确认后会自动合并</p>
+      </div>
+    </div>
+    <div style="background:#f0f5ff;border:1px solid #adc6ff;border-radius:8px;padding:12px">
+      <div style="font-size:13px;font-weight:700;margin-bottom:6px;color:#1d39c4">💡 数据说明</div>
+      <p style="margin:0;font-size:12px;line-height:1.6">数据来源：天天基金网（实时估算）+ 东方财富网（确认净值）<br>可能与支付宝有细微差异（数据源不同），所有数据仅供参考，以支付宝为准</p>
+    </div>
+  `);
 }
 
 function showDataSourceInfo(){
-  alert(`📊 收益数据说明
-
-💡 数据来源
-• 实时净值：天天基金网(fundgz)
-• 历史数据：东方财富网
-• 更新时间：交易日9:30-15:00实时估算
-
-⚠️ 为什么与支付宝有差异？
-• 数据源不同：本工具使用第三方数据源
-• 更新时间差：可能存在几分钟延迟
-• 计算方式：估算净值 vs 确认净值
-• 份额精度：小数位数可能不同
-
-✅ 如何保证准确性？
-• 输入支付宝显示的"持有份额"（推荐）
-• 定期刷新净值数据
-• 以支付宝显示为准，本工具仅供参考
-
-📌 温馨提示
-本工具旨在帮助您更好地管理基金投资，所有数据仅供参考，实际收益请以支付宝为准。`);
+  showHelpModal('📊 收益数据说明', `
+    <div style="margin-bottom:20px">
+      <div style="font-size:14px;font-weight:700;margin-bottom:10px;color:var(--primary)">💡 数据来源</div>
+      <div style="padding-left:12px;border-left:3px solid #e6f4ff">
+        <p style="margin:0 0 6px"><b>实时净值：</b>天天基金网(fundgz)</p>
+        <p style="margin:0 0 6px"><b>历史数据：</b>东方财富网</p>
+        <p style="margin:0"><b>更新时间：</b>交易日9:30-15:00实时估算</p>
+      </div>
+    </div>
+    <div style="margin-bottom:20px">
+      <div style="font-size:14px;font-weight:700;margin-bottom:10px;color:#d46b08">⚠️ 为什么与支付宝有差异？</div>
+      <div style="padding-left:12px;border-left:3px solid #fff7e6">
+        <p style="margin:0 0 6px"><b>数据源不同：</b>本工具使用第三方数据源</p>
+        <p style="margin:0 0 6px"><b>更新时间差：</b>可能存在几分钟延迟</p>
+        <p style="margin:0 0 6px"><b>计算方式：</b>估算净值 vs 确认净值</p>
+        <p style="margin:0"><b>份额精度：</b>小数位数可能不同</p>
+      </div>
+    </div>
+    <div style="background:#f6ffed;border:1px solid #b7eb8f;border-radius:8px;padding:12px">
+      <div style="font-size:13px;font-weight:700;margin-bottom:6px;color:#237804">✅ 如何保证准确性？</div>
+      <p style="margin:0;font-size:12px;line-height:1.6">输入支付宝显示的「持有份额」（推荐）<br>定期刷新净值数据<br>以支付宝显示为准，本工具仅供参考</p>
+    </div>
+  `);
 }
 
 function showProfitExplanation(){
-  alert(`💰 收益指标说明
-
-📊 总市值
-• 当前所有已确认基金持仓的总价值（待确认持仓单独显示）
-• 计算：持有份额 × 当前净值（优先使用盘中估算净值gsz，其次使用确认净值dwjz）
-• 无份额数据时降级为：买入金额 ÷ 买入成本净值 × 当前净值
-
-💵 累计盈亏
-• 从买入至今的总收益（含现金分红）
-• 计算：(当前市值 + 现金分红) - 持仓成本
-• 显示金额和收益率百分比
-• 同时持有直购和定投基金时，分别显示两类收益
-
-📈 实时盈亏
-• 今日相对昨日收盘的收益变化
-• 仅交易日9:30后显示（含盘后）
-• 优先使用：份额 × (当前估算净值 - 昨日确认净值)
-• 无昨日净值时降级为：市值 × 估算涨跌幅
-• 货币基金单位净值固定为1.00，不计入实时涨跌
-
-💡 温馨提示
-• 实时估算数据供参考，以收盘后确认净值为准
-• 非交易日（周末/节假日）净值不更新`);
+  showHelpModal('💰 收益指标说明', `
+    <div style="margin-bottom:20px">
+      <div style="font-size:14px;font-weight:700;margin-bottom:10px;color:var(--primary)">📊 总市值</div>
+      <div style="padding-left:12px;border-left:3px solid #e6f4ff">
+        <p style="margin:0 0 6px">当前所有已确认基金持仓的总价值（待确认持仓单独显示）</p>
+        <p style="margin:0 0 6px"><b>计算：</b>持有份额 × 当前净值（优先使用盘中估算净值gsz，其次使用确认净值dwjz）</p>
+        <p style="margin:0">无份额数据时降级为：买入金额 ÷ 买入成本净值 × 当前净值</p>
+      </div>
+    </div>
+    <div style="margin-bottom:20px">
+      <div style="font-size:14px;font-weight:700;margin-bottom:10px;color:var(--primary)">💵 累计盈亏</div>
+      <div style="padding-left:12px;border-left:3px solid #e6f4ff">
+        <p style="margin:0 0 6px">从买入至今的总收益（含现金分红）</p>
+        <p style="margin:0 0 6px"><b>计算：</b>(当前市值 + 现金分红) - 持仓成本</p>
+        <p style="margin:0">同时持有直购和定投基金时，分别显示两类收益</p>
+      </div>
+    </div>
+    <div style="margin-bottom:20px">
+      <div style="font-size:14px;font-weight:700;margin-bottom:10px;color:var(--primary)">📈 实时盈亏</div>
+      <div style="padding-left:12px;border-left:3px solid #e6f4ff">
+        <p style="margin:0 0 6px">今日相对昨日收盘的收益变化，仅交易日9:30后显示</p>
+        <p style="margin:0 0 6px"><b>优先使用：</b>份额 × (当前估算净值 - 昨日确认净值)</p>
+        <p style="margin:0">无昨日净值时降级为：市值 × 估算涨跌幅</p>
+      </div>
+    </div>
+    <div style="background:#f0f5ff;border:1px solid #adc6ff;border-radius:8px;padding:12px">
+      <div style="font-size:13px;font-weight:700;margin-bottom:6px;color:#1d39c4">💡 温馨提示</div>
+      <p style="margin:0;font-size:12px;line-height:1.6">实时估算数据供参考，以收盘后确认净值为准<br>非交易日（周末/节假日）净值不更新<br>货币基金单位净值固定为1.00，不计入实时涨跌</p>
+    </div>
+  `);
 }
 
 // openModal、closeModal、confirmModal 已移至 js/utils.js
