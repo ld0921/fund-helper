@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-04-13T02:41:05.816Z",
+  "timestamp": "2026-04-13T03:26:26.296Z",
   "categories": {
     "gp": {
       "label": "股票型",
@@ -22,6 +22,7 @@
           "manager": "金梓才",
           "mgrYears": 11.4,
           "stars": 5,
+          "fee": 0.15,
           "risk": "R5"
         },
         {
@@ -39,6 +40,7 @@
           "manager": "李进",
           "mgrYears": 3.1,
           "stars": 5,
+          "fee": 0.15,
           "risk": "R5"
         },
         {
@@ -56,6 +58,7 @@
           "manager": "赵强",
           "mgrYears": 10.1,
           "stars": 5,
+          "fee": 0.15,
           "risk": "R5"
         },
         {
@@ -73,6 +76,7 @@
           "manager": "潘明",
           "mgrYears": 12.2,
           "stars": 4,
+          "fee": 0.15,
           "risk": "R5"
         },
         {
@@ -90,6 +94,7 @@
           "manager": "盖俊龙",
           "mgrYears": 10.9,
           "stars": 5,
+          "fee": 0.15,
           "risk": "R5"
         },
         {
@@ -107,6 +112,7 @@
           "manager": "张仲维",
           "mgrYears": 10.1,
           "stars": 5,
+          "fee": 0.15,
           "risk": "R5"
         },
         {
@@ -124,6 +130,7 @@
           "manager": "陈平",
           "mgrYears": 10.7,
           "stars": 5,
+          "fee": 0.15,
           "risk": "R5"
         },
         {
@@ -141,6 +148,7 @@
           "manager": "陈夏琼",
           "mgrYears": 1.3,
           "stars": 5,
+          "fee": 0.15,
           "risk": "R5"
         },
         {
@@ -158,6 +166,7 @@
           "manager": "郑希",
           "mgrYears": 13.5,
           "stars": 5,
+          "fee": 0.15,
           "risk": "R5"
         },
         {
@@ -175,6 +184,7 @@
           "manager": "欧阳良琦",
           "mgrYears": 2.9,
           "stars": 5,
+          "fee": 0.15,
           "risk": "R5"
         },
         {
@@ -192,6 +202,7 @@
           "manager": "许炎",
           "mgrYears": 9.6,
           "stars": 5,
+          "fee": 0.15,
           "risk": "R5"
         },
         {
@@ -209,6 +220,7 @@
           "manager": "容志能",
           "mgrYears": 3.1,
           "stars": 4,
+          "fee": 0.15,
           "risk": "R5"
         },
         {
@@ -226,6 +238,7 @@
           "manager": "李进",
           "mgrYears": 3.1,
           "stars": 5,
+          "fee": 0.15,
           "risk": "R4"
         },
         {
@@ -243,6 +256,7 @@
           "manager": "卜忠林",
           "mgrYears": 1.5,
           "stars": 4,
+          "fee": 0.15,
           "risk": "R5"
         },
         {
@@ -260,6 +274,7 @@
           "manager": "江山",
           "mgrYears": 4,
           "stars": 5,
+          "fee": 0.15,
           "risk": "R5"
         },
         {
@@ -277,6 +292,7 @@
           "manager": "刘杰",
           "mgrYears": 4.9,
           "stars": 4,
+          "fee": 0.15,
           "risk": "R4"
         }
       ]
@@ -285,7 +301,7 @@
       "label": "混合型",
       "cat": "active",
       "type": "混合型",
-      "allRecords": 8267,
+      "allRecords": 8270,
       "funds": [
         {
           "code": "008528",
@@ -302,6 +318,7 @@
           "manager": "陈文凯",
           "mgrYears": 2.7,
           "stars": 5,
+          "fee": 0.15,
           "risk": "R5"
         },
         {
@@ -319,6 +336,7 @@
           "manager": "陈文凯",
           "mgrYears": 2.7,
           "stars": 5,
+          "fee": 0.15,
           "risk": "R5"
         },
         {
@@ -336,6 +354,7 @@
           "manager": "雷涛",
           "mgrYears": 4.3,
           "stars": 4,
+          "fee": 0.15,
           "risk": "R4"
         },
         {
@@ -353,6 +372,7 @@
           "manager": "魏淳",
           "mgrYears": 7.3,
           "stars": 4,
+          "fee": 0.15,
           "risk": "R5"
         },
         {
@@ -370,6 +390,7 @@
           "manager": "张明昕",
           "mgrYears": 1.1,
           "stars": 5,
+          "fee": 0.15,
           "risk": "R5"
         },
         {
@@ -387,6 +408,7 @@
           "manager": "武阳",
           "mgrYears": 10.7,
           "stars": 5,
+          "fee": 0.06,
           "risk": "R4"
         },
         {
@@ -404,6 +426,7 @@
           "manager": "武阳",
           "mgrYears": 10.7,
           "stars": 5,
+          "fee": 0.15,
           "risk": "R4"
         },
         {
@@ -421,6 +444,7 @@
           "manager": "罗擎",
           "mgrYears": 3.6,
           "stars": 3,
+          "fee": 0.15,
           "risk": "R5"
         },
         {
@@ -438,6 +462,7 @@
           "manager": "廖星昊",
           "mgrYears": 4.4,
           "stars": 4,
+          "fee": 0.15,
           "risk": "R5"
         },
         {
@@ -455,6 +480,7 @@
           "manager": "容志能",
           "mgrYears": 3.1,
           "stars": 4,
+          "fee": 0.15,
           "risk": "R5"
         },
         {
@@ -472,6 +498,7 @@
           "manager": "孙硕",
           "mgrYears": 4.2,
           "stars": 5,
+          "fee": 0.15,
           "risk": "R5"
         },
         {
@@ -489,6 +516,7 @@
           "manager": "周珊珊",
           "mgrYears": 7.3,
           "stars": 5,
+          "fee": 0.08,
           "risk": "R3"
         },
         {
@@ -506,6 +534,7 @@
           "manager": "江山",
           "mgrYears": 4,
           "stars": 5,
+          "fee": 0.1,
           "risk": "R3"
         },
         {
@@ -523,6 +552,7 @@
           "manager": "何一铖",
           "mgrYears": 1.7,
           "stars": 5,
+          "fee": 0.15,
           "risk": "R5"
         }
       ]
@@ -548,6 +578,7 @@
           "manager": "姚楠燕",
           "mgrYears": 6.1,
           "stars": 4,
+          "fee": 0.1,
           "risk": "R4"
         },
         {
@@ -565,6 +596,7 @@
           "manager": "艾小军",
           "mgrYears": 12.3,
           "stars": 5,
+          "fee": 0.1,
           "risk": "R4"
         },
         {
@@ -582,6 +614,7 @@
           "manager": "李俊",
           "mgrYears": 8.3,
           "stars": 4,
+          "fee": 0.12,
           "risk": "R5"
         },
         {
@@ -599,6 +632,7 @@
           "manager": "马君",
           "mgrYears": 13.6,
           "stars": 5,
+          "fee": 0.12,
           "risk": "R5"
         },
         {
@@ -616,6 +650,7 @@
           "manager": "黄稚",
           "mgrYears": 7.7,
           "stars": 4,
+          "fee": 0.12,
           "risk": "R5"
         },
         {
@@ -633,6 +668,7 @@
           "manager": "杨路炜",
           "mgrYears": 5.1,
           "stars": 4,
+          "fee": 0.15,
           "risk": "R5"
         },
         {
@@ -650,6 +686,7 @@
           "manager": "吴中昊",
           "mgrYears": 4.2,
           "stars": 4,
+          "fee": 0,
           "risk": "R5"
         },
         {
@@ -667,6 +704,7 @@
           "manager": "崔蕾",
           "mgrYears": 7.4,
           "stars": 5,
+          "fee": 0.12,
           "risk": "R5"
         },
         {
@@ -684,6 +722,7 @@
           "manager": "龚涛",
           "mgrYears": 6.8,
           "stars": 5,
+          "fee": 0.12,
           "risk": "R5"
         },
         {
@@ -701,6 +740,7 @@
           "manager": "李淏玮",
           "mgrYears": 0.3,
           "stars": 3,
+          "fee": 0.12,
           "risk": "R5"
         },
         {
@@ -718,6 +758,7 @@
           "manager": "许之彦",
           "mgrYears": 19.5,
           "stars": 5,
+          "fee": 0.12,
           "risk": "R5"
         },
         {
@@ -735,6 +776,7 @@
           "manager": "邵文婷",
           "mgrYears": 5,
           "stars": 4,
+          "fee": 0.12,
           "risk": "R5"
         },
         {
@@ -752,6 +794,7 @@
           "manager": "张娅",
           "mgrYears": 16.8,
           "stars": 4,
+          "fee": 0.1,
           "risk": "R5"
         },
         {
@@ -769,6 +812,7 @@
           "manager": "金璜",
           "mgrYears": 2.6,
           "stars": 4,
+          "fee": 0.12,
           "risk": "R5"
         }
       ]
@@ -794,6 +838,7 @@
           "manager": "刘文良",
           "mgrYears": 10.7,
           "stars": 4,
+          "fee": 0.08,
           "risk": "R3"
         },
         {
@@ -811,6 +856,7 @@
           "manager": "况冲",
           "mgrYears": 3.2,
           "stars": 4,
+          "fee": 0.08,
           "risk": "R3"
         },
         {
@@ -828,6 +874,7 @@
           "manager": "柳万军",
           "mgrYears": 12.3,
           "stars": 4,
+          "fee": 0.08,
           "risk": "R3"
         },
         {
@@ -845,6 +892,7 @@
           "manager": "谢志华",
           "mgrYears": 14.5,
           "stars": 4,
+          "fee": 0.08,
           "risk": "R3"
         },
         {
@@ -862,6 +910,7 @@
           "manager": "过钧",
           "mgrYears": 21.7,
           "stars": 4,
+          "fee": 0.08,
           "risk": "R3"
         },
         {
@@ -879,6 +928,7 @@
           "manager": "王石千",
           "mgrYears": 8,
           "stars": 4,
+          "fee": 0.08,
           "risk": "R3"
         },
         {
@@ -896,6 +946,7 @@
           "manager": "曾健飞",
           "mgrYears": 6.1,
           "stars": 4,
+          "fee": 0.08,
           "risk": "R3"
         },
         {
@@ -913,6 +964,7 @@
           "manager": "曾健飞",
           "mgrYears": 6.1,
           "stars": 4,
+          "fee": 0,
           "risk": "R3"
         },
         {
@@ -930,6 +982,7 @@
           "manager": "魏玉敏",
           "mgrYears": 7.6,
           "stars": 4,
+          "fee": 0.08,
           "risk": "R3"
         },
         {
@@ -947,6 +1000,7 @@
           "manager": "赖礼辉",
           "mgrYears": 5.5,
           "stars": 4,
+          "fee": 0.08,
           "risk": "R3"
         },
         {
@@ -964,6 +1018,7 @@
           "manager": "吴敌",
           "mgrYears": 6,
           "stars": 4,
+          "fee": 0.1,
           "risk": "R3"
         },
         {
@@ -981,6 +1036,7 @@
           "manager": "刘文良",
           "mgrYears": 10.7,
           "stars": 4,
+          "fee": 0.08,
           "risk": "R3"
         },
         {
@@ -998,6 +1054,7 @@
           "manager": "吴江宏",
           "mgrYears": 10.7,
           "stars": 5,
+          "fee": 0.08,
           "risk": "R3"
         },
         {
@@ -1015,6 +1072,7 @@
           "manager": "张永志",
           "mgrYears": 15.7,
           "stars": 4,
+          "fee": 0.08,
           "risk": "R3"
         },
         {
@@ -1032,6 +1090,7 @@
           "manager": "罗晓倩",
           "mgrYears": 8.7,
           "stars": 4,
+          "fee": 0.08,
           "risk": "R3"
         },
         {
@@ -1049,6 +1108,7 @@
           "manager": "徐栋",
           "mgrYears": 10.8,
           "stars": 5,
+          "fee": 0.08,
           "risk": "R3"
         },
         {
@@ -1066,6 +1126,7 @@
           "manager": "成琦",
           "mgrYears": 3.3,
           "stars": 4,
+          "fee": 0.08,
           "risk": "R3"
         },
         {
@@ -1083,6 +1144,7 @@
           "manager": "谢志华",
           "mgrYears": 14.5,
           "stars": 4,
+          "fee": 0.08,
           "risk": "R3"
         },
         {
@@ -1100,6 +1162,7 @@
           "manager": "谢志华",
           "mgrYears": 14.5,
           "stars": 4,
+          "fee": 0,
           "risk": "R3"
         }
       ]
@@ -1125,6 +1188,7 @@
           "manager": "李博涵",
           "mgrYears": 12.7,
           "stars": 4,
+          "fee": 0.16,
           "risk": "R4"
         },
         {
@@ -1142,6 +1206,7 @@
           "manager": "徐成",
           "mgrYears": 10.3,
           "stars": 5,
+          "fee": 0.15,
           "risk": "R5"
         },
         {
@@ -1159,6 +1224,7 @@
           "manager": "苏圻涵",
           "mgrYears": 19.5,
           "stars": 3,
+          "fee": 0.15,
           "risk": "R4"
         },
         {
@@ -1176,6 +1242,7 @@
           "manager": "徐成",
           "mgrYears": 10.3,
           "stars": 5,
+          "fee": 0.15,
           "risk": "R4"
         },
         {
@@ -1193,6 +1260,7 @@
           "manager": "李湘杰",
           "mgrYears": 11.9,
           "stars": 4,
+          "fee": 0.15,
           "risk": "R5"
         },
         {
@@ -1210,6 +1278,7 @@
           "manager": "周晶",
           "mgrYears": 12.8,
           "stars": 4,
+          "fee": 0.15,
           "risk": "R5"
         },
         {
@@ -1227,6 +1296,7 @@
           "manager": "IKEDA KAE",
           "mgrYears": 8.2,
           "stars": 5,
+          "fee": 0.15,
           "risk": "R4"
         },
         {
@@ -1244,6 +1314,7 @@
           "manager": "赵年珅",
           "mgrYears": 5.6,
           "stars": 4,
+          "fee": 0.15,
           "risk": "R5"
         },
         {
@@ -1261,6 +1332,7 @@
           "manager": "张军",
           "mgrYears": 18.1,
           "stars": 4,
+          "fee": 0.16,
           "risk": "R5"
         },
         {
@@ -1278,6 +1350,7 @@
           "manager": "苏圻涵",
           "mgrYears": 19.5,
           "stars": 3,
+          "fee": 0.16,
           "risk": "R4"
         },
         {
@@ -1295,6 +1368,7 @@
           "manager": "张峰",
           "mgrYears": 15,
           "stars": 5,
+          "fee": 0.15,
           "risk": "R5"
         },
         {
@@ -1312,6 +1386,7 @@
           "manager": "徐成",
           "mgrYears": 10.3,
           "stars": 5,
+          "fee": 0.15,
           "risk": "R5"
         },
         {
@@ -1329,6 +1404,7 @@
           "manager": "王菀宜",
           "mgrYears": 5.6,
           "stars": 4,
+          "fee": 0.15,
           "risk": "R4"
         },
         {
@@ -1346,6 +1422,7 @@
           "manager": "李耀柱",
           "mgrYears": 10.3,
           "stars": 4,
+          "fee": 0.16,
           "risk": "R5"
         }
       ]
