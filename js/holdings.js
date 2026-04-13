@@ -844,7 +844,7 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
 
   el.style.display='';
   el.innerHTML=`
-    <div class="card" style="background:linear-gradient(135deg,#e6f4ff,#f0f5ff);border:1px solid #91caff">
+    <div class="card" style="background:linear-gradient(135deg,#e6f4ff,#f0f5ff);border:1px solid #91caff;margin-bottom:0;border-bottom-left-radius:0;border-bottom-right-radius:0">
       <div class="card-title">
         <span class="icon icon-green">💰</span>收益总览
         <button onclick="showProfitExplanation()" class="help-btn" title="收益指标说明">?</button>
@@ -887,7 +887,8 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
           <canvas id="portfolioPieChart" style="max-height:220px"></canvas>
         </div>
       </div>
-      <div class="divider"></div>
+    </div>
+    <div class="card" style="margin-top:-8px;border-top-left-radius:0;border-top-right-radius:0">
       <details open>
         <summary style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:14px 16px;user-select:none;list-style:none;gap:8px">
           <div style="flex:1">
