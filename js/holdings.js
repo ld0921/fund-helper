@@ -923,14 +923,20 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
               const costStr=`成本¥${d.cost.toLocaleString('zh-CN',{minimumFractionDigits:0,maximumFractionDigits:0})}`;
               return `<div class="detail-row" style="${idx<details.length-1?'border-bottom:1px solid #f5f5f5':''}">
                 <div class="detail-fund">
-                  <div class="detail-fund-name">${escHtml(d.name)} <span class="detail-fund-extra"><span class="detail-weight-bar-inline"><span style="width:${Math.min(100,weight).toFixed(1)}%"></span></span>${weight.toFixed(1)}% · ${costStr}</span></div>
+                  <div class="detail-fund-name">${escHtml(d.name)}</div>
+                  <div class="detail-fund-meta">
+                    <span class="detail-weight-bar-inline"><span style="width:${Math.min(100,weight).toFixed(1)}%"></span></span>
+                    <span>${weight.toFixed(1)}%</span>
+                    <span style="color:#d9d9d9">·</span>
+                    <span>成本 ¥${d.cost.toLocaleString('zh-CN',{minimumFractionDigits:0,maximumFractionDigits:0})}</span>
+                  </div>
                 </div>
                 <div class="detail-vals">
                   <div class="detail-val">${srcLabel}</div>
                   <div class="detail-val"><span class="detail-val-num" style="font-weight:400;font-size:12px;color:var(--muted)">${dateStr}</span></div>
-                  <div class="detail-val"><span class="detail-val-num">¥${d.value.toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2})}</span></div>
-                  <div class="detail-val"><span class="detail-val-num ${pnlClass}">${pnlStr} <span style="font-size:10px;font-weight:400">${pctStr}</span></span></div>
-                  <div class="detail-val"><span class="detail-val-num ${todayClass}">${todayPctStr}${estTag}<span style="font-size:10px;font-weight:400">${todayPnlStr}</span></span></div>
+                  <div class="detail-val"><div class="detail-val-num">¥${d.value.toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2})}</div></div>
+                  <div class="detail-val"><div class="detail-val-num ${pnlClass}">${pnlStr}</div><div class="detail-val-lbl ${pnlClass}">${pctStr}</div></div>
+                  <div class="detail-val"><div class="detail-val-num ${todayClass}">${todayPctStr}${estTag}</div><div class="detail-val-lbl ${todayClass}">${todayPnlStr}</div></div>
                   <div class="detail-val"><button onclick="showHistoryChart('${d.code}','${escHtml(d.name)}',${d.shares},'${d.date||''}',${d.pnl})" class="btn btn-sm" style="padding:4px 12px;font-size:11px">查看</button></div>
                 </div>
               </div>`;
