@@ -70,11 +70,13 @@ function scoreF(f){
   // - 主动基金：与同类主动基金均值比，衡量选股超额能力
   // - QDII基金：与同类QDII均值比（不与A股比，投资市场不同）
   // - 指数/债券/货币：用无风险利率（它们本身就是基准或低风险资产）
+  // 时间窗口匹配：calmarShort 用1年基准(avgR1)，calmarLong 用3年年化基准(avgR3Ann)
   const bench = _catBench[f.cat];
   const isAlphaFund = f.cat === 'active' || f.cat === 'qdii';
-  const benchmark = isAlphaFund && bench ? bench.avgR1 : RISK_FREE;
-  const calmarShort = (r1 - benchmark) / dd3yAdj;
-  const calmarLong  = (r3Ann - benchmark) / dd3yAdj;
+  const benchmarkShort = isAlphaFund && bench ? bench.avgR1 : RISK_FREE;
+  const benchmarkLong  = isAlphaFund && bench && bench.avgR3 ? (Math.pow(1 + bench.avgR3/100, 1/3) - 1) * 100 : RISK_FREE;
+  const calmarShort = (r1 - benchmarkShort) / dd3yAdj;
+  const calmarLong  = (r3Ann - benchmarkLong) / dd3yAdj;
   const calmar = calmarShort * 0.6 + calmarLong * 0.4;
   const calmarScore = Math.min(32, Math.max(0, calmar * 16)); // 0-32分
 
