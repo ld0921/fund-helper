@@ -474,7 +474,6 @@ function updateNonTradingDayBanner(){
 async function renderExistingHoldings(){
   const list=document.getElementById('eh-list');
   const empty=document.getElementById('eh-empty');
-  const summary=document.getElementById('eh-summary');
 
   // 自动合并相同基金代码的已确认持仓
   const codeMap = new Map();
@@ -533,7 +532,7 @@ async function renderExistingHoldings(){
   }
 
   if(!existingHoldings.length){
-    list.style.display='none'; empty.style.display='block'; summary.style.display='none';
+    list.style.display='none'; empty.style.display='block';
     renderPortfolioOverview([], 0, 0, 0, 0, 0); // 清空收益总览
     return;
   }
@@ -666,11 +665,7 @@ async function renderExistingHoldings(){
       </div>
     </div>`;
   }).join('');
-  // summary
-  const pnlHtml2=totalCost>0?`&nbsp;·&nbsp;盈亏 <b class="${totalPnl>=0?'up':'down'}">${totalPnl>=0?'+':'-'}¥${Math.abs(totalPnl).toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2})} (${totalPnl>=0?'+':''}${totalPnlPct.toFixed(1)}%)</b>`:'';
-  const pendingHtml=pendingTotal>0?`&nbsp;·&nbsp;<span style="color:var(--warning)">⏳确认中 ¥${pendingTotal.toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2})}</span>`:'';
-  summary.style.display='block';
-  summary.innerHTML=`💼 <b>${confirmedHoldings.length}</b> 只基金 · 总成本 <b>¥${totalCost.toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2})}</b> · 总市值 <b>¥${totalVal.toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2})}</b>${pnlHtml2}${pendingHtml}`;
+  // summary (已移除底部汇总栏，数据在收益总览中展示)
 
   // 检查待确认提醒
   const needConfirm = existingHoldings.filter(h => h.status !== 'confirmed' && todayStr >= (h.confirmDate || ''));

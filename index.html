@@ -690,34 +690,34 @@
       <button onclick="showHoldingsHelp()" class="help-btn" title="查看使用说明">?</button>
       <span class="card-desc" style="font-size:12px;color:var(--muted);font-weight:400;margin-left:4px">记录在支付宝购买的基金，自动跟踪市值和盈亏</span>
       <span class="card-actions" style="margin-left:auto">
-        <button class="btn btn-ghost btn-sm" onclick="importFromDcaPlans()">从定投导入</button>
+        <button class="btn btn-sm" style="background:#722ed1;color:#fff;border:none" onclick="importFromDcaPlans()">从定投导入</button>
       </span>
     </div>
-    <div class="form-grid" style="margin-bottom:10px">
-      <div class="form-item" style="grid-column:1/-1">
+    <div style="display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap;align-items:flex-end">
+      <div class="form-item" style="flex:2;min-width:180px">
         <label>搜索基金（输入名称或6位代码）</label>
-        <input id="eh-search" placeholder="如：易方达蓝筹 或 005827" oninput="smartFundSearch('eh',this.value)" list="eh-datalist" autocomplete="off" style="max-width:480px">
+        <input id="eh-search" placeholder="如：易方达蓝筹 或 005827" oninput="smartFundSearch('eh',this.value)" list="eh-datalist" autocomplete="off">
         <datalist id="eh-datalist"></datalist>
         <input type="hidden" id="eh-code"><input type="hidden" id="eh-name">
       </div>
-      <div class="form-item" id="eh-matched" style="display:none;grid-column:1/-1">
-        <div style="font-size:13px;padding:8px 12px;background:var(--primary-bg);border-radius:6px;display:flex;align-items:center;gap:8px">
-          <span style="font-weight:600" id="eh-matched-name"></span>
-          <code style="font-size:11px;color:var(--muted)" id="eh-matched-code"></code>
-          <button onclick="clearFundMatch('eh')" style="margin-left:auto;background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px">&times;</button>
-        </div>
-      </div>
-      <div class="form-item">
+      <div class="form-item" style="flex:1;min-width:120px">
         <label>买入金额 (元)</label>
-        <input id="eh-amount" type="number" placeholder="实际支付金额（含申购费）" inputmode="numeric">
+        <input id="eh-amount" type="number" placeholder="含申购费" inputmode="numeric">
       </div>
-      <div class="form-item">
+      <div class="form-item" style="flex:1;min-width:120px">
         <label>持有份额 <span style="color:var(--muted);font-weight:400">（可选）</span></label>
-        <input id="eh-shares" type="number" placeholder="填写后数据更准确" inputmode="decimal" step="0.01">
+        <input id="eh-shares" type="number" placeholder="更准确" inputmode="decimal" step="0.01">
       </div>
-      <div class="form-item">
+      <div class="form-item" style="flex:1;min-width:120px">
         <label>买入日期</label>
         <input id="eh-date" type="date">
+      </div>
+    </div>
+    <div class="form-item" id="eh-matched" style="display:none;margin-bottom:10px">
+      <div style="font-size:13px;padding:8px 12px;background:var(--primary-bg);border-radius:6px;display:flex;align-items:center;gap:8px">
+        <span style="font-weight:600" id="eh-matched-name"></span>
+        <code style="font-size:11px;color:var(--muted)" id="eh-matched-code"></code>
+        <button onclick="clearFundMatch('eh')" style="margin-left:auto;background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px">&times;</button>
       </div>
     </div>
     <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
@@ -735,46 +735,42 @@
       <button class="btn btn-danger btn-sm" onclick="clearExistingHoldings()">清空全部</button>
     </div>
 
-    <!-- 搜索和筛选 -->
-    <div style="display:flex;gap:8px;margin-top:12px;margin-bottom:8px;align-items:center">
-      <input id="eh-filter-search" type="text" placeholder="🔍 搜索基金名称或代码" style="flex:1;max-width:320px;height:34px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-size:13px;outline:none;transition:border-color .2s" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'" oninput="filterHoldings()">
-      <select id="eh-filter-status" style="height:34px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-size:13px;background:#fff;color:var(--text);cursor:pointer;outline:none" onchange="filterHoldings()">
-        <option value="all">全部</option>
-        <option value="confirmed">已确认</option>
-        <option value="pending">待确认</option>
-      </select>
-    </div>
-
-    <!-- 批量操作 -->
-    <div id="eh-batch-bar" style="display:none;margin-bottom:8px;padding:8px 12px;background:#f0f8ff;border:1px solid #91caff;border-radius:6px">
-      <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:12px;color:#0958d9">已选择 <b id="eh-batch-count">0</b> 项</span>
-        <button class="btn btn-sm" onclick="toggleSelectAll()" style="font-size:11px;padding:4px 10px">全选</button>
-        <button class="btn btn-danger btn-sm" onclick="batchDelete()" style="font-size:11px;padding:4px 10px">批量删除</button>
-        <button class="btn btn-ghost btn-sm" onclick="clearSelection()" style="font-size:11px;padding:4px 10px">取消</button>
-      </div>
-    </div>
-
-    <!-- 待确认提醒横幅 -->
-    <div id="pending-confirm-reminder" style="display:none;margin-top:12px;background:#fff7e6;border:1px solid #ffd591;border-radius:8px;padding:12px 14px;font-size:13px;color:#ad6800;line-height:1.6">
-      <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:20px">⏰</span>
-        <div style="flex:1">
-          <div style="font-weight:600;margin-bottom:4px" id="pending-confirm-title">您有 X 笔持仓待确认</div>
-          <div style="font-size:12px;color:#8c6800" id="pending-confirm-desc">基金已确认，请输入支付宝显示的持有份额以获得准确数据</div>
-        </div>
-        <button class="btn btn-sm" style="background:#faad14;color:#fff;border:none;white-space:nowrap" onclick="scrollToFirstPending()">立即确认</button>
-      </div>
-    </div>
-
     <details open style="margin-top:12px">
       <summary style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:14px 16px;user-select:none;list-style:none;gap:8px">
-        <div style="flex:1">
+        <div style="flex-shrink:0">
           <div style="font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px"><span class="icon icon-blue">💼</span>持仓列表</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex:1;justify-content:flex-end" onclick="event.stopPropagation()">
+          <input id="eh-filter-search" type="text" placeholder="🔍 搜索" style="width:160px;height:30px;border:1px solid var(--border);border-radius:6px;padding:0 10px;font-size:12px;outline:none;transition:border-color .2s" onfocus="this.style.borderColor='var(--primary)';this.style.width='220px'" onblur="this.style.borderColor='var(--border)';if(!this.value)this.style.width='160px'" oninput="filterHoldings()">
+          <select id="eh-filter-status" style="height:30px;border:1px solid var(--border);border-radius:6px;padding:0 8px;font-size:12px;background:#fff;color:var(--text);cursor:pointer;outline:none" onchange="filterHoldings()">
+            <option value="all">全部</option>
+            <option value="confirmed">已确认</option>
+            <option value="pending">待确认</option>
+          </select>
         </div>
         <span class="toggle-arrow" style="font-size:12px;color:var(--primary);flex-shrink:0"></span>
       </summary>
       <div style="border-top:1px solid #f0f0f0">
+      <!-- 批量操作 -->
+      <div id="eh-batch-bar" style="display:none;margin:8px 14px;padding:8px 12px;background:#f0f8ff;border:1px solid #91caff;border-radius:6px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:12px;color:#0958d9">已选择 <b id="eh-batch-count">0</b> 项</span>
+          <button class="btn btn-sm" onclick="toggleSelectAll()" style="font-size:11px;padding:4px 10px">全选</button>
+          <button class="btn btn-danger btn-sm" onclick="batchDelete()" style="font-size:11px;padding:4px 10px">批量删除</button>
+          <button class="btn btn-ghost btn-sm" onclick="clearSelection()" style="font-size:11px;padding:4px 10px">取消</button>
+        </div>
+      </div>
+      <!-- 待确认提醒横幅 -->
+      <div id="pending-confirm-reminder" style="display:none;margin:8px 14px;background:#fff7e6;border:1px solid #ffd591;border-radius:8px;padding:12px 14px;font-size:13px;color:#ad6800;line-height:1.6">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:20px">⏰</span>
+          <div style="flex:1">
+            <div style="font-weight:600;margin-bottom:4px" id="pending-confirm-title">您有 X 笔持仓待确认</div>
+            <div style="font-size:12px;color:#8c6800" id="pending-confirm-desc">基金已确认，请输入支付宝显示的持有份额以获得准确数据</div>
+          </div>
+          <button class="btn btn-sm" style="background:#faad14;color:#fff;border:none;white-space:nowrap" onclick="scrollToFirstPending()">立即确认</button>
+        </div>
+      </div>
       <div id="eh-list" style="margin-top:8px;display:none"></div>
       </div>
     </details>
@@ -795,7 +791,6 @@
       </div>
       <button class="btn btn-primary" onclick="document.getElementById('eh-search').focus()" style="padding:10px 24px">＋ 添加第一笔持仓</button>
     </div>
-    <div id="eh-summary" style="display:none;margin-top:10px;padding:10px 14px;background:#f0f8ff;border-radius:8px;font-size:13px"></div>
     <div style="margin-top:8px;padding:8px 12px;background:#fffbe6;border-radius:6px;font-size:11px;color:#ad6800;line-height:1.6">
       💡 <b>分红提示：</b>基金分红分为「现金分红」和「红利再投资」两种方式，可在支付宝基金详情页设置。红利再投资会增加持有份额，现金分红会发放到余额。分红后基金净值会相应下调，属于正常现象。
     </div>
