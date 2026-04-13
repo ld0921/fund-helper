@@ -844,12 +844,12 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
 
   el.style.display='';
   el.innerHTML=`
-    <div class="card" style="background:linear-gradient(135deg,#e6f4ff,#f0f5ff);border:1px solid #91caff;margin-bottom:0;border-bottom-left-radius:0;border-bottom-right-radius:0">
+    <div class="card" style="background:linear-gradient(135deg,#e6f4ff,#f0f5ff);border:1px solid #91caff">
       <div class="card-title">
         <span class="icon icon-green">💰</span>收益总览
         <button onclick="showProfitExplanation()" class="help-btn" title="收益指标说明">?</button>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
         <div style="padding:16px;background:rgba(255,255,255,0.55);border:1px solid #d6e4ff;border-radius:10px">
           <!-- 总市值 -->
           <div style="padding:12px;background:rgba(255,255,255,0.7);border-radius:8px;margin-bottom:10px">
@@ -888,15 +888,10 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
         </div>
       </div>
     </div>
-    <div class="card" style="margin-top:-8px;border-top-left-radius:0;border-top-right-radius:0">
-      <details open>
-        <summary style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:14px 16px;user-select:none;list-style:none;gap:8px">
-          <div style="flex:1">
-            <div style="font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px"><span class="icon icon-blue">📊</span>各基金收益明细</div>
-          </div>
-          <span class="toggle-arrow" style="font-size:12px;color:var(--primary);flex-shrink:0"></span>
-        </summary>
-        <div style="border-top:1px solid #f0f0f0;padding:0 4px">
+    <div class="card">
+      <div class="card-title">
+        <span class="icon icon-blue">📊</span>各基金收益明细
+      </div>
             <div class="detail-row detail-header">
               <div class="detail-fund" style="margin-bottom:0">基金名称</div>
               <div class="detail-vals">
@@ -940,8 +935,6 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
                 </div>
               </div>`;
             }).join('')}
-        </div>
-      </details>
     </div>`;
 
   // 渲染饼图（确保单次渲染，避免重复加载）
