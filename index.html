@@ -2371,57 +2371,30 @@ async function showFirstTimeGuide(){
   if(hasSeenGuide) return;
 
   setTimeout(async ()=>{
-    const result = confirm(`👋 欢迎使用基金理财辅助工具！
-
-这是一个帮助你管理支付宝基金投资的工具。
-
-📝 快速开始（3步）：
-1️⃣ 在"我的资产"tab添加持仓记录
-2️⃣ 点击"刷新净值数据"查看收益
-3️⃣ 在"智能方案"tab生成投资建议
-
-💡 温馨提示：
-• 所有数据仅供参考，以支付宝为准
-• 建议输入"持有份额"以获得更准确的数据
-• 交易日9:30-15:00可查看实时估算
-
-点击"确定"开始使用，点击"取消"查看详细说明`);
-
-    if(!result){
-      showHelpModal('📖 详细使用说明', `
-        <div style="margin-bottom:20px">
-          <div style="font-size:14px;font-weight:700;margin-bottom:10px;color:var(--primary)">🎯 核心功能</div>
-          <div style="padding-left:12px;border-left:3px solid #e6f4ff">
-            <p style="margin:0 0 6px"><b>我的资产：</b>记录持仓，跟踪收益</p>
-            <p style="margin:0 0 6px"><b>智能方案：</b>AI生成投资组合建议</p>
-            <p style="margin:0 0 6px"><b>定投专区：</b>定投方案和收益测算</p>
-            <p style="margin:0"><b>基金探索：</b>查看精选基金详情</p>
-          </div>
+    showHelpModal('👋 欢迎使用基金理财辅助工具', `
+      <p style="margin:0 0 16px;color:var(--muted)">这是一个帮助你管理支付宝基金投资的工具，以下是快速入门指南。</p>
+      <div style="margin-bottom:20px">
+        <div style="font-size:14px;font-weight:700;margin-bottom:10px;color:var(--primary)">🎯 核心功能</div>
+        <div style="padding-left:12px;border-left:3px solid #e6f4ff">
+          <p style="margin:0 0 6px"><b>我的资产：</b>记录持仓，跟踪收益</p>
+          <p style="margin:0 0 6px"><b>智能方案：</b>AI生成投资组合建议</p>
+          <p style="margin:0 0 6px"><b>定投专区：</b>定投方案和收益测算</p>
+          <p style="margin:0"><b>基金探索：</b>查看精选基金详情</p>
         </div>
-        <div style="margin-bottom:20px">
-          <div style="font-size:14px;font-weight:700;margin-bottom:10px;color:var(--primary)">💼 如何添加持仓？</div>
-          <div style="padding-left:12px;border-left:3px solid #e6f4ff">
-            <p style="margin:0 0 6px">1. 在「我的资产」tab搜索基金</p>
-            <p style="margin:0 0 6px">2. 填写买入金额和日期</p>
-            <p style="margin:0 0 6px">3. 推荐填写「持有份额」（在支付宝查看）</p>
-            <p style="margin:0">4. 点击「添加持仓」</p>
-          </div>
+      </div>
+      <div style="margin-bottom:20px">
+        <div style="font-size:14px;font-weight:700;margin-bottom:10px;color:var(--primary)">📝 快速开始（3步）</div>
+        <div style="padding-left:12px;border-left:3px solid #e6f4ff">
+          <p style="margin:0 0 6px">1. 在「我的资产」tab搜索基金并添加持仓</p>
+          <p style="margin:0 0 6px">2. 推荐填写「持有份额」以获得更准确数据</p>
+          <p style="margin:0">3. 在「智能方案」tab生成投资建议</p>
         </div>
-        <div style="margin-bottom:20px">
-          <div style="font-size:14px;font-weight:700;margin-bottom:10px;color:var(--primary)">📊 如何查看收益？</div>
-          <div style="padding-left:12px;border-left:3px solid #e6f4ff">
-            <p style="margin:0 0 6px">1. 点击「刷新净值数据」按钮</p>
-            <p style="margin:0 0 6px">2. 等待数据加载完成</p>
-            <p style="margin:0">3. 查看今日收益和累计盈亏</p>
-          </div>
-        </div>
-        <div style="background:#fff7e6;border:1px solid #ffd591;border-radius:8px;padding:12px">
-          <div style="font-size:13px;font-weight:700;margin-bottom:6px;color:#ad6800">⚠️ 重要提示</div>
-          <p style="margin:0;font-size:12px;line-height:1.6">本工具数据来源于第三方，可能与支付宝有细微差异<br>所有数据仅供参考，实际收益以支付宝为准<br>基金投资有风险，请谨慎决策</p>
-        </div>
-      `);
-    }
-
+      </div>
+      <div style="background:#fff7e6;border:1px solid #ffd591;border-radius:8px;padding:12px">
+        <div style="font-size:13px;font-weight:700;margin-bottom:6px;color:#ad6800">💡 温馨提示</div>
+        <p style="margin:0;font-size:12px;line-height:1.6">所有数据仅供参考，以支付宝为准<br>交易日9:30-15:00可查看实时估算净值<br>基金投资有风险，请谨慎决策</p>
+      </div>
+    `);
     await FundDB.set('hasSeenGuide', true);
   }, 1000);
 }
