@@ -118,12 +118,15 @@ function refreshAllNav(autoGenerate, silent){
     }
   }));
 }
+let _navRefreshing = false;
 async function refreshHoldingsNav(showToast_ = false){
+  if(_navRefreshing){ console.log('[刷新净值] 已在刷新中，跳过'); return; }
   if(!existingHoldings.length){
     if(showToast_) showToast('暂无持仓数据','info');
     console.log('[刷新净值] 无持仓，跳过刷新');
     return;
   }
+  _navRefreshing = true;
   const btn = document.getElementById('refresh-nav-btn');
   if(btn){ btn.textContent='⏳ 刷新中...'; btn.disabled=true; }
 
@@ -190,6 +193,7 @@ async function refreshHoldingsNav(showToast_ = false){
       if(done === total){
         navRefreshed = true;
         _navFreshThisSession = true;
+        _navRefreshing = false;
         FundDB.set('navCache', navCache);
         FundDB.set('lastNavRefreshTime', Date.now());
 
