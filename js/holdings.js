@@ -898,15 +898,15 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
           <span class="toggle-arrow" style="font-size:12px;color:var(--primary);flex-shrink:0"></span>
         </summary>
         <div style="border-top:1px solid #f0f0f0;padding:0 4px">
-            <div class="detail-row detail-header" style="border-bottom:1px solid #f0f0f0;padding:8px 14px">
-              <div class="detail-fund" style="margin-bottom:0"><span style="font-size:11px;color:var(--muted);font-weight:500">基金名称</span></div>
+            <div class="detail-row detail-header">
+              <div class="detail-fund" style="margin-bottom:0">基金名称</div>
               <div class="detail-vals">
-                <div class="detail-val"><span class="detail-val-lbl" style="font-weight:500">来源</span></div>
-                <div class="detail-val"><span class="detail-val-lbl" style="font-weight:500">买入日期</span></div>
-                <div class="detail-val"><span class="detail-val-lbl" style="font-weight:500">当前市值</span></div>
-                <div class="detail-val"><span class="detail-val-lbl" style="font-weight:500">盈亏</span></div>
-                <div class="detail-val"><span class="detail-val-lbl" style="font-weight:500">今日</span></div>
-                <div class="detail-val"><span class="detail-val-lbl" style="font-weight:500">历史</span></div>
+                <div class="detail-val">买入来源</div>
+                <div class="detail-val">买入日期</div>
+                <div class="detail-val">当前市值</div>
+                <div class="detail-val">盈亏金额</div>
+                <div class="detail-val">今日涨跌</div>
+                <div class="detail-val">历史收益</div>
               </div>
             </div>
             ${details.map((d,idx)=>{
@@ -914,28 +914,23 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
               const pctStr=d.cost>0?`${d.pct>=0?'+':''}${d.pct.toFixed(1)}%`:'--';
               const pnlStr=d.cost>0?`${d.pnl>=0?'+':''}¥${Math.abs(d.pnl).toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2})}`:'--';
               const todayPctStr=d.todayChg!==null?`${d.todayChg>=0?'+':''}${parseFloat(d.todayChg).toFixed(2)}%`:'--';
-              const todayPnlStr=d.todayPnl!==null?`${d.todayPnl>=0?'+':''}¥${Math.abs(d.todayPnl).toFixed(2)}`:'';
+              const todayPnlStr=d.todayPnl!==null?` ${d.todayPnl>=0?'+':''}¥${Math.abs(d.todayPnl).toFixed(2)}`:'';
               const todayClass=d.todayChg!==null?(d.todayChg>=0?'up':'down'):'';
               const pnlClass=d.pnl>=0?'up':'down';
               const srcLabel=d.source==='dca'?'<span style="font-size:10px;padding:2px 6px;border-radius:3px;background:#f9f0ff;color:#722ed1;border:1px solid #d3adf7">定投</span>':'<span style="font-size:10px;padding:2px 6px;border-radius:3px;background:#e6f4ff;color:#1677ff;border:1px solid #91caff">直购</span>';
               const dateStr=d.date?d.date.slice(2).replace(/-/g,'/'):'--';
               const estTag=d.isEstimated?'<span style="font-size:9px;padding:1px 3px;border-radius:2px;background:#e6f7ff;color:#1890ff;margin-left:2px">估</span>':'';
+              const costStr=`成本¥${d.cost.toLocaleString('zh-CN',{minimumFractionDigits:0,maximumFractionDigits:0})}`;
               return `<div class="detail-row" style="${idx<details.length-1?'border-bottom:1px solid #f5f5f5':''}">
                 <div class="detail-fund">
-                  <div class="detail-fund-name">${escHtml(d.name)}</div>
-                  <div class="detail-fund-meta">
-                    <div class="detail-weight-bar"><div style="width:${Math.min(100,weight).toFixed(1)}%" class="detail-weight-fill"></div></div>
-                    <span>${weight.toFixed(1)}%</span>
-                    <span style="color:#d9d9d9">·</span>
-                    <span>成本 ¥${d.cost.toLocaleString('zh-CN',{minimumFractionDigits:0,maximumFractionDigits:0})}</span>
-                  </div>
+                  <div class="detail-fund-name">${escHtml(d.name)} <span class="detail-fund-extra"><span class="detail-weight-bar-inline"><span style="width:${Math.min(100,weight).toFixed(1)}%"></span></span>${weight.toFixed(1)}% · ${costStr}</span></div>
                 </div>
                 <div class="detail-vals">
                   <div class="detail-val">${srcLabel}</div>
-                  <div class="detail-val"><div class="detail-val-num" style="font-weight:400;font-size:12px;color:var(--muted)">${dateStr}</div></div>
-                  <div class="detail-val"><div class="detail-val-num">¥${d.value.toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2})}</div></div>
-                  <div class="detail-val"><div class="detail-val-num ${pnlClass}">${pnlStr}</div><div class="detail-val-lbl ${pnlClass}">${pctStr}</div></div>
-                  <div class="detail-val"><div class="detail-val-num ${todayClass}">${todayPctStr}${estTag}</div><div class="detail-val-lbl ${todayClass}">${todayPnlStr}</div></div>
+                  <div class="detail-val"><span class="detail-val-num" style="font-weight:400;font-size:12px;color:var(--muted)">${dateStr}</span></div>
+                  <div class="detail-val"><span class="detail-val-num">¥${d.value.toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2})}</span></div>
+                  <div class="detail-val"><span class="detail-val-num ${pnlClass}">${pnlStr} <span style="font-size:10px;font-weight:400">${pctStr}</span></span></div>
+                  <div class="detail-val"><span class="detail-val-num ${todayClass}">${todayPctStr}${estTag}<span style="font-size:10px;font-weight:400">${todayPnlStr}</span></span></div>
                   <div class="detail-val"><button onclick="showHistoryChart('${d.code}','${escHtml(d.name)}',${d.shares},'${d.date||''}',${d.pnl})" class="btn btn-sm" style="padding:4px 12px;font-size:11px">查看</button></div>
                 </div>
               </div>`;
