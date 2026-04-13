@@ -2375,23 +2375,24 @@ async function showFirstTimeGuide(){
       <div style="margin-bottom:20px">
         <div style="font-size:14px;font-weight:700;margin-bottom:10px;color:var(--primary)">🎯 核心功能</div>
         <div style="padding-left:12px;border-left:3px solid #e6f4ff">
-          <p style="margin:0 0 6px"><b>我的资产：</b>记录持仓，跟踪收益</p>
-          <p style="margin:0 0 6px"><b>智能方案：</b>AI生成投资组合建议</p>
-          <p style="margin:0 0 6px"><b>定投专区：</b>定投方案和收益测算</p>
-          <p style="margin:0"><b>基金探索：</b>查看精选基金详情</p>
+          <p style="margin:0 0 6px"><b>我的资产：</b>添加持仓记录，自动跟踪市值和盈亏</p>
+          <p style="margin:0 0 6px"><b>智能方案：</b>输入资金和偏好，AI智能生成投资组合方案</p>
+          <p style="margin:0 0 6px"><b>定投专区：</b>管理定投计划，跟踪定投收益</p>
+          <p style="margin:0"><b>持仓诊断：</b>健康度评估和智能买卖信号提醒</p>
         </div>
       </div>
       <div style="margin-bottom:20px">
-        <div style="font-size:14px;font-weight:700;margin-bottom:10px;color:var(--primary)">📝 快速开始（3步）</div>
+        <div style="font-size:14px;font-weight:700;margin-bottom:10px;color:var(--primary)">📝 快速开始</div>
         <div style="padding-left:12px;border-left:3px solid #e6f4ff">
-          <p style="margin:0 0 6px">1. 在「我的资产」tab搜索基金并添加持仓</p>
-          <p style="margin:0 0 6px">2. 推荐填写「持有份额」以获得更准确数据</p>
-          <p style="margin:0">3. 在「智能方案」tab生成投资建议</p>
+          <p style="margin:0 0 6px">1. 切换到「我的资产」tab，搜索基金名称或代码</p>
+          <p style="margin:0 0 6px">2. 填写买入金额、份额（可选）和买入日期，点击添加</p>
+          <p style="margin:0 0 6px">3. 净值数据自动刷新（每5分钟 / 切回页面时）</p>
+          <p style="margin:0">4. 在收益总览中查看实时盈亏和累计收益</p>
         </div>
       </div>
       <div style="background:#fff7e6;border:1px solid #ffd591;border-radius:8px;padding:12px">
         <div style="font-size:13px;font-weight:700;margin-bottom:6px;color:#ad6800">💡 温馨提示</div>
-        <p style="margin:0;font-size:12px;line-height:1.6">所有数据仅供参考，以支付宝为准<br>交易日9:30-15:00可查看实时估算净值<br>基金投资有风险，请谨慎决策</p>
+        <p style="margin:0;font-size:12px;line-height:1.6">填写「持有份额」后收益数据更准确（在支付宝→基金→持仓中查看）<br>所有数据仅供参考，以支付宝为准<br>基金投资有风险，请谨慎决策</p>
       </div>
     `);
     await FundDB.set('hasSeenGuide', true);

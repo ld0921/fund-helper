@@ -852,9 +852,9 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
         <div style="padding:16px;background:linear-gradient(135deg,#f0f7ff,#f8fbff);border:1px solid #d6e4ff;border-radius:10px">
           <!-- 总市值 -->
-          <div style="margin-bottom:14px">
+          <div style="padding:12px;background:rgba(255,255,255,0.7);border-radius:8px;margin-bottom:10px">
             <div style="font-size:12px;color:#5b8def;margin-bottom:6px;font-weight:500">总市值</div>
-            <div style="font-size:28px;font-weight:700;color:#0958d9;letter-spacing:-0.5px">¥${totalVal.toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
+            <div style="font-size:28px;font-weight:700;color:#cf1322;letter-spacing:-0.5px">¥${totalVal.toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
             ${pendingTotal>0?`<div style="margin-top:6px;font-size:11px;color:#1677ff">⏳ 买入待确认 ¥${pendingTotal.toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>`:`<div style="margin-top:6px;font-size:11px;color:var(--muted)">已确认 ${holdings.length} 只基金 · 成本 ¥${totalCost.toLocaleString('zh-CN',{maximumFractionDigits:0})}</div>`}
           </div>
           <!-- 累计盈亏 -->
