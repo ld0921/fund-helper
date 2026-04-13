@@ -405,6 +405,7 @@ function renderRebalancePlan(plan){
       <div class="rebal-fund">
         <div class="rebal-fund-name">${escHtml(a.name)}</div>
         <div class="rebal-fund-meta">代码 ${escHtml(a.code)} · ${escHtml(a.type)} · ${escHtml(a.manager)} · 近1年 <span class="${(+a.r1)>=0?'up':'down'}">${(+a.r1)>=0?'+':''}${a.r1}%</span></div>
+        <div class="rebal-fund-desc">${escHtml(a.actionDesc)}</div>
       </div>
       <div class="rebal-amts">
         <div class="rebal-amt"><div class="rebal-amt-val">¥${a.currentAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}</div><div class="rebal-amt-lbl">当前持仓</div></div>
@@ -412,7 +413,6 @@ function renderRebalancePlan(plan){
         <div class="rebal-amt"><div class="rebal-amt-val" style="color:var(--primary)">¥${Math.max(0, a.targetAmt).toLocaleString('zh-CN',{maximumFractionDigits:0})}</div><div class="rebal-amt-lbl">目标仓位</div></div>
         <div class="rebal-amt"><div class="rebal-amt-val" style="color:${['sell','reduce','reduce_gentle'].includes(a.action)?'var(--danger)':['buy','buy_more'].includes(a.action)?'var(--success)':'var(--muted)'}">${a.actionAmt>0?(['sell','reduce','reduce_gentle'].includes(a.action)?'-':'+')+'\u00A5'+a.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0}):'--'}</div><div class="rebal-amt-lbl">调仓金额</div></div>
       </div>
-      <div class="rebal-op" style="font-size:12px;color:var(--muted);min-width:120px">${escHtml(a.actionDesc)}</div>
     </div>`}).join('');
 }
 
