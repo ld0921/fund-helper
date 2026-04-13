@@ -850,17 +850,17 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
         <button onclick="showProfitExplanation()" class="help-btn" title="收益指标说明">?</button>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
-        <div style="display:flex;flex-direction:column;gap:0">
+        <div style="padding:16px;background:linear-gradient(135deg,#f0f7ff,#f8fbff);border:1px solid #d6e4ff;border-radius:10px">
           <!-- 总市值 -->
-          <div style="margin-bottom:16px">
-            <div style="font-size:12px;color:var(--muted);margin-bottom:6px">总市值</div>
-            <div style="font-size:28px;font-weight:700;color:var(--text);letter-spacing:-0.5px">¥${totalVal.toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
-            ${pendingTotal>0?`<div style="margin-top:6px;font-size:11px;color:#1677ff">⏳ 买入待确认 ¥${pendingTotal.toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>`:''}
+          <div style="margin-bottom:14px">
+            <div style="font-size:12px;color:#5b8def;margin-bottom:6px;font-weight:500">总市值</div>
+            <div style="font-size:28px;font-weight:700;color:#0958d9;letter-spacing:-0.5px">¥${totalVal.toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
+            ${pendingTotal>0?`<div style="margin-top:6px;font-size:11px;color:#1677ff">⏳ 买入待确认 ¥${pendingTotal.toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>`:`<div style="margin-top:6px;font-size:11px;color:var(--muted)">已确认 ${confirmedHoldings.length} 只基金 · 成本 ¥${totalCost.toLocaleString('zh-CN',{maximumFractionDigits:0})}</div>`}
           </div>
           <!-- 累计盈亏 -->
-          <div style="padding:12px 0;border-top:1px solid #f0f0f0">
+          <div style="padding:12px;background:rgba(255,255,255,0.7);border-radius:8px;margin-bottom:10px">
             <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:2px">
-              <span style="font-size:12px;color:var(--muted)">累计盈亏</span>
+              <span style="font-size:12px;color:var(--muted);font-weight:500">累计盈亏</span>
               <span style="font-size:18px;font-weight:700;color:${totalPnl>=0?'#cf1322':'#389e0d'}">${totalPnl>=0?'+':''}¥${Math.abs(totalPnl).toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2})}</span>
               <span style="font-size:13px;font-weight:600;color:${totalPnl>=0?'#cf1322':'#389e0d'}">${totalPnl>=0?'+':''}${totalPnlPct.toFixed(1)}%</span>
             </div>
@@ -870,13 +870,16 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
             </div>` : ''}
           </div>
           <!-- 实时盈亏 -->
-          <div style="padding:12px 0;border-top:1px solid #f0f0f0">
-            <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:2px">
-              <span style="font-size:12px;color:var(--muted)">实时盈亏${!isTradingDay()?'(非交易日)':(navRefreshed&&navCount>0?'':'(待刷新)')}</span>
+          <div style="padding:12px;background:rgba(255,255,255,0.7);border-radius:8px">
+            <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:4px">
+              <span style="font-size:12px;color:var(--muted);font-weight:500">实时盈亏${!isTradingDay()?'(非交易日)':(navRefreshed&&navCount>0?'':'(待刷新)')}</span>
               <span style="font-size:18px;font-weight:700;color:${navRefreshed&&todayPnl!==0?(todayPnl>=0?'#cf1322':'#389e0d'):'#8c8c8c'}">${!isTradingDay()?'--':(navRefreshed?(todayPnl>=0?'+':'')+'¥'+Math.abs(todayPnl).toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2}):'--')}</span>
             </div>
             <div style="font-size:10px;color:var(--muted);line-height:1.6">
               ${refreshTimeStr?`📊 更新: ${refreshTimeStr} · `:''}⚡ 登录后自动 / 每5分钟 / 切回页面时
+            </div>
+            <div style="margin-top:8px;font-size:10px;color:var(--muted);line-height:1.5">
+              💡 实时盈亏 = 份额 × (当前估算净值 - 昨日确认净值)，仅交易日9:30后更新
             </div>
           </div>
         </div>
