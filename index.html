@@ -1314,7 +1314,7 @@ let dcaPlans = [];
 let navCache = {};
 
 function renderAll(){
-  renderFundList(); renderExistingHoldings(); renderDcaPlans(); renderDcaRanking(); runHealthMonitor();
+  renderFundList(); renderExistingHoldings(); renderDcaPlans(); renderDcaRanking(); runHealthMonitor(); renderTodayOverview();
 }
 let currentCat = 'all';
 let currentSortMode = 'score'; // 'score' or 'dca'
@@ -1332,7 +1332,16 @@ async function renderTodayOverview(){
   const allHeld=[];
   existingHoldings.filter(h=>h.status==='confirmed').forEach(h=>{
     if(!allHeld.some(x=>x.code===h.code)){
-      allHeld.push({code:h.code, name:h.name, value:(h.value||0), cost:(h.amount||0), shares:(h.shares||0)});
+      // 从navCache实时计算市值，避免依赖renderExistingHoldings的异步更新
+      const nav=navCache[h.code];
+      const fundInfo=CURATED_FUNDS.find(f=>f.code===h.code);
+      const isMoneyFund=fundInfo&&(fundInfo.type==='货币型'||fundInfo.cat==='money');
+      let value=h.value||0;
+      if(h.shares && h.shares > 0 && nav){
+        const navVal=isMoneyFund?1.00:(parseFloat(nav.gsz)||parseFloat(nav.dwjz)||(h.cost||0));
+        if(navVal>0) value=h.shares*navVal;
+      }
+      allHeld.push({code:h.code, name:h.name, value, cost:(h.amount||0), shares:(h.shares||0)});
     }
   });
   dcaPlans.forEach(d=>{ if(!allHeld.some(x=>x.code===d.code)&&d.curval>0){
