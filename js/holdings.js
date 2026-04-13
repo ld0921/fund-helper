@@ -850,35 +850,35 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
         <button onclick="showProfitExplanation()" class="help-btn" title="收益指标说明">?</button>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
-        <div style="display:flex;flex-direction:column;gap:8px">
-          <div style="padding:12px;background:linear-gradient(135deg,#e6f7ff,#f0f5ff);border-radius:8px;border:1px solid #91d5ff">
-            <div style="font-size:13px;color:#096dd9;margin-bottom:4px">总市值</div>
-            <div style="font-size:22px;font-weight:700;color:#0050b3">¥${totalVal.toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
-            ${pendingTotal>0?`<div style="margin-top:8px;padding:4px 10px;background:rgba(22,119,255,0.1);border-radius:12px;display:inline-block"><span style="font-size:12px;color:#1677ff">买入待确认 ${pendingTotal.toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2})} 元</span></div>`:''}
+        <div style="display:flex;flex-direction:column;gap:0">
+          <!-- 总市值 -->
+          <div style="margin-bottom:16px">
+            <div style="font-size:12px;color:var(--muted);margin-bottom:6px">总市值</div>
+            <div style="font-size:28px;font-weight:700;color:var(--text);letter-spacing:-0.5px">¥${totalVal.toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
+            ${pendingTotal>0?`<div style="margin-top:6px;font-size:11px;color:#1677ff">⏳ 买入待确认 ¥${pendingTotal.toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>`:''}
           </div>
-          <div style="padding:12px;background:${totalPnl>=0?'linear-gradient(135deg,#fff1f0,#fff2f0)':'linear-gradient(135deg,#f6ffed,#f0fff4)'};border-radius:8px;border:1px solid ${totalPnl>=0?'#ffccc7':'#b7eb8f'}">
-            <div style="font-size:13px;color:${totalPnl>=0?'#cf1322':'#389e0d'};margin-bottom:4px">累计盈亏</div>
-            <div style="font-size:20px;font-weight:700;color:${totalPnl>=0?'#cf1322':'#389e0d'}">${totalPnl>=0?'+':''}¥${Math.abs(totalPnl).toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
-            <div style="font-size:14px;font-weight:600;color:${totalPnl>=0?'#cf1322':'#389e0d'};margin-top:2px">${totalPnl>=0?'+':''}${totalPnlPct.toFixed(1)}%</div>
-            ${hasBothSources ? `<div style="margin-top:8px;padding:6px 8px;background:rgba(255,255,255,0.6);border-radius:6px;font-size:11px;line-height:1.8">
-              <div style="display:flex;justify-content:space-between;align-items:center"><span style="color:#1677ff">💰 直购</span><span class="${directPnl>=0?'up':'down'}" style="font-weight:600">${directPnl>=0?'+':''}¥${Math.abs(directPnl).toLocaleString('zh-CN',{maximumFractionDigits:2})} (${directPnl>=0?'+':''}${directPnlPct.toFixed(1)}%)</span></div>
-              <div style="display:flex;justify-content:space-between;align-items:center"><span style="color:#722ed1">📅 定投</span><span class="${dcaPnl>=0?'up':'down'}" style="font-weight:600">${dcaPnl>=0?'+':''}¥${Math.abs(dcaPnl).toLocaleString('zh-CN',{maximumFractionDigits:2})} (${dcaPnl>=0?'+':''}${dcaPnlPct.toFixed(1)}%)</span></div>
+          <!-- 累计盈亏 -->
+          <div style="padding:12px 0;border-top:1px solid #f0f0f0">
+            <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:2px">
+              <span style="font-size:12px;color:var(--muted)">累计盈亏</span>
+              <span style="font-size:18px;font-weight:700;color:${totalPnl>=0?'#cf1322':'#389e0d'}">${totalPnl>=0?'+':''}¥${Math.abs(totalPnl).toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2})}</span>
+              <span style="font-size:13px;font-weight:600;color:${totalPnl>=0?'#cf1322':'#389e0d'}">${totalPnl>=0?'+':''}${totalPnlPct.toFixed(1)}%</span>
+            </div>
+            ${hasBothSources ? `<div style="display:flex;gap:16px;margin-top:6px;font-size:11px">
+              <span><span style="color:#1677ff">💰 直购</span> <span class="${directPnl>=0?'up':'down'}" style="font-weight:600">${directPnl>=0?'+':''}¥${Math.abs(directPnl).toLocaleString('zh-CN',{maximumFractionDigits:2})} (${directPnl>=0?'+':''}${directPnlPct.toFixed(1)}%)</span></span>
+              <span><span style="color:#722ed1">📅 定投</span> <span class="${dcaPnl>=0?'up':'down'}" style="font-weight:600">${dcaPnl>=0?'+':''}¥${Math.abs(dcaPnl).toLocaleString('zh-CN',{maximumFractionDigits:2})} (${dcaPnl>=0?'+':''}${dcaPnlPct.toFixed(1)}%)</span></span>
             </div>` : ''}
           </div>
-          <div style="padding:12px;background:${navRefreshed&&todayPnl!==0?(todayPnl>=0?'linear-gradient(135deg,#fff1f0,#fff2f0)':'linear-gradient(135deg,#f6ffed,#f0fff4)'):'linear-gradient(135deg,#fafafa,#f5f5f5)'};border-radius:8px;border:1px solid ${navRefreshed&&todayPnl!==0?(todayPnl>=0?'#ffccc7':'#b7eb8f'):'#d9d9d9'}">
-            <div style="font-size:13px;color:${navRefreshed&&todayPnl!==0?(todayPnl>=0?'#cf1322':'#389e0d'):'#8c8c8c'};margin-bottom:4px">实时盈亏${!isTradingDay()?'(非交易日)':(navRefreshed&&navCount>0?'':'(待刷新)')}</div>
-            <div style="font-size:20px;font-weight:700;color:${navRefreshed&&todayPnl!==0?(todayPnl>=0?'#cf1322':'#389e0d'):'#8c8c8c'}">${!isTradingDay()?'--':(navRefreshed?(todayPnl>=0?'+':'')+'¥'+Math.abs(todayPnl).toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2}):'--')}</div>
-            ${refreshTimeStr?`<div style="font-size:10px;color:var(--muted);margin-top:4px">📊 更新: ${refreshTimeStr}</div>`:''}
-            <div style="font-size:10px;color:var(--muted);margin-top:4px;line-height:1.5">
-              ⚡ 自动刷新: 登录后自动 / 每5分钟 / 切回页面时
+          <!-- 实时盈亏 -->
+          <div style="padding:12px 0;border-top:1px solid #f0f0f0">
+            <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:2px">
+              <span style="font-size:12px;color:var(--muted)">实时盈亏${!isTradingDay()?'(非交易日)':(navRefreshed&&navCount>0?'':'(待刷新)')}</span>
+              <span style="font-size:18px;font-weight:700;color:${navRefreshed&&todayPnl!==0?(todayPnl>=0?'#cf1322':'#389e0d'):'#8c8c8c'}">${!isTradingDay()?'--':(navRefreshed?(todayPnl>=0?'+':'')+'¥'+Math.abs(todayPnl).toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2}):'--')}</span>
+            </div>
+            <div style="font-size:10px;color:var(--muted);line-height:1.6">
+              ${refreshTimeStr?`📊 更新: ${refreshTimeStr} · `:''}⚡ 登录后自动 / 每5分钟 / 切回页面时
             </div>
           </div>
-          <!-- 昨日收益暂时隐藏，计算逻辑需要优化
-          <div style="padding:12px;background:${isYesterdayTradingDay&&hasYesterdayData?(yesterdayPnl>=0?'linear-gradient(135deg,#fff1f0,#fff2f0)':'linear-gradient(135deg,#f6ffed,#f0fff4)'):'linear-gradient(135deg,#fafafa,#f5f5f5)'};border-radius:8px;border:1px solid ${isYesterdayTradingDay&&hasYesterdayData?(yesterdayPnl>=0?'#ffccc7':'#b7eb8f'):'#d9d9d9'}">
-            <div style="font-size:13px;color:${isYesterdayTradingDay&&hasYesterdayData?(yesterdayPnl>=0?'#cf1322':'#389e0d'):'#8c8c8c'};margin-bottom:4px">昨日收益${!isYesterdayTradingDay?'(非交易日)':''}</div>
-            <div style="font-size:20px;font-weight:700;color:${isYesterdayTradingDay&&hasYesterdayData?(yesterdayPnl>=0?'#cf1322':'#389e0d'):'#8c8c8c'}">${isYesterdayTradingDay&&hasYesterdayData?(yesterdayPnl>=0?'+':'')+'¥'+Math.abs(yesterdayPnl).toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2}):'--'}</div>
-          </div>
-          -->
         </div>
         <div style="display:flex;align-items:center;justify-content:center;background:#fafafa;border-radius:8px;border:1px solid var(--border);padding:12px">
           <canvas id="portfolioPieChart" style="max-height:220px"></canvas>
