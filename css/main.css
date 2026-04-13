@@ -304,39 +304,38 @@ tr:last-child td{border-bottom:none}
 .health-fund{flex:1;min-width:0}.health-name{font-size:13px;font-weight:600;margin-bottom:2px}
 .health-desc{font-size:12px;color:var(--muted);line-height:1.6}
 .health-action{font-size:12px;font-weight:600;flex-shrink:0;text-align:right;min-width:56px}
-.alert-card{background:linear-gradient(135deg,#fff1f0,#fff7e6);border:1px solid #ffa39e;border-radius:10px;padding:14px;margin-bottom:14px}
-.alert-card-title{font-size:14px;font-weight:700;color:#cf1322;margin-bottom:8px;display:flex;align-items:center;gap:6px}
-.alert-green{background:linear-gradient(135deg,#f6ffed,#f0fff4);border-color:#b7eb8f}
+.alert-card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:0;margin-bottom:14px;overflow:hidden}
+.alert-card-title{font-size:15px;font-weight:700;color:var(--text);margin-bottom:2px;display:flex;align-items:center;gap:6px}
+.alert-card>summary{padding:16px 18px;background:linear-gradient(135deg,#f8f9fc,#f0f4ff);border-bottom:1px solid #e8e8e8}
+.alert-green{border-color:#b7eb8f}
+.alert-green>summary{background:linear-gradient(135deg,#f6ffed,#f0f9ff)}
 .alert-green .alert-card-title{color:#237804}
 /* ── 诊断子面板（折叠区） ── */
-.diag-section{border-bottom:1px solid rgba(0,0,0,.05)}
+.diag-section{border-bottom:1px solid #f0f0f0;margin:0 12px}
 .diag-section:last-of-type{border-bottom:none}
-.diag-header{padding:12px 16px;font-size:13px;font-weight:600;cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:10px;transition:background .2s;-webkit-tap-highlight-color:transparent}
+.diag-header{padding:10px 8px;font-size:13px;font-weight:600;cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:10px;transition:background .2s;-webkit-tap-highlight-color:transparent;border-radius:8px;margin:4px 0}
 .diag-header::-webkit-details-marker{display:none}
 .diag-header-left{display:flex;align-items:center;gap:6px;flex:1;min-width:0}
 .diag-header-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
 .diag-badge{font-size:11px;font-weight:500;padding:2px 10px;border-radius:10px;white-space:nowrap}
-.diag-chevron{width:22px;height:22px;display:flex;align-items:center;justify-content:center;border-radius:50%;transition:transform .3s cubic-bezier(.4,0,.2,1),background .2s;flex-shrink:0;font-size:12px}
+.diag-chevron{width:20px;height:20px;display:flex;align-items:center;justify-content:center;border-radius:50%;transition:transform .3s cubic-bezier(.4,0,.2,1);flex-shrink:0;font-size:11px;color:var(--muted)}
 .diag-section[open] .diag-chevron{transform:rotate(90deg)}
 /* 持仓基金 — 蓝色调 */
-.diag-header-holding{background:linear-gradient(135deg,#f0f5ff,#e8f0fe);color:#1677ff}
-.diag-header-holding:hover{background:linear-gradient(135deg,#e6eeff,#dce8fd)}
-.diag-header-holding .diag-badge{background:rgba(22,119,255,.1);color:#1677ff}
-.diag-header-holding .diag-chevron{color:#1677ff;background:rgba(22,119,255,.08)}
+.diag-header-holding{color:#1677ff}
+.diag-header-holding:hover{background:#f0f5ff}
+.diag-header-holding .diag-badge{background:#e6f4ff;color:#1677ff;border:1px solid #91caff}
 /* 定投基金 — 绿色调 */
-.diag-header-dca{background:linear-gradient(135deg,#f6ffed,#ecfce5);color:#389e0d}
-.diag-header-dca:hover{background:linear-gradient(135deg,#edfee5,#e2fada)}
-.diag-header-dca .diag-badge{background:rgba(56,158,13,.1);color:#389e0d}
-.diag-header-dca .diag-chevron{color:#389e0d;background:rgba(56,158,13,.08)}
+.diag-header-dca{color:#389e0d}
+.diag-header-dca:hover{background:#f6ffed}
+.diag-header-dca .diag-badge{background:#f6ffed;color:#389e0d;border:1px solid #b7eb8f}
 /* 资产配置 — 橙色调 */
-.diag-header-alloc{background:linear-gradient(135deg,#fff7e6,#fef3d8);color:#d48806}
-.diag-header-alloc:hover{background:linear-gradient(135deg,#fff0cc,#fdebc0)}
-.diag-header-alloc .diag-badge{background:rgba(212,136,6,.1);color:#d48806}
-.diag-header-alloc .diag-chevron{color:#d48806;background:rgba(212,136,6,.08)}
+.diag-header-alloc{color:#d48806}
+.diag-header-alloc:hover{background:#fff7e6}
+.diag-header-alloc .diag-badge{background:#fff7e6;color:#d48806;border:1px solid #ffd591}
 /* 策略说明 — 中性灰 */
-.diag-header-info{background:#fafafa;color:var(--muted)}
-.diag-header-info:hover{background:#f5f5f5}
-.diag-header-info .diag-chevron{color:var(--primary);background:rgba(22,119,255,.06)}
+.diag-header-info{color:var(--muted)}
+.diag-header-info:hover{background:#fafafa}
+.diag-header-info .diag-chevron{color:var(--primary)}
 /* ── Toast 通知系统 ── */
 .toast-container{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none;max-width:90vw}
 .toast{padding:10px 18px;border-radius:8px;font-size:13px;color:#fff;opacity:0;transform:translateY(-12px);transition:all .3s;pointer-events:auto;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,.15)}

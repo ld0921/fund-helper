@@ -783,15 +783,15 @@ function runHealthMonitor(){
     </div>
   </details>`;
 
-  wrap.innerHTML=`<details class="card ${headerClass} alert-card" style="padding:0;overflow:hidden;cursor:pointer" ${hasIssues?'open':''}>
-    <summary style="padding:14px 16px;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:8px">
+  wrap.innerHTML=`<details class="card ${headerClass} alert-card" style="cursor:pointer" ${hasIssues?'open':''}>
+    <summary style="list-style:none;display:flex;align-items:center;justify-content:space-between;gap:8px">
       <div style="flex:1">
-        <div class="alert-card-title" style="margin-bottom:2px">${headerIcon} 持仓健康诊断 · ${holdings.length + dcaHoldings.length} 只基金</div>
+        <div class="alert-card-title">${headerIcon} 持仓健康诊断 · ${holdings.length + dcaHoldings.length} 只基金</div>
         <div style="font-size:12px;color:var(--muted)">${headerMsg}</div>
       </div>
       <span class="toggle-arrow" style="font-size:12px;color:var(--primary);flex-shrink:0"></span>
     </summary>
-    <div style="border-top:1px solid #f0f0f0">
+    <div style="padding:4px 0 8px">
     ${contentHtml}
     ${strategyHtml}
     </div>
