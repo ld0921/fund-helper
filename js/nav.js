@@ -198,7 +198,7 @@ async function refreshHoldingsNav(showToast_ = false){
         FundDB.set('lastNavRefreshTime', Date.now());
 
         // 每次刷新净值后都检查是否需要更新昨日净值（函数内部会基于净值日期判断）
-        updateYesterdayNav();
+        await updateYesterdayNav();
 
         renderExistingHoldings(); runHealthMonitor(); renderTodayOverview();
         updateLastRefreshTime(); // 更新时间显示
