@@ -1317,7 +1317,7 @@ let navRefreshed = false; // 标记是否已刷新净值数据
 
 // ═══════════════ 标签切换 ═══════════════
 // ═══════════════ 今日概览 ═══════════════
-function renderTodayOverview(){
+async function renderTodayOverview(){
   const el=document.getElementById('today-overview');
   const ct=document.getElementById('today-overview-content');
   if(!el||!ct) return;
@@ -1326,13 +1326,12 @@ function renderTodayOverview(){
   const allHeld=[];
   existingHoldings.filter(h=>h.status==='confirmed').forEach(h=>{
     if(!allHeld.some(x=>x.code===h.code)){
-      // 使用h.value（已在renderExistingHoldings中用dwjz计算），保持与收益总览一致
-      allHeld.push({code:h.code, name:h.name, value:(h.value||0), cost:(h.amount||0)});
+      allHeld.push({code:h.code, name:h.name, value:(h.value||0), cost:(h.amount||0), shares:(h.shares||0)});
     }
   });
   dcaPlans.forEach(d=>{ if(!allHeld.some(x=>x.code===d.code)&&d.curval>0){
     const months=d.start?Math.max(0,Math.floor((new Date()-new Date(d.start))/30/86400000)):0;
-    allHeld.push({code:d.code,value:d.curval,cost:d.monthly*months});
+    allHeld.push({code:d.code,value:d.curval,cost:d.monthly*months,shares:(d.shares||0)});
   }});
 
   if(!allHeld.length){ el.style.display='none'; return; }
@@ -1342,19 +1341,30 @@ function renderTodayOverview(){
   const totalPnl=totalCost>0?totalValue-totalCost:0;
   const totalPnlPct=totalCost>0?(totalPnl/totalCost*100):0;
 
-  // 今日涨跌
+  // 今日涨跌 - 使用昨日净值精确计算，与收益总览(renderPortfolioOverview)保持一致
+  const yesterdayNav = await FundDB.get('yesterdayNav') || {};
   let todayChg=0, navCount=0, isEstimated=false;
-  const today=new Date().toISOString().slice(0,10);
-  allHeld.forEach(h=>{
-    const nav=navCache[h.code];
-    if(!isMarketOpen()){ return; } // 未开盘时不显示今日涨跌
-    const chgPct=nav?(parseFloat(nav.gszzl)||0):0;
-    if(nav && chgPct!==0){ // 只有当gszzl不为0时才计算
-      todayChg+=h.value*chgPct/(100+chgPct);
-      navCount++;
-      if(nav.jzrq!==today) isEstimated=true; // 净值日期不是今天，说明是估算
-    }
-  });
+  if(isTradingDay() && isMarketOpen() && navRefreshed){
+    const today=new Date().toISOString().slice(0,10);
+    allHeld.forEach(h=>{
+      const nav=navCache[h.code];
+      const yNav=yesterdayNav[h.code];
+      const fundInfo=CURATED_FUNDS.find(f=>f.code===h.code);
+      const isMoneyFund=fundInfo&&(fundInfo.type==='货币型'||fundInfo.cat==='money');
+      if(nav && h.shares && yNav){
+        const currentNav = isMoneyFund ? 1.00 : (parseFloat(nav.gsz)||parseFloat(nav.dwjz)||0);
+        const yesterdayNavVal = isMoneyFund ? 1.00 : yNav.nav;
+        todayChg += h.shares * (currentNav - yesterdayNavVal);
+        navCount++;
+        if(nav.jzrq && nav.jzrq!==today) isEstimated=true;
+      } else if(nav && h.value){
+        const chgPct=isMoneyFund ? 0 : (parseFloat(nav.gszzl)||0);
+        todayChg+=(h.value||0)*chgPct/100;
+        navCount++;
+        isEstimated=true;
+      }
+    });
+  }
 
   // 信号数
   const badge=document.getElementById('asset-tab-badge');
@@ -1365,7 +1375,7 @@ function renderTodayOverview(){
   el.style.display='';
   ct.innerHTML=`
     <div class="ov-item"><div class="ov-val" style="color:var(--primary)">¥${totalValue.toLocaleString('zh-CN',{maximumFractionDigits:0})}</div><div class="ov-label">总持仓市值</div></div>
-    <div class="ov-item"><div class="ov-val ${todayChg>=0?'up':'down'}">${todayChg>=0?'+':''}¥${Math.abs(todayChg).toLocaleString('zh-CN',{maximumFractionDigits:0})}</div><div class="ov-label">今日涨跌${navCount>0?(isEstimated?'(估)':''):'(待刷新)'}</div></div>
+    <div class="ov-item"><div class="ov-val ${todayChg>=0?'up':'down'}">${todayChg>=0?'+':''}¥${Math.abs(todayChg).toLocaleString('zh-CN',{maximumFractionDigits:2})}</div><div class="ov-label">今日涨跌${navCount>0?(isEstimated?'(估)':''):'(待刷新)'}</div></div>
     <div class="ov-item"><div class="ov-val ${totalPnl>=0?'up':'down'}">${totalPnl>=0?'+':''}${totalPnlPct.toFixed(1)}%</div><div class="ov-label">累计收益率</div></div>
     <div class="ov-item"><div class="ov-val">${allHeld.length}</div><div class="ov-label">持有基金数</div></div>`;
 }
