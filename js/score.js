@@ -1,5 +1,16 @@
 // ═══ 评分算法模块 ═══
 function getCatBenchmarks(){
+  // 优先使用全市场基准（来自全市场扫描Top50/100统计，比精选库更广谱）
+  // 消除精选库的选择偏差（精选库只含Top10并集，均值严重偏高）
+  if(typeof MARKET_BENCHMARKS === 'object' && Object.keys(MARKET_BENCHMARKS).length > 0){
+    const result={};
+    Object.keys(MARKET_BENCHMARKS).forEach(cat=>{
+      const mb=MARKET_BENCHMARKS[cat];
+      result[cat]={avgR1:mb.avgR1||0, avgR3:mb.avgR3||0, avgDD:mb.avgDD||0, stdR1:mb.stdR1||1, count:mb.count||0};
+    });
+    return result;
+  }
+  // 降级：从精选库计算（旧逻辑，仅在无市场基准时使用）
   const cats = {};
   CURATED_FUNDS.forEach(f=>{
     if(!cats[f.cat]) cats[f.cat]={r1s:[],r3s:[],dds:[]};

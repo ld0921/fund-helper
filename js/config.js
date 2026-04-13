@@ -2,6 +2,8 @@
 let CURATED_FUNDS = [];
 // 记录精选库数据的更新时间（来自 curated-details.json 的 timestamp 字段）
 let _curatedTimestamp = null;
+// 全市场基准统计（来自全市场扫描Top50/100，比精选库更广谱，用于z-score基准）
+let MARKET_BENCHMARKS = {};
 
 // 旧格式 curated-details.json 兼容映射（无 cat 字段时使用）
 const _LEGACY_FUND_META = {
@@ -42,6 +44,10 @@ async function loadCuratedFunds() {
     const res = await fetch('data/curated-details.json?_=' + Date.now());
     const data = await res.json();
     _curatedTimestamp = data.timestamp || null;
+    MARKET_BENCHMARKS = data.marketBenchmarks || {};
+    if(Object.keys(MARKET_BENCHMARKS).length > 0){
+      console.log('[精选库] 已加载市场基准:', Object.keys(MARKET_BENCHMARKS).map(c => `${c}(avgR1=${MARKET_BENCHMARKS[c].avgR1}%,n=${MARKET_BENCHMARKS[c].count})`).join(', '));
+    }
     const funds = [];
     Object.entries(data.funds || {}).forEach(([code, f]) => {
       const legacy = _LEGACY_FUND_META[code] || {};

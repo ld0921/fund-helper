@@ -259,8 +259,9 @@ async function main() {
 
   for (const catInfo of CATEGORIES) {
     try {
-      console.log(`  拉取 ${catInfo.label} Top 50…`);
-      const data = await fetchRank(catInfo.ft, 50);
+      console.log(`  拉取 ${catInfo.label} Top ${catInfo.ft === 'zs' ? 100 : 50}…`);
+      const pn = catInfo.ft === 'zs' ? 100 : 50; // 指数基金拉取更多，弥补筛选后数量不足
+      const data = await fetchRank(catInfo.ft, pn);
       const allParsed = data.datas.map(item => parseFund(item, catInfo)).filter(Boolean);
 
       // 为每只基金补充详情（maxDD、经理、任期、星级）
@@ -299,8 +300,9 @@ async function main() {
       // 维度3: 近3年收益 Top 10
       [...withDetail].filter(f => f.r3 > 0).sort((a, b) => b.r3 - a.r3).slice(0, 10).forEach(f => selectedCodes.add(f.code));
 
-      // 合并去重，最终每类别最多保留20只
-      const funds = allParsed.filter(f => selectedCodes.has(f.code)).slice(0, 20);
+      // 合并去重，最终每类别最多保留（指数25只，其他20只）
+      const maxPerCat = catInfo.ft === 'zs' ? 25 : 20;
+      const funds = allParsed.filter(f => selectedCodes.has(f.code)).slice(0, maxPerCat);
 
       result.categories[catInfo.ft] = {
         label: catInfo.label,
@@ -326,6 +328,51 @@ async function main() {
   fs.writeFileSync(outPath, JSON.stringify(result, null, 2), 'utf-8');
   console.log(`\n完成！共 ${totalFunds} 只基金，已写入 ${outPath}`);
 
+  // ═══ 从全市场Top50/100原始数据提取市场基准统计 ═══
+  // 用于z-score动量修正的基准，比精选库(仅Top10并集)更广谱，消除选择偏差
+  const marketBenchmarks = {};
+  for (const catKey of Object.keys(result.categories)) {
+    const catData = result.categories[catKey];
+    const cat = catData.cat;
+    const funds = catData.funds || [];
+    const r1s = funds.map(f => f.r1).filter(v => isFinite(v));
+    if (r1s.length < 3) continue;
+    const avgR1 = r1s.reduce((s, v) => s + v, 0) / r1s.length;
+    const stdR1 = Math.sqrt(r1s.reduce((s, v) => s + (v - avgR1) ** 2, 0) / r1s.length) || 1;
+    const dds = funds.map(f => f.maxDD).filter(v => v > 0);
+    const avgDD = dds.length > 0 ? dds.reduce((s, v) => s + v, 0) / dds.length : 0;
+    const r3s = funds.map(f => f.r3).filter(v => isFinite(v));
+    const avgR3 = r3s.length > 0 ? r3s.reduce((s, v) => s + v, 0) / r3s.length : 0;
+    // 按 cat 聚合（gp+hh → active）
+    if (!marketBenchmarks[cat]) {
+      marketBenchmarks[cat] = { r1s: [], dds: [], r3s: [] };
+    }
+    marketBenchmarks[cat].r1s.push(...r1s);
+    marketBenchmarks[cat].dds.push(...dds);
+    marketBenchmarks[cat].r3s.push(...r3s);
+  }
+  // 最终计算聚合后的统计量
+  const finalBenchmarks = {};
+  for (const cat of Object.keys(marketBenchmarks)) {
+    const mb = marketBenchmarks[cat];
+    const avgR1 = mb.r1s.length > 0 ? mb.r1s.reduce((s, v) => s + v, 0) / mb.r1s.length : 0;
+    const stdR1 = mb.r1s.length > 1 ? Math.sqrt(mb.r1s.reduce((s, v) => s + (v - avgR1) ** 2, 0) / mb.r1s.length) || 1 : 1;
+    const avgDD = mb.dds.length > 0 ? mb.dds.reduce((s, v) => s + v, 0) / mb.dds.length : 0;
+    const avgR3 = mb.r3s.length > 0 ? mb.r3s.reduce((s, v) => s + v, 0) / mb.r3s.length : 0;
+    finalBenchmarks[cat] = {
+      avgR1: Math.round(avgR1 * 100) / 100,
+      stdR1: Math.round(stdR1 * 100) / 100,
+      avgDD: Math.round(avgDD * 100) / 100,
+      avgR3: Math.round(avgR3 * 100) / 100,
+      count: mb.r1s.length
+    };
+  }
+  console.log('\n市场基准统计（基于全市场Top扫描）:');
+  for (const cat of Object.keys(finalBenchmarks)) {
+    const b = finalBenchmarks[cat];
+    console.log(`  ${cat}: avgR1=${b.avgR1}% stdR1=${b.stdR1}% avgDD=${b.avgDD}% count=${b.count}`);
+  }
+
   // ═══ 从全市场扫描结果构建动态精选库 ═══
   // 收集所有类别的候选基金（已含详情），合并去重
   const dynamicCodes = new Set(FIXED_CODES);
@@ -340,7 +387,7 @@ async function main() {
   }
 
   console.log(`\n开始构建动态精选库（${dynamicCodes.size} 只候选基金）…`);
-  const curatedResult = { timestamp: new Date().toISOString(), funds: {} };
+  const curatedResult = { timestamp: new Date().toISOString(), marketBenchmarks: finalBenchmarks, funds: {} };
   let curatedDone = 0;
 
   for (const code of dynamicCodes) {
