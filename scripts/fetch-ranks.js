@@ -92,6 +92,13 @@ async function fetchFundDetail(code) {
     const r1Match = body.match(/var\s+syl_1n\s*=\s*"([^"]+)"/);
     if (r1Match) result.r1 = parseFloat(r1Match[1]) || 0;
 
+    // 申购费率（支付宝等平台1折后费率）
+    const feeMatch = body.match(/var\s+fund_Rate\s*=\s*"([^"]+)"/);
+    if (feeMatch) {
+      const feeVal = parseFloat(feeMatch[1]);
+      if (isFinite(feeVal) && feeVal >= 0 && feeVal <= 5) result.fee = feeVal;
+    }
+
     // 基金经理（JSON含嵌套数组，不能用非贪婪匹配，需要手动找完整的顶层[]）
     const mgrIdx = body.indexOf('var Data_currentFundManager =');
     if (mgrIdx >= 0) {
@@ -279,6 +286,7 @@ async function main() {
           if (detail.star >= 1 && detail.star <= 5) f.stars = detail.star;
           if (detail.fundSize > 0) f.size = Math.round(detail.fundSize * 100) / 100;
           if (detail.r1 !== undefined && isFinite(detail.r1)) f.r1 = detail.r1;
+          if (detail.fee !== undefined) f.fee = detail.fee;
           f.risk = inferRiskLevel(f.maxDD || 0, f.cat);
         }
         // 间隔300ms避免请求过快
@@ -390,7 +398,8 @@ async function main() {
         // 已有完整详情，只补 r3
         r3 = await fetchFundR3(code);
         detail = { r1: base.r1, maxDD: base.maxDD, maxDD3y: base.maxDD3y,
-          manager: base.manager, mgrYears: base.mgrYears, star: base.stars, fundSize: base.size };
+          manager: base.manager, mgrYears: base.mgrYears, star: base.stars, fundSize: base.size,
+          fee: base.fee };
       } else {
         // 固定基金（货币/超短债）需单独拉取
         detail = await fetchFundDetail(code);
@@ -414,6 +423,7 @@ async function main() {
         if (detail.mgrYears > 0) entry.mgrYears = detail.mgrYears;
         if (detail.star >= 1 && detail.star <= 5) entry.stars = detail.star;
         if (detail.fundSize > 0) entry.size = Math.round(detail.fundSize * 100) / 100;
+        if (detail.fee !== undefined) entry.fee = detail.fee;
 
         // 自动生成 reason 和 tags
         entry.tags = autoTags(entry);

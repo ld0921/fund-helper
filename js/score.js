@@ -91,7 +91,16 @@ function scoreF(f){
   } else {
     dirConsistency = 5; // 方向不一致
   }
-  const r3Strength = r3 > 50 ? 14 : r3 > 20 ? 11 : r3 > 0 ? Math.max(5, r3 * 0.28) : Math.max(0, 3 + r3 * 0.05);
+  // r3Strength：连续函数，消除硬分档断层（旧版r3=20%处跳变5.4分）
+  // 使用对数曲线：低区间增长快（区分垃圾和及格），高区间增长慢（避免过度奖励极端牛市）
+  let r3Strength;
+  if(r3 > 0){
+    // 对数映射：r3=1%→5.0, r3=20%→10.3, r3=50%→12.7, r3=100%→14.0
+    r3Strength = Math.min(14, 5 + Math.log(1 + r3) / Math.log(1 + 100) * 9);
+  } else {
+    // 负收益：线性衰减，r3=0→3, r3=-60→0
+    r3Strength = Math.max(0, 3 + r3 * 0.05);
+  }
   const consistencyScore = Math.min(24, dirConsistency + r3Strength); // 0-24分
 
   // 3. 任期稳定性（权重 22%）
