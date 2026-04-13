@@ -209,7 +209,7 @@ tr:last-child td{border-bottom:none}
 .eh-row{padding:10px;border-bottom:none;margin-bottom:6px;border-radius:10px;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.06);border:1px solid #f0f0f0}
 .eh-row:last-child{margin-bottom:0}
 .eh-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:4px}
-.eh-fund-name{font-size:15px;font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.eh-fund-name{font-size:13px;font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .eh-stats{display:flex;gap:8px;margin-bottom:4px}
 .eh-stat{flex:1;text-align:center;padding:8px 4px;background:#f8f9fc;border-radius:8px}
 .eh-stat:not(:last-child){border-right:none}
@@ -540,7 +540,7 @@ details[open] .toggle-arrow::after{content:'收起 ▾'}
   .btn-sm{min-height:38px;font-size:13px}
   /* 持仓列表移动端优化 */
   .eh-row{padding:8px;margin-bottom:6px}
-  .eh-fund-name{font-size:15px}
+  .eh-fund-name{font-size:13px}
   .eh-stat-val{font-size:15px}
   .eh-stat-lbl{font-size:11px}
   /* 表格横向滚动 */
