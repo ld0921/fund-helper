@@ -26,6 +26,7 @@ function hideAuthModal(){
 function skipAuth(){
   hideAuthModal();
   showToast('离线模式：数据仅保存在本地，不会同步到云端','info',4000);
+  if(typeof showFirstTimeGuide === 'function') showFirstTimeGuide();
 }
 function toggleAuthMode(){
   _authMode = _authMode==='login' ? 'register' : 'login';
@@ -73,6 +74,7 @@ async function submitAuth(){
     _currentUser = result.data.user;
     hideAuthModal();
     updateAuthUI();
+    if(typeof showFirstTimeGuide === 'function') showFirstTimeGuide();
     await pullFromCloud();
     const localData = await FundDB.getSyncData();
     const hasLocalData = localData.funds?.length || localData.holdings?.length || localData.existingHoldings?.length || localData.dcaPlans?.length;

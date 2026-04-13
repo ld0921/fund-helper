@@ -2370,8 +2370,7 @@ async function showFirstTimeGuide(){
   const hasSeenGuide = await FundDB.get('hasSeenGuide');
   if(hasSeenGuide) return;
 
-  setTimeout(async ()=>{
-    showHelpModal('👋 欢迎使用基金理财辅助工具', `
+  showHelpModal('👋 欢迎使用基金理财辅助工具', `
       <p style="margin:0 0 16px;color:var(--muted)">这是一个帮助你管理支付宝基金投资的工具，以下是快速入门指南。</p>
       <div style="margin-bottom:20px">
         <div style="font-size:14px;font-weight:700;margin-bottom:10px;color:var(--primary)">🎯 核心功能</div>
@@ -2396,7 +2395,6 @@ async function showFirstTimeGuide(){
       </div>
     `);
     await FundDB.set('hasSeenGuide', true);
-  }, 1000);
 }
 
 // ═══════════════ 页面加载时自动刷新 ═══════════════
@@ -2419,7 +2417,6 @@ async function autoRefreshOnLoad(){
 // 页面加载完成后显示新手引导
 if(document.readyState === 'loading'){
   document.addEventListener('DOMContentLoaded', () => {
-    showFirstTimeGuide();
     autoRefreshOnLoad();
     const h = document.querySelector('.header');
     const tabs = document.querySelector('.tabs');
@@ -2428,7 +2425,6 @@ if(document.readyState === 'loading'){
     }
   });
 } else {
-  showFirstTimeGuide();
   autoRefreshOnLoad();
 }
 
