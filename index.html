@@ -301,7 +301,7 @@
 
       <b>一、基金评分体系（5维正交模型）</b><br>
       去除冗余指标，保留5个正交维度，总分100分：<br>
-      · <b>Calmar Ratio（32%）</b>：混合Calmar——短期=(近1年收益−基准)/近3年最大回撤 × 60% + 长期=(近3年年化收益−基准)/近3年最大回撤 × 40%。<b>主动/QDII基金用沪深300近1年收益作为Alpha基准</b>（衡量超额收益能力），指数/债券/货币用无风险利率（默认1.7%，可自定义）<br>
+      · <b>Calmar Ratio（32%）</b>：混合Calmar——短期=(近1年收益−基准)/近3年最大回撤 × 60% + 长期=(近3年年化收益−基准)/近3年最大回撤 × 40%。<b>主动/QDII基金用同类均值作为Alpha基准</b>（衡量相对同类的超额能力，避免跨市场比较偏差），指数/债券/货币用无风险利率（默认1.7%，可自定义）<br>
       · <b>收益一致性（24%）</b>：1年与3年收益方向+幅度匹配度（双正且幅度匹配4-10分，反向5分，双负0-2分）+ 3年收益强度分<br>
       · <b>任期稳定性（22%）</b>：基金经理连续任期年限，6档：&lt;1年=3分，1-2年=7分，2-3年=11分，3-5年=15分，5-10年=19分，≥10年=22分<br>
       · <b>规模适配性（10%）</b>：<b>指数基金</b>规模越大越好：≥50亿9分，≥500亿/≥1000亿均满分10分；<b>主动/QDII基金</b>50-500亿满分10分，&gt;1000亿调仓困难4分，&lt;2亿清盘风险2分<br>
@@ -2231,25 +2231,7 @@ const _catBench = getCatBenchmarks();
 // 无风险利率（1年期国债收益率近似）：支持用户自定义，默认1.7%
 const RISK_FREE = (() => { try { const v = localStorage.getItem('riskFreeRate'); if(v !== null) return parseFloat(v); } catch(e){} return 1.7; })();
 
-// ═══════════════ Alpha基准：沪深300近1年收益（自动拉取） ═══════════════
-let _benchmarkR1 = null;
-(async function fetchBenchmarkR1(){
-  try {
-    const url = `https://fundgz.1234567.com.cn/js/460300.js?rt=${Date.now()}`;
-    await new Promise((resolve,reject)=>{
-      const s=document.createElement('script'); s.src=url;
-      s.onload=resolve; s.onerror=reject;
-      document.head.appendChild(s);
-      setTimeout(reject,8000);
-    });
-    const hs300 = CURATED_FUNDS.find(f=>f.code==='460300');
-    if(hs300 && hs300.r1 != null) _benchmarkR1 = hs300.r1;
-  } catch(e){}
-  if(_benchmarkR1 === null){
-    const idxFunds = CURATED_FUNDS.filter(f=>f.cat==='index');
-    if(idxFunds.length) _benchmarkR1 = idxFunds.reduce((s,f)=>s+f.r1,0)/idxFunds.length;
-  }
-})();
+// Alpha基准已改为同类均值（_catBench），不再使用全局HS300基准
 
 // INDEX_VALUATION、FUND_VALUATION_MAP 已移至 js/config.js
 // getValuationAdj、getValuationLabel 已移至 js/score.js

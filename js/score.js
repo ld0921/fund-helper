@@ -66,10 +66,13 @@ function scoreF(f){
   //    加权：短期60% + 长期40%，侧重近期表现但兼顾长期
   const r3Ann = r3 > -100 ? (Math.pow(1 + r3/100, 1/3) - 1) * 100 : 0; // r3累计转年化
   const dd3yAdj = Math.max(0.1, dd3y);
-  // Alpha因子：主动/QDII基金用超额收益（r1 - 沪深300基准），衡量真实选股能力
-  // 指数/债券/货币基金仍用超额无风险利率（它们本身就是基准或低风险资产）
+  // Alpha基准：各类别使用同类均值，避免跨市场比较偏差
+  // - 主动基金：与同类主动基金均值比，衡量选股超额能力
+  // - QDII基金：与同类QDII均值比（不与A股比，投资市场不同）
+  // - 指数/债券/货币：用无风险利率（它们本身就是基准或低风险资产）
+  const bench = _catBench[f.cat];
   const isAlphaFund = f.cat === 'active' || f.cat === 'qdii';
-  const benchmark = isAlphaFund && _benchmarkR1 !== null ? _benchmarkR1 : RISK_FREE;
+  const benchmark = isAlphaFund && bench ? bench.avgR1 : RISK_FREE;
   const calmarShort = (r1 - benchmark) / dd3yAdj;
   const calmarLong  = (r3Ann - benchmark) / dd3yAdj;
   const calmar = calmarShort * 0.6 + calmarLong * 0.4;
