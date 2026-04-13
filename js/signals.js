@@ -1098,21 +1098,17 @@ function renderDiagnostics(){
     const gapNote = s.reason === 'problem'
       ? `当前基金近期表现不佳（${s.isProblem?'严重落后同类/结构性亏损':'评分偏低'}），同类相对更优`
       : `评分差 +${s.bestScore-s.currentScore}分`;
-    return `<div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap">
-      <div style="flex:1;min-width:200px">
-        <div style="font-size:13px;font-weight:600;margin-bottom:4px">
-          <span style="color:var(--danger)">${escHtml(s.fd.name)}</span>
-          <span style="color:var(--muted);font-size:11px;margin-left:4px">${s.currentScore}分</span>${sourceBadge(s.source)}
-          <span style="margin:0 6px;color:var(--muted)">→</span>
-          <span style="color:var(--success)">${escHtml(s.best.name)}</span>
-          <span style="color:var(--muted);font-size:11px;margin-left:4px">${s.bestScore}分</span>
-        </div>
-        <div style="font-size:12px;color:var(--muted);line-height:1.6">
-          ${gapNote} · ${pnlStr}${redeemTip}<br>
-          ${escHtml(s.best.name)}：近1年${s.best.r1>0?'+':''}${s.best.r1}%，近3年${s.best.r3>0?'+':''}${s.best.r3}%，经理任期${s.best.mgrYears}年
-        </div>
+    return `<div style="padding:14px 16px;border-bottom:1px solid #f0f0f0">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+        <span style="font-size:13px;font-weight:600;color:#cf1322;padding:4px 10px;background:#fff1f0;border:1px solid #ffccc7;border-radius:6px">${escHtml(s.fd.name)} <span style="font-size:11px;font-weight:400;color:var(--muted)">${s.currentScore}分</span></span>${sourceBadge(s.source)}
+        <span style="color:var(--muted);font-size:14px">→</span>
+        <span style="font-size:13px;font-weight:600;color:#389e0d;padding:4px 10px;background:#f6ffed;border:1px solid #b7eb8f;border-radius:6px">${escHtml(s.best.name)} <span style="font-size:11px;font-weight:400;color:var(--muted)">${s.bestScore}分</span></span>
+        <span style="margin-left:auto;font-size:12px;font-weight:600;color:#d48806;padding:3px 10px;background:#fff7e6;border:1px solid #ffd591;border-radius:6px;white-space:nowrap">${actionLabel}</span>
       </div>
-      <div style="flex-shrink:0;font-size:12px;font-weight:600;color:var(--warning);padding:3px 8px;background:#fff7e6;border-radius:6px;white-space:nowrap">${actionLabel}</div>
+      <div style="font-size:12px;color:#595959;line-height:1.6;padding:8px 10px;background:#fafafa;border-radius:6px">
+        ${gapNote} · ${pnlStr}${redeemTip}<br>
+        📈 ${escHtml(s.best.name)}：近1年${s.best.r1>0?'+':''}${s.best.r1}%，近3年${s.best.r3>0?'+':''}${s.best.r3}%，经理任期${s.best.mgrYears}年
+      </div>
     </div>`;
   }).join('');
 
@@ -1122,14 +1118,14 @@ function renderDiagnostics(){
     const advice = s.source === 'dca'
       ? '建议暂停定投并观察，或转投其他类别（如债券/货币基金）'
       : '建议减仓或转投其他类别，释放资金重新配置';
-    return `<div style="padding:12px 16px;border-bottom:1px solid var(--border)">
-      <div style="font-size:13px;font-weight:600;margin-bottom:4px">
-        <span style="color:var(--danger)">${escHtml(s.fd.name)}</span>
-        <span style="color:var(--muted);font-size:11px;margin-left:4px">${s.currentScore}分</span>${sourceBadge(s.source)}
+    return `<div style="padding:14px 16px;border-bottom:1px solid #f0f0f0">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+        <span style="font-size:13px;font-weight:600;color:#cf1322;padding:4px 10px;background:#fff1f0;border:1px solid #ffccc7;border-radius:6px">${escHtml(s.fd.name)} <span style="font-size:11px;font-weight:400;color:var(--muted)">${s.currentScore}分</span></span>${sourceBadge(s.source)}
+        <span style="margin-left:auto;font-size:12px;font-weight:500;color:var(--muted);padding:3px 10px;background:#f5f5f5;border:1px solid #d9d9d9;border-radius:6px;white-space:nowrap">🔍 持仓</span>
       </div>
-      <div style="font-size:12px;color:var(--muted);line-height:1.6">
+      <div style="font-size:12px;color:#595959;line-height:1.6;padding:8px 10px;background:#fafafa;border-radius:6px">
         ⚠️ 本基金近期表现不佳，但同类精选库内暂无显著更优选择 · ${pnlStr}<br>
-        ${advice}
+        💡 ${advice}
       </div>
     </div>`;
   }).join('');
@@ -1168,11 +1164,14 @@ function renderDiagMarket(){
   tableEl.innerHTML = `<thead><tr><th>类别</th><th>今日均涨跌</th><th>近1年均收益</th><th>近3年均收益</th><th>性价比(Calmar)</th><th>趋势</th></tr></thead>
   <tbody>${catRanks.map((c,i)=>{
     const chgText = chgAvailable ? `<span class="${c.avgChg>=0?'up':'down'}">${c.avgChg>=0?'+':''}${c.avgChg.toFixed(2)}%</span>` : '<span style="color:var(--muted)">—</span>';
-    const trendIcon = c.catTrend>=2?'🔥强势':c.catTrend>=0?'➡️平稳':'❄️弱势';
-    return `<tr><td><b>${i+1}. ${escHtml(c.name)}</b></td><td>${chgText}</td>
-      <td class="${c.avgR1>=0?'up':'down'}">${c.avgR1>=0?'+':''}${c.avgR1.toFixed(1)}%</td>
-      <td class="${c.avgR3>=0?'up':'down'}">${c.avgR3>=0?'+':''}${c.avgR3.toFixed(1)}%</td>
-      <td>${c.avgCalmar.toFixed(2)}</td><td>${trendIcon}</td></tr>`;
+    const trendBg = c.catTrend>=2?'background:#fff1f0;color:#cf1322;border:1px solid #ffccc7':c.catTrend>=0?'background:#e6f4ff;color:#1677ff;border:1px solid #91caff':'background:#f6ffed;color:#389e0d;border:1px solid #b7eb8f';
+    const trendText = c.catTrend>=2?'🔥 强势':c.catTrend>=0?'➡️ 平稳':'❄️ 弱势';
+    const rowBg = i%2===0?'':'background:#f8f9fc';
+    return `<tr style="${rowBg}"><td><b>${i+1}. ${escHtml(c.name)}</b></td><td>${chgText}</td>
+      <td class="${c.avgR1>=0?'up':'down'}" style="font-weight:600">${c.avgR1>=0?'+':''}${c.avgR1.toFixed(1)}%</td>
+      <td class="${c.avgR3>=0?'up':'down'}" style="font-weight:600">${c.avgR3>=0?'+':''}${c.avgR3.toFixed(1)}%</td>
+      <td style="font-weight:600">${c.avgCalmar.toFixed(2)}</td>
+      <td><span style="font-size:11px;padding:2px 8px;border-radius:10px;white-space:nowrap;${trendBg}">${trendText}</span></td></tr>`;
   }).join('')}</tbody>`;
 
   // 移动端卡片
@@ -1195,9 +1194,9 @@ function renderDiagMarket(){
     }
   }
 
-  if(summaryEl) summaryEl.textContent = chgAvailable
-    ? `数据更新于 ${new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})}，基于精选库实时净值计算`
-    : '净值数据未加载，今日涨跌暂不可用。点击「生成方案」可触发净值更新。';
+  if(summaryEl) summaryEl.innerHTML = chgAvailable
+    ? `📊 数据更新于 ${new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})}，基于精选库实时净值计算 · <span style="color:var(--muted)">性价比 = 年均收益 ÷ 最大回撤，越高越好</span>`
+    : '<span style="color:#d48806">⚠️ 净值数据未加载，今日涨跌暂不可用。净值刷新后自动更新。</span>';
 }
 
 // ═══════════════ 新手引导 ═══════════════
