@@ -1450,6 +1450,9 @@ function switchTab(i){
   document.querySelectorAll('.panel').forEach((p,j)=>p.classList.toggle('active',i===j));
   window.scrollTo({top:0});
   // 只有在有持仓数据时才执行相关渲染
+  if(i===0 && existingHoldings.length > 0){
+    renderTodayOverview();
+  }
   if(i===2 && existingHoldings.length > 0){
     renderExistingHoldings();
     renderDcaPlans();
