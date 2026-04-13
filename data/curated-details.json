@@ -1,33 +1,33 @@
 {
-  "timestamp": "2026-04-13T02:35:32.362Z",
+  "timestamp": "2026-04-13T02:41:48.280Z",
   "marketBenchmarks": {
     "active": {
-      "avgR1": 196.15,
-      "stdR1": 51.95,
-      "avgDD": 54.3,
-      "avgR3": 149.23,
-      "count": 30
+      "avgR1": 186.47,
+      "stdR1": 50.04,
+      "avgDD": 56.51,
+      "avgR3": 134.18,
+      "count": 44
     },
     "index": {
-      "avgR1": 121.88,
-      "stdR1": 43.19,
-      "avgDD": 52.88,
-      "avgR3": 102.01,
-      "count": 14
+      "avgR1": 119.9,
+      "stdR1": 42.38,
+      "avgDD": 53.19,
+      "avgR3": 98.71,
+      "count": 15
     },
     "bond": {
-      "avgR1": 34.19,
-      "stdR1": 5.26,
-      "avgDD": 35.37,
-      "avgR3": 31.94,
-      "count": 19
+      "avgR1": 33.27,
+      "stdR1": 5.1,
+      "avgDD": 35.85,
+      "avgR3": 29.06,
+      "count": 24
     },
     "qdii": {
-      "avgR1": 72.27,
-      "stdR1": 17.78,
-      "avgDD": 46.66,
-      "avgR3": 101.31,
-      "count": 14
+      "avgR1": 70.74,
+      "stdR1": 17.11,
+      "avgDD": 47.71,
+      "avgR3": 94.4,
+      "count": 16
     }
   },
   "funds": {
