@@ -893,7 +893,7 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
       <details open>
         <summary style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:14px 16px;user-select:none;list-style:none;gap:8px">
           <div style="flex:1">
-            <div style="font-size:13px;font-weight:600">各基金收益明细</div>
+            <div style="font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px"><span class="icon icon-blue">📊</span>各基金收益明细</div>
           </div>
           <span class="toggle-arrow" style="font-size:12px;color:var(--primary);flex-shrink:0"></span>
         </summary>

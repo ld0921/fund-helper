@@ -685,7 +685,7 @@
     <div class="form-grid" style="margin-bottom:10px">
       <div class="form-item" style="grid-column:1/-1">
         <label>搜索基金（输入名称或6位代码）</label>
-        <input id="eh-search" placeholder="如：易方达蓝筹 或 005827" oninput="smartFundSearch('eh',this.value)" list="eh-datalist" autocomplete="off">
+        <input id="eh-search" placeholder="如：易方达蓝筹 或 005827" oninput="smartFundSearch('eh',this.value)" list="eh-datalist" autocomplete="off" style="max-width:480px">
         <datalist id="eh-datalist"></datalist>
         <input type="hidden" id="eh-code"><input type="hidden" id="eh-name">
       </div>
@@ -697,12 +697,12 @@
         </div>
       </div>
       <div class="form-item">
-        <label>买入金额 (元) <span style="color:var(--muted);font-weight:400">（实际支付金额，含申购费）</span></label>
-        <input id="eh-amount" type="number" placeholder="支付宝实际支付的金额" inputmode="numeric">
+        <label>买入金额 (元)</label>
+        <input id="eh-amount" type="number" placeholder="实际支付金额（含申购费）" inputmode="numeric">
       </div>
       <div class="form-item">
-        <label>持有份额 <span style="color:var(--muted);font-weight:400">（可选，推荐填写）</span></label>
-        <input id="eh-shares" type="number" placeholder="可选，填写后数据更准确" inputmode="decimal" step="0.01">
+        <label>持有份额 <span style="color:var(--muted);font-weight:400">（可选）</span></label>
+        <input id="eh-shares" type="number" placeholder="填写后数据更准确" inputmode="decimal" step="0.01">
       </div>
       <div class="form-item">
         <label>买入日期</label>
@@ -725,9 +725,9 @@
     </div>
 
     <!-- 搜索和筛选 -->
-    <div style="display:flex;gap:8px;margin-top:12px;margin-bottom:8px">
-      <input id="eh-filter-search" type="text" placeholder="搜索基金名称或代码" style="flex:1;height:32px;border:1px solid var(--border);border-radius:6px;padding:0 10px;font-size:13px" oninput="filterHoldings()">
-      <select id="eh-filter-status" style="height:32px;border:1px solid var(--border);border-radius:6px;padding:0 10px;font-size:13px;background:#fff" onchange="filterHoldings()">
+    <div style="display:flex;gap:8px;margin-top:12px;margin-bottom:8px;align-items:center">
+      <input id="eh-filter-search" type="text" placeholder="🔍 搜索基金名称或代码" style="flex:1;max-width:320px;height:34px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-size:13px;outline:none;transition:border-color .2s" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'" oninput="filterHoldings()">
+      <select id="eh-filter-status" style="height:34px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-size:13px;background:#fff;color:var(--text);cursor:pointer;outline:none" onchange="filterHoldings()">
         <option value="all">全部</option>
         <option value="confirmed">已确认</option>
         <option value="pending">待确认</option>
@@ -759,12 +759,12 @@
     <details open style="margin-top:12px">
       <summary style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:14px 16px;user-select:none;list-style:none;gap:8px">
         <div style="flex:1">
-          <div style="font-size:13px;font-weight:600">持仓列表</div>
+          <div style="font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px"><span class="icon icon-blue">💼</span>持仓列表</div>
         </div>
         <span class="toggle-arrow" style="font-size:12px;color:var(--primary);flex-shrink:0"></span>
       </summary>
       <div style="border-top:1px solid #f0f0f0">
-      <div id="eh-list" style="margin-top:8px;border:1px solid var(--border);border-radius:10px;overflow:hidden;display:none"></div>
+      <div id="eh-list" style="margin-top:8px;display:none"></div>
       </div>
     </details>
     <div id="eh-empty" class="empty-state" style="margin-top:10px;padding:24px;text-align:center">

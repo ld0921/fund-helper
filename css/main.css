@@ -209,9 +209,9 @@ tr:last-child td{border-bottom:none}
 .eh-row:last-child{margin-bottom:0}
 .eh-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:4px}
 .eh-fund-name{font-size:15px;font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.eh-stats{display:flex;gap:0;margin-bottom:4px;border-radius:6px;overflow:hidden;border:1px solid #e8e8e8}
-.eh-stat{flex:1;text-align:center;padding:6px 4px;background:#fafafa}
-.eh-stat:not(:last-child){border-right:1px solid #e8e8e8}
+.eh-stats{display:flex;gap:8px;margin-bottom:4px}
+.eh-stat{flex:1;text-align:center;padding:8px 4px;background:#f8f9fc;border-radius:8px}
+.eh-stat:not(:last-child){border-right:none}
 .eh-stat-val{font-size:14px;font-weight:700}
 .eh-stat-lbl{font-size:10px;color:var(--muted);margin-top:2px}
 .eh-meta{font-size:11px;color:var(--muted);line-height:1.6;margin-bottom:4px}
@@ -405,8 +405,8 @@ tr:last-child td{border-bottom:none}
   .empty{color:var(--muted)}
   .eh-row,.dp-item,.dca-rank-item,.dca-ai-item,.health-item,.rebal-row{border-bottom-color:var(--border)}
   .eh-row{border-bottom-color:var(--border)}
-  .eh-stats{border-color:var(--border)}
-  .eh-stat{background:#2a2a2a;border-color:var(--border)}
+  .eh-stats{border-color:transparent}
+  .eh-stat{background:#2a2a2a;border-color:transparent}
   .eh-actions,.eh-actions .fc-btn:not(:last-child){border-color:var(--border)}
   .eh-actions .fc-btn:hover{background:#1a2a3a}
   /* 持仓摘要条 */
