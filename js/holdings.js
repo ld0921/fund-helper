@@ -844,13 +844,13 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
 
   el.style.display='';
   el.innerHTML=`
-    <div class="card">
+    <div class="card" style="background:linear-gradient(135deg,#e6f4ff,#f0f5ff);border:1px solid #91caff">
       <div class="card-title">
         <span class="icon icon-green">💰</span>收益总览
         <button onclick="showProfitExplanation()" class="help-btn" title="收益指标说明">?</button>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
-        <div style="padding:16px;background:linear-gradient(135deg,#f0f7ff,#f8fbff);border:1px solid #d6e4ff;border-radius:10px">
+        <div style="padding:16px;background:rgba(255,255,255,0.55);border:1px solid #d6e4ff;border-radius:10px">
           <!-- 总市值 -->
           <div style="padding:12px;background:rgba(255,255,255,0.7);border-radius:8px;margin-bottom:10px">
             <div style="font-size:12px;color:#5b8def;margin-bottom:6px;font-weight:500">总市值</div>
@@ -883,7 +883,7 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
             </div>
           </div>
         </div>
-        <div style="display:flex;align-items:center;justify-content:center;background:#fafafa;border-radius:8px;border:1px solid var(--border);padding:12px">
+        <div style="display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.55);border-radius:8px;border:1px solid #d6e4ff;padding:12px">
           <canvas id="portfolioPieChart" style="max-height:220px"></canvas>
         </div>
       </div>

@@ -453,6 +453,7 @@ tr:last-child td{border-bottom:none}
   [style*="linear-gradient(135deg,#e6f4ff"] [style*="color:#0958d9"]{color:#6db3f8!important}
   [style*="linear-gradient(135deg,#e6f4ff"] [style*="color:#595959"]{color:#b0b0b0!important}
   /* portfolio-overview 内的明细文字 */
+  #portfolio-overview [style*="background:rgba(255,255,255"]{background:rgba(255,255,255,0.08)!important;border-color:rgba(255,255,255,0.12)!important}
   .today-overview [style*="border-bottom:1px solid rgba(0,0,0"]{border-color:var(--border)!important}
 }
 /* 今日概览卡片 */
