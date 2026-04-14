@@ -92,10 +92,12 @@ function scoreF(f){
     dirConsistency = 5; // 方向不一致
   }
   // r3Strength：用超额r3（相对同类均值），避免牛市中所有基金趋近满分
+  // 双负基金（r1<0且r3<0）：r3Strength基准从7降至0，避免连续亏损基金一致性分虚高
   const excessR3 = r3 - (bench && bench.avgR3 ? bench.avgR3 : 0);
+  const r3Base = (r1 < 0 && r3 < 0) ? 0 : 7;
   const r3Strength = excessR3 > 0
-    ? Math.min(14, 7 + Math.log(1 + excessR3) / Math.log(101) * 7)
-    : Math.max(0, 7 + excessR3 * 0.05);
+    ? Math.min(14, r3Base + Math.log(1 + excessR3) / Math.log(101) * 7)
+    : Math.max(0, r3Base + excessR3 * 0.05);
   const consistencyScore = Math.min(24, dirConsistency + r3Strength);
 
   // 3. 任期稳定性（权重 22%）
@@ -143,11 +145,11 @@ function recommend(s){
 function calcDCAScore(f){
   // 定投评分：波动适度性 + 长期趋势 + 管理质量 + 近期动量（去除当日择时信号）
   if(f.cat==='money') return 10; // 货币基金不适合定投
-  // 双负基金大幅降分但不完全排除：周期性行业基金可能处于底部区间，仍有定投价值
-  // 仅对实质性下跌触发惩罚（r1<-3%且r3<-5%），微负基金走正常评分避免误杀
+  // 双负基金大幅降分：r1<-3%且r3<-5% 直接返回低分，不走正常流程
+  // 上限设为15分（低于正常流程最低约20分），确保双负惩罚真正生效
   if(f.r1 < -3 && f.r3 < -5) {
-    const penalty = Math.min(60, Math.abs(f.r1) * 0.5 + Math.abs(f.r3) * 0.3);
-    return Math.max(0, 30 - Math.round(penalty));
+    const penalty = Math.min(15, Math.abs(f.r1) * 0.5 + Math.abs(f.r3) * 0.3);
+    return Math.max(0, 15 - Math.round(penalty));
   }
 
   // 1. 波动适度性（定投核心指标，35%）
