@@ -183,8 +183,11 @@ function calcDCAScore(f){
     ? Math.max(5, Math.min(25, 13 + Math.log(1 + excessR3Dca) / Math.log(101) * 12))
     : Math.max(5, Math.min(25, 13 + excessR3Dca * 0.1));
 
-  // 3. 管理质量（20%）：经理年限 + 星级
-  const qualityScore = Math.min(12, (f.mgrYears||0) * 0.8) + Math.min(8, Math.max(0, (f.r3||0) / (f.maxDD||50) * 4));
+  // 3. 管理质量（20%）：经理年限 + 超额Calmar（相对同类均值，替代r3/maxDD避免牛市区分度消失）
+  const benchQ = _catBench[f.cat];
+  const avgCalmar = benchQ ? (benchQ.avgR3 ? (Math.pow(1+benchQ.avgR3/100,1/3)-1)*100 : RISK_FREE) / Math.max(benchQ.avgDD||10, 1) : 0;
+  const excessCalmar = (r3Ann / dd3yAdj) - avgCalmar;
+  const qualityScore = Math.min(12, (f.mgrYears||0) * 0.8) + Math.min(8, Math.max(0, 4 + excessCalmar * 2));
 
   // 4. 近期动量反转修正 r1（20%）：定投应在低位买入，近期涨太多反而不是好时机
   // 逻辑：r1跌幅大（但长期向上）→ 定投摊成本效果最佳；r1涨幅过大 → 可能均值回归

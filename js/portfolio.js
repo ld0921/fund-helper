@@ -763,9 +763,8 @@ function selectFunds(cat, catData, riskProfile, pct, totalAmt){
     if(pct * coreRatio > maxSingleFundPct) coreRatio = maxSingleFundPct / pct;
     perPick = [Math.round(pct*coreRatio), pct - Math.round(pct*coreRatio)];
   } else {
-    // 单只基金时，不做上限截断（30%上限在类别间已由computeWeights控制）
-    // 截断会导致权重凭空消失（如 pct=40 截断到30，10%无去处）
-    perPick = [pct];
+    // 单只基金：超过30%时截断，超出部分由调用方重新分配
+    perPick = [Math.min(pct, maxSingleFundPct)];
   }
 
   return picks.map((f,i)=>({
