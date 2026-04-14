@@ -89,7 +89,8 @@ function scoreF(f){
     const ratio = Math.max(absR1, absR3A) > 0 ? Math.min(absR1, absR3A) / Math.max(absR1, absR3A) : 0;
     dirConsistency = r1 > 0 ? (4 + 6 * ratio) : (0 + 2 * ratio); // 双正4-10分，双负0-2分
   } else {
-    dirConsistency = 5; // 方向不一致
+    // 方向不一致：近涨远跌（r1>0,r3<0）风险高得3分，近跌远涨（r1<0,r3>0）是回调得6分
+    dirConsistency = (r1 > 0 && r3 < 0) ? 3 : 6;
   }
   // r3Strength：用超额r3（相对同类均值），避免牛市中所有基金趋近满分
   // 双负基金（r1<0且r3<0）：r3Strength基准从7降至0，避免连续亏损基金一致性分虚高
@@ -181,7 +182,7 @@ function calcDCAScore(f){
   const excessR3Dca = f.r3 - avgR3Dca;
   const trendScore = excessR3Dca > 0
     ? Math.max(5, Math.min(25, 13 + Math.log(1 + excessR3Dca) / Math.log(101) * 12))
-    : Math.max(5, Math.min(25, 13 + excessR3Dca * 0.1));
+    : Math.max(2, Math.min(25, 13 + excessR3Dca * 0.1));
 
   // 3. 管理质量（20%）：经理年限 + 超额Calmar（相对同类均值，替代r3/maxDD避免牛市区分度消失）
   const r3AnnDca = f.r3 > -100 ? (Math.pow(1 + f.r3/100, 1/3) - 1) * 100 : 0;
