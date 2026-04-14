@@ -129,13 +129,7 @@ function scoreF(f){
   // 5. 费率优势（权重 12%）
   //    费率是预测基金长期表现的可靠指标，低费率长期复利优势显著
   let feeScore;
-  if(fee <= 0) feeScore = 12;           // 货币基金/C类免申购费
-  else if(fee <= 0.05) feeScore = 12;   // 超低费率
-  else if(fee <= 0.08) feeScore = 10;   // 低费率指数/QDII
-  else if(fee <= 0.12) feeScore = 8;    // 标准指数
-  else if(fee <= 0.15) feeScore = 5;    // 标准主动
-  else feeScore = 2;                    // 高费率
-  // 0-12分
+  feeScore = fee <= 0 ? 12 : Math.max(2, Math.round(12 - fee * 60));
 
   const total = Math.round(Math.min(100, Math.max(0, calmarScore + consistencyScore + stabilityScore + sizeScore + feeScore)));
   // 估值调整：指数基金加入PE百分位信号，与calcDCAScore统一标准

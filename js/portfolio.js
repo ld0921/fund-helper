@@ -698,8 +698,8 @@ function selectFunds(cat, catData, riskProfile, pct, totalAmt){
   const skipTagDedup = tagDiversity <= 2;
 
   pool.forEach(f => {
-    if(usedManagers.has(f.manager) && deduped.length > 0) return; // 同经理跳过（首只除外）
-    // 标签重叠检查：标签同质化时跳过此检查，避免整个类别只选1只
+    if(usedManagers.has(f.manager) && deduped.length > 0) return;
+    // 标签重叠检查
     if(!skipTagDedup){
       const fTags = new Set(f.tags||[]);
       let tooSimilar = false;
@@ -709,6 +709,13 @@ function selectFunds(cat, catData, riskProfile, pct, totalAmt){
       });
       if(tooSimilar && deduped.length > 0) return;
     }
+    // 收益相关性去重：r1和r3高度相似的基金视为重复（避免选入高度相关的基金）
+    const tooCorrelated = deduped.some(sel => {
+      const r1Diff = Math.abs((f.r1||0) - (sel.r1||0)) / (Math.abs(sel.r1||0) + 1);
+      const r3Diff = Math.abs((f.r3||0) - (sel.r3||0)) / (Math.abs(sel.r3||0) + 1);
+      return r1Diff < 0.08 && r3Diff < 0.08;
+    });
+    if(tooCorrelated && deduped.length > 0) return;
     usedManagers.add(f.manager);
     deduped.push(f);
   });

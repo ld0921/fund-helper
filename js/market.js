@@ -9,8 +9,12 @@ function analyzeCategoryPerf(){
       // Calmar Ratio（时间窗口匹配：短期r1/maxDD3y + 长期r3Ann/maxDD）
       const dd3y = f.maxDD3y || f.maxDD;
       const r3Ann = f.r3 > -100 ? (Math.pow(1 + f.r3/100, 1/3) - 1) * 100 : 0;
-      const calmarShort = dd3y > 0 ? (f.r1 - RISK_FREE) / dd3y : 0;
-      const calmarLong  = f.maxDD > 0 ? (r3Ann - RISK_FREE) / f.maxDD : 0;
+      // Alpha Calmar：相对同类均值的超额收益，减少追涨偏差
+      const bench = _catBench[f.cat];
+      const alpha1 = bench ? f.r1 - bench.avgR1 : f.r1 - RISK_FREE;
+      const alpha3 = bench && bench.avgR3 ? r3Ann - (Math.pow(1 + bench.avgR3/100, 1/3) - 1) * 100 : r3Ann - RISK_FREE;
+      const calmarShort = dd3y > 0 ? alpha1 / dd3y : 0;
+      const calmarLong  = f.maxDD > 0 ? alpha3 / f.maxDD : 0;
       const calmar = calmarShort * 0.6 + calmarLong * 0.4;
       // 趋势一致性：加权幅度（短期20% + 中期50% + 长期30%），比纯方向更精准
       const trendScore = todayChg * 0.2 + f.r1 * 0.5 + r3Ann * 0.3;
