@@ -511,7 +511,7 @@ function runHealthMonitor(){
     const currentScore = scoreF(fd);
     const sameCatFunds = CURATED_FUNDS.filter(f=>f.cat===fd.cat && f.code!==fd.code);
 
-    if(currentScore < 60){
+    if(currentScore < 45){
       if(sameCatFunds.length > 0){
         const betterFunds = sameCatFunds.filter(f=>scoreF(f) > currentScore + 10);
         if(betterFunds.length > 0){
@@ -627,9 +627,7 @@ function runHealthMonitor(){
     const dcaScore = calcDCAScore(fd);
     const sameCatFunds = CURATED_FUNDS.filter(f=>f.cat===fd.cat && f.code!==fd.code);
 
-    if(currentScore < 55){
-      if(sameCatFunds.length > 0){
-        const betterFunds = sameCatFunds.filter(f=>scoreF(f) > currentScore + 20);
+    if(currentScore < 45){
         if(betterFunds.length > 0){
           const best = betterFunds.sort((a,b)=>scoreF(b)-scoreF(a))[0];
           issues.push(`综合评分 ${currentScore}分（较低），同类有更优选择（${best.name} ${scoreF(best)}分）${statusHint}。定投评分 ${dcaScore}分`);
@@ -1074,7 +1072,7 @@ function renderDiagnostics(){
     const isStructuralLoss = fd.r1 < -10 && fd.r3 < -15;
     const isSeverelyLagging = stats && zScore < -2.5;
     const ddOverflow = pnlPct !== null && pnlPct < 0 && fd.maxDD > 0 && (-pnlPct / fd.maxDD * 100) > 100;
-    const isProblem = isStructuralLoss || isSeverelyLagging || ddOverflow || currentScore < 60;
+    const isProblem = isStructuralLoss || isSeverelyLagging || ddOverflow || currentScore < 45;
 
     // 找同类最优
     const sortedSameCat = sameCat.slice().sort((a,b)=>scoreF(b)-scoreF(a));
