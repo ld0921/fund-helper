@@ -351,7 +351,7 @@ function runHealthMonitor(){
       const curNav = nav ? parseFloat(nav.gsz)||1 : 1;
       const cost = h.amount || h.value || 0;
       const value = h.amount ? (h.amount / (h.cost||curNav) * curNav) : (h.value||0);
-      holdings.push({code:h.code, name:h.name, value, cost, source:'existing'});
+      holdings.push({code:h.code, name:h.name, value, cost, source:'existing', date:h.date});
     }
   });
 
@@ -476,14 +476,17 @@ function runHealthMonitor(){
       level = 'red';
     }
 
-    // 当前亏损占最大回撤比例
+    // 当前亏损占最大回撤比例（考虑持有时长：持有超过1年的容忍度更高）
     if(pnlPct !== null && pnlPct < 0 && fd.maxDD > 0){
+      const holdDays = h.date ? Math.floor((Date.now() - new Date(h.date).getTime()) / 86400000) : 0;
+      const redThreshold = holdDays > 365 ? 100 : 80; // 持有超过1年，容忍度提高到100%
+      const yellowThreshold = holdDays > 365 ? 70 : 50;
       const ddRatio = (-pnlPct / fd.maxDD * 100);
-      if(ddRatio > 80){
-        issues.push(`当前亏损 ${pnlPct.toFixed(1)}%，已达历史最大跌幅(${fd.maxDD}%)的 ${ddRatio.toFixed(0)}%，接近极端水平`);
+      if(ddRatio > redThreshold){
+        issues.push(`当前亏损 ${pnlPct.toFixed(1)}%，已达历史最大跌幅(${fd.maxDD}%)的 ${ddRatio.toFixed(0)}%，接近极端水平${holdDays>0?`（已持有${holdDays}天）`:''}`);
         if(level !== 'red') level = 'red';
-      } else if(ddRatio > 50){
-        issues.push(`当前亏损 ${pnlPct.toFixed(1)}%，占历史最大跌幅(${fd.maxDD}%)的 ${ddRatio.toFixed(0)}%`);
+      } else if(ddRatio > yellowThreshold){
+        issues.push(`当前亏损 ${pnlPct.toFixed(1)}%，占历史最大跌幅(${fd.maxDD}%)的 ${ddRatio.toFixed(0)}%${holdDays>0?`（已持有${holdDays}天）`:''}`);
         if(level === 'green') level = 'yellow';
       }
     }
@@ -615,7 +618,7 @@ function runHealthMonitor(){
     // 定投专用：今日大跌不作为预警（定投就是要在下跌时买入）
     // 只在极端情况（-5%以上）才提示关注
     if(todayChg!==null && todayChg < -5){
-      issues.push(`今日大幅下跌 ${todayChg.toFixed(2)}%，可能是加仓良机${statusHint}`);
+      issues.push(`今日大幅下跌 ${todayChg.toFixed(2)}%，建议关注是否有基本面变化再决定是否加仓${statusHint}`);
       // 不改变 level，仅作为信息提示
     }
 
@@ -624,7 +627,7 @@ function runHealthMonitor(){
     const dcaScore = calcDCAScore(fd);
     const sameCatFunds = CURATED_FUNDS.filter(f=>f.cat===fd.cat && f.code!==fd.code);
 
-    if(currentScore < 50){
+    if(currentScore < 55){
       if(sameCatFunds.length > 0){
         const betterFunds = sameCatFunds.filter(f=>scoreF(f) > currentScore + 20);
         if(betterFunds.length > 0){
