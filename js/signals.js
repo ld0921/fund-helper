@@ -728,9 +728,9 @@ function runHealthMonitor(){
     const holdingHasIssues = holdingAlerts.length > 0;
     contentHtml += `<details class="diag-section" ${holdingHasIssues?'open':''}>
       <summary class="diag-header diag-header-holding">
-        <span class="diag-header-left">📊 持仓基金诊断（${holdings.length}只）</span>
+        <span class="diag-header-left">📊 持仓基金诊断<span class="diag-count">（${holdings.length}只）</span></span>
         <span class="diag-header-right">
-          <span class="diag-badge">${holdingSummary}</span>
+          <span class="diag-badge${holdingHasIssues?'':' badge-ok'}">${holdingSummary}</span>
           <span class="diag-chevron">▸</span>
         </span>
       </summary>
@@ -742,9 +742,9 @@ function runHealthMonitor(){
     const dcaHasIssues = dcaAlerts.length > 0;
     contentHtml += `<details class="diag-section" ${dcaHasIssues?'open':''}>
       <summary class="diag-header diag-header-dca">
-        <span class="diag-header-left">📈 定投基金诊断（${dcaHoldings.length}只）</span>
+        <span class="diag-header-left">📈 定投基金诊断<span class="diag-count">（${dcaHoldings.length}只）</span></span>
         <span class="diag-header-right">
-          <span class="diag-badge">${dcaSummary}</span>
+          <span class="diag-badge${dcaHasIssues?'':' badge-ok'}">${dcaSummary}</span>
           <span class="diag-chevron">▸</span>
         </span>
       </summary>
@@ -763,6 +763,7 @@ function runHealthMonitor(){
       </summary>
       <div>${catAlerts.map(a => renderItem(a, false)).join('')}</div>
     </details>`;
+
   }
 
   // 诊断策略说明
