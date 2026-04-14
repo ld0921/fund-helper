@@ -156,18 +156,26 @@ function calcDCAScore(f){
   }
 
   // 1. 波动适度性（定投核心指标，35%）
-  // 定投受益于波动，但超高波动（>35%）时散户大概率放弃定投，实际效果反降
-  // 使用钟形曲线，最优DD按类别差异化（权益25%，QDII 20%，债券5%）
+  // 优先用月度收益率标准差（σ）衡量真实波动，无数据时回退 maxDD 估算
+  // 定投受益于震荡波动，但超高波动时散户大概率放弃，实际效果反降
   let volScore = 0;
-  if(f.r3 > -20 && f.maxDD > 0){
-    const dd = Math.min(f.maxDD, 80);
-    // 各类别最优定投波动率区间不同
-    const optimalDD = {active:25, index:25, bond:13, qdii:40}[f.cat] || 22.5;
-    const ddSigma = {active:12, index:12, bond:6, qdii:15}[f.cat] || 12;
-    volScore = 35 * Math.exp(-Math.pow(dd - optimalDD, 2) / (2 * ddSigma * ddSigma));
-    // 长期正收益加成：r3越高，波动越有价值
-    const r3Bonus = Math.min(1.0, f.r3 / 30); // r3>=30%时加成满额
-    volScore = volScore * (0.6 + 0.4 * r3Bonus); // 基础60% + r3加成40%
+  if(f.r3 > -20){
+    let vol; // 月度收益率标准差（%）
+    if(f.monthlyReturns && f.monthlyReturns.length >= 6){
+      const mr = f.monthlyReturns;
+      const mean = mr.reduce((s,v)=>s+v,0)/mr.length;
+      vol = Math.sqrt(mr.reduce((s,v)=>s+(v-mean)**2,0)/mr.length);
+    } else if(f.maxDD > 0){
+      vol = f.maxDD / 5; // maxDD≈5σ 经验估算，降级回退
+    }
+    if(vol > 0){
+      // 各类别最优月度σ区间（月度σ≈年化σ/√12）
+      const optimalVol = {active:5, index:5, bond:1.5, qdii:7}[f.cat] || 5;
+      const volSigma   = {active:3, index:3, bond:1,   qdii:4}[f.cat] || 3;
+      volScore = 35 * Math.exp(-Math.pow(Math.min(vol,20) - optimalVol, 2) / (2 * volSigma * volSigma));
+      const r3Bonus = Math.min(1.0, (f.r3||0) / 30);
+      volScore = volScore * (0.6 + 0.4 * r3Bonus);
+    }
   }
 
   // 2. 长期趋势（25%）：定投看长期中枢方向，近3年下跌但波动大的基金反而适合定投摊成本
