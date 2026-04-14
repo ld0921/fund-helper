@@ -113,8 +113,9 @@ function computeRebalancePlan(targetPicks, newMoney){
     const held=existingHoldings.find(h=>h.code===pick.code);
     const currentAmt=held?held.value:0;
     const targetAmt=pick.amt; // 直接使用pick.amt作为目标金额
-    // 修复：targetAmt为0时强制减仓，不被newBuyAmt污染
-    const diff = targetAmt === 0 ? -currentAmt : (pick.newBuyAmt || (targetAmt-currentAmt));
+    // 修复：targetAmt为0时强制减仓；newBuyAmt只在需要加仓时使用
+    const rawDiff = targetAmt - currentAmt;
+    const diff = targetAmt === 0 ? -currentAmt : (rawDiff > 0 && pick.newBuyAmt ? pick.newBuyAmt : rawDiff);
     // 容忍带差异化：货币/债券5%或¥200，指数10%或¥300，主动/QDII 15%或¥500
     // 再平衡触发：只有偏离超过阈值才建议调仓，避免频繁换仓产生摩擦成本
     const tolPct = ['money','bond'].includes(pick.cat) ? 0.10 : pick.cat === 'index' ? 0.15 : 0.20;
