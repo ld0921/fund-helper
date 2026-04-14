@@ -382,14 +382,18 @@ function runHealthMonitor(){
 
   if(!holdings.length && !dcaHoldings.length){ wrap.innerHTML=''; return; }
 
-  // 计算各类别统计（均值 + 标准差，用于动态阈值）
+  // 优先使用全市场基准（与 scoreF 的 _catBench 保持一致）
   const catStats = {};
   ['active','index','bond','money','qdii'].forEach(cat=>{
-    const fs=CURATED_FUNDS.filter(f=>f.cat===cat);
-    if(!fs.length) return;
-    const avgR1 = fs.reduce((s,f)=>s+f.r1,0)/fs.length;
-    const stdR1 = Math.sqrt(fs.reduce((s,f)=>s+(f.r1-avgR1)**2,0)/fs.length)||1;
-    catStats[cat] = { avgR1, stdR1, count:fs.length };
+    if(_catBench && _catBench[cat]){
+      catStats[cat] = { avgR1: _catBench[cat].avgR1, stdR1: _catBench[cat].stdR1, count: _catBench[cat].count||0 };
+    } else {
+      const fs=CURATED_FUNDS.filter(f=>f.cat===cat);
+      if(!fs.length) return;
+      const avgR1 = fs.reduce((s,f)=>s+f.r1,0)/fs.length;
+      const stdR1 = Math.sqrt(fs.reduce((s,f)=>s+(f.r1-avgR1)**2,0)/fs.length)||1;
+      catStats[cat] = { avgR1, stdR1, count:fs.length };
+    }
   });
 
   const catRanksCache = Object.keys(navCache).length>0 ? analyzeCategoryPerf() : null;
@@ -1023,14 +1027,19 @@ function renderDiagnostics(){
   }
   if(emptyEl) emptyEl.style.display = 'none';
 
-  // 计算各类别统计（与健康监控一致），用于判断是否"严重落后同类"
+  // 优先使用全市场基准（与 scoreF 的 _catBench 保持一致）
   const catStats = {};
   ['active','index','bond','money','qdii'].forEach(cat=>{
-    const fs=CURATED_FUNDS.filter(f=>f.cat===cat);
-    if(!fs.length) return;
-    const avgR1 = fs.reduce((s,f)=>s+f.r1,0)/fs.length;
-    const stdR1 = Math.sqrt(fs.reduce((s,f)=>s+(f.r1-avgR1)**2,0)/fs.length)||1;
-    catStats[cat] = { avgR1, stdR1, count:fs.length };
+    if(_catBench && _catBench[cat]){
+      catStats[cat] = { avgR1: _catBench[cat].avgR1, stdR1: _catBench[cat].stdR1, count: _catBench[cat].count||0 };
+    } else {
+      const fs=CURATED_FUNDS.filter(f=>f.cat===cat);
+      if(!fs.length) return;
+      const avgR1 = fs.reduce((s,f)=>s+f.r1,0)/fs.length;
+      const stdR1 = Math.sqrt(fs.reduce((s,f)=>s+(f.r1-avgR1)**2,0)/fs.length)||1;
+      catStats[cat] = { avgR1, stdR1, count:fs.length };
+    }
+  });
   });
 
   const suggestions = [];

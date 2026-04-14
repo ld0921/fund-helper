@@ -1585,6 +1585,7 @@ function _doGenerate(shouldScroll){
           </div>`;
         }).join('')}
         <div style="font-size:11px;color:var(--muted);margin-top:6px">注：在支付宝中赎回低分基金（到账约1-3个工作日），到账后买入推荐基金。赎回费：&lt;7天=1.5%，7天-1年≈0.5%，&gt;2年=0%。</div>
+        <div style="font-size:11px;color:var(--primary);margin-top:6px">💡 更完整的调仓建议（含定投计划、多维度诊断）请查看「持仓诊断」模块的主动调仓建议。</div>
       </div>`;
       rebalCard.insertAdjacentHTML('beforeend', replaceHtml);
       rebalCard.style.display = '';
