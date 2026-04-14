@@ -143,9 +143,28 @@ async function fetchFundDetail(code) {
           });
           result.maxDD = Math.round(maxDD * 10) / 10;
 
-          // 近3年最大回撤（与r3时间窗口匹配）
+          // 近36个月月度收益率（用于类别相关性矩阵计算）
           const threeYearsAgo = Date.now() - 3 * 365.25 * 24 * 60 * 60 * 1000;
           const nav3y = navData.filter(p => p.x >= threeYearsAgo);
+          if (nav3y.length >= 2) {
+            // 按月采样：取每月最后一个净值点
+            const byMonth = {};
+            nav3y.forEach(p => {
+              const d = new Date(p.x);
+              const key = `${d.getFullYear()}-${d.getMonth()}`;
+              byMonth[key] = p.y;
+            });
+            const monthlyVals = Object.keys(byMonth).sort().map(k => byMonth[k]);
+            const monthlyReturns = [];
+            for (let i = 1; i < monthlyVals.length; i++) {
+              if (monthlyVals[i - 1] > 0) {
+                monthlyReturns.push(Math.round((monthlyVals[i] / monthlyVals[i - 1] - 1) * 10000) / 100);
+              }
+            }
+            if (monthlyReturns.length >= 6) result.monthlyReturns = monthlyReturns;
+          }
+
+          // 近3年最大回撤（与r3时间窗口匹配）
           if (nav3y.length >= 10) {
             let peak3 = 0, maxDD3 = 0;
             nav3y.forEach(p => {
@@ -356,12 +375,23 @@ async function main() {
     const avgDD = dds.length > 0 ? dds.reduce((s, v) => s + v, 0) / dds.length : 0;
     const r3s = funds.map(f => f.r3).filter(v => isFinite(v));
     const avgR3 = r3s.length > 0 ? r3s.reduce((s, v) => s + v, 0) / r3s.length : 0;
+    // 月度收益序列：取各基金序列的逐月均值（用于前端动态计算相关性矩阵）
+    const allMonthly = funds.map(f => f.monthlyReturns).filter(a => a && a.length >= 6);
+    let monthlyReturns = [];
+    if (allMonthly.length > 0) {
+      const minLen = Math.min(...allMonthly.map(a => a.length));
+      for (let i = 0; i < minLen; i++) {
+        const avg = allMonthly.reduce((s, a) => s + a[i], 0) / allMonthly.length;
+        monthlyReturns.push(Math.round(avg * 100) / 100);
+      }
+    }
     finalBenchmarks[cat] = {
       avgR1: Math.round(avgR1 * 100) / 100,
       stdR1: Math.round(stdR1 * 100) / 100,
       avgDD: Math.round(avgDD * 100) / 100,
       avgR3: Math.round(avgR3 * 100) / 100,
-      count: r1s.length
+      count: r1s.length,
+      ...(monthlyReturns.length >= 6 && { monthlyReturns })
     };
   }
   console.log('\n市场基准统计（基于全市场Top扫描，筛选前全量数据）:');

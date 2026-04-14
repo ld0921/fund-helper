@@ -429,14 +429,34 @@ function computeWeights(riskProfile, horizon, catRanks, macroClock){
   const volFloor = {active:1.0, index:1.0, bond:0.5, money:0.2, qdii:1.0};
   catRanks.forEach(c => { catVol[c.cat] = Math.max(c.avgDD / (DD_TO_VOL[c.cat]||2.5), volFloor[c.cat]||0.5); });
 
-  // 相关性矩阵（基于历史数据）
-  const corrMatrix = {
+  // 相关性矩阵：优先从 MARKET_BENCHMARKS 月度序列动态计算，兜底用历史经验值
+  const _corrFallback = {
     active: { active:1.00, index:0.92, bond:-0.15, money:0.05, qdii:0.65 },
     index:  { active:0.92, index:1.00, bond:-0.10, money:0.05, qdii:0.70 },
     bond:   { active:-0.15, index:-0.10, bond:1.00, money:0.20, qdii:-0.05 },
     money:  { active:0.05, index:0.05, bond:0.20, money:1.00, qdii:0.05 },
     qdii:   { active:0.65, index:0.70, bond:-0.05, money:0.05, qdii:1.00 }
   };
+  const cats5 = ['active','index','bond','money','qdii'];
+  const _mbSeqs = {};
+  cats5.forEach(c => { if(MARKET_BENCHMARKS[c] && MARKET_BENCHMARKS[c].monthlyReturns && MARKET_BENCHMARKS[c].monthlyReturns.length >= 6) _mbSeqs[c] = MARKET_BENCHMARKS[c].monthlyReturns; });
+  const _seqCats = cats5.filter(c => _mbSeqs[c]);
+  const corrMatrix = JSON.parse(JSON.stringify(_corrFallback)); // 先复制兜底值
+  if(_seqCats.length >= 2){
+    _seqCats.forEach(ci => {
+      _seqCats.forEach(cj => {
+        if(ci === cj){ corrMatrix[ci][cj] = 1.00; return; }
+        const a = _mbSeqs[ci], b = _mbSeqs[cj];
+        const n = Math.min(a.length, b.length);
+        const ma = a.slice(0,n).reduce((s,v)=>s+v,0)/n;
+        const mb2 = b.slice(0,n).reduce((s,v)=>s+v,0)/n;
+        let num=0, da=0, db=0;
+        for(let i=0;i<n;i++){ num+=(a[i]-ma)*(b[i]-mb2); da+=(a[i]-ma)**2; db+=(b[i]-mb2)**2; }
+        const corr = (da>0&&db>0) ? Math.max(-1, Math.min(1, num/Math.sqrt(da*db))) : _corrFallback[ci][cj];
+        corrMatrix[ci][cj] = Math.round(corr*100)/100;
+      });
+    });
+  }
 
   // 简化的风险平价：使用迭代法求解等风险贡献
   // 初始权重：1/波动率
