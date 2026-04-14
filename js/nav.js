@@ -94,6 +94,7 @@ function refreshAllNav(autoGenerate, silent){
         banner.className='done';
       }
       document.getElementById('nav-update-time').textContent=`净值更新于 ${timeStr}`;
+      window._allNavLoaded = true; // 标记精选库净值已全部加载
 
       // 5秒后隐藏进度条
       if(!silent) setTimeout(()=>{ banner.className='hidden'; },5000);
