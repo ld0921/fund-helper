@@ -1079,9 +1079,9 @@ function renderDiagnostics(){
     const betterThan15 = sortedSameCat.filter(f=>scoreF(f) > currentScore + 15);
 
     let best = null, reason = '';
-    if(betterThan15.length){
+    if(isProblem && betterThan15.length){
       best = betterThan15[0];
-      reason = 'score15'; // 同类有高15分以上更优
+      reason = 'score15';
     } else if(isProblem && sortedSameCat.length){
       // 标红但同类没有高15分更优 → 仍取同类最高作为候选，避免与健康监控矛盾
       const topCandidate = sortedSameCat[0];
