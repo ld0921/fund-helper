@@ -41,21 +41,7 @@ function resetDcaGenButton(){
   }
 }
 
-function generateDcaAiPlan(){
-  updateDcaBudgetHint(); // 生成前更新提示
-  const btn=document.getElementById('dca-gen-btn');
-  if(btn){btn.classList.add('is-loading');btn.innerHTML='<span class="loading-dot"></span> 生成中…';}
-
-  // 显示加载卡片，隐藏结果
-  const loadCard = document.getElementById('dca-loading-card');
-  const resultEl = document.getElementById('dca-ai-result');
-  loadCard.style.display = 'block';
-  resultEl.style.display = 'none';
-
-  // 滚动到加载卡片
-  setTimeout(() => loadCard.scrollIntoView({behavior:'smooth',block:'center'}), 100);
-
-  // 显示算法执行步骤动画
+function _startDcaAnimation(btn, loadCard){
   setTimeout(() => {
     const bar = document.getElementById('dca-loading-bar');
     const textEl = document.getElementById('dca-loading-text');
@@ -109,6 +95,32 @@ function generateDcaAiPlan(){
     }
     showAlgoStep();
   }, 300);
+}
+
+function generateDcaAiPlan(){
+  updateDcaBudgetHint();
+  const btn=document.getElementById('dca-gen-btn');
+  if(btn){btn.classList.add('is-loading');btn.innerHTML='<span class="loading-dot"></span> 生成中…';}
+
+  const loadCard = document.getElementById('dca-loading-card');
+  const resultEl = document.getElementById('dca-ai-result');
+  loadCard.style.display = 'block';
+  resultEl.style.display = 'none';
+  setTimeout(() => loadCard.scrollIntoView({behavior:'smooth',block:'center'}), 100);
+
+  // 若净值未加载，先静默刷新再启动动画
+  if(Object.keys(navCache).length === 0){
+    refreshAllNav(false, true);
+    const timer = setInterval(() => {
+      if(Object.keys(navCache).length > 0){
+        clearInterval(timer);
+        _startDcaAnimation(btn, loadCard);
+      }
+    }, 300);
+    return;
+  }
+
+  _startDcaAnimation(btn, loadCard);
 }
 function _doGenerateDca(){
   const budget = parseFloat(document.getElementById('dca-budget').value)||1000;
