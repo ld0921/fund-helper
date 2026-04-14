@@ -75,18 +75,6 @@ function refreshAllNav(autoGenerate, silent){
     });
   }
 
-  if(total === 0){
-    window._allNavLoaded = true;
-    if(window._pendingDcaGenerate){
-      const { btn, loadCard } = window._pendingDcaGenerate;
-      window._pendingDcaGenerate = null;
-      loadCard.style.display = 'block';
-      setTimeout(() => loadCard.scrollIntoView({behavior:'smooth',block:'center'}), 100);
-      _startDcaAnimation(btn, loadCard);
-    }
-    return;
-  }
-
   CURATED_FUNDS.forEach(f=>fetchNav(f.code, data=>{
     updateNavCard(f.code,data);
     done++;
@@ -106,16 +94,7 @@ function refreshAllNav(autoGenerate, silent){
         banner.className='done';
       }
       document.getElementById('nav-update-time').textContent=`净值更新于 ${timeStr}`;
-      window._allNavLoaded = true; // 标记精选库净值已全部加载
-
-      // 若有待执行的定投方案生成，触发它
-      if(window._pendingDcaGenerate){
-        const { btn, loadCard } = window._pendingDcaGenerate;
-        window._pendingDcaGenerate = null;
-        loadCard.style.display = 'block';
-        setTimeout(() => loadCard.scrollIntoView({behavior:'smooth',block:'center'}), 100);
-        _startDcaAnimation(btn, loadCard);
-      }
+      window._allNavLoaded = true;
 
       // 5秒后隐藏进度条
       if(!silent) setTimeout(()=>{ banner.className='hidden'; },5000);

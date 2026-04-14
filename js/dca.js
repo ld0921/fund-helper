@@ -105,17 +105,42 @@ function generateDcaAiPlan(){
   const loadCard = document.getElementById('dca-loading-card');
   const resultEl = document.getElementById('dca-ai-result');
   resultEl.style.display = 'none';
+  loadCard.style.display = 'block';
+  setTimeout(() => loadCard.scrollIntoView({behavior:'smooth',block:'center'}), 100);
 
-  // 若精选库净值未全部加载，先刷新（显示顶部banner），完成后再启动动画
-  if(!window._allNavLoaded){
-    window._pendingDcaGenerate = { btn, loadCard }; // 先设置，再调用 refreshAllNav
-    refreshAllNav(false, false);
+  const bar = document.getElementById('dca-loading-bar');
+  const countEl = document.getElementById('dca-loading-count');
+  const textEl = document.getElementById('dca-loading-text');
+  const iconEl = document.getElementById('dca-loading-icon');
+
+  // 若净值已足够，直接进入算法步骤动画
+  if(Object.keys(navCache).length >= 10){
+    countEl.textContent = `已缓存 ${Object.keys(navCache).length}/${CURATED_FUNDS.length} 只基金实时数据`;
+    _startDcaAnimation(btn, loadCard);
     return;
   }
 
-  loadCard.style.display = 'block';
-  setTimeout(() => loadCard.scrollIntoView({behavior:'smooth',block:'center'}), 100);
-  _startDcaAnimation(btn, loadCard);
+  // 否则在卡片内部加载净值，显示进度
+  iconEl.textContent = '📡';
+  textEl.textContent = '正在获取实时净值数据…';
+  bar.style.width = '0%';
+  const total = CURATED_FUNDS.length;
+  let done = 0;
+  countEl.textContent = `0 / ${total}`;
+
+  CURATED_FUNDS.forEach(f => fetchNav(f.code, data => {
+    updateNavCard(f.code, data);
+    done++;
+    const pct = Math.round(done / total * 100);
+    bar.style.width = pct + '%';
+    countEl.textContent = `${done} / ${total}`;
+    if(done >= Math.floor(total * 0.5)) textEl.textContent = '正在分析市场行情…';
+    if(done === total){
+      countEl.textContent = '数据加载完成，开始策略计算';
+      iconEl.textContent = '🤖';
+      _startDcaAnimation(btn, loadCard);
+    }
+  }));
 }
 function _doGenerateDca(){
   const budget = parseFloat(document.getElementById('dca-budget').value)||1000;
