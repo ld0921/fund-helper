@@ -45,8 +45,15 @@ function analyzeCategoryPerf(){
 function inferMomentumPhase(catRanks){
   if(!catRanks || catRanks.length < 3) return { phase:'unknown', label:'数据不足', equityMult:1.0, bondMult:1.0 };
 
-  const getAvgR1 = cat => { const c = catRanks.find(x=>x.cat===cat); return c ? c.avgR1 : 0; };
-  const getStdR1 = cat => { const c = catRanks.find(x=>x.cat===cat); return c ? c.stdR1 : 10; };
+  // 优先用全市场基准（MARKET_BENCHMARKS），避免精选库选择偏差导致均值虚高
+  const getAvgR1 = cat => {
+    if(typeof MARKET_BENCHMARKS === 'object' && MARKET_BENCHMARKS[cat]) return MARKET_BENCHMARKS[cat].avgR1 || 0;
+    const c = catRanks.find(x=>x.cat===cat); return c ? c.avgR1 : 0;
+  };
+  const getStdR1 = cat => {
+    if(typeof MARKET_BENCHMARKS === 'object' && MARKET_BENCHMARKS[cat]) return MARKET_BENCHMARKS[cat].stdR1 || 10;
+    const c = catRanks.find(x=>x.cat===cat); return c ? c.stdR1 : 10;
+  };
 
   const equityR1 = (getAvgR1('active') + getAvgR1('index')) / 2;
   const bondR1 = getAvgR1('bond');
@@ -68,7 +75,7 @@ function inferMomentumPhase(catRanks){
 
   if(equityStrong && bondWeak && equityR1 > 10){
     phase = 'overheat'; label = '权益极端强势';
-    equityMult = 1.0; bondMult = 0.9;
+    equityMult = 0.85; bondMult = 0.95;
     desc = '权益涨幅显著高于历史均值且债券走弱，可能存在过热风险。建议控制仓位，警惕回调。';
   } else if(qdiiStrong && equityStrong){
     phase = 'global_bull'; label = '全球权益强势';
