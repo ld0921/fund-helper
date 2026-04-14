@@ -417,6 +417,14 @@ function runHealthMonitor(){
     const cat = fd ? fd.cat : 'other';
     catConcentration[cat] = (catConcentration[cat]||0) + h.value;
   });
+  // 类别集中度警告（权益类合计 > 80% 或单一类别 > 60%）
+  const equityConc = ((catConcentration.active||0) + (catConcentration.index||0) + (catConcentration.qdii||0)) / (totalPortValue||1) * 100;
+  const catConcAlerts = [];
+  if(equityConc > 80) catConcAlerts.push(`权益类资产（主动+指数+QDII）占总仓位 ${equityConc.toFixed(0)}%，超过80%，建议适当配置债券或货币基金降低风险`);
+  Object.entries(catConcentration).forEach(([cat, val])=>{
+    const pct = val / (totalPortValue||1) * 100;
+    if(pct > 60 && cat !== 'other') catConcAlerts.push(`${CAT_NAMES[cat]||cat}类占总仓位 ${pct.toFixed(0)}%，超过60%集中度警戒线`);
+  });
 
   // ========== 诊断持仓基金（短期视角，严格标准） ==========
   holdings.forEach(h=>{
@@ -480,8 +488,9 @@ function runHealthMonitor(){
       }
     }
 
-    // 今日大跌
-    if(todayChg!==null && todayChg < -2){
+    // 今日大跌（按类别差异化阈值）
+    const dropThreshold = {active:-3, qdii:-3, index:-2.5, bond:-1, money:-0.5}[fd.cat] || -2;
+    if(todayChg!==null && todayChg < dropThreshold){
       issues.push(`今日下跌 ${todayChg.toFixed(2)}%，关注是否有负面消息驱动`);
       if(level==='green') level='yellow';
     }
@@ -656,6 +665,12 @@ function runHealthMonitor(){
 
   // 类别集中度预警（独立条目）
   const catAlerts = [];
+  // 权益类合计集中度
+  if(catConcAlerts.length > 0){
+    catConcAlerts.forEach(msg => {
+      catAlerts.push({code:'_cat_equity',name:'权益类集中度',level:'yellow', desc:msg, action:'🟡 需分散', source:'category'});
+    });
+  }
   Object.keys(catConcentration).forEach(cat=>{
     if(cat === 'other') return;
     const catPct = totalPortValue > 0 ? catConcentration[cat] / totalPortValue * 100 : 0;
