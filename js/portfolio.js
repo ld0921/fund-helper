@@ -423,11 +423,19 @@ function renderRebalancePlan(plan){
 
 // 根据档案 & 行情 & 市场动量 生成配置权重（风险平价 + 动量约束 + 动态倾斜 + 期限约束）
 function computeWeights(riskProfile, horizon, catRanks, macroClock){
-  // 1. 风险平价基础权重：考虑波动率和相关性矩阵
-  const catVol = {}; // 用平均最大回撤 / DD_TO_VOL 转为估算年化波动率
-  // 波动率下限按类别差异化：货币基金波动率极低，下限设低以避免过度超配
+  // 1. 风险平价基础权重：优先用 monthlyReturns 真实标准差，兜底用 avgDD/DD_TO_VOL
+  const catVol = {};
   const volFloor = {active:1.0, index:1.0, bond:0.5, money:0.2, qdii:1.0};
-  catRanks.forEach(c => { catVol[c.cat] = Math.max(c.avgDD / (DD_TO_VOL[c.cat]||2.5), volFloor[c.cat]||0.5); });
+  catRanks.forEach(c => {
+    const mr = MARKET_BENCHMARKS[c.cat] && MARKET_BENCHMARKS[c.cat].monthlyReturns;
+    if(mr && mr.length >= 6){
+      const mean = mr.reduce((s,v)=>s+v,0)/mr.length;
+      const std = Math.sqrt(mr.reduce((s,v)=>s+(v-mean)**2,0)/mr.length);
+      catVol[c.cat] = Math.max(std, volFloor[c.cat]||0.5);
+    } else {
+      catVol[c.cat] = Math.max(c.avgDD / (DD_TO_VOL[c.cat]||2.5), volFloor[c.cat]||0.5);
+    }
+  });
 
   // 相关性矩阵：优先从 MARKET_BENCHMARKS 月度序列动态计算，兜底用历史经验值
   const _corrFallback = {
