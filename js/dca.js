@@ -796,15 +796,6 @@ function renderDcaPlans(){
 }
 
 // 渲染定投跟踪
-function toggleDcaTracker(){
-  const body = document.getElementById('dca-tracker-body');
-  const arrow = document.getElementById('dca-tracker-toggle');
-  if(!body) return;
-  const collapsed = body.style.display === 'none';
-  body.style.display = collapsed ? '' : 'none';
-  arrow.textContent = collapsed ? '▼' : '▶';
-}
-
 function renderDcaTracker(){
   const card=document.getElementById('dca-tracker-card');
   const list=document.getElementById('dca-tracker-list');

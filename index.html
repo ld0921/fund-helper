@@ -658,14 +658,15 @@
 
   <!-- 定投跟踪 -->
   <div class="card" id="dca-tracker-card" style="display:none">
-    <div class="card-title" onclick="toggleDcaTracker()" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between">
-      <span><span class="icon icon-purple">📅</span>定投跟踪</span>
-      <span id="dca-tracker-toggle" style="font-size:12px;color:var(--muted)">▼</span>
-    </div>
-    <div id="dca-tracker-body">
-      <div style="font-size:12px;color:var(--muted);margin-bottom:12px">记录定投执行情况，避免遗漏</div>
-      <div id="dca-tracker-list"></div>
-    </div>
+    <details open>
+      <summary style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:4px 0;user-select:none;list-style:none;gap:8px">
+        <div class="card-title" style="margin-bottom:0"><span class="icon icon-purple">📅</span>定投跟踪<span style="font-size:12px;color:var(--muted);font-weight:400;margin-left:4px">— 记录定投执行情况，避免遗漏</span></div>
+        <span class="toggle-arrow" style="font-size:12px;color:var(--primary);flex-shrink:0"></span>
+      </summary>
+      <div style="border-top:1px solid #f0f0f0;margin-top:8px;padding-top:8px">
+        <div id="dca-tracker-list"></div>
+      </div>
+    </details>
   </div>
 
   <div class="warning-notice">⚠️ <b>免责声明：</b>定投不等于保本，收益率仅为模拟测算，实际收益受市场波动影响。基金投资有风险，请根据自身风险承受能力决策。</div>
