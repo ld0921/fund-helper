@@ -78,7 +78,7 @@ function scoreF(f){
   const calmarShort = (r1 - benchmarkShort) / dd3yAdj;
   const calmarLong  = (r3Ann - benchmarkLong) / dd3yAdj;
   const calmar = calmarShort * 0.6 + calmarLong * 0.4;
-  const calmarScore = Math.min(32, Math.max(0, calmar * 16)); // 0-32分
+  const calmarScore = Math.round(32 / (1 + Math.exp(-calmar * 1.5))); // sigmoid映射，避免牛市中系统性低估
 
   // 2. 收益一致性（权重 24%）
   //    中期(r1)与长期(r3)方向是否一致 + 幅度匹配度 + r3趋势强度
