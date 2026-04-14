@@ -167,8 +167,8 @@ function calcDCAScore(f){
   if(f.r3 > 0 && f.maxDD > 0){
     const dd = Math.min(f.maxDD, 80);
     // 各类别最优定投波动率区间不同
-    const optimalDD = {active:25, index:25, bond:5, qdii:20}[f.cat] || 22.5;
-    const ddSigma = {active:12, index:12, bond:3, qdii:10}[f.cat] || 12;
+    const optimalDD = {active:25, index:25, bond:5, qdii:40}[f.cat] || 22.5;
+    const ddSigma = {active:12, index:12, bond:3, qdii:15}[f.cat] || 12;
     volScore = 35 * Math.exp(-Math.pow(dd - optimalDD, 2) / (2 * ddSigma * ddSigma));
     // 长期正收益加成：r3越高，波动越有价值
     const r3Bonus = Math.min(1.0, f.r3 / 30); // r3>=30%时加成满额
