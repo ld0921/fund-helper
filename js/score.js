@@ -91,7 +91,7 @@ function scoreF(f){
   } else {
     dirConsistency = 5; // 方向不一致
   }
-  // r3Strength：用相对同类均值的超额r3，避免牛市中所有基金趋近满分
+  // r3Strength：用超额r3（相对同类均值），避免牛市中所有基金趋近满分
   const excessR3 = r3 - (bench && bench.avgR3 ? bench.avgR3 : 0);
   const r3Strength = excessR3 > 0
     ? Math.min(14, 7 + Math.log(1 + excessR3) / Math.log(101) * 7)
@@ -173,12 +173,13 @@ function calcDCAScore(f){
     }
   }
 
-  // 2. 长期趋势（25%）：定投看长期中枢方向，近3年下跌但波动大的基金反而适合定投摊成本
-  //    不重度惩罚r3<0——下跌中的优质基金正是定投的黄金窗口
-  // 长期趋势（25%）：连续函数，消除分档断层
-  const trendScore = f.r3 > 0
-    ? Math.max(5, Math.min(25, 10 + Math.log(1 + f.r3) / Math.log(101) * 15))
-    : Math.max(5, Math.min(25, 12 + f.r3 * 0.2));
+  // 2. 长期趋势（25%）：用超额r3（相对同类均值），避免牛市中所有基金趋近满分
+  const benchDca = _catBench[f.cat];
+  const avgR3Dca = benchDca && benchDca.avgR3 ? benchDca.avgR3 : 0;
+  const excessR3Dca = f.r3 - avgR3Dca;
+  const trendScore = excessR3Dca > 0
+    ? Math.max(5, Math.min(25, 13 + Math.log(1 + excessR3Dca) / Math.log(101) * 12))
+    : Math.max(5, Math.min(25, 13 + excessR3Dca * 0.1));
 
   // 3. 管理质量（20%）：经理年限 + 星级
   const qualityScore = Math.min(12, (f.mgrYears||0) * 0.8) + Math.min(8, Math.max(0, (f.r3||0) / (f.maxDD||50) * 4));
