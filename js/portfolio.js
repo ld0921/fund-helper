@@ -646,6 +646,14 @@ function computeWeights(riskProfile, horizon, catRanks, macroClock){
     base[k] += 100 - total2;
   }
 
+  // 8. 货币类集中度约束：上限50%，超出部分转移给债券，避免与持仓诊断矛盾
+  const moneyCap = 50;
+  if((base.money||0) > moneyCap){
+    const excess = base.money - moneyCap;
+    base.money = moneyCap;
+    base.bond = (base.bond||0) + excess;
+  }
+
   return base;
 }
 
