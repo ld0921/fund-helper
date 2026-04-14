@@ -2256,7 +2256,7 @@ function manualRefresh(){ refreshAllNav(true); }
 
 // ═══════════════ 面板0: 自定义评分 ═══════════════
 // getCatBenchmarks、getValuationAdj、getValuationLabel、scoreF、scoreColor、recommend、calcDCAScore 已移至 js/score.js
-const _catBench = getCatBenchmarks();
+let _catBench = getCatBenchmarks();
 
 // 无风险利率（1年期国债收益率近似）：支持用户自定义，默认1.7%
 const RISK_FREE = (() => { try { const v = localStorage.getItem('riskFreeRate'); if(v !== null) return parseFloat(v); } catch(e){} return 1.7; })();

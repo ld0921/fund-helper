@@ -108,9 +108,9 @@ function generateDcaAiPlan(){
   resultEl.style.display = 'none';
   setTimeout(() => loadCard.scrollIntoView({behavior:'smooth',block:'center'}), 100);
 
-  // 若净值未加载，先静默刷新再启动动画
+  // 若净值未加载，先刷新再启动动画
   if(Object.keys(navCache).length === 0){
-    refreshAllNav(false, true);
+    refreshAllNav(false, false); // 非静默，用户可见加载进度
     const timer = setInterval(() => {
       if(Object.keys(navCache).length > 0){
         clearInterval(timer);

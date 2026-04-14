@@ -75,6 +75,8 @@ async function loadCuratedFunds() {
       });
     });
     CURATED_FUNDS = funds;
+    // 精选库和市场基准加载完成后，重新初始化评分基准
+    if(typeof getCatBenchmarks === 'function') _catBench = getCatBenchmarks();
     console.log(`[精选库] 已加载 ${funds.length} 只基金，数据时间：${_curatedTimestamp}`);
     // 更新页面上的精选库状态显示（顶部和底部）
     updateCuratedStatus(funds.length, _curatedTimestamp);
