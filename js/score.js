@@ -107,14 +107,7 @@ function scoreF(f){
   //    客观指标：基金经理任期年限
   //    任期<1年=可能刚更换经理（高风险），>5年=稳定，>10年=非常稳定
   //    替代主观的「星级评定」
-  let stabilityScore;
-  if(mg < 1) stabilityScore = 3;       // 刚更换经理，高不确定性
-  else if(mg < 2) stabilityScore = 7;  // 磨合期
-  else if(mg < 3) stabilityScore = 11; // 初步稳定
-  else if(mg < 5) stabilityScore = 15; // 稳定
-  else if(mg < 10) stabilityScore = 19;// 成熟
-  else stabilityScore = 22;            // 超长任期，团队非常稳定
-  // 0-22分
+  const stabilityScore = Math.round(Math.min(22, 3 + Math.log(1 + mg) / Math.log(16) * 19));
 
   // 4. 规模适配性（权重 10%）
   //    指数基金：规模越大越好（流动性强、跟踪误差小）
@@ -122,6 +115,8 @@ function scoreF(f){
   let sizeScore;
   if(f.cat === 'index'){
     sizeScore = sz >= 1000 ? 10 : sz >= 500 ? 10 : sz >= 50 ? 9 : sz >= 10 ? 7 : sz >= 2 ? 4 : 2;
+  } else if(f.cat === 'bond'){
+    sizeScore = sz >= 500 ? 10 : sz >= 100 ? 9 : sz >= 20 ? 7 : sz >= 5 ? 5 : 2; // 债券基金规模越大流动性越好
   } else {
     sizeScore = sz >= 1000 ? 4 : sz >= 500 ? 7 : sz >= 50 ? 10 : sz >= 10 ? 7 : sz >= 2 ? 4 : 2;
   }
@@ -132,8 +127,14 @@ function scoreF(f){
   feeScore = fee <= 0 ? 12 : Math.max(2, Math.round(12 - fee * 60));
 
   const total = Math.round(Math.min(100, Math.max(0, calmarScore + consistencyScore + stabilityScore + sizeScore + feeScore)));
-  // 估值调整：指数基金加入PE百分位信号，与calcDCAScore统一标准
-  const valuationAdj = f.cat === 'index' ? getValuationAdj(f.code) : 0;
+  // 估值调整：指数基金用PE百分位，主动/qdii基金用相对同类均值的z-score（±5分）
+  let valuationAdj = 0;
+  if(f.cat === 'index'){
+    valuationAdj = getValuationAdj(f.code);
+  } else if((f.cat === 'active' || f.cat === 'qdii') && bench && bench.stdR1 > 0){
+    const z = (r1 - bench.avgR1) / bench.stdR1;
+    valuationAdj = Math.round(Math.max(-5, Math.min(5, -z * 2.5))); // 超涨减分，超跌加分
+  }
   return Math.max(0, Math.min(100, total + valuationAdj));
 }
 
@@ -158,7 +159,7 @@ function calcDCAScore(f){
   // 定投受益于波动，但超高波动（>35%）时散户大概率放弃定投，实际效果反降
   // 使用钟形曲线，最优DD按类别差异化（权益25%，QDII 20%，债券5%）
   let volScore = 0;
-  if(f.r3 > 0 && f.maxDD > 0){
+  if(f.r3 > -20 && f.maxDD > 0){
     const dd = Math.min(f.maxDD, 80);
     // 各类别最优定投波动率区间不同
     const optimalDD = {active:25, index:25, bond:13, qdii:40}[f.cat] || 22.5;
@@ -177,7 +178,7 @@ function calcDCAScore(f){
     : Math.max(5, Math.min(25, 12 + f.r3 * 0.2));
 
   // 3. 管理质量（20%）：经理年限 + 星级
-  const qualityScore = Math.min(12, (f.mgrYears||0) * 0.8) + Math.min(8, ((f.stars||3) - 1) * 2); // 0-20分
+  const qualityScore = Math.min(12, (f.mgrYears||0) * 0.8) + Math.min(8, Math.max(0, (f.r3||0) / (f.maxDD||50) * 4));
 
   // 4. 近期动量反转修正 r1（20%）：定投应在低位买入，近期涨太多反而不是好时机
   // 逻辑：r1跌幅大（但长期向上）→ 定投摊成本效果最佳；r1涨幅过大 → 可能均值回归
