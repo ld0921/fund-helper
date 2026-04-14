@@ -628,11 +628,11 @@ function runHealthMonitor(){
     const sameCatFunds = CURATED_FUNDS.filter(f=>f.cat===fd.cat && f.code!==fd.code);
 
     if(currentScore < 45){
-        if(betterFunds.length > 0){
-          const best = betterFunds.sort((a,b)=>scoreF(b)-scoreF(a))[0];
-          issues.push(`综合评分 ${currentScore}分（较低），同类有更优选择（${best.name} ${scoreF(best)}分）${statusHint}。定投评分 ${dcaScore}分`);
-          level = 'yellow';
-        }
+      const betterFunds = sameCatFunds.filter(f=>scoreF(f) > currentScore + 10);
+      if(betterFunds.length > 0){
+        const best = betterFunds.sort((a,b)=>scoreF(b)-scoreF(a))[0];
+        issues.push(`综合评分 ${currentScore}分（较低），同类有更优选择（${best.name} ${scoreF(best)}分）${statusHint}。定投评分 ${dcaScore}分`);
+        level = 'yellow';
       }
     } else if(dcaScore < 60 && sameCatFunds.length > 0){
       // 定投评分不及格，提示但不强制要求换基
