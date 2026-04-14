@@ -72,9 +72,9 @@ function scoreF(f){
   // - 指数/债券/货币：用无风险利率（它们本身就是基准或低风险资产）
   // 时间窗口匹配：calmarShort 用1年基准(avgR1)，calmarLong 用3年年化基准(avgR3Ann)
   const bench = _catBench[f.cat];
-  const isAlphaFund = f.cat === 'active' || f.cat === 'qdii';
-  const benchmarkShort = isAlphaFund && bench ? bench.avgR1 : RISK_FREE;
-  const benchmarkLong  = isAlphaFund && bench && bench.avgR3 ? (Math.pow(1 + bench.avgR3/100, 1/3) - 1) * 100 : RISK_FREE;
+  // 所有类别统一用同类均值作基准，消除跨类别评分不均衡
+  const benchmarkShort = bench ? bench.avgR1 : RISK_FREE;
+  const benchmarkLong  = bench && bench.avgR3 ? (Math.pow(1 + bench.avgR3/100, 1/3) - 1) * 100 : RISK_FREE;
   const calmarShort = (r1 - benchmarkShort) / dd3yAdj;
   const calmarLong  = (r3Ann - benchmarkLong) / dd3yAdj;
   const calmar = calmarShort * 0.6 + calmarLong * 0.4;
