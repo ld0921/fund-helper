@@ -140,8 +140,8 @@ function _doGenerateDca(){
     const cat = fd.cat;
     if(cat === 'money') return; // 货币基金不参与定投方案
     const dcaScore = calcDCAScore(fd);
-    const keepThreshold = cat === 'bond' ? 45 : cat === 'index' ? 50 : 60;
-    const keep = dcaScore >= keepThreshold; // 保留阈值与选基阈值一致，避免刚选入就被推翻
+    const keepThreshold = cat === 'bond' ? 40 : cat === 'index' ? 45 : 55; // 比选基阈值低5分，避免边界波动导致刚选入就被推翻
+    const keep = dcaScore >= keepThreshold;
     if(!holdingPlansByCat[cat]) holdingPlansByCat[cat] = [];
     holdingPlansByCat[cat].push({ code:plan.code, name:plan.name||fd.name, monthly:plan.monthly, dcaScore, keep, fundData:fd });
     if(!keep) replaceSuggestions.push({ code:plan.code, name:plan.name||fd.name, cat, dcaScore, monthly:plan.monthly });
