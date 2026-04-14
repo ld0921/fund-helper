@@ -167,8 +167,8 @@ function calcDCAScore(f){
   if(f.r3 > 0 && f.maxDD > 0){
     const dd = Math.min(f.maxDD, 80);
     // 各类别最优定投波动率区间不同
-    const optimalDD = {active:25, index:25, bond:5, qdii:40}[f.cat] || 22.5;
-    const ddSigma = {active:12, index:12, bond:3, qdii:15}[f.cat] || 12;
+    const optimalDD = {active:25, index:25, bond:13, qdii:40}[f.cat] || 22.5;
+    const ddSigma = {active:12, index:12, bond:6, qdii:15}[f.cat] || 12;
     volScore = 35 * Math.exp(-Math.pow(dd - optimalDD, 2) / (2 * ddSigma * ddSigma));
     // 长期正收益加成：r3越高，波动越有价值
     const r3Bonus = Math.min(1.0, f.r3 / 30); // r3>=30%时加成满额
@@ -178,7 +178,9 @@ function calcDCAScore(f){
   // 2. 长期趋势（25%）：定投看长期中枢方向，近3年下跌但波动大的基金反而适合定投摊成本
   //    不重度惩罚r3<0——下跌中的优质基金正是定投的黄金窗口
   // 长期趋势（25%）：连续函数，消除分档断层
-  const trendScore = Math.max(5, Math.min(25, f.r3 > 0 ? 10 + f.r3 * 0.3 : 12 + f.r3 * 0.2));
+  const trendScore = f.r3 > 0
+    ? Math.max(5, Math.min(25, 10 + Math.log(1 + f.r3) / Math.log(101) * 15))
+    : Math.max(5, Math.min(25, 12 + f.r3 * 0.2));
 
   // 3. 管理质量（20%）：经理年限 + 星级
   const qualityScore = Math.min(12, (f.mgrYears||0) * 0.8) + Math.min(8, ((f.stars||3) - 1) * 2); // 0-20分
