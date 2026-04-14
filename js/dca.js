@@ -108,7 +108,7 @@ function generateDcaAiPlan(){
 
   // 若精选库净值未全部加载，先刷新（显示顶部banner），完成后再启动动画
   if(!window._allNavLoaded){
-    window._pendingDcaGenerate = { btn, loadCard };
+    window._pendingDcaGenerate = { btn, loadCard }; // 先设置，再调用 refreshAllNav
     refreshAllNav(false, false);
     return;
   }

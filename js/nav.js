@@ -75,6 +75,18 @@ function refreshAllNav(autoGenerate, silent){
     });
   }
 
+  if(total === 0){
+    window._allNavLoaded = true;
+    if(window._pendingDcaGenerate){
+      const { btn, loadCard } = window._pendingDcaGenerate;
+      window._pendingDcaGenerate = null;
+      loadCard.style.display = 'block';
+      setTimeout(() => loadCard.scrollIntoView({behavior:'smooth',block:'center'}), 100);
+      _startDcaAnimation(btn, loadCard);
+    }
+    return;
+  }
+
   CURATED_FUNDS.forEach(f=>fetchNav(f.code, data=>{
     updateNavCard(f.code,data);
     done++;
