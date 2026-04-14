@@ -104,22 +104,17 @@ function generateDcaAiPlan(){
 
   const loadCard = document.getElementById('dca-loading-card');
   const resultEl = document.getElementById('dca-ai-result');
-  loadCard.style.display = 'block';
   resultEl.style.display = 'none';
-  setTimeout(() => loadCard.scrollIntoView({behavior:'smooth',block:'center'}), 100);
 
-  // 若精选库净值未全部加载，先刷新再启动动画
+  // 若精选库净值未全部加载，先刷新（显示顶部banner），完成后再启动动画
   if(!window._allNavLoaded){
-    refreshAllNav(false, false); // 非静默，用户可见加载进度
-    const timer = setInterval(() => {
-      if(window._allNavLoaded){
-        clearInterval(timer);
-        _startDcaAnimation(btn, loadCard);
-      }
-    }, 300);
+    window._pendingDcaGenerate = { btn, loadCard };
+    refreshAllNav(false, false);
     return;
   }
 
+  loadCard.style.display = 'block';
+  setTimeout(() => loadCard.scrollIntoView({behavior:'smooth',block:'center'}), 100);
   _startDcaAnimation(btn, loadCard);
 }
 function _doGenerateDca(){
