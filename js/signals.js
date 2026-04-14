@@ -1071,7 +1071,7 @@ function renderDiagnostics(){
     const zScore = stats ? (fd.r1 - stats.avgR1) / stats.stdR1 : 0;
     const isStructuralLoss = fd.r1 < -10 && fd.r3 < -15;
     const isSeverelyLagging = stats && zScore < -2.5;
-    const ddOverflow = pnlPct !== null && pnlPct < 0 && fd.maxDD > 0 && (-pnlPct / fd.maxDD * 100) > 100;
+    const ddOverflow = fd.r1 < 0 && fd.maxDD > 0 && (-fd.r1 / fd.maxDD * 100) > 80;
     const isProblem = isStructuralLoss || isSeverelyLagging || ddOverflow || currentScore < 45;
 
     // 找同类最优

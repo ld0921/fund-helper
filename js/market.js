@@ -25,11 +25,11 @@ function analyzeCategoryPerf(){
       const composite = calmar * 10 * 0.5 + trendConsistency * 4 * 0.25 + stability * 0.20 + todayChg * 5 * 0.05;
       return { ...f, todayChg, calmar, trendConsistency, stability, composite };
     });
-    const avgR1 = funds.reduce((s,f)=>s+f.r1,0)/funds.length;
+    const avgR1 = (typeof MARKET_BENCHMARKS === 'object' && MARKET_BENCHMARKS[cat]) ? MARKET_BENCHMARKS[cat].avgR1 : funds.reduce((s,f)=>s+f.r1,0)/funds.length;
     const avgDD = funds.reduce((s,f)=>s+f.maxDD,0)/funds.length;
     const avgChg = scores.reduce((s,f)=>s+f.todayChg,0)/scores.length;
-    const avgR3 = funds.reduce((s,f)=>s+f.r3,0)/funds.length;
-    const stdR1 = Math.sqrt(funds.reduce((s,f)=>s+(f.r1-avgR1)**2,0)/funds.length)||1;
+    const avgR3 = (typeof MARKET_BENCHMARKS === 'object' && MARKET_BENCHMARKS[cat]) ? MARKET_BENCHMARKS[cat].avgR3 : funds.reduce((s,f)=>s+f.r3,0)/funds.length;
+    const stdR1 = (typeof MARKET_BENCHMARKS === 'object' && MARKET_BENCHMARKS[cat]) ? MARKET_BENCHMARKS[cat].stdR1 : Math.sqrt(funds.reduce((s,f)=>s+(f.r1-avgR1)**2,0)/funds.length)||1;
     const avgCalmar = scores.reduce((s,f)=>s+f.calmar,0)/scores.length;
     const catTrend = (avgChg > 0 ? 1 : avgChg < 0 ? -1 : 0) + (avgR1 > 0 ? 1 : -1) + (avgR3 > 0 ? 1 : -1);
     const avgStability = funds.reduce((s,f)=>s+Math.min(f.mgrYears,15)/15*10,0)/funds.length;
