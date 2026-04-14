@@ -1058,7 +1058,6 @@ function renderDiagnostics(){
       catStats[cat] = { avgR1, stdR1, count:fs.length };
     }
   });
-  });
 
   const suggestions = [];
   evalList.forEach(h=>{
