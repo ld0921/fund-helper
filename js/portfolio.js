@@ -443,6 +443,7 @@ function computeWeights(riskProfile, horizon, catRanks, macroClock){
   const _seqCats = cats5.filter(c => _mbSeqs[c]);
   const corrMatrix = JSON.parse(JSON.stringify(_corrFallback)); // 先复制兜底值
   if(_seqCats.length >= 2){
+    console.log('[相关性矩阵] 使用动态计算（月度序列长度:', _seqCats.map(c=>`${c}:${_mbSeqs[c].length}`).join(', '), ')');
     _seqCats.forEach(ci => {
       _seqCats.forEach(cj => {
         if(ci === cj){ corrMatrix[ci][cj] = 1.00; return; }
