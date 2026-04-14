@@ -437,6 +437,7 @@ function importDcaAiToPlan(planArr){
       if(added>0){ showToast(`已添加 ${added} 只基金到您的定投计划`,'success'); }
       else { showToast('所有基金已在定投计划中','info'); }
     }
+    resetDcaGenButton();
   };
   // 优先用参数/内存，其次从IndexedDB加载
   const arr = planArr || window._lastDcaAiPicks;
