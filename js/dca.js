@@ -165,11 +165,6 @@ function _doGenerateDca(){
     catKept[cat] = keptPlans;
   });
   const totalGap = Object.values(catGap).reduce((s,v) => s + v, 0);
-  console.log('[DCA DEBUG] totalBudget:', totalBudget, 'totalExisting:', totalExistingMonthly, 'budget:', budget);
-  console.log('[DCA DEBUG] riskWeightMap:', JSON.stringify(riskWeightMap));
-  console.log('[DCA DEBUG] catGap:', JSON.stringify(catGap));
-  console.log('[DCA DEBUG] holdingPlansByCat keys:', Object.keys(holdingPlansByCat));
-
   // 替换建议用的候选池（按定投评分排名）
   const dcaScoredPool = CURATED_FUNDS.filter(f => f.cat !== 'money')
     .map(f => ({...f, dcaScore: calcDCAScore(f)}))
@@ -197,21 +192,17 @@ function _doGenerateDca(){
     // B. 为缺口使用 selectFunds 多因子选基（经理去重+标签过滤+核心卫星+动量反转）
     if(gap > 100) {
       const catData = catRanks.find(cr => cr.cat === cat);
-      console.log('[DCA DEBUG] cat:', cat, 'gap:', gap, 'catData found:', !!catData);
       if(!catData) return;
 
       // 构建排除已选基金的候选池，叠加定投评分兜底过滤
       // 阈值按类别差异化：权益类60分，债券/指数波动小天然低分，放宽到45分
       const dcaScoreThreshold = ['bond'].includes(cat) ? 45 : ['index'].includes(cat) ? 50 : 60;
-      const filteredCatData = {
-        ...catData,
-        topFunds: catData.topFunds.filter(f =>
-          !allPicks.some(p => p.code === f.code) &&
-          calcDCAScore(f) >= dcaScoreThreshold
-        )
-      };
+      const excluded = catData.topFunds.filter(f => !allPicks.some(p => p.code === f.code));
+      const qualified = excluded.filter(f => calcDCAScore(f) >= dcaScoreThreshold);
+      // 若阈值过滤后整个类别为空（如市场整体高位），回退到该类别评分最高的Top3
+      const topFunds = qualified.length > 0 ? qualified : excluded.slice(0, 3);
+      const filteredCatData = { ...catData, topFunds };
       const catPct = Math.round(gap / totalBudget * 100);
-      console.log('[DCA DEBUG] cat:', cat, 'catPct:', catPct, 'filteredTopFunds:', filteredCatData.topFunds.length);
       if(catPct < 1 || filteredCatData.topFunds.length === 0) return;
 
       const fundPicks = selectFunds(cat, filteredCatData, risk, catPct, totalBudget);
