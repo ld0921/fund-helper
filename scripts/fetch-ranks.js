@@ -306,6 +306,7 @@ async function main() {
           if (detail.fundSize > 0) f.size = Math.round(detail.fundSize * 100) / 100;
           if (detail.r1 !== undefined && isFinite(detail.r1)) f.r1 = detail.r1;
           if (detail.fee !== undefined) f.fee = detail.fee;
+          if (detail.monthlyReturns) f.monthlyReturns = detail.monthlyReturns;
           f.risk = inferRiskLevel(f.maxDD || 0, f.cat);
         }
         // 间隔300ms避免请求过快
