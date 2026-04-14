@@ -128,7 +128,7 @@ function _doGenerateDca(){
     const cat = fd.cat;
     if(cat === 'money') return; // 货币基金不参与定投方案
     const dcaScore = calcDCAScore(fd);
-    const keep = dcaScore >= 70; // 定投评分≥70为达标（提高阈值，确保推荐质量）
+    const keep = dcaScore >= 55; // 已有计划宽松保留阈值，避免刚加入的基金被立刻推翻
     if(!holdingPlansByCat[cat]) holdingPlansByCat[cat] = [];
     holdingPlansByCat[cat].push({ code:plan.code, name:plan.name||fd.name, monthly:plan.monthly, dcaScore, keep, fundData:fd });
     if(!keep) replaceSuggestions.push({ code:plan.code, name:plan.name||fd.name, cat, dcaScore, monthly:plan.monthly });
