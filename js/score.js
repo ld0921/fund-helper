@@ -176,22 +176,22 @@ function calcDCAScore(f){
   }
 
   // 2. 长期趋势（25%）：用超额r3（相对同类均值），避免牛市中所有基金趋近满分
-  const benchDca = _catBench[f.cat];
-  const avgR3Dca = benchDca && benchDca.avgR3 ? benchDca.avgR3 : 0;
+  const bench = _catBench[f.cat];
+  const avgR3Dca = bench && bench.avgR3 ? bench.avgR3 : 0;
   const excessR3Dca = f.r3 - avgR3Dca;
   const trendScore = excessR3Dca > 0
     ? Math.max(5, Math.min(25, 13 + Math.log(1 + excessR3Dca) / Math.log(101) * 12))
     : Math.max(5, Math.min(25, 13 + excessR3Dca * 0.1));
 
   // 3. 管理质量（20%）：经理年限 + 超额Calmar（相对同类均值，替代r3/maxDD避免牛市区分度消失）
-  const benchQ = _catBench[f.cat];
-  const avgCalmar = benchQ ? (benchQ.avgR3 ? (Math.pow(1+benchQ.avgR3/100,1/3)-1)*100 : RISK_FREE) / Math.max(benchQ.avgDD||10, 1) : 0;
-  const excessCalmar = (r3Ann / dd3yAdj) - avgCalmar;
+  const r3AnnDca = f.r3 > -100 ? (Math.pow(1 + f.r3/100, 1/3) - 1) * 100 : 0;
+  const dd3yAdjDca = Math.max(0.1, f.maxDD3y || f.maxDD || 0.1);
+  const avgCalmar = bench ? (bench.avgR3 ? (Math.pow(1+bench.avgR3/100,1/3)-1)*100 : RISK_FREE) / Math.max(bench.avgDD||10, 1) : 0;
+  const excessCalmar = (r3AnnDca / dd3yAdjDca) - avgCalmar;
   const qualityScore = Math.min(12, (f.mgrYears||0) * 0.8) + Math.min(8, Math.max(0, 4 + excessCalmar * 2));
 
   // 4. 近期动量反转修正 r1（20%）：定投应在低位买入，近期涨太多反而不是好时机
   // 逻辑：r1跌幅大（但长期向上）→ 定投摊成本效果最佳；r1涨幅过大 → 可能均值回归
-  const bench = _catBench[f.cat];
   const catAvgR1 = bench ? bench.avgR1 : 10;
   const catStdR1 = bench ? bench.stdR1 : 10;
   // 超涨（>均值+1σ）扣分，超跌（<均值-1σ）加分，中性区间正常计分
