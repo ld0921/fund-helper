@@ -89,6 +89,17 @@ function inferMomentumPhase(catRanks){
 
   let phase, label, equityMult, bondMult, desc;
 
+  // phase 参数映射（用于确认期回退）
+  const _phaseParams = {
+    overheat:    { label:'权益极端强势', equityMult:0.85, bondMult:0.95, desc:'权益涨幅显著高于历史均值且债券走弱，可能存在过热风险。建议控制仓位，警惕回调。' },
+    global_bull: { label:'全球权益强势', equityMult:1.08, bondMult:0.93, desc:'A股与海外权益同步强势，全球风险偏好上升。可适度超配权益和QDII。' },
+    recovery:    { label:'权益强势期',   equityMult:1.10, bondMult:0.93, desc:'权益类资产相对强势，动量信号偏多。债券仍有正收益。建议适度超配权益类资产。' },
+    stagflation: { label:'全面弱势期',   equityMult:0.85, bondMult:0.93, desc:'权益和债券均表现不佳，市场缺乏明确趋势。防御为主，建议超配货币和短债。' },
+    recession:   { label:'债券强势期',   equityMult:0.90, bondMult:1.10, desc:'债券相对强势，权益动量偏弱。避险情绪或降息预期驱动。建议超配债券类资产。' },
+    qdii_opp:    { label:'QDII机会期',  equityMult:0.95, bondMult:1.0,  desc:'海外权益强于A股，全球资产分散配置价值凸显。可适度增加QDII配置。' },
+    transition:  { label:'信号模糊期',   equityMult:0.95, bondMult:1.03, desc:'各类资产动量信号不明确，无明显趋势方向。建议均衡偏防守配置，小幅倾斜债券。' }
+  };
+
   if(equityStrong && bondWeak && equitySig > 10){
     phase = 'overheat'; label = '权益极端强势';
     equityMult = 0.85; bondMult = 0.95;
@@ -117,6 +128,40 @@ function inferMomentumPhase(catRanks){
     phase = 'transition'; label = '信号模糊期';
     equityMult = 0.95; bondMult = 1.03;
     desc = '各类资产动量信号不明确，无明显趋势方向。建议均衡偏防守配置，小幅倾斜债券。';
+  }
+
+  // 十年期国债收益率修正：利率上行压制债券、利率下行利好债券
+  const bondYield = (typeof MARKET_BENCHMARKS === 'object' && MARKET_BENCHMARKS._bondYield) || null;
+  if(bondYield !== null){
+    // 基准区间：2.5%-3.5% 为中性，低于2.5%利好债券，高于3.5%压制债券
+    if(bondYield < 2.3){
+      bondMult *= 1.05; // 低利率环境，债券有利
+      desc += ' 国债收益率偏低（' + bondYield.toFixed(2) + '%），利率环境利好债券。';
+    } else if(bondYield > 3.2){
+      bondMult *= 0.95; // 高利率环境，债券承压
+      equityMult *= 0.97; // 高利率也压制权益估值
+      desc += ' 国债收益率偏高（' + bondYield.toFixed(2) + '%），利率环境对债券和权益估值构成压力。';
+    }
+  }
+
+  // phase 确认期：新 phase 需连续出现2次才切换，防止频繁调仓
+  const prevPhaseData = JSON.parse(localStorage.getItem('_phaseHistory') || '{}');
+  const prevPhase = prevPhaseData.phase || phase;
+  const prevCount = prevPhaseData.count || 0;
+  if(phase !== prevPhase){
+    // 新 phase 出现，但还不切换（除非是高危状态直接切换）
+    if(prevCount >= 1 || phase === 'overheat' || phase === 'stagflation'){
+      // 已确认或高危状态，立即切换
+      localStorage.setItem('_phaseHistory', JSON.stringify({phase, count:0}));
+    } else {
+      // 首次出现，暂不切换，沿用上次 phase
+      localStorage.setItem('_phaseHistory', JSON.stringify({phase, count:1}));
+      // 用回上次的 phase 对应参数
+      const prev = _phaseParams[prevPhase];
+      if(prev){ phase = prevPhase; label = prev.label; equityMult = prev.equityMult; bondMult = prev.bondMult; desc = prev.desc + '（新信号待确认）'; }
+    }
+  } else {
+    localStorage.setItem('_phaseHistory', JSON.stringify({phase, count:0}));
   }
 
   return { phase, label, equityMult, bondMult, desc, equityR1, bondR1, qdiiR1, spread, spreadThreshold };

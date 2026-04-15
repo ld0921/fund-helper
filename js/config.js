@@ -45,6 +45,15 @@ async function loadCuratedFunds() {
     const data = await res.json();
     _curatedTimestamp = data.timestamp || null;
     MARKET_BENCHMARKS = data.marketBenchmarks || {};
+    // 动态覆盖指数估值数据（来自 fetch-ranks.js 自动爬取）
+    if(data.indexValuation){
+      Object.entries(data.indexValuation).forEach(([code, v]) => {
+        INDEX_VALUATION[code] = { name:v.name, pePct:v.pePct, pbPct:v.pbPct, updated:v.updated };
+      });
+      console.log('[精选库] 已更新指数估值:', Object.entries(data.indexValuation).map(([c,v]) => `${v.name}(PE百分位=${v.pePct}%)`).join(', '));
+    }
+    // 加载十年期国债收益率（用于宏观信号补充）
+    if(data.bondYield !== undefined) MARKET_BENCHMARKS._bondYield = data.bondYield;
     if(Object.keys(MARKET_BENCHMARKS).length > 0){
       console.log('[精选库] 已加载市场基准:', Object.keys(MARKET_BENCHMARKS).map(c => `${c}(avgR1=${MARKET_BENCHMARKS[c].avgR1}%,n=${MARKET_BENCHMARKS[c].count})`).join(', '));
     }

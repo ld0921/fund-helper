@@ -103,11 +103,19 @@ function scoreF(f){
     : Math.max(0, r3Base - Math.log(1 + Math.abs(excessR3)) / Math.log(101) * 7);
   const consistencyScore = Math.min(24, dirConsistency + r3Strength);
 
-  // 3. 任期稳定性（权重 22%）
-  //    客观指标：基金经理任期年限
-  //    任期<1年=可能刚更换经理（高风险），>5年=稳定，>10年=非常稳定
-  //    替代主观的「星级评定」
-  const stabilityScore = Math.round(Math.min(22, 3 + Math.log(1 + mg) / Math.log(16) * 19));
+  // 3. 任期稳定性 + 经理alpha（权重 22%）
+  //    任期对数增长（5年饱和大部分分值）+ 信息比率（IR）补充能力维度
+  //    IR = 超额收益 / 波动率，区分"靠市场涨"和"靠能力赚"
+  const tenureScore = Math.min(14, Math.round(2 + Math.log(1 + mg) / Math.log(16) * 12)); // 任期部分：最高14分
+  let alphaScore = 0;
+  if(bench && bench.stdR1 > 0 && f.cat !== 'money'){
+    const excessR1 = r1 - bench.avgR1;
+    const ir = excessR1 / bench.stdR1; // 信息比率
+    alphaScore = Math.round(Math.max(0, Math.min(8, 4 + ir * 2))); // IR=0→4分, IR=2→8分, IR=-2→0分
+  } else {
+    alphaScore = 4; // 货币基金或无基准数据，给中性分
+  }
+  const stabilityScore = Math.min(22, tenureScore + alphaScore);
 
   // 4. 规模适配性（权重 10%）
   //    指数基金：规模越大越好（流动性强、跟踪误差小）

@@ -458,10 +458,14 @@ function computeWeights(riskProfile, horizon, catRanks, macroClock){
         if(ci === cj){ corrMatrix[ci][cj] = 1.00; return; }
         const a = _mbSeqs[ci], b = _mbSeqs[cj];
         const n = Math.min(a.length, b.length);
-        const ma = a.slice(0,n).reduce((s,v)=>s+v,0)/n;
-        const mb2 = b.slice(0,n).reduce((s,v)=>s+v,0)/n;
+        // 指数衰减权重：最近月份权重最高，半衰期6个月
+        const halfLife = 6;
+        const wts = Array.from({length:n}, (_,i) => Math.exp(-Math.LN2 * (n-1-i) / halfLife));
+        const wSum = wts.reduce((s,v)=>s+v,0);
+        const ma = a.slice(0,n).reduce((s,v,i)=>s+v*wts[i],0)/wSum;
+        const mb2 = b.slice(0,n).reduce((s,v,i)=>s+v*wts[i],0)/wSum;
         let num=0, da=0, db=0;
-        for(let i=0;i<n;i++){ num+=(a[i]-ma)*(b[i]-mb2); da+=(a[i]-ma)**2; db+=(b[i]-mb2)**2; }
+        for(let i=0;i<n;i++){ num+=wts[i]*(a[i]-ma)*(b[i]-mb2); da+=wts[i]*(a[i]-ma)**2; db+=wts[i]*(b[i]-mb2)**2; }
         const corr = (da>0&&db>0) ? Math.max(-1, Math.min(1, num/Math.sqrt(da*db))) : _corrFallback[ci][cj];
         corrMatrix[ci][cj] = Math.round(corr*100)/100;
       });
@@ -1549,6 +1553,9 @@ function _doGenerate(shouldScroll){
   renderStyleExposure(styleExposure, finalPicks);
   renderStressTest(stressResults, totalAmt);
 
+  // 10.6 简易历史回测（用 monthlyReturns 模拟组合过去表现）
+  renderBacktest(finalPicks, totalAmt);
+
   // 11. 调仓建议（先于执行步骤生成，以便步骤引用调仓数据）
   const rebalPlan = computeRebalancePlan(selectedPicks, totalAmt);
   renderRebalancePlan(rebalPlan);
@@ -1800,6 +1807,110 @@ function renderStressTest(results, stressAmt){
       📐 <b>再平衡规则：</b>建议每半年检视，当任一类别偏离目标权重>15%(相对偏离)时触发再平衡。<br>
       💰 <b>交易成本（支付宝1折费率）：</b>混合型A类申购约0.15%，指数联接A类约0.10-0.12%，QDII A类约0.08%，C类/货币基金免申购费。赎回费：&lt;7天=1.5%（惩罚性），7天-1年≈0.5%，1-2年≈0.25%，&gt;2年=0%。QDII基金可能有单日限购（1000-5000元）。每次再平衡综合成本约0.1-0.3%。<br>
       ⏰ <b>再平衡频率：</b>半年度为宜。过频(季度/月度)增加成本且心理负担重，过疏(年度以上)偏离积累过大。阈值触发优于固定日历。
+    </div>`;
+}
+
+// ═══ 简易历史回测：用 monthlyReturns 模拟组合过去表现 ═══
+function renderBacktest(allPicks, totalAmt){
+  const sec = document.getElementById('backtest-section');
+  if(!sec) return;
+
+  // 收集各类别的月度收益序列
+  const catSeqs = {};
+  const cats5 = ['active','index','bond','money','qdii'];
+  cats5.forEach(c => {
+    if(MARKET_BENCHMARKS[c] && MARKET_BENCHMARKS[c].monthlyReturns && MARKET_BENCHMARKS[c].monthlyReturns.length >= 6)
+      catSeqs[c] = MARKET_BENCHMARKS[c].monthlyReturns;
+  });
+
+  if(Object.keys(catSeqs).length < 2){ sec.style.display='none'; return; }
+
+  // 计算各类别在组合中的权重
+  const catWeights = {};
+  allPicks.forEach(f => { catWeights[f.cat] = (catWeights[f.cat]||0) + (f.pct||0)/100; });
+
+  // 统一到最短月度序列长度
+  const months = Math.min(...Object.values(catSeqs).map(s=>s.length));
+  if(months < 6){ sec.style.display='none'; return; }
+
+  // 逐月计算组合收益
+  const portfolioReturns = [];
+  let cumReturn = 1;
+  let peak = 1;
+  let maxDD = 0;
+  const cumSeries = [1]; // 累计净值曲线
+
+  for(let i = 0; i < months; i++){
+    let monthReturn = 0;
+    Object.entries(catWeights).forEach(([cat, w]) => {
+      const seq = catSeqs[cat];
+      if(seq && i < seq.length) monthReturn += seq[i] / 100 * w;
+    });
+    // 未覆盖的类别（如无月度数据）假设为0收益
+    portfolioReturns.push(monthReturn * 100);
+    cumReturn *= (1 + monthReturn);
+    cumSeries.push(cumReturn);
+    if(cumReturn > peak) peak = cumReturn;
+    const dd = (peak - cumReturn) / peak * 100;
+    if(dd > maxDD) maxDD = dd;
+  }
+
+  const totalReturn = (cumReturn - 1) * 100;
+  const annReturn = (Math.pow(cumReturn, 12/months) - 1) * 100;
+  const monthlyStd = Math.sqrt(portfolioReturns.reduce((s,r) => s + (r - totalReturn/months)**2, 0) / months);
+  const annVol = monthlyStd * Math.sqrt(12);
+  const sharpe = annVol > 0 ? (annReturn - 1.7) / annVol : 0; // 无风险利率1.7%
+  const calmar = maxDD > 0 ? annReturn / maxDD : 0;
+
+  // 正收益月份占比
+  const posMonths = portfolioReturns.filter(r => r > 0).length;
+  const winRate = (posMonths / months * 100).toFixed(0);
+
+  // 生成简易ASCII净值曲线（20列宽）
+  const barCols = 24;
+  const step = Math.max(1, Math.floor(cumSeries.length / barCols));
+  const sampled = [];
+  for(let i = 0; i < cumSeries.length; i += step) sampled.push(cumSeries[i]);
+  const minV = Math.min(...sampled), maxV = Math.max(...sampled);
+  const range = maxV - minV || 1;
+  const barHeight = 6;
+  const bars = sampled.map(v => Math.round((v - minV) / range * barHeight));
+
+  sec.style.display='block';
+  sec.innerHTML=`
+    <div style="font-size:13px;font-weight:600;margin-bottom:8px">📈 历史回测（近${months}个月模拟）</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:8px">基于各类别月度收益均值 × 当前组合权重，模拟过去${months}个月的组合表现（不含交易成本和再平衡）。</div>
+    <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:10px">
+      <div style="flex:1;min-width:100px;padding:8px 12px;background:#f0f8ff;border-radius:6px;text-align:center">
+        <div style="font-size:11px;color:var(--muted)">累计收益</div>
+        <div style="font-size:16px;font-weight:700;color:${totalReturn>=0?'#237804':'#cf1322'}">${totalReturn>=0?'+':''}${totalReturn.toFixed(1)}%</div>
+      </div>
+      <div style="flex:1;min-width:100px;padding:8px 12px;background:#f0f8ff;border-radius:6px;text-align:center">
+        <div style="font-size:11px;color:var(--muted)">年化收益</div>
+        <div style="font-size:16px;font-weight:700;color:${annReturn>=0?'#237804':'#cf1322'}">${annReturn>=0?'+':''}${annReturn.toFixed(1)}%</div>
+      </div>
+      <div style="flex:1;min-width:100px;padding:8px 12px;background:#f0f8ff;border-radius:6px;text-align:center">
+        <div style="font-size:11px;color:var(--muted)">最大回撤</div>
+        <div style="font-size:16px;font-weight:700;color:#cf1322">-${maxDD.toFixed(1)}%</div>
+      </div>
+      <div style="flex:1;min-width:100px;padding:8px 12px;background:#f0f8ff;border-radius:6px;text-align:center">
+        <div style="font-size:11px;color:var(--muted)">Sharpe</div>
+        <div style="font-size:16px;font-weight:700;color:${sharpe>=0.5?'#237804':sharpe>=0?'#d48806':'#cf1322'}">${sharpe.toFixed(2)}</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:12px;margin-bottom:8px">
+      <div style="flex:1;padding:6px 10px;background:#fafafa;border-radius:4px;font-size:11px;text-align:center">
+        <span style="color:var(--muted)">Calmar</span> <b>${calmar.toFixed(2)}</b>
+      </div>
+      <div style="flex:1;padding:6px 10px;background:#fafafa;border-radius:4px;font-size:11px;text-align:center">
+        <span style="color:var(--muted)">年化波动</span> <b>${annVol.toFixed(1)}%</b>
+      </div>
+      <div style="flex:1;padding:6px 10px;background:#fafafa;border-radius:4px;font-size:11px;text-align:center">
+        <span style="color:var(--muted)">月度胜率</span> <b>${winRate}%</b>
+      </div>
+    </div>
+    <div style="font-size:10px;color:var(--muted);margin-top:6px;line-height:1.5">
+      ⚠️ 回测基于各类别历史月度均值，实际持有个基的表现会有偏差。过去表现不代表未来收益。回测不含交易成本、申赎费、再平衡摩擦。
     </div>`;
 }
 
