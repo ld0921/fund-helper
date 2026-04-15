@@ -1228,12 +1228,19 @@ function _doGenerate(shouldScroll){
     const newMoneyForCat = totalGap > 0 ? Math.round(totalAmt * gap / totalGap) : 0;
 
     // 已保留基金纳入推荐
+    // 关键：如果该类别已有持仓超过目标配置，按比例缩减到目标水平
+    // 例如：进取型 money 目标2%=¥805，但用户持有¥25,608，应缩减到¥805
+    // 否则超配的类别会在归一化时挤压其他类别的分配空间
+    const catTargetAmt = portfolioTotal * w / 100;
+    const keptValueTotal = kept.reduce((s,h) => s + h.value, 0);
+    const keptScale = (keptValueTotal > catTargetAmt && catTargetAmt > 0) ? catTargetAmt / keptValueTotal : 1;
+
     const keptPicks = kept.map(h=>({
       ...h.fundData,
-      pct: Math.round(h.value / portfolioTotal * 100),
-      amt: h.value,
-      role: '已持有·保留',
-      method: '继续持有',
+      pct: Math.round(h.value * keptScale / portfolioTotal * 100),
+      amt: Math.round(h.value * keptScale),
+      role: keptScale < 1 ? '已持有·减配' : '已持有·保留',
+      method: keptScale < 1 ? '减仓至目标配置' : '继续持有',
       methodClass: 'method-hold',
       isExisting: true,
     }));
