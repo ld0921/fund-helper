@@ -1481,6 +1481,7 @@ function hideParamHelp(){
   document.getElementById('param-help-overlay').style.display = 'none';
   document.getElementById('param-help-modal').style.display = 'none';
 }
+function switchTab(i){
   document.querySelectorAll('.tab').forEach((t,j)=>t.classList.toggle('active',i===j));
   document.querySelectorAll('.panel').forEach((p,j)=>p.classList.toggle('active',i===j));
   window.scrollTo({top:0});
