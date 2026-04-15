@@ -254,7 +254,7 @@
 
     <!-- 风险偏好：一行4个 -->
     <div style="margin-bottom:12px">
-      <div style="font-size:12px;color:var(--muted);margin-bottom:6px">🛡️ 风险偏好</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:6px;display:flex;align-items:center;gap:6px">🛡️ 风险偏好 <span class="param-help-btn" onclick="showParamHelp('risk')">?</span></div>
       <div style="display:flex;gap:6px" id="risk-selector">
         <label class="risk-option" data-v="conservative" onclick="selectRisk('conservative')" style="flex:1;padding:6px 4px">
           <div class="risk-name">🛡️ 保守</div><div class="risk-desc">3-5%</div>
@@ -274,7 +274,7 @@
 
     <!-- 投资期限：一行4个 -->
     <div style="margin-bottom:14px">
-      <div style="font-size:12px;color:var(--muted);margin-bottom:6px">📅 投资期限</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:6px;display:flex;align-items:center;gap:6px">📅 投资期限 <span class="param-help-btn" onclick="showParamHelp('horizon')">?</span></div>
       <div style="display:flex;gap:6px" id="horizon-selector">
         <label class="risk-option horizon-chip" data-v="1" onclick="selectHorizon(1)" style="flex:1;padding:6px 4px">
           <div class="risk-name">1年内</div><div class="risk-desc">短期</div>
@@ -1453,7 +1453,34 @@ function selectHorizon(val){
   resetSmartGenButton();
 }
 
-function switchTab(i){
+function showParamHelp(type){
+  const data = {
+    risk: {
+      title: '🛡️ 风险偏好说明',
+      body: `<b>保守型</b>：货币+债券为主（约70-80%），权益类极少。预期年化3-5%，最大回撤约5-10%。适合不能承受亏损的资金。<br><br>
+<b>稳健型</b>：债券为主，适度配置权益（约20-35%）。预期年化6-10%，最大回撤约10-20%。适合追求稳健增值的资金。<br><br>
+<b>平衡型</b>：权益与债券均衡配置（权益约40-55%）。预期年化8-15%，最大回撤约20-30%。适合接受一定波动的中长期资金。<br><br>
+<b>进取型</b>：权益类为主（约60-80%），货币/债券极少。预期年化12%+，最大回撤可能超过30%。适合长期闲置资金，能承受大幅波动。`
+    },
+    horizon: {
+      title: '📅 投资期限说明',
+      body: `<b>1年内</b>：大幅提升货币/债券比例，压缩权益类至最低。优先保本，牺牲收益换流动性。<br><br>
+<b>1-3年</b>：适度配置权益，以稳健资产为主。兼顾流动性与收益。<br><br>
+<b>3-5年</b>：中性配置，权益类比例适当提升。时间足够平滑短期波动，追求中长期复利。<br><br>
+<b>5年+</b>：大幅提升权益类比例，降低货币/债券。时间是最好的风险缓冲，长期复利效应显著。<br><br>
+<span style="color:var(--primary)">期限越长，系统会越积极地配置高波动高收益资产。</span>`
+    }
+  };
+  const d = data[type];
+  document.getElementById('param-help-title').innerHTML = d.title;
+  document.getElementById('param-help-body').innerHTML = d.body;
+  document.getElementById('param-help-overlay').style.display = 'block';
+  document.getElementById('param-help-modal').style.display = 'block';
+}
+function hideParamHelp(){
+  document.getElementById('param-help-overlay').style.display = 'none';
+  document.getElementById('param-help-modal').style.display = 'none';
+}
   document.querySelectorAll('.tab').forEach((t,j)=>t.classList.toggle('active',i===j));
   document.querySelectorAll('.panel').forEach((p,j)=>p.classList.toggle('active',i===j));
   window.scrollTo({top:0});
@@ -2495,6 +2522,16 @@ if('serviceWorker' in navigator){
       ⚠️ 以上为参考性推荐，不构成投资建议。基金投资有风险，请根据自身风险承受能力决策。
     </div>
   </div>
+</div>
+
+<!-- 参数说明浮层 -->
+<div id="param-help-overlay" onclick="hideParamHelp()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:9998"></div>
+<div id="param-help-modal" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9999;background:#fff;border-radius:14px;padding:20px;max-width:340px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.18)">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+    <div id="param-help-title" style="font-size:15px;font-weight:700;color:var(--text)"></div>
+    <span onclick="hideParamHelp()" style="cursor:pointer;font-size:18px;color:var(--muted);line-height:1">×</span>
+  </div>
+  <div id="param-help-body" style="font-size:13px;color:#595959;line-height:1.8"></div>
 </div>
 
 </body>

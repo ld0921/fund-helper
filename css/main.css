@@ -122,6 +122,8 @@ tr:last-child td{border-bottom:none}
 .risk-option.selected .risk-desc{color:rgba(255,255,255,.8)}
 .risk-option.selected::after{content:'✓';position:absolute;top:3px;right:5px;font-size:10px;font-weight:700;color:#fff;background:rgba(255,255,255,.3);width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;line-height:1}
 .risk-name{font-size:13px;font-weight:600;transition:color .2s}
+.param-help-btn{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:var(--border);color:var(--muted);font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0;transition:background .2s}
+.param-help-btn:hover{background:var(--primary);color:#fff}
 .risk-desc{font-size:10px;color:var(--muted);margin-top:1px;transition:color .2s}
 
 .risk-name{font-size:13px;font-weight:600}
