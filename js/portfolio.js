@@ -114,26 +114,18 @@ function computeRebalancePlan(targetPicks, newMoney){
     const held=existingHoldings.find(h=>h.code===pick.code);
     const currentAmt=held?held.value:0;
     const targetAmt=pick.amt; // 直接使用pick.amt作为目标金额
-    // 修复：targetAmt为0时强制减仓，不被newBuyAmt污染
-    const diff = targetAmt === 0 ? -currentAmt : (pick.newBuyAmt || (targetAmt-currentAmt));
-    // 容忍带差异化：货币/债券5%或¥200，指数10%或¥300，主动/QDII 15%或¥500
-    // 再平衡触发：只有偏离超过阈值才建议调仓，避免频繁换仓产生摩擦成本
+    // diff 始终基于 targetAmt - currentAmt，确保调仓金额与目标仓位一致
+    const diff = targetAmt === 0 ? -currentAmt : (targetAmt - currentAmt);
     const tolPct = ['money','bond'].includes(pick.cat) ? 0.10 : pick.cat === 'index' ? 0.15 : 0.20;
     const tolMin = ['money','bond'].includes(pick.cat) ? 300 : pick.cat === 'index' ? 500 : 800;
     const tol = Math.max(targetAmt * tolPct, tolMin);
     let action,actionAmt,actionDesc,actionColor;
-    // 修复：目标仓位为0时不显示"建议新买"
     if(targetAmt === 0 && currentAmt === 0) return;
     if(currentAmt===0){
       action='buy'; actionAmt=targetAmt;
       actionDesc=`新建仓 ¥${targetAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
       actionColor='act-buy';
-    } else if(pick.newBuyAmt && pick.newBuyAmt > 0){
-      // 对于有newBuyAmt的基金，直接使用newBuyAmt作为加仓金额，不受容忍带限制
-      action='buy_more'; actionAmt=pick.newBuyAmt;
-      actionDesc=`加仓 ¥${pick.newBuyAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
-      actionColor='act-buy_more';
-    } else if(diff>tol && diff > 0){ // 修复问题3：强制检查diff>0，避免负数加仓
+    } else if(diff>tol && diff > 0){
       action='buy_more'; actionAmt=diff;
       actionDesc=`加仓 ¥${diff.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
       actionColor='act-buy_more';
@@ -658,8 +650,8 @@ function computeWeights(riskProfile, horizon, catRanks, macroClock){
     base[k] += 100 - total2;
   }
 
-  // 8. 货币类集中度约束：上限50%，超出部分转移给债券，避免与持仓诊断矛盾
-  const moneyCap = 50;
+  // 8. 货币类集中度约束：按风险偏好设置上限
+  const moneyCap = {conservative:50, moderate:35, balanced:20, aggressive:10}[riskProfile] || 50;
   if((base.money||0) > moneyCap){
     const excess = base.money - moneyCap;
     base.money = moneyCap;
@@ -1412,23 +1404,36 @@ function _doGenerate(shouldScroll){
     return s;
   }, 0);
   const newBuyDiff = totalAmt - newBuyTotal;
-  if(Math.abs(newBuyDiff) > 1){ // 容忍1元误差
-    // 将差额加到金额最大的新买入基金上
+  if(Math.abs(newBuyDiff) > 1){
     const candidates = finalPicks.filter(f => !f.isExisting || f.newBuyAmt);
     if(candidates.length > 0){
-      const maxNewBuy = candidates.sort((a,b) => {
-        const amtA = !a.isExisting ? a.amt : (a.newBuyAmt || 0);
-        const amtB = !b.isExisting ? b.amt : (b.newBuyAmt || 0);
-        return amtB - amtA;
-      })[0];
-
-      if(!maxNewBuy.isExisting){
-        maxNewBuy.amt += newBuyDiff;
-      } else if(maxNewBuy.newBuyAmt){
-        maxNewBuy.newBuyAmt += newBuyDiff;
-        maxNewBuy.amt += newBuyDiff;
+      if(newBuyDiff > 0){
+        // 资金有剩余：加到最大买入基金上
+        const maxNewBuy = candidates.sort((a,b)=>{
+          const amtA = !a.isExisting ? a.amt : (a.newBuyAmt||0);
+          const amtB = !b.isExisting ? b.amt : (b.newBuyAmt||0);
+          return amtB - amtA;
+        })[0];
+        if(!maxNewBuy.isExisting){ maxNewBuy.amt += newBuyDiff; }
+        else { maxNewBuy.newBuyAmt += newBuyDiff; maxNewBuy.amt += newBuyDiff; }
+        maxNewBuy.pct = Math.round(maxNewBuy.amt / portfolioTotal * 100);
+      } else {
+        // 资金不足：按比例缩减所有新买入基金，确保没有负数
+        const totalNewBuy = candidates.reduce((s,f)=>s+(!f.isExisting?f.amt:(f.newBuyAmt||0)),0);
+        if(totalNewBuy > 0){
+          const scale = totalAmt / totalNewBuy;
+          candidates.forEach(f => {
+            if(!f.isExisting){
+              f.amt = Math.max(0, Math.round(f.amt * scale));
+            } else if(f.newBuyAmt){
+              const scaled = Math.max(0, Math.round(f.newBuyAmt * scale));
+              f.amt = f.amt - f.newBuyAmt + scaled;
+              f.newBuyAmt = scaled;
+            }
+            f.pct = Math.round(f.amt / portfolioTotal * 100);
+          });
+        }
       }
-      maxNewBuy.pct = Math.round(maxNewBuy.amt / portfolioTotal * 100);
     }
   }
 
