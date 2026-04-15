@@ -87,8 +87,9 @@ function computeRebalancePlan(targetPicks, newMoney){
           actionDesc=`加仓 ¥${diff.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
           actionColor='act-buy_more';
         } else if(diff < -tol){
-          action='reduce'; actionAmt=Math.abs(diff);
-          actionDesc=`减仓 ¥${Math.abs(diff).toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
+          const reduceAmt = Math.min(Math.abs(diff), currentAmt); // 不能超过持仓金额
+          action='reduce'; actionAmt=reduceAmt;
+          actionDesc=`减仓 ¥${reduceAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
           actionColor='act-reduce';
         } else {
           action='hold'; actionAmt=0;
@@ -223,14 +224,6 @@ function computeRebalancePlan(targetPicks, newMoney){
     const sameCatTargets = allPicks.filter(p => p.cat === cat);
     const bestTarget = sameCatTargets.length > 0 ? sameCatTargets.sort((a,b) => scoreF(b) - scoreF(a))[0] : null;
 
-    // 货币基金：永远不建议卖出，保持观察
-    if(cat === 'money'){
-      action='satellite'; actionAmt=0;
-      actionDesc=`货币基金，近1年${r1}%，可作流动性底仓继续持有`;
-      actionColor='act-satellite';
-      actions.push({code:h.code,name:h.name,type:fd?.type||'--',cat:'money',r1:r1??'--',currentAmt:h.value,targetAmt:0,action,actionAmt,actionDesc,actionColor,manager:fd?.manager||'--'});
-      return;
-    }
     if(r1===null){
       action='satellite'; actionAmt=0;
       actionDesc='无法获取收益数据，建议人工确认后决定';
@@ -1242,7 +1235,7 @@ function _doGenerate(shouldScroll){
       const newPctForCat = Math.round(newMoneyForCat / portfolioTotal * 100);
       const poolExcluded = {
         ...cd,
-        topFunds: cd.topFunds.filter(f=>!kept.some(k=>k.code===f.code))
+        topFunds: cd.topFunds.filter(f=>!existingHoldings.some(h=>h.code===f.code))
       };
       newPicks = selectFunds(cd.cat, poolExcluded, riskP, newPctForCat, portfolioTotal);
       newPicks.forEach(p=>{ p.isExisting = false; });
