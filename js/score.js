@@ -133,7 +133,7 @@ function scoreF(f){
     valuationAdj = getValuationAdj(f.code);
   } else if((f.cat === 'active' || f.cat === 'qdii') && bench && bench.stdR1 > 0){
     const z = (r1 - bench.avgR1) / bench.stdR1;
-    valuationAdj = Math.round(Math.max(-5, Math.min(5, -z * 2.5))); // 超涨减分，超跌加分
+    valuationAdj = Math.round(Math.max(-8, Math.min(8, -z * 3.5))); // 超涨减分，超跌加分
   }
   return Math.max(0, Math.min(100, total + valuationAdj));
 }

@@ -66,7 +66,7 @@ function inferMomentumPhase(catRanks){
     const r1 = getAvgR1(cat);
     const r3m = getAvgR3(cat) > -100 ? (Math.pow(1 + getAvgR3(cat)/100, 1/3) - 1) * 100 / 4 * 12 : 0; // r3年化后近似3月值（年化%）
     const chg = getAvgChg(cat) * 20; // 今日涨跌放大20倍对齐量纲
-    return r3m * 0.5 + r1 * 0.3 + chg * 0.2;
+    return r3m * 0.65 + r1 * 0.30 + chg * 0.05;
   };
 
   const equityR1 = (getAvgR1('active') + getAvgR1('index')) / 2;

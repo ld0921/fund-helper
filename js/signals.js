@@ -106,10 +106,13 @@ function runSignalEngine(){
       });
     }
 
-    // 信号2：持仓基金大涨（≥3%），考虑部分止盈
-    if(chg >= 3){
+    // 信号2：持仓基金大涨（≥3%）或近1年超涨（r1超同类均值1.5σ），考虑部分止盈
+    const catBench = catRanks && fd ? catRanks.find(c=>c.cat===fd.cat) : null;
+    const overheated = catBench && catBench.stdR1 > 0 && fd.r1 > catBench.avgR1 + catBench.stdR1 * 1.5;
+    if(chg >= 3 || (pnlPct !== null && pnlPct > 20 && overheated)){
+      const triggerDesc = chg >= 3 ? `今日大涨 ${chg.toFixed(2)}%` : `近1年超涨（+${fd.r1}%，超同类均值${(fd.r1-catBench.avgR1).toFixed(1)}%）`;
       signals.push({type:'success', priority:2, code:h.code, name:h.name,
-        title:`🚀 ${h.name} 今日大涨 ${chg.toFixed(2)}%`,
+        title:`🚀 ${h.name} ${triggerDesc}`,
         desc: pnlPct!==null && pnlPct > 20
           ? `持仓已盈利 ${pnlPct.toFixed(1)}%，可考虑部分止盈锁定利润。`
           : '涨幅可观，持续关注后续走势。',

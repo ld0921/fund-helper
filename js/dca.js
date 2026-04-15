@@ -273,6 +273,15 @@ function _doGenerateDca(){
     });
   }
 
+  // 6.5 指数基金估值感知：低估多投，高估少投（±20%幅度）
+  allPicks.forEach(p => {
+    if(p.cat !== 'index') return;
+    const adj = getValuationAdj(p.code); // -10~+10
+    if(adj === 0) return;
+    const mult = 1 + adj * 0.02; // adj=10 → ×1.2，adj=-10 → ×0.8
+    p.monthly = Math.max(100, Math.round(p.monthly * mult / 100) * 100);
+  });
+
   // 7. 重新计算百分比（基于最终月投金额）
   const finalTotal = allPicks.reduce((s,p) => s + p.monthly, 0);
   allPicks.forEach(p => {
