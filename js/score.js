@@ -168,8 +168,8 @@ function calcDCAScore(f){
     }
     if(vol > 0){
       // 各类别最优月度σ区间（月度σ≈年化σ/√12）
-      const optimalVol = {active:5, index:5, bond:5, qdii:7}[f.cat] || 5;
-      const volSigma   = {active:3, index:3, bond:3, qdii:4}[f.cat] || 3;
+      const optimalVol = {active:5, index:5, bond:0.8, qdii:7}[f.cat] || 5;
+      const volSigma   = {active:3, index:3, bond:0.5, qdii:4}[f.cat] || 3;
       volScore = 35 * Math.exp(-Math.pow(Math.min(vol,20) - optimalVol, 2) / (2 * volSigma * volSigma));
       const r3Bonus = Math.min(1.0, (f.r3||0) / 30);
       volScore = volScore * (0.6 + 0.4 * r3Bonus);
