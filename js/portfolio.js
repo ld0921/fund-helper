@@ -301,6 +301,12 @@ function computeRebalancePlan(targetPicks, newMoney){
     }
   }
 
+  // 新建仓基金：targetAmt 始终等于 actionAmt（买多少就是目标仓位）
+  buyActions.filter(a=>a.action==='buy').forEach(a=>{
+    a.targetAmt = a.actionAmt;
+    a.actionDesc = `新建仓 ¥${a.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
+  });
+
   // 计算资金流动摘要
   const summary={
     existTotal, newMoney, totalPortfolio,
