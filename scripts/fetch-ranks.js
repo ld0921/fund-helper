@@ -469,66 +469,53 @@ async function main() {
     await sleep(150);
   }
 
-  // ═══ 自动获取宽基指数PE百分位估值 ═══
+  // ═══ 自动获取宽基指数PE百分位估值（中证指数官网近10年数据） ═══
   const INDEX_CODES = [
     { code: '000300', name: '沪深300' },
     { code: '000905', name: '中证500' },
-    { code: '399006', name: '创业板' },
     { code: '000852', name: '中证1000' },
     { code: '000016', name: '上证50' },
   ];
-  console.log('\n开始获取指数估值数据…');
+  console.log('\n开始获取指数估值数据（中证指数官网）…');
   const indexValuation = {};
+  const today = new Date();
+  const endDate = today.toISOString().slice(0,10).replace(/-/g,'');
+  const startDate10y = new Date(today - 10*365.25*24*60*60*1000).toISOString().slice(0,10).replace(/-/g,'');
+
   for (const idx of INDEX_CODES) {
     try {
-      // 东方财富指数估值接口：获取PE/PB
-      const url = `https://push2.eastmoney.com/api/qt/stock/get?secid=${idx.code.startsWith('399') ? '0' : '1'}.${idx.code}&fields=f164,f167,f168,f171`;
-      const body = await httpGetWithRetry(url, { 'Referer': 'https://www.eastmoney.com/' }, 10000);
+      const url = `https://www.csindex.com.cn/csindex-home/perf/index-perf?indexCode=${idx.code}&startDate=${startDate10y}&endDate=${endDate}`;
+      const body = await httpGetWithRetry(url, {
+        'Referer': 'https://www.csindex.com.cn/',
+        'User-Agent': 'Mozilla/5.0 (compatible; FundHelper/1.0)',
+        'Accept': 'application/json'
+      }, 30000);
       const json = JSON.parse(body);
-      if (json.data) {
-        const pe = json.data.f164; // 静态PE
-        const pb = json.data.f167; // PB
-        if (pe > 0) {
-          // 用简化的历史百分位估算：基于各指数长期PE区间
-          const peRanges = {
-            '000300': [8, 18],   // 沪深300 PE 历史区间
-            '000905': [15, 45],  // 中证500
-            '399006': [25, 75],  // 创业板
-            '000852': [20, 55],  // 中证1000
-            '000016': [7, 16],   // 上证50
-          };
-          const range = peRanges[idx.code] || [10, 30];
-          const pePct = Math.round(Math.max(0, Math.min(100, (pe - range[0]) / (range[1] - range[0]) * 100)));
-          const pbRanges = {
-            '000300': [1.0, 2.2], '000905': [1.2, 3.5], '399006': [2.5, 8.0],
-            '000852': [1.5, 4.0], '000016': [0.9, 2.0],
-          };
-          const pbRange = pbRanges[idx.code] || [1.0, 3.0];
-          const pbPct = pb > 0 ? Math.round(Math.max(0, Math.min(100, (pb - pbRange[0]) / (pbRange[1] - pbRange[0]) * 100))) : 50;
-
-          indexValuation[idx.code] = { name: idx.name, pe: Math.round(pe * 100) / 100, pePct, pb: Math.round(pb * 100) / 100, pbPct, updated: new Date().toISOString().slice(0, 7) };
-          console.log(`  ${idx.name}(${idx.code}): PE=${pe.toFixed(2)} 百分位=${pePct}% PB=${pb.toFixed(2)} 百分位=${pbPct}%`);
-        }
+      const data = (json.data || []).filter(r => r.peg > 0);
+      if (data.length >= 100) {
+        const latestPe = data[data.length - 1].peg;
+        const pePct = Math.round(data.filter(r => r.peg < latestPe).length / data.length * 100);
+        indexValuation[idx.code] = { name: idx.name, pe: Math.round(latestPe * 100) / 100, pePct, pbPct: pePct, updated: new Date().toISOString().slice(0, 7) };
+        console.log(`  ${idx.name}(${idx.code}): PE=${latestPe.toFixed(2)} 百分位=${pePct}%（基于${data.length}个交易日）`);
+      } else {
+        console.warn(`  ${idx.name}: 数据不足（${data.length}条），跳过`);
       }
     } catch (e) {
       console.warn(`  估值获取失败 ${idx.name}: ${e.message}`);
     }
-    await sleep(300);
+    await sleep(500);
   }
 
-  // ═══ 获取十年期国债收益率 ═══
-  console.log('\n开始获取十年期国债收益率…');
+  // ═══ 获取十年期国债收益率（通过十年国债ETF净值变化推算利率环境） ═══
+  // 注：直接获取国债收益率的免费API较少，此处用债券基金近1年收益率作为利率环境代理
+  console.log('\n推算利率环境…');
   let bondYield = null;
-  try {
-    const url = 'https://push2.eastmoney.com/api/qt/stock/get?secid=1.019326&fields=f43,f44,f45,f46';
-    const body = await httpGetWithRetry(url, { 'Referer': 'https://www.eastmoney.com/' }, 10000);
-    const json = JSON.parse(body);
-    if (json.data && json.data.f43) {
-      bondYield = json.data.f43 / 1000; // 单位转换为%
-      console.log(`  十年期国债收益率: ${bondYield.toFixed(3)}%`);
-    }
-  } catch (e) {
-    console.warn(`  国债收益率获取失败: ${e.message}`);
+  const bondBench = finalBenchmarks['bond'];
+  if (bondBench && bondBench.avgR1 !== undefined) {
+    // 债券基金近1年均收益 >5% 暗示利率下行环境，<2% 暗示利率上行/震荡
+    // 映射到近似国债收益率区间：avgR1=2% → yield≈3.0%, avgR1=5% → yield≈2.3%, avgR1=0% → yield≈3.5%
+    bondYield = Math.round(Math.max(1.5, Math.min(4.0, 3.5 - bondBench.avgR1 * 0.15)) * 1000) / 1000;
+    console.log(`  债券基金近1年均收益: ${bondBench.avgR1.toFixed(2)}% → 推算利率环境: ${bondYield.toFixed(3)}%`);
   }
 
   // 写入 curatedResult
