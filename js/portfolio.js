@@ -581,18 +581,17 @@ function computeWeights(riskProfile, horizon, catRanks, macroClock){
     const bottom = catRanks[catRanks.length-1].cat;
     const scoreRange = catRanks[0].catScore - catRanks[catRanks.length-1].catScore;
     if(scoreRange > 0){
-      // 反转保护1：若该类别已被动量信号调高（equityMult>1），动量倾斜减半，防止双重追涨
+      // 反转保护1：若该类别已被动量信号调高（equityMult>1），跳过正向倾斜，防止双重追涨
       const topAlreadyBoosted = macroClock && macroClock.equityMult > 1 && ['active','index','qdii'].includes(top);
-      const tiltScale = topAlreadyBoosted ? 0.5 : 1.0;
       const topCatData = catRanks[0];
-      // 固定幅度倾斜：强势类别+maxTilt，避免 scoreRange 量纲不稳定
-      let effectiveTilt = Math.round(maxTilt * tiltScale);
+      // 固定幅度倾斜：强势类别+maxTilt，避免 scoreRange 量纲不稳定；已被宏观信号加仓则不再叠加
+      let effectiveTilt = topAlreadyBoosted ? 0 : maxTilt;
       if(topCatData.avgR1 > 40){
         effectiveTilt = -Math.round(maxTilt * 0.3);
       } else if(topCatData.avgR1 > 30){
         effectiveTilt = 0;
       }
-      const trimAmt = Math.round(maxTilt * 0.5 * tiltScale);
+      const trimAmt = Math.round(maxTilt * 0.5);
       // 反转保护3：弱势类别若已跌较深(avgR1<-10%)，可能是底部区域，不再减配
       const bottomCatData = catRanks[catRanks.length-1];
       const effectiveTrim = bottomCatData.avgR1 < -10 ? 0 : trimAmt;
