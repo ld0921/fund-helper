@@ -115,11 +115,11 @@ function inferMomentumPhase(catRanks){
     desc = '海外权益强于A股，全球资产分散配置价值凸显。可适度增加QDII配置。';
   } else {
     phase = 'transition'; label = '信号模糊期';
-    equityMult = 1.0; bondMult = 1.0;
-    desc = '各类资产动量信号不明确，无明显趋势方向。建议均衡配置，不做极端倾斜。';
+    equityMult = 0.95; bondMult = 1.03;
+    desc = '各类资产动量信号不明确，无明显趋势方向。建议均衡偏防守配置，小幅倾斜债券。';
   }
 
-  return { phase, label, equityMult, bondMult, desc, equityR1, bondR1, qdiiR1 };
+  return { phase, label, equityMult, bondMult, desc, equityR1, bondR1, qdiiR1, spread, spreadThreshold };
 }
 
 // 基金经理变更检测

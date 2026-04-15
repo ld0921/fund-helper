@@ -100,7 +100,7 @@ function scoreF(f){
   const r3Base = (r1 < 0 && r3 < 0) ? 0 : 7;
   const r3Strength = excessR3 > 0
     ? Math.min(14, r3Base + Math.log(1 + excessR3) / Math.log(101) * 7)
-    : Math.max(0, r3Base + excessR3 * 0.05);
+    : Math.max(0, r3Base - Math.log(1 + Math.abs(excessR3)) / Math.log(101) * 7);
   const consistencyScore = Math.min(24, dirConsistency + r3Strength);
 
   // 3. 任期稳定性（权重 22%）

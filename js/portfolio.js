@@ -214,7 +214,7 @@ function computeRebalancePlan(targetPicks, newMoney){
     } else if(cat === 'money'){
       sellThreshold = -999; // 货币基金几乎不建议卖
     } else {
-      sellThreshold = 0; // 权益类：近1年负收益才建议卖
+      sellThreshold = bench ? bench.avgR1 - bench.stdR1 * 1.5 : 0; // 权益类：跌破同类均值1.5σ才建议卖
     }
 
     // 计算持有天数（如果有购买日期）
@@ -561,9 +561,11 @@ function computeWeights(riskProfile, horizon, catRanks, macroClock){
     const bdMult = macroClock.bondMult;
     ['active','index','qdii'].forEach(c => { if(base[c]) base[c] *= eqMult; });
     if(base.bond) base.bond *= bdMult;
-    // 滞胀期强制提升货币配置
+    // 滞胀期按信号强度梯度提升货币配置
     if(macroClock.phase === 'stagflation'){
-      base.money = Math.max(base.money || 0, 15);
+      const intensity = macroClock.spreadThreshold > 0 ? Math.abs(macroClock.spread) / macroClock.spreadThreshold : 1;
+      const moneyFloor = intensity > 1.5 ? 15 : intensity > 0.8 ? 10 : 5;
+      base.money = Math.max(base.money || 0, moneyFloor);
     }
     // QDII机会期：适度提升QDII配置
     if(macroClock.phase === 'qdii_opp' || macroClock.phase === 'global_bull'){
