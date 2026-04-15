@@ -74,6 +74,7 @@ function computeRebalancePlan(targetPicks, newMoney){
   allPicks.forEach(pick=>{
     // 特殊处理：如果是新买入的条目（isExisting=false），先检查用户是否实际持有该基金
     if(pick.isExisting === false){
+      if(pick.amt <= 0) return; // 金额为0的新买入直接跳过
       const actualHeld = existingHoldings.find(h => h.code === pick.code);
       if(actualHeld){
         // 用户实际持有该基金，但评分未达保留阈值，按加仓逻辑处理
