@@ -1950,10 +1950,13 @@ function renderAllocGroups(selectedPicks, weights){
     if(!picks.length) return;
     const groupPct = Math.round(picks.reduce((s,f)=>s+f.pct,0));
     const groupAmt = Math.round(picks.reduce((s,f)=>s+f.amt,0));
+    const targetGroupPct = Math.round(g.cats.reduce((s,cat)=>s+(weights[cat]||0),0));
+    const targetNote = targetGroupPct !== groupPct
+      ? `<span style="font-size:11px;color:var(--muted);margin-left:6px">目标${targetGroupPct}%</span>` : '';
     html+=`<div class="alloc-group">
       <div class="alloc-group-head">
         <span>${g.title}</span>
-        <span style="color:${g.color};font-size:14px"><b>${groupPct}%</b> · ¥${groupAmt.toLocaleString()}</span>
+        <span style="color:${g.color};font-size:14px"><b>${groupPct}%</b> · ¥${groupAmt.toLocaleString()}${targetNote}</span>
       </div>
       <div class="alloc-group-body">${picks.map(f=>{
         const nav=navCache[f.code];
