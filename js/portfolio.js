@@ -1191,7 +1191,9 @@ function _doGenerate(shouldScroll){
   catRanks.forEach(cd=>{
     const cat = cd.cat;
     const targetAmt = portfolioTotal * (weights[cat]||0) / 100;
-    const keptFunds = (holdingsByCat[cat]||[]).filter(h=>h.keep);
+    // 所有已持仓基金（不管评分高低）都参与调仓计算
+    const allHeldFunds = holdingsByCat[cat]||[];
+    const keptFunds = allHeldFunds; // 不再按评分过滤，已持仓基金都纳入目标
     const keptAmt = keptFunds.reduce((s,h)=>s+h.value,0);
     if(keptAmt > targetAmt){
       freedFromOverweight += keptAmt - targetAmt;
@@ -1223,8 +1225,8 @@ function _doGenerate(shouldScroll){
       ...h.fundData,
       pct: Math.round(h.value * keptScale / portfolioTotal * 100),
       amt: Math.round(h.value * keptScale),
-      role: keptScale < 1 ? '已持有·减配' : '已持有·保留',
-      method: keptScale < 1 ? '减仓至目标配置' : '继续持有',
+      role: keptScale < 1 ? '已持有·减配' : (h.keep ? '已持有·保留' : '已持有·低分'),
+      method: keptScale < 1 ? '减仓至目标配置' : (h.keep ? '继续持有' : '建议逐步替换'),
       methodClass: 'method-hold',
       isExisting: true,
     })).filter(p => p.amt >= 100);
