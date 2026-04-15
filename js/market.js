@@ -50,9 +50,23 @@ function inferMomentumPhase(catRanks){
     if(typeof MARKET_BENCHMARKS === 'object' && MARKET_BENCHMARKS[cat]) return MARKET_BENCHMARKS[cat].avgR1 || 0;
     const c = catRanks.find(x=>x.cat===cat); return c ? c.avgR1 : 0;
   };
+  const getAvgR3 = cat => {
+    if(typeof MARKET_BENCHMARKS === 'object' && MARKET_BENCHMARKS[cat]) return MARKET_BENCHMARKS[cat].avgR3 || 0;
+    const c = catRanks.find(x=>x.cat===cat); return c ? c.avgR3 : 0;
+  };
+  const getAvgChg = cat => { const c = catRanks.find(x=>x.cat===cat); return c ? c.avgChg : 0; };
   const getStdR1 = cat => {
     if(typeof MARKET_BENCHMARKS === 'object' && MARKET_BENCHMARKS[cat]) return MARKET_BENCHMARKS[cat].stdR1 || 10;
     const c = catRanks.find(x=>x.cat===cat); return c ? c.stdR1 : 10;
+  };
+
+  // 多时间窗口加权信号：近3月(r3年化/4)*50% + 近1年*30% + 今日涨跌*20倍*20%
+  // 降低r1权重，提升短期信号权重，减少6~12个月滞后
+  const signal = cat => {
+    const r1 = getAvgR1(cat);
+    const r3m = getAvgR3(cat) > -100 ? (Math.pow(1 + getAvgR3(cat)/100, 1/3) - 1) * 100 / 4 * 12 : 0; // r3年化后近似3月值（年化%）
+    const chg = getAvgChg(cat) * 20; // 今日涨跌放大20倍对齐量纲
+    return r3m * 0.5 + r1 * 0.3 + chg * 0.2;
   };
 
   const equityR1 = (getAvgR1('active') + getAvgR1('index')) / 2;
@@ -61,19 +75,21 @@ function inferMomentumPhase(catRanks){
   const bondStd = getStdR1('bond');
   const qdiiStd = getStdR1('qdii');
 
-  // 修复：用权益相对债券的强弱判断，而非自比较（自比较永远为false）
-  // 权益强：equityR1 显著高于 bondR1；权益弱：equityR1 显著低于 bondR1
-  const spread = equityR1 - bondR1; // 权益-债券利差
-  const spreadThreshold = Math.max(3, bondStd * 0.5); // 动态阈值，至少3%
-  const equityStrong = spread > spreadThreshold && equityR1 > 0;
-  const equityWeak   = spread < -spreadThreshold || equityR1 < 0;
-  const bondStrong   = bondR1 > 3 && spread < 0;
-  const bondWeak     = bondR1 < 1;
-  const qdiiStrong   = qdiiR1 > equityR1 + qdiiStd * 0.3 && qdiiR1 > 5;
+  const equitySig = (signal('active') + signal('index')) / 2;
+  const bondSig   = signal('bond');
+  const qdiiSig   = signal('qdii');
+
+  const spread = equitySig - bondSig;
+  const spreadThreshold = Math.max(3, bondStd * 0.5);
+  const equityStrong = spread > spreadThreshold && equitySig > 0;
+  const equityWeak   = spread < -spreadThreshold || equitySig < 0;
+  const bondStrong   = bondSig > 3 && spread < 0;
+  const bondWeak     = bondSig < 1;
+  const qdiiStrong   = qdiiSig > equitySig + qdiiStd * 0.3 && qdiiSig > 5;
 
   let phase, label, equityMult, bondMult, desc;
 
-  if(equityStrong && bondWeak && equityR1 > 10){
+  if(equityStrong && bondWeak && equitySig > 10){
     phase = 'overheat'; label = '权益极端强势';
     equityMult = 0.85; bondMult = 0.95;
     desc = '权益涨幅显著高于历史均值且债券走弱，可能存在过热风险。建议控制仓位，警惕回调。';
