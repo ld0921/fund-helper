@@ -1217,30 +1217,48 @@ function _doGenerate(shouldScroll){
     const newMoneyForCat = totalGap > 0 ? Math.round(distributableMoney * gap / totalGap) : 0;
 
     // 已保留基金纳入推荐
-    // 若该类别超配，按目标金额缩减 amt，避免归一化后 targetAmt≈0 触发全仓减仓
+    // 若该类别超配，按目标金额缩减 amt；若不足，优先将缺口分配给评分达标的已持仓基金（加仓）
     const catTargetAmt = portfolioTotal * w / 100;
     const keptValueTotal = kept.reduce((s,h) => s + h.value, 0);
     const keptScale = (keptValueTotal > catTargetAmt && catTargetAmt > 0) ? catTargetAmt / keptValueTotal : 1;
+
+    // 缺口优先分配给评分达标的已持仓基金（加仓），按持仓比例分配
+    const keepFunds = kept.filter(h => h.keep);
+    let remainingGap = gap; // 分配给已持仓后的剩余缺口
+    const keptAddMap = {}; // code -> 加仓金额
+    if(gap > 0 && keepFunds.length > 0 && newMoneyForCat > 0){
+      const keepTotal = keepFunds.reduce((s,h) => s + h.value, 0) || 1;
+      keepFunds.forEach(h => {
+        const addAmt = Math.round(newMoneyForCat * (h.value / keepTotal));
+        keptAddMap[h.code] = addAmt;
+        remainingGap -= addAmt;
+      });
+      remainingGap = Math.max(0, remainingGap);
+    }
+
     const keptPicks = kept.map(h=>({
       ...h.fundData,
-      pct: Math.round(h.value * keptScale / portfolioTotal * 100),
-      amt: Math.round(h.value * keptScale),
-      role: keptScale < 1 ? '已持有·减配' : (h.keep ? '已持有·保留' : '已持有·低分'),
-      method: keptScale < 1 ? '减仓至目标配置' : (h.keep ? '继续持有' : '建议逐步替换'),
+      pct: Math.round((h.value * keptScale + (keptAddMap[h.code]||0)) / portfolioTotal * 100),
+      amt: Math.round(h.value * keptScale + (keptAddMap[h.code]||0)),
+      role: keptScale < 1 ? '已持有·减配' : (keptAddMap[h.code] ? '已持有·加仓' : (h.keep ? '已持有·保留' : '已持有·低分')),
+      method: keptScale < 1 ? '减仓至目标配置' : (keptAddMap[h.code] ? '加仓至目标配置' : (h.keep ? '继续持有' : '建议逐步替换')),
       methodClass: 'method-hold',
       isExisting: true,
+      newBuyAmt: keptAddMap[h.code] || 0,
     })).filter(p => p.amt >= 100);
 
-    // 新买入的基金（从候选池中选，排除已持有的）
+    // 新买入的基金（从候选池中选，排除已持有的），仅用剩余缺口
     let newPicks = [];
-    if(newMoneyForCat > 0 && gap > 0){
-      const newPctForCat = Math.round(newMoneyForCat / portfolioTotal * 100);
-      const poolExcluded = {
-        ...cd,
-        topFunds: cd.topFunds.filter(f=>!existingHoldings.some(h=>h.code===f.code))
-      };
-      newPicks = selectFunds(cd.cat, poolExcluded, riskP, newPctForCat, portfolioTotal);
-      newPicks.forEach(p=>{ p.isExisting = false; });
+    if(remainingGap > 0){
+      const newPctForCat = Math.round(remainingGap / portfolioTotal * 100);
+      if(newPctForCat > 0){
+        const poolExcluded = {
+          ...cd,
+          topFunds: cd.topFunds.filter(f=>!existingHoldings.some(h=>h.code===f.code))
+        };
+        newPicks = selectFunds(cd.cat, poolExcluded, riskP, newPctForCat, portfolioTotal);
+        newPicks.forEach(p=>{ p.isExisting = false; });
+      }
     }
 
     selectedPicks[cd.cat] = [...keptPicks, ...newPicks];
