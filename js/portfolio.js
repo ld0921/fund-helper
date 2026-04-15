@@ -250,7 +250,7 @@ function computeRebalancePlan(targetPicks, newMoney){
       actionDesc=`非核心仓，近1年${r1}%，表现尚可，可作卫星仓继续持有观察`;
       actionColor='act-satellite';
     }
-    actions.push({code:h.code,name:h.name,type:fd?.type||'--',cat:fd?.cat||'other',r1:r1??'--',currentAmt:h.value,targetAmt:0,action,actionAmt,actionDesc,actionColor,manager:fd?.manager||'--'});
+    actions.push({code:h.code,name:h.name,type:fd?.type||'--',cat:fd?.cat||'other',r1:r1??'--',currentAmt:h.value,targetAmt:action==='satellite'?h.value:0,action,actionAmt,actionDesc,actionColor,manager:fd?.manager||'--'});
   });
 
   // 优先级排序：卖出 → 减仓 → 温和减仓 → 新买 → 加仓 → 持有 → 卫星
@@ -1256,16 +1256,26 @@ function _doGenerate(shouldScroll){
       remainingGap = Math.max(0, remainingGap);
     }
 
-    const keptPicks = kept.map(h=>({
-      ...h.fundData,
-      pct: Math.round((h.value * keptScale + (keptAddMap[h.code]||0)) / portfolioTotal * 100),
-      amt: Math.round(h.value * keptScale + (keptAddMap[h.code]||0)),
-      role: keptScale < 1 ? '已持有·减配' : (keptAddMap[h.code] ? '已持有·加仓' : (h.keep ? '已持有·保留' : '已持有·低分')),
-      method: keptScale < 1 ? '减仓至目标配置' : (keptAddMap[h.code] ? '加仓至目标配置' : (h.keep ? '继续持有' : '建议逐步替换')),
-      methodClass: 'method-hold',
-      isExisting: true,
-      newBuyAmt: keptAddMap[h.code] || 0,
-    })).filter(p => p.amt >= 100);
+    const keptPicks = kept.map(h=>{
+      const targetAmt = Math.round(h.value * keptScale + (keptAddMap[h.code]||0));
+      const diffAmt = targetAmt - h.value;
+      const tolPct = ['money','bond'].includes(h.fundData.cat) ? 0.10 : h.fundData.cat === 'index' ? 0.15 : 0.20;
+      const tolMin = ['money','bond'].includes(h.fundData.cat) ? 300 : h.fundData.cat === 'index' ? 500 : 800;
+      const tol = Math.max(targetAmt * tolPct, tolMin);
+      let method, role;
+      if(diffAmt > tol){ method='加仓至目标配置'; role='已持有·加仓'; }
+      else if(diffAmt < -tol){ method='减仓至目标配置'; role='已持有·减配'; }
+      else { method = h.keep ? '继续持有' : '建议逐步替换'; role = h.keep ? '已持有·保留' : '已持有·低分'; }
+      return {
+        ...h.fundData,
+        pct: Math.round(targetAmt / portfolioTotal * 100),
+        amt: targetAmt,
+        role, method,
+        methodClass: 'method-hold',
+        isExisting: true,
+        newBuyAmt: keptAddMap[h.code] || 0,
+      };
+    }).filter(p => p.amt >= 100);
 
     // 新买入的基金（从候选池中选，排除已持有的），仅用剩余缺口
     let newPicks = [];
@@ -1472,11 +1482,12 @@ function _doGenerate(shouldScroll){
   const finalAmtSum = finalPicks.reduce((s, f) => s + f.amt, 0);
   if(finalAmtSum !== portfolioTotal && finalPicks.length > 0){
     const diff = portfolioTotal - finalAmtSum;
-    // 将差额加到金额最大的基金上
     const maxPick = [...finalPicks].sort((a,b) => b.amt - a.amt)[0];
     maxPick.amt += diff;
     maxPick.pct = Math.round(maxPick.amt / portfolioTotal * 100);
   }
+  // 确保所有基金 pct 与 amt 一致
+  finalPicks.forEach(f => { f.pct = Math.round(f.amt / portfolioTotal * 100); });
 
   // 重新同步selectedPicks：确保computeRebalancePlan使用的是过滤和调整后的数据
   Object.keys(selectedPicks).forEach(cat => {
