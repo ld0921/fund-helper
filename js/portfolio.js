@@ -270,15 +270,34 @@ function computeRebalancePlan(targetPicks, newMoney){
   const totalAvailable = newMoney + totalRelease;
   if(buyActions.length > 0 && Math.abs(actualBuyTotal - totalAvailable) > 10){
     const diff = totalAvailable - actualBuyTotal;
-    // 只在 diff > 0（资金有剩余）时才调整，避免 diff < 0 导致 actionAmt 变负数
     if(diff > 0){
+      // 资金有剩余：加到最大买入操作上
       const maxBuy = [...buyActions].sort((a,b)=>b.actionAmt-a.actionAmt)[0];
       maxBuy.actionAmt += diff;
       maxBuy.targetAmt = maxBuy.currentAmt + maxBuy.actionAmt;
-      if(maxBuy.action === 'buy'){
-        maxBuy.actionDesc = `新建仓 ¥${maxBuy.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
-      } else {
-        maxBuy.actionDesc = `加仓 ¥${maxBuy.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
+      maxBuy.actionDesc = maxBuy.action==='buy'
+        ? `新建仓 ¥${maxBuy.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`
+        : `加仓 ¥${maxBuy.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
+    } else {
+      // 资金不足：按比例缩减所有买入操作，确保 buyAmt = totalAvailable
+      const scale = totalAvailable / actualBuyTotal;
+      buyActions.forEach(a => {
+        a.actionAmt = Math.max(0, Math.round(a.actionAmt * scale));
+        a.targetAmt = a.currentAmt + a.actionAmt;
+        a.actionDesc = a.action==='buy'
+          ? `新建仓 ¥${a.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`
+          : `加仓 ¥${a.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
+      });
+      // 修正舍入误差：将差额加到最大买入操作
+      const scaledTotal = buyActions.reduce((s,a)=>s+a.actionAmt,0);
+      const remainder = totalAvailable - scaledTotal;
+      if(Math.abs(remainder) > 0){
+        const maxBuy = [...buyActions].sort((a,b)=>b.actionAmt-a.actionAmt)[0];
+        maxBuy.actionAmt += remainder;
+        maxBuy.targetAmt = maxBuy.currentAmt + maxBuy.actionAmt;
+        maxBuy.actionDesc = maxBuy.action==='buy'
+          ? `新建仓 ¥${maxBuy.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`
+          : `加仓 ¥${maxBuy.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
       }
     }
   }
