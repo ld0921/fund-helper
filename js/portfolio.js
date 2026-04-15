@@ -275,16 +275,14 @@ function computeRebalancePlan(targetPicks, newMoney){
       // 资金有剩余：加到最大买入操作上
       const maxBuy = [...buyActions].sort((a,b)=>b.actionAmt-a.actionAmt)[0];
       maxBuy.actionAmt += diff;
-      maxBuy.targetAmt = maxBuy.currentAmt + maxBuy.actionAmt;
       maxBuy.actionDesc = maxBuy.action==='buy'
         ? `新建仓 ¥${maxBuy.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`
         : `加仓 ¥${maxBuy.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
     } else {
-      // 资金不足：按比例缩减所有买入操作，确保 buyAmt = totalAvailable
+      // 资金不足：按比例缩减所有买入操作的 actionAmt，targetAmt 保持不变（与AI方案一致）
       const scale = totalAvailable / actualBuyTotal;
       buyActions.forEach(a => {
         a.actionAmt = Math.max(0, Math.round(a.actionAmt * scale));
-        a.targetAmt = a.currentAmt + a.actionAmt;
         a.actionDesc = a.action==='buy'
           ? `新建仓 ¥${a.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`
           : `加仓 ¥${a.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
@@ -1946,7 +1944,7 @@ function renderAllocGroups(selectedPicks, weights){
   };
   let html='';
   groupDefs.forEach(g=>{
-    const picks = g.cats.flatMap(cat=>selectedPicks[cat]||[]);
+    const picks = g.cats.flatMap(cat=>selectedPicks[cat]||[]).filter(f=>f.amt > 0);
     if(!picks.length) return;
     const groupPct = Math.round(picks.reduce((s,f)=>s+f.pct,0));
     const groupAmt = Math.round(picks.reduce((s,f)=>s+f.amt,0));
