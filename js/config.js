@@ -96,6 +96,7 @@ async function loadCuratedFunds() {
       { keywords: ['有色金属','有色指数','有色增强','有色ETF'], idx: '930997' },
       { keywords: ['5G通信','5G主题','通信设备','通信ETF','通信主题','通信A','通信指数'], idx: '930716' },
       { keywords: ['互联网','互联网指数','互联网ETF'], idx: 'H30533' },
+      { keywords: ['中证红利','红利ETF','红利指数','红利低波'], idx: '000922' },
     ];
     let autoMapped = 0;
     funds.filter(f => f.cat === 'index').forEach(f => {
@@ -263,6 +264,7 @@ const INDEX_VALUATION = {
   '399006': { name:'创业板',  pePct:55, pbPct:52, updated:'2026-04' }, // 中性
   '000852': { name:'中证1000',pePct:32, pbPct:28, updated:'2026-04' }, // 偏低估
   '000016': { name:'上证50',  pePct:38, pbPct:35, updated:'2026-04' }, // 中性偏低
+  '000922': { name:'中证红利',pePct:50, pbPct:50, updated:'2026-04' }, // 静态兜底，自动爬取后会覆盖
 };
 // 基金代码 → 对应指数代码映射
 const FUND_VALUATION_MAP = {
