@@ -87,8 +87,8 @@ function computeRebalancePlan(targetPicks, newMoney){
           actionDesc=`加仓 ¥${diff.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
           actionColor='act-buy_more';
         } else if(diff < -tol){
-          action='reduce'; actionAmt=Math.min(Math.abs(diff), currentAmt); // 减仓金额不超过当前持仓
-          actionDesc=`减仓 ¥${actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
+          action='reduce'; actionAmt=Math.abs(diff);
+          actionDesc=`减仓 ¥${Math.abs(diff).toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
           actionColor='act-reduce';
         } else {
           action='hold'; actionAmt=0;
@@ -112,9 +112,9 @@ function computeRebalancePlan(targetPicks, newMoney){
     // 已有持仓的处理逻辑
     const held=existingHoldings.find(h=>h.code===pick.code);
     const currentAmt=held?held.value:0;
-    const targetAmt=Math.max(0, pick.amt); // 目标金额不可为负
-    const rawDiff = targetAmt - currentAmt;
-    const diff = targetAmt === 0 ? -currentAmt : (rawDiff > 0 && pick.newBuyAmt ? pick.newBuyAmt : rawDiff);
+    const targetAmt=pick.amt; // 直接使用pick.amt作为目标金额
+    // 修复：targetAmt为0时强制减仓，不被newBuyAmt污染
+    const diff = targetAmt === 0 ? -currentAmt : (pick.newBuyAmt || (targetAmt-currentAmt));
     // 容忍带差异化：货币/债券5%或¥200，指数10%或¥300，主动/QDII 15%或¥500
     // 再平衡触发：只有偏离超过阈值才建议调仓，避免频繁换仓产生摩擦成本
     const tolPct = ['money','bond'].includes(pick.cat) ? 0.10 : pick.cat === 'index' ? 0.15 : 0.20;
@@ -155,8 +155,8 @@ function computeRebalancePlan(targetPicks, newMoney){
         }
       }
       if(costWorthIt){
-        action='reduce'; actionAmt=Math.min(Math.abs(diff), currentAmt); // 减仓金额不超过当前持仓
-        actionDesc=`减仓 ¥${actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
+        action='reduce'; actionAmt=Math.abs(diff);
+        actionDesc=`减仓 ¥${Math.abs(diff).toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
         actionColor='act-reduce';
       }
 
@@ -213,7 +213,7 @@ function computeRebalancePlan(targetPicks, newMoney){
     } else if(cat === 'money'){
       sellThreshold = -999; // 货币基金几乎不建议卖
     } else {
-      sellThreshold = bench ? bench.avgR1 - bench.stdR1 * 1.5 : 0; // 权益类：跌破同类均值1.5σ才建议卖
+      sellThreshold = 0; // 权益类：近1年负收益才建议卖
     }
 
     // 计算持有天数（如果有购买日期）
@@ -264,18 +264,6 @@ function computeRebalancePlan(targetPicks, newMoney){
   actions.sort((a,b)=>(order[a.action]??9)-(order[b.action]??9));
 
   // 计算减持释放的资金
-  // 安全检查：减仓/卖出金额不能超过当前持仓，减持总额不能超过持仓总值
-  actions.forEach(a => {
-    if(['sell','reduce','reduce_gentle'].includes(a.action) && a.actionAmt > a.currentAmt){
-      console.warn(`[调仓] ${a.name} actionAmt(${a.actionAmt}) > currentAmt(${a.currentAmt})，已修正`);
-      a.actionAmt = a.currentAmt;
-      a.targetAmt = 0;
-      a.actionDesc = a.action === 'sell'
-        ? `建议卖出 ¥${a.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`
-        : `减仓 ¥${a.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
-    }
-  });
-
   const sellTotal = actions.filter(a=>a.action==='sell').reduce((s,a)=>s+a.actionAmt,0);
   const reduceTotal = actions.filter(a=>a.action==='reduce'||a.action==='reduce_gentle').reduce((s,a)=>s+a.actionAmt,0);
   const totalRelease = sellTotal + reduceTotal;
@@ -289,22 +277,14 @@ function computeRebalancePlan(targetPicks, newMoney){
   const totalAvailable = newMoney + totalRelease;
   if(buyActions.length > 0 && Math.abs(actualBuyTotal - totalAvailable) > 10){
     const diff = totalAvailable - actualBuyTotal;
-    // 将差额按比例分摊到所有买入操作，而非全部堆到一个上
-    if(Math.abs(diff) < actualBuyTotal * 0.5){
-      // 差额较小（<50%），按比例微调
-      buyActions.forEach(a => {
-        const ratio = a.actionAmt / actualBuyTotal;
-        const adj = Math.round(diff * ratio);
-        a.actionAmt = Math.max(0, a.actionAmt + adj);
-        a.targetAmt = a.currentAmt + a.actionAmt;
-        if(a.action === 'buy'){
-          a.actionDesc = `新建仓 ¥${a.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
-        } else {
-          a.actionDesc = `加仓 ¥${a.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
-        }
-      });
+    const maxBuy = [...buyActions].sort((a,b)=>b.actionAmt-a.actionAmt)[0];
+    maxBuy.actionAmt += diff;
+    maxBuy.targetAmt = maxBuy.currentAmt + maxBuy.actionAmt;
+    if(maxBuy.action === 'buy'){
+      maxBuy.actionDesc = `新建仓 ¥${maxBuy.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
+    } else {
+      maxBuy.actionDesc = `加仓 ¥${maxBuy.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
     }
-    // 差额过大（≥50%）说明方案本身有结构性问题，不做暴力调整
   }
 
   // 计算资金流动摘要
@@ -477,14 +457,10 @@ function computeWeights(riskProfile, horizon, catRanks, macroClock){
         if(ci === cj){ corrMatrix[ci][cj] = 1.00; return; }
         const a = _mbSeqs[ci], b = _mbSeqs[cj];
         const n = Math.min(a.length, b.length);
-        // 指数衰减权重：最近月份权重最高，半衰期6个月
-        const halfLife = 6;
-        const wts = Array.from({length:n}, (_,i) => Math.exp(-Math.LN2 * (n-1-i) / halfLife));
-        const wSum = wts.reduce((s,v)=>s+v,0);
-        const ma = a.slice(0,n).reduce((s,v,i)=>s+v*wts[i],0)/wSum;
-        const mb2 = b.slice(0,n).reduce((s,v,i)=>s+v*wts[i],0)/wSum;
+        const ma = a.slice(0,n).reduce((s,v)=>s+v,0)/n;
+        const mb2 = b.slice(0,n).reduce((s,v)=>s+v,0)/n;
         let num=0, da=0, db=0;
-        for(let i=0;i<n;i++){ num+=wts[i]*(a[i]-ma)*(b[i]-mb2); da+=wts[i]*(a[i]-ma)**2; db+=wts[i]*(b[i]-mb2)**2; }
+        for(let i=0;i<n;i++){ num+=(a[i]-ma)*(b[i]-mb2); da+=(a[i]-ma)**2; db+=(b[i]-mb2)**2; }
         const corr = (da>0&&db>0) ? Math.max(-1, Math.min(1, num/Math.sqrt(da*db))) : _corrFallback[ci][cj];
         corrMatrix[ci][cj] = Math.round(corr*100)/100;
       });
@@ -584,11 +560,9 @@ function computeWeights(riskProfile, horizon, catRanks, macroClock){
     const bdMult = macroClock.bondMult;
     ['active','index','qdii'].forEach(c => { if(base[c]) base[c] *= eqMult; });
     if(base.bond) base.bond *= bdMult;
-    // 滞胀期按信号强度梯度提升货币配置
+    // 滞胀期强制提升货币配置
     if(macroClock.phase === 'stagflation'){
-      const intensity = macroClock.spreadThreshold > 0 ? Math.abs(macroClock.spread) / macroClock.spreadThreshold : 1;
-      const moneyFloor = intensity > 1.5 ? 15 : intensity > 0.8 ? 10 : 5;
-      base.money = Math.max(base.money || 0, moneyFloor);
+      base.money = Math.max(base.money || 0, 15);
     }
     // QDII机会期：适度提升QDII配置
     if(macroClock.phase === 'qdii_opp' || macroClock.phase === 'global_bull'){
@@ -606,17 +580,18 @@ function computeWeights(riskProfile, horizon, catRanks, macroClock){
     const bottom = catRanks[catRanks.length-1].cat;
     const scoreRange = catRanks[0].catScore - catRanks[catRanks.length-1].catScore;
     if(scoreRange > 0){
-      // 反转保护1：若该类别已被动量信号调高（equityMult>1），跳过正向倾斜，防止双重追涨
+      // 反转保护1：若该类别已被动量信号调高（equityMult>1），动量倾斜减半，防止双重追涨
       const topAlreadyBoosted = macroClock && macroClock.equityMult > 1 && ['active','index','qdii'].includes(top);
+      const tiltScale = topAlreadyBoosted ? 0.5 : 1.0;
       const topCatData = catRanks[0];
-      // 固定幅度倾斜：强势类别+maxTilt，避免 scoreRange 量纲不稳定；已被宏观信号加仓则不再叠加
-      let effectiveTilt = topAlreadyBoosted ? 0 : maxTilt;
+      // 固定幅度倾斜：强势类别+maxTilt，避免 scoreRange 量纲不稳定
+      let effectiveTilt = Math.round(maxTilt * tiltScale);
       if(topCatData.avgR1 > 40){
         effectiveTilt = -Math.round(maxTilt * 0.3);
       } else if(topCatData.avgR1 > 30){
         effectiveTilt = 0;
       }
-      const trimAmt = Math.round(maxTilt * 0.5);
+      const trimAmt = Math.round(maxTilt * 0.5 * tiltScale);
       // 反转保护3：弱势类别若已跌较深(avgR1<-10%)，可能是底部区域，不再减配
       const bottomCatData = catRanks[catRanks.length-1];
       const effectiveTrim = bottomCatData.avgR1 < -10 ? 0 : trimAmt;
@@ -640,11 +615,10 @@ function computeWeights(riskProfile, horizon, catRanks, macroClock){
   if(equityTotal > equityCap){
     const scale = equityCap / equityTotal;
     equityCats.forEach(c => { if(base[c]) base[c] *= scale; });
-    // 释放的权重按风险偏好分配：进取型多给债券少给货币，保守型反过来
+    // 释放的权重分配给债券和货币
     const freed = equityTotal - equityCap;
-    const bondShare = { conservative:0.4, moderate:0.5, balanced:0.7, aggressive:0.9 }[riskProfile] || 0.6;
-    base.bond = (base.bond||0) + freed * bondShare;
-    base.money = (base.money||0) + freed * (1 - bondShare);
+    base.bond = (base.bond||0) + freed * 0.6;
+    base.money = (base.money||0) + freed * 0.4;
   }
 
   // 6. 短期额外调整
@@ -789,8 +763,9 @@ function selectFunds(cat, catData, riskProfile, pct, totalAmt){
     if(pct * coreRatio > maxSingleFundPct) coreRatio = maxSingleFundPct / pct;
     perPick = [Math.round(pct*coreRatio), pct - Math.round(pct*coreRatio)];
   } else {
-    // 单只基金：超过30%时截断，超出部分由调用方重新分配
-    perPick = [Math.min(pct, maxSingleFundPct)];
+    // 单只基金时，不做上限截断（30%上限在类别间已由computeWeights控制）
+    // 截断会导致权重凭空消失（如 pct=40 截断到30，10%无去处）
+    perPick = [pct];
   }
 
   return picks.map((f,i)=>({
@@ -1205,8 +1180,7 @@ function _doGenerate(shouldScroll){
     });
   }
 
-  // 计算每个类别的缺口：目标金额 - 已有达标基金金额（缩减后）
-  // 当已有持仓超过目标配置时，按比例缩减到目标水平，释放的资金纳入可分配池
+  // 计算每个类别的缺口：目标金额 - 已有达标基金金额
   const catGap = {};
   const catKept = {}; // 每个类别保留的已有基金
   let freedFromOverweight = 0; // 超配类别缩减释放的资金
@@ -1216,7 +1190,6 @@ function _doGenerate(shouldScroll){
     const keptFunds = (holdingsByCat[cat]||[]).filter(h=>h.keep);
     const keptAmt = keptFunds.reduce((s,h)=>s+h.value,0);
     if(keptAmt > targetAmt){
-      // 超配：缩减到目标，释放差额
       freedFromOverweight += keptAmt - targetAmt;
       catGap[cat] = 0;
     } else {
@@ -1225,8 +1198,7 @@ function _doGenerate(shouldScroll){
     catKept[cat] = keptFunds;
   });
   const totalGap = Object.values(catGap).reduce((s,v)=>s+v,0);
-  // 可分配的总资金 = 新增资金 + 超配类别释放的资金
-  const distributableMoney = totalAmt + freedFromOverweight;
+  const distributableMoney = totalAmt + freedFromOverweight; // 新增资金 + 超配释放资金
 
   // 5. 选基（融合已有持仓）
   const selectedPicks = {};
@@ -1235,17 +1207,14 @@ function _doGenerate(shouldScroll){
     if(w<=0) return;
     const kept = catKept[cd.cat]||[];
     const gap = catGap[cd.cat]||0;
-    // 该类别分配的资金 = 可分配总资金 × (缺口占比)
+    // 该类别分配的新资金 = 总新资金 × (缺口占比)，确保不超过新资金总额
     const newMoneyForCat = totalGap > 0 ? Math.round(distributableMoney * gap / totalGap) : 0;
 
     // 已保留基金纳入推荐
-    // 关键：如果该类别已有持仓超过目标配置，按比例缩减到目标水平
-    // 例如：进取型 money 目标2%=¥805，但用户持有¥25,608，应缩减到¥805
-    // 否则超配的类别会在归一化时挤压其他类别的分配空间
+    // 若该类别超配，按目标金额缩减 amt，避免归一化后 targetAmt≈0 触发全仓减仓
     const catTargetAmt = portfolioTotal * w / 100;
     const keptValueTotal = kept.reduce((s,h) => s + h.value, 0);
     const keptScale = (keptValueTotal > catTargetAmt && catTargetAmt > 0) ? catTargetAmt / keptValueTotal : 1;
-
     const keptPicks = kept.map(h=>({
       ...h.fundData,
       pct: Math.round(h.value * keptScale / portfolioTotal * 100),
@@ -1254,7 +1223,7 @@ function _doGenerate(shouldScroll){
       method: keptScale < 1 ? '减仓至目标配置' : '继续持有',
       methodClass: 'method-hold',
       isExisting: true,
-    }));
+    })).filter(p => p.amt >= 100);
 
     // 新买入的基金（从候选池中选，排除已持有的）
     let newPicks = [];
@@ -1590,10 +1559,13 @@ function _doGenerate(shouldScroll){
   renderStyleExposure(styleExposure, finalPicks);
   renderStressTest(stressResults, totalAmt);
 
-  // 10.6 简易历史回测（用 monthlyReturns 模拟组合过去表现）
-  renderBacktest(finalPicks, totalAmt);
-
   // 11. 调仓建议（先于执行步骤生成，以便步骤引用调仓数据）
+  // 用最新净值同步 existingHoldings.value，确保调仓金额与界面显示一致
+  existingHoldings.forEach(h => {
+    const nav = navCache[h.code];
+    const curNav = nav ? parseFloat(nav.gsz) || 1 : 1;
+    if(h.amount && h.cost) h.value = h.amount / h.cost * curNav;
+  });
   const rebalPlan = computeRebalancePlan(selectedPicks, totalAmt);
   renderRebalancePlan(rebalPlan);
 
@@ -1844,110 +1816,6 @@ function renderStressTest(results, stressAmt){
       📐 <b>再平衡规则：</b>建议每半年检视，当任一类别偏离目标权重>15%(相对偏离)时触发再平衡。<br>
       💰 <b>交易成本（支付宝1折费率）：</b>混合型A类申购约0.15%，指数联接A类约0.10-0.12%，QDII A类约0.08%，C类/货币基金免申购费。赎回费：&lt;7天=1.5%（惩罚性），7天-1年≈0.5%，1-2年≈0.25%，&gt;2年=0%。QDII基金可能有单日限购（1000-5000元）。每次再平衡综合成本约0.1-0.3%。<br>
       ⏰ <b>再平衡频率：</b>半年度为宜。过频(季度/月度)增加成本且心理负担重，过疏(年度以上)偏离积累过大。阈值触发优于固定日历。
-    </div>`;
-}
-
-// ═══ 简易历史回测：用 monthlyReturns 模拟组合过去表现 ═══
-function renderBacktest(allPicks, totalAmt){
-  const sec = document.getElementById('backtest-section');
-  if(!sec) return;
-
-  // 收集各类别的月度收益序列
-  const catSeqs = {};
-  const cats5 = ['active','index','bond','money','qdii'];
-  cats5.forEach(c => {
-    if(MARKET_BENCHMARKS[c] && MARKET_BENCHMARKS[c].monthlyReturns && MARKET_BENCHMARKS[c].monthlyReturns.length >= 6)
-      catSeqs[c] = MARKET_BENCHMARKS[c].monthlyReturns;
-  });
-
-  if(Object.keys(catSeqs).length < 2){ sec.style.display='none'; return; }
-
-  // 计算各类别在组合中的权重
-  const catWeights = {};
-  allPicks.forEach(f => { catWeights[f.cat] = (catWeights[f.cat]||0) + (f.pct||0)/100; });
-
-  // 统一到最短月度序列长度
-  const months = Math.min(...Object.values(catSeqs).map(s=>s.length));
-  if(months < 6){ sec.style.display='none'; return; }
-
-  // 逐月计算组合收益
-  const portfolioReturns = [];
-  let cumReturn = 1;
-  let peak = 1;
-  let maxDD = 0;
-  const cumSeries = [1]; // 累计净值曲线
-
-  for(let i = 0; i < months; i++){
-    let monthReturn = 0;
-    Object.entries(catWeights).forEach(([cat, w]) => {
-      const seq = catSeqs[cat];
-      if(seq && i < seq.length) monthReturn += seq[i] / 100 * w;
-    });
-    // 未覆盖的类别（如无月度数据）假设为0收益
-    portfolioReturns.push(monthReturn * 100);
-    cumReturn *= (1 + monthReturn);
-    cumSeries.push(cumReturn);
-    if(cumReturn > peak) peak = cumReturn;
-    const dd = (peak - cumReturn) / peak * 100;
-    if(dd > maxDD) maxDD = dd;
-  }
-
-  const totalReturn = (cumReturn - 1) * 100;
-  const annReturn = (Math.pow(cumReturn, 12/months) - 1) * 100;
-  const monthlyStd = Math.sqrt(portfolioReturns.reduce((s,r) => s + (r - totalReturn/months)**2, 0) / months);
-  const annVol = monthlyStd * Math.sqrt(12);
-  const sharpe = annVol > 0 ? (annReturn - 1.7) / annVol : 0; // 无风险利率1.7%
-  const calmar = maxDD > 0 ? annReturn / maxDD : 0;
-
-  // 正收益月份占比
-  const posMonths = portfolioReturns.filter(r => r > 0).length;
-  const winRate = (posMonths / months * 100).toFixed(0);
-
-  // 生成简易ASCII净值曲线（20列宽）
-  const barCols = 24;
-  const step = Math.max(1, Math.floor(cumSeries.length / barCols));
-  const sampled = [];
-  for(let i = 0; i < cumSeries.length; i += step) sampled.push(cumSeries[i]);
-  const minV = Math.min(...sampled), maxV = Math.max(...sampled);
-  const range = maxV - minV || 1;
-  const barHeight = 6;
-  const bars = sampled.map(v => Math.round((v - minV) / range * barHeight));
-
-  sec.style.display='block';
-  sec.innerHTML=`
-    <div style="font-size:13px;font-weight:600;margin-bottom:8px">📈 历史回测（近${months}个月模拟）</div>
-    <div style="font-size:11px;color:var(--muted);margin-bottom:8px">基于各类别月度收益均值 × 当前组合权重，模拟过去${months}个月的组合表现（不含交易成本和再平衡）。</div>
-    <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:10px">
-      <div style="flex:1;min-width:100px;padding:8px 12px;background:#f0f8ff;border-radius:6px;text-align:center">
-        <div style="font-size:11px;color:var(--muted)">累计收益</div>
-        <div style="font-size:16px;font-weight:700;color:${totalReturn>=0?'#237804':'#cf1322'}">${totalReturn>=0?'+':''}${totalReturn.toFixed(1)}%</div>
-      </div>
-      <div style="flex:1;min-width:100px;padding:8px 12px;background:#f0f8ff;border-radius:6px;text-align:center">
-        <div style="font-size:11px;color:var(--muted)">年化收益</div>
-        <div style="font-size:16px;font-weight:700;color:${annReturn>=0?'#237804':'#cf1322'}">${annReturn>=0?'+':''}${annReturn.toFixed(1)}%</div>
-      </div>
-      <div style="flex:1;min-width:100px;padding:8px 12px;background:#f0f8ff;border-radius:6px;text-align:center">
-        <div style="font-size:11px;color:var(--muted)">最大回撤</div>
-        <div style="font-size:16px;font-weight:700;color:#cf1322">-${maxDD.toFixed(1)}%</div>
-      </div>
-      <div style="flex:1;min-width:100px;padding:8px 12px;background:#f0f8ff;border-radius:6px;text-align:center">
-        <div style="font-size:11px;color:var(--muted)">Sharpe</div>
-        <div style="font-size:16px;font-weight:700;color:${sharpe>=0.5?'#237804':sharpe>=0?'#d48806':'#cf1322'}">${sharpe.toFixed(2)}</div>
-      </div>
-    </div>
-    <div style="display:flex;gap:12px;margin-bottom:8px">
-      <div style="flex:1;padding:6px 10px;background:#fafafa;border-radius:4px;font-size:11px;text-align:center">
-        <span style="color:var(--muted)">Calmar</span> <b>${calmar.toFixed(2)}</b>
-      </div>
-      <div style="flex:1;padding:6px 10px;background:#fafafa;border-radius:4px;font-size:11px;text-align:center">
-        <span style="color:var(--muted)">年化波动</span> <b>${annVol.toFixed(1)}%</b>
-      </div>
-      <div style="flex:1;padding:6px 10px;background:#fafafa;border-radius:4px;font-size:11px;text-align:center">
-        <span style="color:var(--muted)">月度胜率</span> <b>${winRate}%</b>
-      </div>
-    </div>
-    <div style="font-size:10px;color:var(--muted);margin-top:6px;line-height:1.5">
-      ⚠️ 回测基于各类别历史月度均值，实际持有个基的表现会有偏差。过去表现不代表未来收益。回测不含交易成本、申赎费、再平衡摩擦。
     </div>`;
 }
 
