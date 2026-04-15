@@ -87,8 +87,8 @@ function computeRebalancePlan(targetPicks, newMoney){
           actionDesc=`加仓 ¥${diff.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
           actionColor='act-buy_more';
         } else if(diff < -tol){
-          action='reduce'; actionAmt=Math.abs(diff);
-          actionDesc=`减仓 ¥${Math.abs(diff).toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
+          action='reduce'; actionAmt=Math.min(Math.abs(diff), currentAmt); // 减仓金额不超过当前持仓
+          actionDesc=`减仓 ¥${actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
           actionColor='act-reduce';
         } else {
           action='hold'; actionAmt=0;
@@ -113,14 +113,7 @@ function computeRebalancePlan(targetPicks, newMoney){
     const held=existingHoldings.find(h=>h.code===pick.code);
     const currentAmt=held?held.value:0;
     const targetAmt=pick.amt; // 直接使用pick.amt作为目标金额
-    // 货币基金特殊处理：不建议减仓（用户的现金储备）
-    // 无论目标金额是多少，货币基金都保持当前持仓不动
-    if(pick.cat === 'money' && currentAmt > 0 && targetAmt < currentAmt){
-      actions.push({code:pick.code,name:pick.name,type:pick.type,cat:pick.cat,r1:pick.r1,
-        currentAmt, targetAmt:currentAmt, action:'hold', actionAmt:0,
-        actionDesc:'货币基金作为现金储备，建议持有', actionColor:'act-hold', manager:pick.manager});
-      return;
-    }
+    const targetAmt=Math.max(0, pick.amt); // 目标金额不可为负
     const rawDiff = targetAmt - currentAmt;
     const diff = targetAmt === 0 ? -currentAmt : (rawDiff > 0 && pick.newBuyAmt ? pick.newBuyAmt : rawDiff);
     // 容忍带差异化：货币/债券5%或¥200，指数10%或¥300，主动/QDII 15%或¥500
@@ -163,8 +156,8 @@ function computeRebalancePlan(targetPicks, newMoney){
         }
       }
       if(costWorthIt){
-        action='reduce'; actionAmt=Math.abs(diff);
-        actionDesc=`减仓 ¥${Math.abs(diff).toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
+        action='reduce'; actionAmt=Math.min(Math.abs(diff), currentAmt); // 减仓金额不超过当前持仓
+        actionDesc=`减仓 ¥${actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
         actionColor='act-reduce';
       }
 
@@ -272,6 +265,18 @@ function computeRebalancePlan(targetPicks, newMoney){
   actions.sort((a,b)=>(order[a.action]??9)-(order[b.action]??9));
 
   // 计算减持释放的资金
+  // 安全检查：减仓/卖出金额不能超过当前持仓，减持总额不能超过持仓总值
+  actions.forEach(a => {
+    if(['sell','reduce','reduce_gentle'].includes(a.action) && a.actionAmt > a.currentAmt){
+      console.warn(`[调仓] ${a.name} actionAmt(${a.actionAmt}) > currentAmt(${a.currentAmt})，已修正`);
+      a.actionAmt = a.currentAmt;
+      a.targetAmt = 0;
+      a.actionDesc = a.action === 'sell'
+        ? `建议卖出 ¥${a.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`
+        : `减仓 ¥${a.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
+    }
+  });
+
   const sellTotal = actions.filter(a=>a.action==='sell').reduce((s,a)=>s+a.actionAmt,0);
   const reduceTotal = actions.filter(a=>a.action==='reduce'||a.action==='reduce_gentle').reduce((s,a)=>s+a.actionAmt,0);
   const totalRelease = sellTotal + reduceTotal;
