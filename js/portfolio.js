@@ -113,8 +113,9 @@ function computeRebalancePlan(targetPicks, newMoney){
     const held=existingHoldings.find(h=>h.code===pick.code);
     const currentAmt=held?held.value:0;
     const targetAmt=pick.amt; // 直接使用pick.amt作为目标金额
-    // 货币基金特殊处理：不建议减仓到0（用户的现金储备），目标为0时改为持有
-    if(pick.cat === 'money' && targetAmt === 0 && currentAmt > 0){
+    // 货币基金特殊处理：不建议减仓（用户的现金储备）
+    // 无论目标金额是多少，货币基金都保持当前持仓不动
+    if(pick.cat === 'money' && currentAmt > 0 && targetAmt < currentAmt){
       actions.push({code:pick.code,name:pick.name,type:pick.type,cat:pick.cat,r1:pick.r1,
         currentAmt, targetAmt:currentAmt, action:'hold', actionAmt:0,
         actionDesc:'货币基金作为现金储备，建议持有', actionColor:'act-hold', manager:pick.manager});
@@ -284,18 +285,22 @@ function computeRebalancePlan(targetPicks, newMoney){
   const totalAvailable = newMoney + totalRelease;
   if(buyActions.length > 0 && Math.abs(actualBuyTotal - totalAvailable) > 10){
     const diff = totalAvailable - actualBuyTotal;
-    const maxBuy = [...buyActions].sort((a,b)=>b.actionAmt-a.actionAmt)[0];
-    const adjusted = maxBuy.actionAmt + diff;
-    // 防止调整后金额变成负数
-    if(adjusted > 0){
-      maxBuy.actionAmt = adjusted;
-      maxBuy.targetAmt = maxBuy.currentAmt + maxBuy.actionAmt;
-      if(maxBuy.action === 'buy'){
-        maxBuy.actionDesc = `新建仓 ¥${maxBuy.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
-      } else {
-        maxBuy.actionDesc = `加仓 ¥${maxBuy.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
-      }
+    // 将差额按比例分摊到所有买入操作，而非全部堆到一个上
+    if(Math.abs(diff) < actualBuyTotal * 0.5){
+      // 差额较小（<50%），按比例微调
+      buyActions.forEach(a => {
+        const ratio = a.actionAmt / actualBuyTotal;
+        const adj = Math.round(diff * ratio);
+        a.actionAmt = Math.max(0, a.actionAmt + adj);
+        a.targetAmt = a.currentAmt + a.actionAmt;
+        if(a.action === 'buy'){
+          a.actionDesc = `新建仓 ¥${a.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
+        } else {
+          a.actionDesc = `加仓 ¥${a.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
+        }
+      });
     }
+    // 差额过大（≥50%）说明方案本身有结构性问题，不做暴力调整
   }
 
   // 计算资金流动摘要
