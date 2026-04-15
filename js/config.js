@@ -84,6 +84,31 @@ async function loadCuratedFunds() {
       });
     });
     CURATED_FUNDS = funds;
+    // 自动为指数基金建立估值映射（根据基金名称关键词匹配宽基/行业指数）
+    const _idxKeywords = [
+      // 宽基指数
+      { keywords: ['沪深300','300ETF','300指数'], idx: '000300' },
+      { keywords: ['中证500','500ETF','500指数'], idx: '000905' },
+      { keywords: ['创业板','创业板50','创业板指'], idx: '399006' },
+      { keywords: ['中证1000','1000ETF','1000指数'], idx: '000852' },
+      { keywords: ['上证50','50ETF','上证50指数'], idx: '000016' },
+      // 行业指数
+      { keywords: ['有色金属','有色指数','有色增强','有色ETF'], idx: '930997' },
+      { keywords: ['5G通信','5G主题','通信设备','通信ETF','通信主题','通信A','通信指数'], idx: '930716' },
+      { keywords: ['互联网','互联网指数','互联网ETF'], idx: 'H30533' },
+    ];
+    let autoMapped = 0;
+    funds.filter(f => f.cat === 'index').forEach(f => {
+      if(FUND_VALUATION_MAP[f.code]) return; // 已有手动映射，跳过
+      for(const rule of _idxKeywords){
+        if(rule.keywords.some(kw => f.name.includes(kw))){
+          FUND_VALUATION_MAP[f.code] = rule.idx;
+          autoMapped++;
+          break;
+        }
+      }
+    });
+    if(autoMapped > 0) console.log(`[精选库] 自动建立 ${autoMapped} 只指数基金的估值映射`);
     // 精选库和市场基准加载完成后，重新初始化评分基准
     if(typeof getCatBenchmarks === 'function') _catBench = getCatBenchmarks();
     console.log(`[精选库] 已加载 ${funds.length} 只基金，数据时间：${_curatedTimestamp}`);
