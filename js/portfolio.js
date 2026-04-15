@@ -112,7 +112,6 @@ function computeRebalancePlan(targetPicks, newMoney){
     // 已有持仓的处理逻辑
     const held=existingHoldings.find(h=>h.code===pick.code);
     const currentAmt=held?held.value:0;
-    const targetAmt=pick.amt; // 直接使用pick.amt作为目标金额
     const targetAmt=Math.max(0, pick.amt); // 目标金额不可为负
     const rawDiff = targetAmt - currentAmt;
     const diff = targetAmt === 0 ? -currentAmt : (rawDiff > 0 && pick.newBuyAmt ? pick.newBuyAmt : rawDiff);
