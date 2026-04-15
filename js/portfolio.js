@@ -113,7 +113,13 @@ function computeRebalancePlan(targetPicks, newMoney){
     const held=existingHoldings.find(h=>h.code===pick.code);
     const currentAmt=held?held.value:0;
     const targetAmt=pick.amt; // 直接使用pick.amt作为目标金额
-    // 修复：targetAmt为0时强制减仓；newBuyAmt只在需要加仓时使用
+    // 货币基金特殊处理：不建议减仓到0（用户的现金储备），目标为0时改为持有
+    if(pick.cat === 'money' && targetAmt === 0 && currentAmt > 0){
+      actions.push({code:pick.code,name:pick.name,type:pick.type,cat:pick.cat,r1:pick.r1,
+        currentAmt, targetAmt:currentAmt, action:'hold', actionAmt:0,
+        actionDesc:'货币基金作为现金储备，建议持有', actionColor:'act-hold', manager:pick.manager});
+      return;
+    }
     const rawDiff = targetAmt - currentAmt;
     const diff = targetAmt === 0 ? -currentAmt : (rawDiff > 0 && pick.newBuyAmt ? pick.newBuyAmt : rawDiff);
     // 容忍带差异化：货币/债券5%或¥200，指数10%或¥300，主动/QDII 15%或¥500
@@ -279,12 +285,16 @@ function computeRebalancePlan(targetPicks, newMoney){
   if(buyActions.length > 0 && Math.abs(actualBuyTotal - totalAvailable) > 10){
     const diff = totalAvailable - actualBuyTotal;
     const maxBuy = [...buyActions].sort((a,b)=>b.actionAmt-a.actionAmt)[0];
-    maxBuy.actionAmt += diff;
-    maxBuy.targetAmt = maxBuy.currentAmt + maxBuy.actionAmt;
-    if(maxBuy.action === 'buy'){
-      maxBuy.actionDesc = `新建仓 ¥${maxBuy.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
-    } else {
-      maxBuy.actionDesc = `加仓 ¥${maxBuy.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
+    const adjusted = maxBuy.actionAmt + diff;
+    // 防止调整后金额变成负数
+    if(adjusted > 0){
+      maxBuy.actionAmt = adjusted;
+      maxBuy.targetAmt = maxBuy.currentAmt + maxBuy.actionAmt;
+      if(maxBuy.action === 'buy'){
+        maxBuy.actionDesc = `新建仓 ¥${maxBuy.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
+      } else {
+        maxBuy.actionDesc = `加仓 ¥${maxBuy.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
+      }
     }
   }
 
