@@ -545,15 +545,25 @@ function computeWeights(riskProfile, horizon, catRanks, macroClock){
 
   // 2. 风险偏好倾斜系数（在风险平价基础上调整）
   const tiltFactors = {
-    conservative: { money:1.6, bond:1.4, index:0.6, active:0.6, qdii:0.4 }, // 提升权益系数，避免完全无权益敞口
+    conservative: { money:1.6, bond:1.4, index:0.6, active:0.6, qdii:0.4 },
     moderate:     { money:0.9, bond:1.0, index:1.2, active:0.8, qdii:0.9 },
     balanced:     { money:0.5, bond:0.7, index:1.1, active:1.3, qdii:1.1 },
     aggressive:   { money:0.2, bond:0.3, index:1.0, active:1.5, qdii:1.4 },
   }[riskProfile];
+
+  // 2.5 投资期限主动倾斜（叠加在风险偏好之上）
+  // 短期降权益提稳健，长期提权益追复利
+  const horizonFactors =
+    horizon <= 1  ? { money:1.5, bond:1.3, index:0.5, active:0.5, qdii:0.4 } :
+    horizon <= 2  ? { money:1.2, bond:1.1, index:0.8, active:0.8, qdii:0.7 } :
+    horizon <= 3  ? { money:1.0, bond:1.0, index:1.0, active:1.0, qdii:1.0 } :
+    horizon <= 5  ? { money:0.8, bond:0.9, index:1.1, active:1.2, qdii:1.1 } :
+                    { money:0.5, bond:0.8, index:1.2, active:1.4, qdii:1.3 };
+
   const base = {};
   let tiltSum = 0;
   catRanks.forEach(c => {
-    base[c.cat] = rpWeights[c.cat] * (tiltFactors[c.cat] || 1);
+    base[c.cat] = rpWeights[c.cat] * (tiltFactors[c.cat] || 1) * (horizonFactors[c.cat] || 1);
     tiltSum += base[c.cat];
   });
   // 归一化
