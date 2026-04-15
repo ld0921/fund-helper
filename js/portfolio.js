@@ -223,6 +223,14 @@ function computeRebalancePlan(targetPicks, newMoney){
     const sameCatTargets = allPicks.filter(p => p.cat === cat);
     const bestTarget = sameCatTargets.length > 0 ? sameCatTargets.sort((a,b) => scoreF(b) - scoreF(a))[0] : null;
 
+    // 货币基金：永远不建议卖出，保持观察
+    if(cat === 'money'){
+      action='satellite'; actionAmt=0;
+      actionDesc=`货币基金，近1年${r1}%，可作流动性底仓继续持有`;
+      actionColor='act-satellite';
+      actions.push({code:h.code,name:h.name,type:fd?.type||'--',cat:'money',r1:r1??'--',currentAmt:h.value,targetAmt:0,action,actionAmt,actionDesc,actionColor,manager:fd?.manager||'--'});
+      return;
+    }
     if(r1===null){
       action='satellite'; actionAmt=0;
       actionDesc='无法获取收益数据，建议人工确认后决定';
@@ -277,13 +285,16 @@ function computeRebalancePlan(targetPicks, newMoney){
   const totalAvailable = newMoney + totalRelease;
   if(buyActions.length > 0 && Math.abs(actualBuyTotal - totalAvailable) > 10){
     const diff = totalAvailable - actualBuyTotal;
-    const maxBuy = [...buyActions].sort((a,b)=>b.actionAmt-a.actionAmt)[0];
-    maxBuy.actionAmt += diff;
-    maxBuy.targetAmt = maxBuy.currentAmt + maxBuy.actionAmt;
-    if(maxBuy.action === 'buy'){
-      maxBuy.actionDesc = `新建仓 ¥${maxBuy.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
-    } else {
-      maxBuy.actionDesc = `加仓 ¥${maxBuy.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
+    // 只在 diff > 0（资金有剩余）时才调整，避免 diff < 0 导致 actionAmt 变负数
+    if(diff > 0){
+      const maxBuy = [...buyActions].sort((a,b)=>b.actionAmt-a.actionAmt)[0];
+      maxBuy.actionAmt += diff;
+      maxBuy.targetAmt = maxBuy.currentAmt + maxBuy.actionAmt;
+      if(maxBuy.action === 'buy'){
+        maxBuy.actionDesc = `新建仓 ¥${maxBuy.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
+      } else {
+        maxBuy.actionDesc = `加仓 ¥${maxBuy.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
+      }
     }
   }
 
