@@ -1205,18 +1205,28 @@ function _doGenerate(shouldScroll){
     });
   }
 
-  // 计算每个类别的缺口：目标金额 - 已有达标基金金额
+  // 计算每个类别的缺口：目标金额 - 已有达标基金金额（缩减后）
+  // 当已有持仓超过目标配置时，按比例缩减到目标水平，释放的资金纳入可分配池
   const catGap = {};
   const catKept = {}; // 每个类别保留的已有基金
+  let freedFromOverweight = 0; // 超配类别缩减释放的资金
   catRanks.forEach(cd=>{
     const cat = cd.cat;
     const targetAmt = portfolioTotal * (weights[cat]||0) / 100;
     const keptFunds = (holdingsByCat[cat]||[]).filter(h=>h.keep);
     const keptAmt = keptFunds.reduce((s,h)=>s+h.value,0);
-    catGap[cat] = Math.max(0, targetAmt - keptAmt);
+    if(keptAmt > targetAmt){
+      // 超配：缩减到目标，释放差额
+      freedFromOverweight += keptAmt - targetAmt;
+      catGap[cat] = 0;
+    } else {
+      catGap[cat] = targetAmt - keptAmt;
+    }
     catKept[cat] = keptFunds;
   });
   const totalGap = Object.values(catGap).reduce((s,v)=>s+v,0);
+  // 可分配的总资金 = 新增资金 + 超配类别释放的资金
+  const distributableMoney = totalAmt + freedFromOverweight;
 
   // 5. 选基（融合已有持仓）
   const selectedPicks = {};
@@ -1225,8 +1235,8 @@ function _doGenerate(shouldScroll){
     if(w<=0) return;
     const kept = catKept[cd.cat]||[];
     const gap = catGap[cd.cat]||0;
-    // 该类别分配的新资金 = 总新资金 × (缺口占比)，确保不超过新资金总额
-    const newMoneyForCat = totalGap > 0 ? Math.round(totalAmt * gap / totalGap) : 0;
+    // 该类别分配的资金 = 可分配总资金 × (缺口占比)
+    const newMoneyForCat = totalGap > 0 ? Math.round(distributableMoney * gap / totalGap) : 0;
 
     // 已保留基金纳入推荐
     // 关键：如果该类别已有持仓超过目标配置，按比例缩减到目标水平
