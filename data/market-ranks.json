@@ -1,11 +1,11 @@
 {
-  "timestamp": "2026-04-15T07:42:09.353Z",
+  "timestamp": "2026-04-15T09:14:10.472Z",
   "categories": {
     "gp": {
       "label": "股票型",
       "cat": "active",
       "type": "股票型",
-      "allRecords": 1055,
+      "allRecords": 1057,
       "funds": [
         {
           "code": "006502",
@@ -2493,7 +2493,7 @@
       "label": "债券型",
       "cat": "bond",
       "type": "债券型",
-      "allRecords": 4693,
+      "allRecords": 4694,
       "funds": [
         {
           "code": "006030",
@@ -3797,7 +3797,7 @@
           "type": "QDII",
           "cat": "qdii",
           "label": "QDII",
-          "r1": 74.82,
+          "r1": 76.75,
           "r3": 78.93,
           "size": 1.74,
           "established": "2019-11-27",
@@ -3843,7 +3843,7 @@
             5.89,
             3.47,
             -8.83,
-            14.88
+            16.67
           ],
           "risk": "R5"
         },

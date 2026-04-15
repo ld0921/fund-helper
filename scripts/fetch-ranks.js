@@ -8,6 +8,12 @@ const https = require('https');
 
 // 固定保留的基金代码（货币/超短债等特殊品种，全市场扫描不覆盖）
 const FIXED_CODES = ['000198','003003','070009'];
+// 固定基金的预设元数据（扫描不覆盖，需手动指定类别）
+const FIXED_META = {
+  '000198': { name:'天治财富增长', cat:'active', type:'混合型', label:'主动权益' },
+  '003003': { name:'华夏现金增利货币A', cat:'money', type:'货币型', label:'货币基金' },
+  '070009': { name:'嘉实超短债债券A', cat:'bond', type:'债券型', label:'短债基金' },
+};
 
 const CATEGORIES = [
   { ft: 'gp',   cat: 'active', label: '股票型', type: '股票型' },
@@ -439,11 +445,12 @@ async function main() {
 
       if (detail) {
         const f = base || {};
+        const meta = FIXED_META[code] || {};
         const entry = {
-          name: f.name || '',
-          type: f.type || '',
-          cat: f.cat || '',
-          label: f.label || '',
+          name: f.name || meta.name || '',
+          type: f.type || meta.type || '',
+          cat: f.cat || meta.cat || '',
+          label: f.label || meta.label || '',
           risk: f.risk || '',
         };
         if (detail.r1 !== undefined && isFinite(detail.r1)) entry.r1 = detail.r1;
