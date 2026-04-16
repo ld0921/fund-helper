@@ -227,12 +227,18 @@ function _doGenerateDca(){
       if(!catData) return;
 
       // 构建排除已选基金的候选池，叠加定投评分兜底过滤
-      // 阈值按类别差异化：权益类60分，债券/指数波动小天然低分，放宽到45分
-      const dcaScoreThreshold = ['bond'].includes(cat) ? 45 : ['index'].includes(cat) ? 50 : 60;
+      // 阈值：权益类60分，指数50分，债券50分（与"及格线"对齐，避免推荐<50分基金）
+      const dcaScoreThreshold = ['bond','index'].includes(cat) ? 50 : 60;
       const excluded = catData.topFunds.filter(f => !allPicks.some(p => p.code === f.code));
       const qualified = excluded.filter(f => calcDCAScore(f) >= dcaScoreThreshold);
-      // 若阈值过滤后整个类别为空（如市场整体高位），回退到该类别评分最高的Top3
-      const topFunds = qualified.length > 0 ? qualified : excluded.slice(0, 3);
+      // 若阈值过滤后整个类别为空（如可转债等高波动品种、或市场整体高位）：
+      // 按定投评分排序取 Top3 兜底，并标记 _dcaFallback 让 UI 显示警告
+      const topFunds = qualified.length > 0
+        ? qualified
+        : [...excluded]
+            .sort((a, b) => calcDCAScore(b) - calcDCAScore(a))
+            .slice(0, 3)
+            .map(f => ({...f, _dcaFallback: true}));
       const filteredCatData = { ...catData, topFunds };
       const catPct = Math.round(gap / totalBudget * 100);
       if(catPct < 1 || filteredCatData.topFunds.length === 0) return;
@@ -430,11 +436,12 @@ function _doGenerateDca(){
         ${newPicks.map((f,i)=>{
           const nav=navCache[f.code]; const chg=nav?parseFloat(nav.gszzl)||0:null;
           const todayStr=chg!==null?`<span style="font-size:11px;color:${chg>=0?'var(--danger)':'var(--success)'};margin-left:6px">今日${chg>=0?'+':''}${chg}%</span>`:'';
+          const fallbackBadge = f._dcaFallback ? `<span style="font-size:10px;padding:1px 5px;border-radius:3px;background:#fff7e6;color:#d46b08;border:1px solid #ffd591;margin-left:6px" title="该类暂无定投评分≥50的基金，已按同类最优兜底选出。当前时点可能不是定投最佳起点，建议关注或减少投入比例">⚠️ 兜底</span>` : '';
           return `<div class="dca-ai-item">
             <div style="width:28px;text-align:center;font-size:14px;color:var(--primary)">+</div>
             <div class="dca-ai-fund">
               <div class="dca-ai-name">${f.name}${todayStr}</div>
-              <div class="dca-ai-meta">代码 ${f.code} · ${f.manager} · 近1年 <span class="${f.r1>=0?'up':'down'}">${f.r1>=0?'+':''}${f.r1}%</span> · 定投评分 <b style="color:var(--primary)">${f.dcaScore}</b></div>
+              <div class="dca-ai-meta">代码 ${f.code} · ${f.manager} · 近1年 <span class="${f.r1>=0?'up':'down'}">${f.r1>=0?'+':''}${f.r1}%</span> · 定投评分 <b style="color:var(--primary)">${f.dcaScore}</b>${fallbackBadge}</div>
             </div>
             <div class="dca-ai-bar"><div class="dca-ai-bar-fill" style="width:${f.pct}%;background:${CAT_COLORS[f.cat]||'#999'}"></div></div>
             <div class="dca-ai-pct">${f.pct}%</div>
