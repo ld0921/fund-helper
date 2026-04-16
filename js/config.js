@@ -200,7 +200,7 @@ const FUND_META = {
   '040046':{style:'large_blend',industry:'美股',instPct:32,sizeQ:[1,2,3,5]},
   '006479':{style:'large_blend',industry:'美股',instPct:25,sizeQ:[2,3,5,8]},
 };
-const STYLE_LABELS = {large_value:'大盘价值',large_blend:'大盘均衡',large_growth:'大盘成长',mid_value:'中盘价值',mid_blend:'中盘均衡',mid_growth:'中盘成长',bond_credit:'信用债',bond_rate:'利率债',bond_short:'短债',money:'货币'};
+const STYLE_LABELS = {large_value:'大盘价值',large_blend:'大盘均衡',large_growth:'大盘成长',mid_value:'中盘价值',mid_blend:'中盘均衡',mid_growth:'中盘成长',bond_credit:'信用债',bond_rate:'利率债',bond_short:'短债',money:'货币',unknown:'风格未知'};
 function getMeta(code){ return FUND_META[code]||{}; }
 
 // ═══════════════ 暂停申购基金及替代方案 ═══════════════

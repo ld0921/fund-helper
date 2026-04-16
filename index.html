@@ -1259,12 +1259,12 @@ function analyzeStyleExposure(allPicks){
   });
   // 风格集中度预警
   Object.entries(exposure.styles).forEach(([s,pct])=>{
-    if(pct > 50 && s !== 'money' && s !== 'bond_short'){
+    if(pct > 50 && s !== 'money' && s !== 'bond_short' && s !== 'unknown'){
       exposure.risks.push({code:'_style',name:STYLE_LABELS[s]||s,type:'style',desc:`${STYLE_LABELS[s]||s}风格占比 ${pct}%，超过50%集中度红线。风格切换时可能全线回撤`});
     }
   });
   Object.entries(exposure.industries).forEach(([ind,pct])=>{
-    if(pct > 40 && !['宽基','货币','债券','美股'].includes(ind)){
+    if(pct > 40 && !['宽基','货币','债券','美股','未知'].includes(ind)){
       exposure.risks.push({code:'_ind',name:ind,type:'industry',desc:`${ind}行业占比 ${pct}%，行业集中度过高。建议分散到其他行业`});
     }
   });
