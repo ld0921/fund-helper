@@ -1024,7 +1024,7 @@ function renderDiagnostics(){
     const curNav = navCache[h.code] ? parseFloat(navCache[h.code].gsz)||1 : 1;
     const cost = h.amount || h.value || 0;
     const value = h.amount ? (h.amount / (h.cost||curNav) * curNav) : (h.value||0);
-    evalList.push({ code:h.code, name:h.name, value, cost, source:'existing', paused:false });
+    evalList.push({ code:h.code, name:h.name, value, cost, source:'existing', paused:false, date:h.date });
   });
   (typeof dcaPlans !== 'undefined' ? dcaPlans : []).forEach(d=>{
     if(evalList.some(x=>x.code===d.code)) return; // 已在持仓中
@@ -1037,7 +1037,7 @@ function renderDiagnostics(){
       const months = d.start ? Math.max(0, Math.floor((new Date()-new Date(d.start))/30/86400000)) : 0;
       cost = d.monthly * months;
     }
-    evalList.push({ code:d.code, name:d.name, value:d.curval, cost, source:'dca', paused:d.paused||false, monthly:d.monthly });
+    evalList.push({ code:d.code, name:d.name, value:d.curval, cost, source:'dca', paused:d.paused||false, monthly:d.monthly, date:d.start });
   });
 
   if(!evalList.length){
@@ -1097,10 +1097,17 @@ function renderDiagnostics(){
     }
 
     if(!best && reason !== 'noAlt') return;
+    // 换仓成本评估：复用智能方案的 calculateRebalanceCost，消除两模块矛盾
+    let costInfo = null;
+    if(best && typeof calculateRebalanceCost === 'function'){
+      const holdingDays = h.date ? Math.floor((Date.now() - new Date(h.date).getTime()) / 86400000) : 365;
+      costInfo = calculateRebalanceCost(fd, best, holdingDays, h.value);
+    }
     suggestions.push({
       holding:h, fd, currentScore,
       best, bestScore: best ? scoreF(best) : null,
-      pnlPct, source:h.source, reason, isProblem
+      pnlPct, source:h.source, reason, isProblem,
+      costInfo
     });
   });
 
@@ -1120,21 +1127,40 @@ function renderDiagnostics(){
   const rows = rebalList.map(s=>{
     const pnlStr = s.pnlPct!==null ? `${s.source==='dca'?'定投':'持仓'}${s.pnlPct>=0?'+':''}${s.pnlPct.toFixed(1)}%` : '';
     const redeemTip = s.pnlPct!==null && s.pnlPct < 0 ? '（当前亏损，换仓需承担浮亏）' : '';
-    const actionLabel = s.source === 'dca'
-      ? (s.reason === 'problem' ? '⏸️ 暂停并换入' : '🔄 换入定投')
-      : '🔄 建议换仓';
+    // 根据换仓成本评估结果区分展示
+    const costNotWorth = s.costInfo && !s.costInfo.worthIt;
+    let actionLabel, costNote = '';
+    if(costNotWorth){
+      // 换仓成本不划算：降级为"观察"，附带成本数据
+      actionLabel = '👀 暂不建议换';
+      const costPct = (s.costInfo.totalCostRate * 100).toFixed(2);
+      const breakEven = s.costInfo.breakEvenYears < 99 ? `${s.costInfo.breakEvenYears.toFixed(1)}年` : '极长';
+      costNote = `<br>💸 <span style="color:#d46b08">换仓成本 ${costPct}%，需${breakEven}回本，当前不划算。建议持有满2年（免赎回费）后再考虑。</span>`;
+    } else {
+      actionLabel = s.source === 'dca'
+        ? (s.reason === 'problem' ? '⏸️ 暂停并换入' : '🔄 换入定投')
+        : '🔄 建议换仓';
+      if(s.costInfo && s.costInfo.worthIt){
+        const costPct = (s.costInfo.totalCostRate * 100).toFixed(2);
+        const breakEven = s.costInfo.breakEvenYears.toFixed(1);
+        costNote = `<br>💰 换仓成本 ${costPct}%，预计${breakEven}年回本，换仓划算。`;
+      }
+    }
     const gapNote = s.reason === 'problem'
       ? `当前基金近期表现不佳（${s.isProblem?'严重落后同类/结构性亏损':'评分偏低'}），同类相对更优`
       : `评分差 +${s.bestScore-s.currentScore}分`;
+    const actionStyle = costNotWorth
+      ? 'color:var(--muted);background:#f5f5f5;border:1px solid #d9d9d9'
+      : 'color:#d48806;background:#fff7e6;border:1px solid #ffd591';
     return `<div style="padding:14px 16px;border-bottom:1px solid #f0f0f0">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
         <span style="font-size:13px;font-weight:600;color:#cf1322;padding:4px 10px;background:#fff1f0;border:1px solid #ffccc7;border-radius:6px">${escHtml(s.fd.name)} <span style="font-size:11px;font-weight:400;color:var(--muted)">${s.currentScore}分</span></span>${sourceBadge(s.source)}
         <span style="color:var(--muted);font-size:14px">→</span>
         <span style="font-size:13px;font-weight:600;color:#389e0d;padding:4px 10px;background:#f6ffed;border:1px solid #b7eb8f;border-radius:6px">${escHtml(s.best.name)} <span style="font-size:11px;font-weight:400;color:var(--muted)">${s.bestScore}分</span></span>
-        <span style="margin-left:auto;font-size:12px;font-weight:600;color:#d48806;padding:3px 10px;background:#fff7e6;border:1px solid #ffd591;border-radius:6px;white-space:nowrap">${actionLabel}</span>
+        <span style="margin-left:auto;font-size:12px;font-weight:600;${actionStyle};padding:3px 10px;border-radius:6px;white-space:nowrap">${actionLabel}</span>
       </div>
       <div style="font-size:12px;color:#595959;line-height:1.6;padding:8px 10px;background:#fafafa;border-radius:6px">
-        ${gapNote} · ${pnlStr}${redeemTip}<br>
+        ${gapNote} · ${pnlStr}${redeemTip}${costNote}<br>
         📈 ${escHtml(s.best.name)}：近1年${s.best.r1>0?'+':''}${s.best.r1}%，近3年${s.best.r3>0?'+':''}${s.best.r3}%，经理任期${s.best.mgrYears}年
       </div>
     </div>`;
@@ -1172,7 +1198,7 @@ function renderDiagnostics(){
     </div>
     ${rows}
     ${noAltRows}
-    <div style="padding:10px 14px;font-size:11px;color:var(--muted);background:#fafafa">⚠️ 换仓前请评估赎回费和持有天数，持有2年以上通常免赎回费。定投基金暂停后建议评估是否转投其他类别。</div>
+    <div style="padding:10px 14px;font-size:11px;color:var(--muted);background:#fafafa">⚠️ 已计算换仓成本（赎回费+申购费+回本期），标注"暂不建议换"的基金持有满2年后再评估。定投基金暂停后建议评估是否转投其他类别。</div>
   </div>`;
 }
 
