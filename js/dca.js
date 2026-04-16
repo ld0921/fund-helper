@@ -271,16 +271,50 @@ function _doGenerateDca(){
         p.monthly = Math.max(100, remaining);
       }
     });
+    // 溢出保护：小预算时每只基金 100 元下限可能导致总额超出可分配额度
+    // 按比例缩减并降低取整粒度（10 元），最低 10 元/月
+    const allocTotal = newPart.reduce((s,p) => s + p.monthly, 0);
+    if(allocTotal > newBudget + 1) {
+      const scale = newBudget / allocTotal;
+      let rem = Math.round(newBudget);
+      newPart.forEach((p, i) => {
+        if(i < newPart.length - 1) {
+          p.monthly = Math.max(10, Math.round(p.monthly * scale / 10) * 10);
+          rem -= p.monthly;
+        } else {
+          p.monthly = Math.max(10, rem);
+        }
+      });
+    }
   }
 
-  // 6.5 指数基金估值感知：低估多投，高估少投（±20%幅度）
-  allPicks.forEach(p => {
+  // 6.5 指数基金估值感知：仅调整新增基金，低估多投、高估少投（±20%幅度）
+  // 不调整已有计划的月投金额（用户已设定的金额应保持不变）
+  let hasValAdj = false;
+  newPart.forEach(p => {
     if(p.cat !== 'index') return;
-    const adj = getValuationAdj(p.code); // -10~+10
+    const adj = getValuationAdj(p.code);
     if(adj === 0) return;
     const mult = 1 + adj * 0.02; // adj=10 → ×1.2，adj=-10 → ×0.8
-    p.monthly = Math.max(100, Math.round(p.monthly * mult / 100) * 100);
+    p.monthly = Math.max(10, Math.round(p.monthly * mult / 10) * 10);
+    hasValAdj = true;
   });
+  // 估值调整后归一化：确保新增基金月投总额精确等于 newBudget
+  if(hasValAdj && newPart.length > 0 && newBudget > 0) {
+    const newAdjTotal = newPart.reduce((s,p) => s + p.monthly, 0);
+    if(Math.abs(newAdjTotal - newBudget) > 1 && newAdjTotal > 0) {
+      const adjScale = newBudget / newAdjTotal;
+      let rem = Math.round(newBudget);
+      newPart.forEach((p, i) => {
+        if(i < newPart.length - 1) {
+          p.monthly = Math.max(10, Math.round(p.monthly * adjScale / 10) * 10);
+          rem -= p.monthly;
+        } else {
+          p.monthly = Math.max(10, rem);
+        }
+      });
+    }
+  }
 
   // 7. 重新计算百分比（基于最终月投金额）
   const finalTotal = allPicks.reduce((s,p) => s + p.monthly, 0);
