@@ -496,7 +496,7 @@
         <div id="dca-budget-hint" style="font-size:11px;color:var(--muted);margin-top:2px;line-height:1.4"></div>
       </div>
       <div class="form-item">
-        <label>🛡️ 风险偏好</label>
+        <label>🛡️ 风险偏好 <span class="param-help-btn" onclick="showParamHelp('dca_risk')">?</span></label>
         <select id="dca-risk-pref" onchange="resetDcaGenButton()">
           <option value="conservative">保守型</option>
           <option value="moderate" selected>稳健型</option>
@@ -505,7 +505,7 @@
         </select>
       </div>
       <div class="form-item">
-        <label>📅 计划定投年限</label>
+        <label>📅 计划定投年限 <span class="param-help-btn" onclick="showParamHelp('dca_horizon')">?</span></label>
         <select id="dca-plan-years" onchange="resetDcaGenButton()">
           <option value="3">3年</option>
           <option value="5" selected>5年</option>
@@ -1470,6 +1470,24 @@ function showParamHelp(type){
 <b>3-5年</b>：中性配置，权益类比例适当提升。时间足够平滑短期波动，追求中长期复利。<br><br>
 <b>5年+</b>：大幅提升权益类比例，降低货币/债券。时间是最好的风险缓冲，长期复利效应显著。<br><br>
 <span style="color:var(--primary)">期限越长，系统会越积极地配置高波动高收益资产。</span>`
+    },
+    dca_risk: {
+      title: '🛡️ 定投风险偏好说明',
+      body: `定投方案使用与智能组合方案完全相同的 Risk Parity 权重算法，风险偏好直接决定各类资产的配比方向：<br><br>
+<b>保守型</b>：债券为主（约60-70%），少量权益+QDII。预期定投年化3-5%。适合不愿承受大幅波动、但希望跑赢通胀的长期资金。<br><br>
+<b>稳健型</b>：债券与权益均衡偏债（权益约25-35%）。预期定投年化5-8%。大多数人的默认选择。<br><br>
+<b>平衡型</b>：权益与债券均衡配置（权益约40-55%）。预期定投年化7-12%。适合能坚持3年以上不赎回的资金。<br><br>
+<b>进取型</b>：权益类为主（约60-80%），债券极少。预期定投年化10%+，但过程中可能出现-30%以上的浮亏。适合能坚持5年以上不动摇的闲钱。<br><br>
+<span style="color:var(--muted)">💡 定投自动排除货币基金（货币无波动，不受益于定投摊低成本的机制），其权重会按比例分配给其他类别。</span>`
+    },
+    dca_horizon: {
+      title: '📅 定投年限说明',
+      body: `定投年限直接影响资产配比和预期收益计算：<br><br>
+<b>3年</b>：中性配置，权益上限约65%。时间刚好覆盖一轮牛熊周期，建议至少选此档。<br><br>
+<b>5年</b>：权益比例适当提升（上限75%），复利效应开始显现。推荐多数定投用户选择。<br><br>
+<b>10年</b>：大幅提升权益类比例（上限85%）。历史数据显示，A股任意时点开始定投10年，正收益概率超过95%。<br><br>
+<b>20年</b>：最积极的权益配置。长期复利+定投摊低成本双重优势，适合养老/教育等超长期目标。<br><br>
+<span style="color:var(--primary)">年限越长，系统会越积极地配置高波动资产——因为定投天然适合在波动中摊低成本，时间越长这一优势越明显。</span>`
     }
   };
   const d = data[type];
