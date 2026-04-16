@@ -1228,14 +1228,19 @@ function _doGenerate(shouldScroll){
   const weights = computeWeights(riskP, horizon, catRanks, macroClock);
 
   // 4.5 融合已有持仓分析
-  // 先用最新净值同步 existingHoldings.value，确保聚合和后续计算用到的 value 是准确的
+  // 先用最新净值同步 value：已确认用市值，待确认用买入成本（份额未确认，成本偏差可忽略）
   existingHoldings.forEach(h => {
-    const nav = navCache[h.code];
-    const curNav = nav ? parseFloat(nav.gsz) || 1 : 1;
-    if(h.shares && h.shares > 0){
-      h.value = h.shares * curNav;
-    } else if(h.amount && h.cost){
-      h.value = h.amount / h.cost * curNav;
+    if(h.status === 'pending'){
+      // 待确认：直接用买入成本作为持仓金额
+      h.value = h.amount || 0;
+    } else {
+      const nav = navCache[h.code];
+      const curNav = nav ? parseFloat(nav.gsz) || 1 : 1;
+      if(h.shares && h.shares > 0){
+        h.value = h.shares * curNav;
+      } else if(h.amount && h.cost){
+        h.value = h.amount / h.cost * curNav;
+      }
     }
   });
   // 按code聚合：同一只基金的多条持仓（已确认+待确认）合并，避免后续算法把同基金当作多只分别处理
@@ -1253,11 +1258,8 @@ function _doGenerate(shouldScroll){
       const cat = fd ? fd.cat : null;
       if(!cat) return; // 未知基金跳过
 
-      // 使用最新净值计算当前市值
-      // 聚合后 h.amount/h.cost 可能跨多笔成本不一致，不能反推份额，直接用聚合后的 value（已累加）或 shares×curNav
-      const nav = navCache[h.code];
-      const curNav = nav ? parseFloat(nav.gsz)||1 : 1;
-      const currentValue = (h.shares && h.shares > 0) ? (h.shares * curNav) : (h.value || 0);
+      // 聚合后 value 已在同步阶段计算好（已确认=市值，待确认=买入成本），直接使用
+      const currentValue = h.value || 0;
 
       const score = scoreF(fd);
       const keep = score >= 60; // 评分≥60为达标（60分及格线，与持仓诊断标准统一）
