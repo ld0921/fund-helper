@@ -268,7 +268,9 @@ function computeRebalancePlan(targetPicks, newMoney){
   // 仅在累积误差超过阈值时做微调（将差额分摊到最大买入操作）
   const buyActions = actions.filter(a=>['buy','buy_more'].includes(a.action));
   const actualBuyTotal = buyActions.reduce((s,a)=>s+a.actionAmt,0);
-  const totalAvailable = newMoney + totalRelease;
+  // 待确认持仓的金额已花出去，计入existTotal但不在newMoney里，需加回totalAvailable避免错误缩减actionAmt
+  const pendingAmt = existingHoldings.filter(h=>h.status==='pending').reduce((s,h)=>s+(h.value||0),0);
+  const totalAvailable = newMoney + totalRelease + pendingAmt;
   if(buyActions.length > 0 && Math.abs(actualBuyTotal - totalAvailable) > 10){
     const diff = totalAvailable - actualBuyTotal;
     if(diff > 0){
