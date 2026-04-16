@@ -58,9 +58,7 @@ function calculateRebalanceCost(currentFund, targetFund, holdingDays, amount){
 function computeRebalancePlan(targetPicks, newMoney){
   if(!existingHoldings.length) return null;
   const allPicks=Object.values(targetPicks).flat();
-  // 待确认持仓不计入existTotal：份额未确认，不应影响目标组合规模计算
-  const confirmedHoldings = existingHoldings.filter(h => h.status !== 'pending');
-  const existTotal=confirmedHoldings.reduce((s,h)=>s+h.value,0);
+  const existTotal=existingHoldings.reduce((s,h)=>s+h.value,0);
   const totalPortfolio=existTotal+newMoney;
   const actions=[];
 
@@ -77,7 +75,7 @@ function computeRebalancePlan(targetPicks, newMoney){
     // 特殊处理：如果是新买入的条目（isExisting=false），先检查用户是否实际持有该基金
     if(pick.isExisting === false){
       if(pick.amt <= 0) return; // 金额为0的新买入直接跳过
-      const actualHeld = confirmedHoldings.find(h => h.code === pick.code);
+      const actualHeld = existingHoldings.find(h => h.code === pick.code);
       if(actualHeld){
         // 用户实际持有该基金，但评分未达保留阈值，按加仓逻辑处理
         const currentAmt = actualHeld.value;
@@ -113,8 +111,8 @@ function computeRebalancePlan(targetPicks, newMoney){
       return;
     }
 
-    // 已有持仓的处理逻辑（只查已确认持仓，待确认持仓不计入currentAmt）
-    const held=confirmedHoldings.find(h=>h.code===pick.code);
+    // 已有持仓的处理逻辑
+    const held=existingHoldings.find(h=>h.code===pick.code);
     const currentAmt=held?held.value:0;
     const targetAmt=pick.amt; // 直接使用pick.amt作为目标金额
     // diff 始终基于 targetAmt - currentAmt，确保调仓金额与目标仓位一致
@@ -134,7 +132,7 @@ function computeRebalancePlan(targetPicks, newMoney){
       actionColor='act-buy_more';
     } else if(diff<-tol){
       // 持有成本感知：计算换仓净收益，只有划算时才建议减仓
-      const held = confirmedHoldings.find(h=>h.code===pick.code);
+      const held = existingHoldings.find(h=>h.code===pick.code);
       const holdingDays = held && held.date ? Math.floor((Date.now()-new Date(held.date).getTime())/86400000) : 365;
       const fd = CURATED_FUNDS.find(f=>f.code===pick.code);
       // 找同类最优基金作为换仓目标
@@ -189,8 +187,8 @@ function computeRebalancePlan(targetPicks, newMoney){
     actions.push(actionObj);
   });
 
-  // 用户持有但不在目标中的基金（只处理已确认持仓）
-  confirmedHoldings.forEach(h=>{
+  // 用户持有但不在目标中的基金
+  existingHoldings.forEach(h=>{
     const inTarget=allPicks.some(p=>p.code===h.code);
     if(inTarget) return;
     const fd=CURATED_FUNDS.find(f=>f.code===h.code);
@@ -270,7 +268,9 @@ function computeRebalancePlan(targetPicks, newMoney){
   // 仅在累积误差超过阈值时做微调（将差额分摊到最大买入操作）
   const buyActions = actions.filter(a=>['buy','buy_more'].includes(a.action));
   const actualBuyTotal = buyActions.reduce((s,a)=>s+a.actionAmt,0);
-  const totalAvailable = newMoney + totalRelease;
+  // 待确认持仓的金额已花出去，计入existTotal但不在newMoney里，需加回totalAvailable避免错误缩减actionAmt
+  const pendingAmt = existingHoldings.filter(h=>h.status==='pending').reduce((s,h)=>s+(h.value||0),0);
+  const totalAvailable = newMoney + totalRelease + pendingAmt;
   if(buyActions.length > 0 && Math.abs(actualBuyTotal - totalAvailable) > 10){
     const diff = totalAvailable - actualBuyTotal;
     if(diff > 0){
