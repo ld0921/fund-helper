@@ -1224,10 +1224,8 @@ function _doGenerate(shouldScroll){
       const cat = fd ? fd.cat : null;
       if(!cat) return; // 未知基金跳过
 
-      // 使用最新净值计算当前市值
-      const nav = navCache[h.code];
-      const curNav = nav ? parseFloat(nav.gsz)||1 : 1;
-      const currentValue = h.amount ? (h.amount / (h.cost||curNav) * curNav) : (h.value||0);
+      // 使用 h.value 作为当前市值（与 existTotal 计算基准一致，避免二次计算导致不一致）
+      const currentValue = h.value || 0;
 
       const score = scoreF(fd);
       const keep = score >= 60; // 评分≥60为达标（60分及格线，与持仓诊断标准统一）
@@ -1662,12 +1660,7 @@ function _doGenerate(shouldScroll){
   renderStressTest(stressResults, totalAmt);
 
   // 11. 调仓建议（先于执行步骤生成，以便步骤引用调仓数据）
-  // 用最新净值同步 existingHoldings.value，确保调仓金额与界面显示一致
-  existingHoldings.forEach(h => {
-    const nav = navCache[h.code];
-    const curNav = nav ? parseFloat(nav.gsz) || 1 : 1;
-    if(h.amount && h.cost) h.value = h.amount / h.cost * curNav;
-  });
+  // existingHoldings.value 保持与AI方案生成时一致（第1214行），不再重复同步，避免两处existTotal不一致
   const rebalPlan = computeRebalancePlan(selectedPicks, totalAmt);
   renderRebalancePlan(rebalPlan);
 
