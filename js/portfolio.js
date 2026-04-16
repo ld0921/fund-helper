@@ -974,6 +974,13 @@ async function generateSmartPortfolio(){
     return;
   }
 
+  // 待确认持仓检查：在进入数据加载流程前立即拦截
+  const pendingCount = existingHoldings.filter(h => h.status === 'pending').length;
+  if(pendingCount > 0){
+    showToast(`您有 ${pendingCount} 笔基金待确认份额，请先在「我的持仓」中完成确认后再生成方案`, 'error', 4000);
+    return;
+  }
+
   const btn=document.getElementById('gen-btn');
   btn.disabled=true; btn.innerHTML='<span class="loading-dot"></span> 准备数据中…';
   document.getElementById('gen-status').textContent='';
@@ -1129,16 +1136,6 @@ async function generateSmartPortfolio(){
 }
 
 function _finishGenerate(btn, shouldScroll){
-  // 待确认持仓检查：立即拦截，不等数据加载
-  const pendingHoldings = existingHoldings.filter(h => h.status === 'pending');
-  if(pendingHoldings.length > 0){
-    showToast(`您有 ${pendingHoldings.length} 笔基金待确认份额，请先在「我的持仓」中完成确认后再生成方案`, 'error', 4000);
-    btn.disabled = false;
-    btn.innerHTML = '🤖 生成我的专属方案';
-    btn.style.opacity = '1';
-    btn.style.cursor = 'pointer';
-    return;
-  }
   let ok = false;
   try { ok = _doGenerate(shouldScroll); } catch(e){ console.error(e); }
   if(ok){
