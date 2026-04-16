@@ -1129,6 +1129,16 @@ async function generateSmartPortfolio(){
 }
 
 function _finishGenerate(btn, shouldScroll){
+  // 待确认持仓检查：立即拦截，不等数据加载
+  const pendingHoldings = existingHoldings.filter(h => h.status === 'pending');
+  if(pendingHoldings.length > 0){
+    showToast(`您有 ${pendingHoldings.length} 笔基金待确认份额，请先在「我的持仓」中完成确认后再生成方案`, 'error', 4000);
+    btn.disabled = false;
+    btn.innerHTML = '🤖 生成我的专属方案';
+    btn.style.opacity = '1';
+    btn.style.cursor = 'pointer';
+    return;
+  }
   let ok = false;
   try { ok = _doGenerate(shouldScroll); } catch(e){ console.error(e); }
   if(ok){
@@ -1183,27 +1193,6 @@ function _doGenerate(shouldScroll){
     if(isEmpty) return; // 库为空时直接中止，无法生成方案
   } else {
     if(staleNotice) staleNotice.style.display = 'none';
-  }
-
-  // 待确认持仓检查：存在未确认份额的基金时，阻止生成方案
-  const pendingHoldings = existingHoldings.filter(h => h.status === 'pending');
-  if(pendingHoldings.length > 0){
-    const names = pendingHoldings.map(h => h.name || h.code).join('、');
-    const planSummary = document.getElementById('plan-summary');
-    if(planSummary){
-      planSummary.innerHTML = `
-        <div style="padding:24px;text-align:center">
-          <div style="font-size:40px;margin-bottom:12px">⏳</div>
-          <div style="font-size:16px;font-weight:600;color:#d46b08;margin-bottom:10px">您有 ${pendingHoldings.length} 笔基金待确认份额</div>
-          <div style="font-size:13px;color:#8c8c8c;line-height:1.8;max-width:420px;margin:0 auto">
-            为确保生成的配置方案准确合理，请先在支付宝中查看以下基金的确认份额，<br>在「我的持仓」中点击「待确认」按钮完成确认后再生成方案。
-          </div>
-          <div style="margin-top:14px;padding:10px 16px;background:#fff7e6;border-radius:8px;font-size:12px;color:#ad6800;text-align:left;display:inline-block;max-width:420px">
-            ${pendingHoldings.map(h => `· ${h.name || h.code}（买入 ¥${(h.amount||0).toLocaleString()}）`).join('<br>')}
-          </div>
-        </div>`;
-    }
-    return;
   }
 
   const totalAmt  = parseFloat(document.getElementById('sp-amount').value)||0;
