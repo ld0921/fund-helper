@@ -1671,6 +1671,7 @@ function _doGenerate(shouldScroll){
   ).join('');
 
   // 13.5 低分基金替换建议
+  let validReplacements = [];
   if(replaceSuggestions.length > 0){
     const rebalCard = document.getElementById('rebal-card');
     if(rebalCard){
@@ -1683,7 +1684,7 @@ function _doGenerate(shouldScroll){
         picks.forEach(p => { if(p.method && p.method.includes('加仓')) addingCodes.add(p.code); });
       });
 
-      const validReplacements = replaceSuggestions
+      validReplacements = replaceSuggestions
         .filter(r => !addingCodes.has(r.code))
         .map(r=>{
           const catFunds = catRanks.find(c=>c.cat===r.cat);
@@ -1808,7 +1809,7 @@ function _doGenerate(shouldScroll){
     const holdingNote = hasHoldings
       ? `<div style="margin-top:10px;padding:8px 12px;background:rgba(22,119,255,.08);border-radius:8px;font-size:12px;color:var(--primary);line-height:1.6">
           💼 已融合您的 ${existingHoldings.length} 笔持仓（总市值 ¥${existTotal.toLocaleString()}）：
-          保留达标基金 <b>${keptCount}</b> 只，新建仓 <b>${newCount}</b> 只${replaceSuggestions.length>0?`，建议替换 <b>${replaceSuggestions.length}</b> 只低分基金`:''}。
+          保留达标基金 <b>${keptCount}</b> 只，新建仓 <b>${newCount}</b> 只${validReplacements.length>0?`，建议替换 <b>${validReplacements.length}</b> 只低分基金`:''}。
           新资金 ¥${totalAmt.toLocaleString()} 将优先填补配置缺口。
         </div>`
       : '';
