@@ -263,29 +263,33 @@ function computeRebalancePlan(targetPicks, newMoney){
   const totalRelease = sellTotal + reduceTotal;
 
   // 资金平衡校验：买入总额应 ≈ 新增资金 + 减持释放
-  // targetAmt 来自 AI方案的 pick.amt，actionAmt = targetAmt - currentAmt
-  // 正常情况下无需重新分配，因为 AI 方案的目标总额 = existTotal + newMoney
-  // 仅在累积误差超过阈值时做微调（将差额分摊到最大买入操作）
+  // 当 hold/satellite 锁定部分资金使实际可用 < AI目标，按比例缩减并同步 pick.amt
+  // 保证 AI方案显示 与 调仓建议 的目标仓位一致
   const buyActions = actions.filter(a=>['buy','buy_more'].includes(a.action));
   const actualBuyTotal = buyActions.reduce((s,a)=>s+a.actionAmt,0);
   const totalAvailable = newMoney + totalRelease;
+  const syncPick = (code, amt) => {
+    const pick = allPicks.find(p => p.code === code);
+    if(pick){ pick.amt = amt; pick.pct = Math.round(amt / totalPortfolio * 100); }
+  };
   if(buyActions.length > 0 && Math.abs(actualBuyTotal - totalAvailable) > 10){
     const diff = totalAvailable - actualBuyTotal;
     if(diff > 0){
-      // 资金有剩余：加到最大买入操作上；同步更新 targetAmt 以维持"当前+调仓=目标"不变量
+      // 资金有剩余：加到最大买入操作上
       const maxBuy = [...buyActions].sort((a,b)=>b.actionAmt-a.actionAmt)[0];
       maxBuy.actionAmt += diff;
       maxBuy.targetAmt = maxBuy.currentAmt + maxBuy.actionAmt;
+      syncPick(maxBuy.code, maxBuy.targetAmt);
       maxBuy.actionDesc = maxBuy.action==='buy'
         ? `新建仓 ¥${maxBuy.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`
         : `加仓 ¥${maxBuy.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
     } else {
-      // 资金不足：按比例缩减所有买入操作的 actionAmt；targetAmt 同步缩减为实际可达仓位
-      // （避免 UI 上出现"当前 + 调仓 ≠ 目标"的数学不一致）
+      // 资金不足：按比例缩减所有买入操作，同步更新 AI方案 pick.amt/pct
       const scale = totalAvailable / actualBuyTotal;
       buyActions.forEach(a => {
         a.actionAmt = Math.max(0, Math.round(a.actionAmt * scale));
         a.targetAmt = a.currentAmt + a.actionAmt;
+        syncPick(a.code, a.targetAmt);
         a.actionDesc = a.action==='buy'
           ? `新建仓 ¥${a.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`
           : `加仓 ¥${a.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
@@ -297,6 +301,7 @@ function computeRebalancePlan(targetPicks, newMoney){
         const maxBuy = [...buyActions].sort((a,b)=>b.actionAmt-a.actionAmt)[0];
         maxBuy.actionAmt += remainder;
         maxBuy.targetAmt = maxBuy.currentAmt + maxBuy.actionAmt;
+        syncPick(maxBuy.code, maxBuy.targetAmt);
         maxBuy.actionDesc = maxBuy.action==='buy'
           ? `新建仓 ¥${maxBuy.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`
           : `加仓 ¥${maxBuy.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
@@ -1647,11 +1652,8 @@ function _doGenerate(shouldScroll){
     : `${riskNames[riskP]} · ${horizonNames[horizon]} · ¥${totalAmt.toLocaleString()}`;
   document.getElementById('plan-subtitle').textContent = subtitleText;
 
-  // 8. 渲染配置方案
-  renderAllocGroups(selectedPicks, weights);
-
-  // 9. 饼图
-  renderPortfolioPie(selectedPicks);
+  // 8+9: 配置方案和饼图的渲染延后到 computeRebalancePlan 之后
+  // （computeRebalancePlan 可能因资金平衡校验缩减 pick.amt/pct，需先完成再渲染）
 
   // 10. 风险计量
   renderRiskMeter(blendedDD, riskP);
@@ -1665,6 +1667,10 @@ function _doGenerate(shouldScroll){
   // 11. 调仓建议（先于执行步骤生成，以便步骤引用调仓数据）
   // existingHoldings.value 保持与AI方案生成时一致（第1214行），不再重复同步，避免两处existTotal不一致
   const rebalPlan = computeRebalancePlan(selectedPicks, totalAmt);
+  // 8. 渲染配置方案（在 computeRebalancePlan 之后，pick.amt 已反映资金平衡校验结果）
+  renderAllocGroups(selectedPicks, weights);
+  // 9. 饼图
+  renderPortfolioPie(selectedPicks);
   renderRebalancePlan(rebalPlan);
 
   // 12. 执行步骤（基于调仓建议生成，确保与调仓一致）
