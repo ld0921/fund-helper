@@ -419,10 +419,6 @@ function renderRebalancePlan(plan){
     }
 
     // 普通action：使用原有渲染逻辑
-    const meta = getMeta(a.code);
-    const dailyLimitHint = meta.dailyLimit && ['buy','buy_more'].includes(a.action)
-      ? `<div style="font-size:11px;color:#d46b08;margin-top:3px">⚠️ 该基金每日限购 ¥${meta.dailyLimit}，需分 ${Math.ceil(a.actionAmt/meta.dailyLimit)} 天完成买入</div>`
-      : '';
     return `
     <div class="rebal-row">
       <div style="width:88px;flex-shrink:0"><span class="rebal-action ${a.actionColor}">${actionIcons[a.action]} ${actionLabels[a.action]}</span></div>
@@ -430,7 +426,6 @@ function renderRebalancePlan(plan){
         <div class="rebal-fund-name">${escHtml(a.name)}</div>
         <div class="rebal-fund-meta">代码 ${escHtml(a.code)} · ${escHtml(a.type)} · ${escHtml(a.manager)} · 近1年 <span class="${(+a.r1)>=0?'up':'down'}">${(+a.r1)>=0?'+':''}${a.r1}%</span></div>
         <div class="rebal-fund-desc">${escHtml(a.actionDesc)}</div>
-        ${dailyLimitHint}
       </div>
       <div class="rebal-amts">
         <div class="rebal-amt"><div class="rebal-amt-val">¥${a.currentAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}</div><div class="rebal-amt-lbl">当前持仓</div></div>
