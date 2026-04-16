@@ -657,8 +657,10 @@ function computeWeights(riskProfile, horizon, catRanks, macroClock){
     base.bond = (base.bond||0) + 5;
   }
 
-  // 6.5 风险偏好权益下限保障（防止风险平价稀释效应）
-  const equityFloor = { conservative:0, moderate:15, balanced:30, aggressive:55 }[riskProfile] || 0;
+  // 6.5 风险偏好权益下限保障（防止风险平价稀释效应，不超过equityCap）
+  // 下限对齐文字说明：稳健20%、平衡40%、进取60%（短期进取受equityCap约束取较小值）
+  const equityFloorBase = { conservative:0, moderate:20, balanced:40, aggressive:60 }[riskProfile] || 0;
+  const equityFloor = Math.min(equityFloorBase, equityCap);
   if(equityFloor > 0){
     let eq = equityCats.reduce((s,c) => s + (base[c]||0), 0);
     if(eq < equityFloor){
