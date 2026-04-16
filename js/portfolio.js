@@ -657,6 +657,25 @@ function computeWeights(riskProfile, horizon, catRanks, macroClock){
     base.bond = (base.bond||0) + 5;
   }
 
+  // 6.5 风险偏好权益下限保障（防止风险平价稀释效应）
+  const equityFloor = { conservative:0, moderate:15, balanced:30, aggressive:55 }[riskProfile] || 0;
+  if(equityFloor > 0){
+    let eq = equityCats.reduce((s,c) => s + (base[c]||0), 0);
+    if(eq < equityFloor){
+      const deficit = equityFloor - eq;
+      // 优先从货币基金扣减，其次债券
+      const fromMoney = Math.min(base.money||0, deficit);
+      base.money = (base.money||0) - fromMoney;
+      const fromBond = Math.min(base.bond||0, deficit - fromMoney);
+      base.bond = (base.bond||0) - fromBond;
+      // 按 active:index:qdii = 3:2:1 补充权益
+      const add = fromMoney + fromBond;
+      base.active = (base.active||0) + add * 0.5;
+      base.index  = (base.index||0)  + add * 0.33;
+      base.qdii   = (base.qdii||0)   + add * 0.17;
+    }
+  }
+
   // 7. 归一化到100 + 修正舍入
   const total = Object.values(base).reduce((s,v)=>s+v,0);
   Object.keys(base).forEach(k => base[k] = Math.round(base[k] / total * 100));
