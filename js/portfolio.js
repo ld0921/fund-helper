@@ -55,10 +55,34 @@ function calculateRebalanceCost(currentFund, targetFund, holdingDays, amount){
 }
 
 // ═══════════════ 调仓算法 ═══════════════
+// 按 code 聚合持仓：同一只基金的多条记录（已确认+待确认）合并为一条
+// 修复：避免同基金在算法链路里被当作多只基金分别处理，导致 currentAmt/actionAmt 重复计算
+function aggregateHoldings(holdings){
+  const map = new Map();
+  holdings.forEach(h => {
+    if(map.has(h.code)){
+      const existing = map.get(h.code);
+      existing.value = (existing.value||0) + (h.value||0);
+      existing.amount = (existing.amount||0) + (h.amount||0);
+      existing.shares = (existing.shares||0) + (h.shares||0);
+      // 保留最早买入日期（用于持有天数计算，影响赎回费）
+      if(h.date && (!existing.date || new Date(h.date) < new Date(existing.date))){
+        existing.date = h.date;
+      }
+      // status：任一条已确认则视为已确认（份额基准可用）
+      if(h.status === 'confirmed') existing.status = 'confirmed';
+    } else {
+      map.set(h.code, {...h});
+    }
+  });
+  return Array.from(map.values());
+}
+
 function computeRebalancePlan(targetPicks, newMoney){
   if(!existingHoldings.length) return null;
+  const aggHoldings = aggregateHoldings(existingHoldings);
   const allPicks=Object.values(targetPicks).flat();
-  const existTotal=existingHoldings.reduce((s,h)=>s+h.value,0);
+  const existTotal=aggHoldings.reduce((s,h)=>s+h.value,0);
   const totalPortfolio=existTotal+newMoney;
   const actions=[];
 
@@ -75,7 +99,7 @@ function computeRebalancePlan(targetPicks, newMoney){
     // 特殊处理：如果是新买入的条目（isExisting=false），先检查用户是否实际持有该基金
     if(pick.isExisting === false){
       if(pick.amt <= 0) return; // 金额为0的新买入直接跳过
-      const actualHeld = existingHoldings.find(h => h.code === pick.code);
+      const actualHeld = aggHoldings.find(h => h.code === pick.code);
       if(actualHeld){
         // 用户实际持有该基金，但评分未达保留阈值，按加仓逻辑处理
         const currentAmt = actualHeld.value;
@@ -112,7 +136,7 @@ function computeRebalancePlan(targetPicks, newMoney){
     }
 
     // 已有持仓的处理逻辑
-    const held=existingHoldings.find(h=>h.code===pick.code);
+    const held=aggHoldings.find(h=>h.code===pick.code);
     const currentAmt=held?held.value:0;
     const targetAmt=pick.amt; // 直接使用pick.amt作为目标金额
     // diff 始终基于 targetAmt - currentAmt，确保调仓金额与目标仓位一致
@@ -132,7 +156,7 @@ function computeRebalancePlan(targetPicks, newMoney){
       actionColor='act-buy_more';
     } else if(diff<-tol){
       // 持有成本感知：计算换仓净收益，只有划算时才建议减仓
-      const held = existingHoldings.find(h=>h.code===pick.code);
+      const held = aggHoldings.find(h=>h.code===pick.code);
       const holdingDays = held && held.date ? Math.floor((Date.now()-new Date(held.date).getTime())/86400000) : 365;
       const fd = CURATED_FUNDS.find(f=>f.code===pick.code);
       // 找同类最优基金作为换仓目标
@@ -187,8 +211,8 @@ function computeRebalancePlan(targetPicks, newMoney){
     actions.push(actionObj);
   });
 
-  // 用户持有但不在目标中的基金
-  existingHoldings.forEach(h=>{
+  // 用户持有但不在目标中的基金（用聚合后的持仓，避免同code基金被重复处理）
+  aggHoldings.forEach(h=>{
     const inTarget=allPicks.some(p=>p.code===h.code);
     if(inTarget) return;
     const fd=CURATED_FUNDS.find(f=>f.code===h.code);
@@ -1204,7 +1228,9 @@ function _doGenerate(shouldScroll){
   const weights = computeWeights(riskP, horizon, catRanks, macroClock);
 
   // 4.5 融合已有持仓分析
-  const existTotal = existingHoldings.reduce((s,h)=>s+h.value,0);
+  // 按code聚合：同一只基金的多条持仓（已确认+待确认）合并，避免后续算法把同基金当作多只分别处理
+  const aggHoldingsForPortfolio = aggregateHoldings(existingHoldings);
+  const existTotal = aggHoldingsForPortfolio.reduce((s,h)=>s+h.value,0);
   const portfolioTotal = existTotal + totalAmt; // 总资产 = 已有 + 新资金
   const hasHoldings = existTotal > 0;
 
@@ -1212,7 +1238,7 @@ function _doGenerate(shouldScroll){
   const holdingsByCat = {}; // { cat: [{code,name,value,score,keep,fundData}] }
   const replaceSuggestions = []; // 建议替换的低分基金
   if(hasHoldings){
-    existingHoldings.forEach(h=>{
+    aggHoldingsForPortfolio.forEach(h=>{
       const fd = CURATED_FUNDS.find(f=>f.code===h.code);
       const cat = fd ? fd.cat : null;
       if(!cat) return; // 未知基金跳过
@@ -1226,7 +1252,7 @@ function _doGenerate(shouldScroll){
       const keep = score >= 60; // 评分≥60为达标（60分及格线，与持仓诊断标准统一）
       if(!holdingsByCat[cat]) holdingsByCat[cat] = [];
       holdingsByCat[cat].push({ code:h.code, name:h.name||fd.name, value:currentValue, score, keep, fundData:fd });
-      // 只有评分<60且已确认的持仓才建议替换
+      // 只有评分<60且已确认的持仓才建议替换（聚合后的status：任一条confirmed则视为confirmed）
       if(!keep && h.status === 'confirmed') replaceSuggestions.push({ code:h.code, name:h.name||fd.name, cat, score, value:currentValue });
     });
   }
