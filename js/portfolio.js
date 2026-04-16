@@ -79,10 +79,8 @@ function aggregateHoldings(holdings){
 }
 
 function computeRebalancePlan(targetPicks, newMoney){
-  // 待确认持仓不参与调仓计算，遵循"确认前不计入总资产"
-  const confirmedOnly = existingHoldings.filter(h => h.status !== 'pending');
-  if(!confirmedOnly.length) return null;
-  const aggHoldings = aggregateHoldings(confirmedOnly);
+  if(!existingHoldings.length) return null;
+  const aggHoldings = aggregateHoldings(existingHoldings);
   const allPicks=Object.values(targetPicks).flat();
   const existTotal=aggHoldings.reduce((s,h)=>s+h.value,0);
   const totalPortfolio=existTotal+newMoney;
@@ -1230,10 +1228,8 @@ function _doGenerate(shouldScroll){
   const weights = computeWeights(riskP, horizon, catRanks, macroClock);
 
   // 4.5 融合已有持仓分析
-  // 待确认持仓(pending)不参与方案计算，遵循UI"确认前不计入总资产"的设计
-  const confirmedHoldings = existingHoldings.filter(h => h.status !== 'pending');
-  // 先用最新净值同步 confirmedHoldings.value
-  confirmedHoldings.forEach(h => {
+  // 先用最新净值同步 existingHoldings.value，确保聚合和后续计算用到的 value 是准确的
+  existingHoldings.forEach(h => {
     const nav = navCache[h.code];
     const curNav = nav ? parseFloat(nav.gsz) || 1 : 1;
     if(h.shares && h.shares > 0){
@@ -1242,7 +1238,8 @@ function _doGenerate(shouldScroll){
       h.value = h.amount / h.cost * curNav;
     }
   });
-  const aggHoldingsForPortfolio = aggregateHoldings(confirmedHoldings);
+  // 按code聚合：同一只基金的多条持仓（已确认+待确认）合并，避免后续算法把同基金当作多只分别处理
+  const aggHoldingsForPortfolio = aggregateHoldings(existingHoldings);
   const existTotal = aggHoldingsForPortfolio.reduce((s,h)=>s+h.value,0);
   const portfolioTotal = existTotal + totalAmt; // 总资产 = 已有 + 新资金
   const hasHoldings = existTotal > 0;
@@ -1351,7 +1348,7 @@ function _doGenerate(shouldScroll){
       if(newPctForCat > 0){
         const poolExcluded = {
           ...cd,
-          topFunds: cd.topFunds.filter(f=>!confirmedHoldings.some(h=>h.code===f.code))
+          topFunds: cd.topFunds.filter(f=>!existingHoldings.some(h=>h.code===f.code))
         };
         newPicks = selectFunds(cd.cat, poolExcluded, riskP, newPctForCat, portfolioTotal);
         newPicks.forEach(p=>{ p.isExisting = false; });
@@ -1843,7 +1840,7 @@ function _doGenerate(shouldScroll){
   if(summaryEl){
     const holdingNote = hasHoldings
       ? `<div style="margin-top:10px;padding:8px 12px;background:rgba(22,119,255,.08);border-radius:8px;font-size:12px;color:var(--primary);line-height:1.6">
-          💼 已融合您的 ${confirmedHoldings.length} 笔持仓（总市值 ¥${existTotal.toLocaleString()}）：
+          💼 已融合您的 ${existingHoldings.length} 笔持仓（总市值 ¥${existTotal.toLocaleString()}）：
           保留达标基金 <b>${keptCount}</b> 只，新建仓 <b>${newCount}</b> 只${validReplacements.length>0?`，建议替换 <b>${validReplacements.length}</b> 只低分基金`:''}。
           新资金 ¥${totalAmt.toLocaleString()} 将优先填补配置缺口。
         </div>`
