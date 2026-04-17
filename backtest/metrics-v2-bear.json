@@ -1,0 +1,573 @@
+[
+  {
+    "name": "平衡+1年 [类别均值]",
+    "profile": {
+      "name": "平衡+1年 [类别均值]",
+      "riskProfile": "balanced",
+      "horizon": 1,
+      "useSelect": false,
+      "applyCosts": false
+    },
+    "months": 45,
+    "cumulative": 19.837834615836748,
+    "annualized": 4.944187011641432,
+    "annVol": 11.334500390135087,
+    "maxDD": 18.8721812766515,
+    "sharpe": 0.28622232122952596,
+    "sortino": 0.4930123486621289,
+    "winRate": 46.666666666666664,
+    "phaseMetrics": {
+      "bullishHit": 57.14285714285714,
+      "bearishHit": 60.60606060606061,
+      "bullishCount": 7,
+      "bearishCount": 33
+    },
+    "phaseTransitions": 5
+  },
+  {
+    "name": "平衡+1年 [智能选基-无成本]",
+    "profile": {
+      "name": "平衡+1年 [智能选基-无成本]",
+      "riskProfile": "balanced",
+      "horizon": 1,
+      "useSelect": true,
+      "applyCosts": false
+    },
+    "months": 45,
+    "cumulative": 29.341210289861806,
+    "annualized": 7.1017364454972975,
+    "annVol": 8.963658497076331,
+    "maxDD": 12.119969415171534,
+    "sharpe": 0.6026263101454811,
+    "sortino": 1.1564667334485212,
+    "winRate": 55.55555555555556,
+    "phaseMetrics": {
+      "bullishHit": 57.14285714285714,
+      "bearishHit": 60.60606060606061,
+      "bullishCount": 7,
+      "bearishCount": 33
+    },
+    "phaseTransitions": 5
+  },
+  {
+    "name": "平衡+1年 [智能选基+成本]",
+    "profile": {
+      "name": "平衡+1年 [智能选基+成本]",
+      "riskProfile": "balanced",
+      "horizon": 1,
+      "useSelect": true,
+      "applyCosts": true
+    },
+    "months": 45,
+    "cumulative": 17.63757676684976,
+    "annualized": 4.42687583197332,
+    "annVol": 8.964471113405112,
+    "maxDD": 15.587516268509779,
+    "sharpe": 0.30418702871334585,
+    "sortino": 0.5401493789448275,
+    "winRate": 53.333333333333336,
+    "phaseMetrics": {
+      "bullishHit": 57.14285714285714,
+      "bearishHit": 60.60606060606061,
+      "bullishCount": 7,
+      "bearishCount": 33
+    },
+    "phaseTransitions": 5
+  },
+  {
+    "name": "平衡+2年 [类别均值]",
+    "profile": {
+      "name": "平衡+2年 [类别均值]",
+      "riskProfile": "balanced",
+      "horizon": 2,
+      "useSelect": false,
+      "applyCosts": false
+    },
+    "months": 45,
+    "cumulative": 24.194108240922716,
+    "annualized": 5.948203795123064,
+    "annVol": 12.699284182588164,
+    "maxDD": 20.468992605029413,
+    "sharpe": 0.3345230907540226,
+    "sortino": 0.6008303631604591,
+    "winRate": 46.666666666666664,
+    "phaseMetrics": {
+      "bullishHit": 57.14285714285714,
+      "bearishHit": 60.60606060606061,
+      "bullishCount": 7,
+      "bearishCount": 33
+    },
+    "phaseTransitions": 5
+  },
+  {
+    "name": "平衡+2年 [智能选基-无成本]",
+    "profile": {
+      "name": "平衡+2年 [智能选基-无成本]",
+      "riskProfile": "balanced",
+      "horizon": 2,
+      "useSelect": true,
+      "applyCosts": false
+    },
+    "months": 45,
+    "cumulative": 37.89637230145306,
+    "annualized": 8.94670275723184,
+    "annVol": 10.197971991176944,
+    "maxDD": 12.62998468115465,
+    "sharpe": 0.7106023397104371,
+    "sortino": 1.530218369316339,
+    "winRate": 57.77777777777777,
+    "phaseMetrics": {
+      "bullishHit": 57.14285714285714,
+      "bearishHit": 60.60606060606061,
+      "bullishCount": 7,
+      "bearishCount": 33
+    },
+    "phaseTransitions": 5
+  },
+  {
+    "name": "平衡+2年 [智能选基+成本]",
+    "profile": {
+      "name": "平衡+2年 [智能选基+成本]",
+      "riskProfile": "balanced",
+      "horizon": 2,
+      "useSelect": true,
+      "applyCosts": true
+    },
+    "months": 45,
+    "cumulative": 25.588571958422722,
+    "annualized": 6.26413203398879,
+    "annVol": 10.20725854490968,
+    "maxDD": 16.394514804345505,
+    "sharpe": 0.44714572614258946,
+    "sortino": 0.8950246316008217,
+    "winRate": 48.888888888888886,
+    "phaseMetrics": {
+      "bullishHit": 57.14285714285714,
+      "bearishHit": 60.60606060606061,
+      "bullishCount": 7,
+      "bearishCount": 33
+    },
+    "phaseTransitions": 5
+  },
+  {
+    "name": "平衡+3年 [类别均值]",
+    "profile": {
+      "name": "平衡+3年 [类别均值]",
+      "riskProfile": "balanced",
+      "horizon": 3,
+      "useSelect": false,
+      "applyCosts": false
+    },
+    "months": 45,
+    "cumulative": 23.36065143014958,
+    "annualized": 5.758132763187951,
+    "annVol": 11.785725628049512,
+    "maxDD": 18.609585154000953,
+    "sharpe": 0.34432608489796945,
+    "sortino": 0.6082755876744261,
+    "winRate": 46.666666666666664,
+    "phaseMetrics": {
+      "bullishHit": 57.14285714285714,
+      "bearishHit": 60.60606060606061,
+      "bullishCount": 7,
+      "bearishCount": 33
+    },
+    "phaseTransitions": 5
+  },
+  {
+    "name": "平衡+3年 [智能选基-无成本]",
+    "profile": {
+      "name": "平衡+3年 [智能选基-无成本]",
+      "riskProfile": "balanced",
+      "horizon": 3,
+      "useSelect": true,
+      "applyCosts": false
+    },
+    "months": 45,
+    "cumulative": 35.52655421149513,
+    "annualized": 8.444244056337213,
+    "annVol": 9.468850372882164,
+    "maxDD": 12.294993453402736,
+    "sharpe": 0.7122558484662563,
+    "sortino": 1.4368491971698503,
+    "winRate": 55.55555555555556,
+    "phaseMetrics": {
+      "bullishHit": 57.14285714285714,
+      "bearishHit": 60.60606060606061,
+      "bullishCount": 7,
+      "bearishCount": 33
+    },
+    "phaseTransitions": 5
+  },
+  {
+    "name": "平衡+3年 [智能选基+成本]",
+    "profile": {
+      "name": "平衡+3年 [智能选基+成本]",
+      "riskProfile": "balanced",
+      "horizon": 3,
+      "useSelect": true,
+      "applyCosts": true
+    },
+    "months": 45,
+    "cumulative": 23.32446628662892,
+    "annualized": 5.749859385181755,
+    "annVol": 9.493252625012184,
+    "maxDD": 15.98052676328684,
+    "sharpe": 0.4266039833925263,
+    "sortino": 0.7992332062310801,
+    "winRate": 51.11111111111111,
+    "phaseMetrics": {
+      "bullishHit": 57.14285714285714,
+      "bearishHit": 60.60606060606061,
+      "bullishCount": 7,
+      "bearishCount": 33
+    },
+    "phaseTransitions": 5
+  },
+  {
+    "name": "进取+1年 [类别均值]",
+    "profile": {
+      "name": "进取+1年 [类别均值]",
+      "riskProfile": "aggressive",
+      "horizon": 1,
+      "useSelect": false,
+      "applyCosts": false
+    },
+    "months": 45,
+    "cumulative": 18.089037584411205,
+    "annualized": 4.533595584613459,
+    "annVol": 10.986134449765544,
+    "maxDD": 18.41926093738828,
+    "sharpe": 0.257924713880953,
+    "sortino": 0.42052141597741044,
+    "winRate": 53.333333333333336,
+    "phaseMetrics": {
+      "bullishHit": 57.14285714285714,
+      "bearishHit": 60.60606060606061,
+      "bullishCount": 7,
+      "bearishCount": 33
+    },
+    "phaseTransitions": 5
+  },
+  {
+    "name": "进取+1年 [智能选基-无成本]",
+    "profile": {
+      "name": "进取+1年 [智能选基-无成本]",
+      "riskProfile": "aggressive",
+      "horizon": 1,
+      "useSelect": true,
+      "applyCosts": false
+    },
+    "months": 45,
+    "cumulative": 26.053411221306533,
+    "annualized": 6.368873723315183,
+    "annVol": 8.327417341925974,
+    "maxDD": 12.62868114175982,
+    "sharpe": 0.5606628720058073,
+    "sortino": 0.9432519577163505,
+    "winRate": 60,
+    "phaseMetrics": {
+      "bullishHit": 57.14285714285714,
+      "bearishHit": 60.60606060606061,
+      "bullishCount": 7,
+      "bearishCount": 33
+    },
+    "phaseTransitions": 5
+  },
+  {
+    "name": "进取+1年 [智能选基+成本]",
+    "profile": {
+      "name": "进取+1年 [智能选基+成本]",
+      "riskProfile": "aggressive",
+      "horizon": 1,
+      "useSelect": true,
+      "applyCosts": true
+    },
+    "months": 45,
+    "cumulative": 14.190920809883533,
+    "annualized": 3.6020669412641926,
+    "annVol": 8.330102294866716,
+    "maxDD": 16.40309794091056,
+    "sharpe": 0.22833656465855273,
+    "sortino": 0.35661453820354233,
+    "winRate": 53.333333333333336,
+    "phaseMetrics": {
+      "bullishHit": 57.14285714285714,
+      "bearishHit": 60.60606060606061,
+      "bullishCount": 7,
+      "bearishCount": 33
+    },
+    "phaseTransitions": 5
+  },
+  {
+    "name": "进取+2年 [类别均值]",
+    "profile": {
+      "name": "进取+2年 [类别均值]",
+      "riskProfile": "aggressive",
+      "horizon": 2,
+      "useSelect": false,
+      "applyCosts": false
+    },
+    "months": 45,
+    "cumulative": 30.662174427728715,
+    "annualized": 7.392339068621556,
+    "annVol": 14.099436122325764,
+    "maxDD": 21.226955519036018,
+    "sharpe": 0.40372813630525384,
+    "sortino": 0.7363892584347118,
+    "winRate": 46.666666666666664,
+    "phaseMetrics": {
+      "bullishHit": 57.14285714285714,
+      "bearishHit": 60.60606060606061,
+      "bullishCount": 7,
+      "bearishCount": 33
+    },
+    "phaseTransitions": 5
+  },
+  {
+    "name": "进取+2年 [智能选基-无成本]",
+    "profile": {
+      "name": "进取+2年 [智能选基-无成本]",
+      "riskProfile": "aggressive",
+      "horizon": 2,
+      "useSelect": true,
+      "applyCosts": false
+    },
+    "months": 45,
+    "cumulative": 53.7189342887813,
+    "annualized": 12.148627762190788,
+    "annVol": 11.97164578330884,
+    "maxDD": 14.174070229322766,
+    "sharpe": 0.872781232531831,
+    "sortino": 2.0033976512352596,
+    "winRate": 55.55555555555556,
+    "phaseMetrics": {
+      "bullishHit": 57.14285714285714,
+      "bearishHit": 60.60606060606061,
+      "bullishCount": 7,
+      "bearishCount": 33
+    },
+    "phaseTransitions": 5
+  },
+  {
+    "name": "进取+2年 [智能选基+成本]",
+    "profile": {
+      "name": "进取+2年 [智能选基+成本]",
+      "riskProfile": "aggressive",
+      "horizon": 2,
+      "useSelect": true,
+      "applyCosts": true
+    },
+    "months": 45,
+    "cumulative": 39.409715160086755,
+    "annualized": 9.264263813979401,
+    "annVol": 12.014885278666942,
+    "maxDD": 18.088114531120326,
+    "sharpe": 0.6295743686716799,
+    "sortino": 1.3453222357126204,
+    "winRate": 48.888888888888886,
+    "phaseMetrics": {
+      "bullishHit": 57.14285714285714,
+      "bearishHit": 60.60606060606061,
+      "bullishCount": 7,
+      "bearishCount": 33
+    },
+    "phaseTransitions": 5
+  },
+  {
+    "name": "进取+3年 [类别均值]",
+    "profile": {
+      "name": "进取+3年 [类别均值]",
+      "riskProfile": "aggressive",
+      "horizon": 3,
+      "useSelect": false,
+      "applyCosts": false
+    },
+    "months": 45,
+    "cumulative": 28.017653637390726,
+    "annualized": 6.808372321653566,
+    "annVol": 12.531727707406768,
+    "maxDD": 18.34304701888042,
+    "sharpe": 0.4076351195082469,
+    "sortino": 0.7178716703993463,
+    "winRate": 48.888888888888886,
+    "phaseMetrics": {
+      "bullishHit": 57.14285714285714,
+      "bearishHit": 60.60606060606061,
+      "bullishCount": 7,
+      "bearishCount": 33
+    },
+    "phaseTransitions": 5
+  },
+  {
+    "name": "进取+3年 [智能选基-无成本]",
+    "profile": {
+      "name": "进取+3年 [智能选基-无成本]",
+      "riskProfile": "aggressive",
+      "horizon": 3,
+      "useSelect": true,
+      "applyCosts": false
+    },
+    "months": 45,
+    "cumulative": 44.59333978631077,
+    "annualized": 10.333199032842044,
+    "annVol": 10.260185515601197,
+    "maxDD": 12.55756026633551,
+    "sharpe": 0.8414271866444103,
+    "sortino": 1.7394685385154172,
+    "winRate": 55.55555555555556,
+    "phaseMetrics": {
+      "bullishHit": 57.14285714285714,
+      "bearishHit": 60.60606060606061,
+      "bullishCount": 7,
+      "bearishCount": 33
+    },
+    "phaseTransitions": 5
+  },
+  {
+    "name": "进取+3年 [智能选基+成本]",
+    "profile": {
+      "name": "进取+3年 [智能选基+成本]",
+      "riskProfile": "aggressive",
+      "horizon": 3,
+      "useSelect": true,
+      "applyCosts": true
+    },
+    "months": 45,
+    "cumulative": 30.83763816164211,
+    "annualized": 7.430777511894893,
+    "annVol": 10.29572015395982,
+    "maxDD": 16.70610738368794,
+    "sharpe": 0.556617451348538,
+    "sortino": 1.071318274449462,
+    "winRate": 53.333333333333336,
+    "phaseMetrics": {
+      "bullishHit": 57.14285714285714,
+      "bearishHit": 60.60606060606061,
+      "bullishCount": 7,
+      "bearishCount": 33
+    },
+    "phaseTransitions": 5
+  },
+  {
+    "name": "进取+5年 [类别均值]",
+    "profile": {
+      "name": "进取+5年 [类别均值]",
+      "riskProfile": "aggressive",
+      "horizon": 5,
+      "useSelect": false,
+      "applyCosts": false
+    },
+    "months": 45,
+    "cumulative": 26.91357841319939,
+    "annualized": 6.561949522665422,
+    "annVol": 11.701678256051192,
+    "maxDD": 16.8568229384386,
+    "sharpe": 0.41549164284629025,
+    "sortino": 0.7170846302213801,
+    "winRate": 51.11111111111111,
+    "phaseMetrics": {
+      "bullishHit": 57.14285714285714,
+      "bearishHit": 60.60606060606061,
+      "bullishCount": 7,
+      "bearishCount": 33
+    },
+    "phaseTransitions": 5
+  },
+  {
+    "name": "进取+5年 [智能选基-无成本]",
+    "profile": {
+      "name": "进取+5年 [智能选基-无成本]",
+      "riskProfile": "aggressive",
+      "horizon": 5,
+      "useSelect": true,
+      "applyCosts": false
+    },
+    "months": 45,
+    "cumulative": 40.45945537263,
+    "annualized": 9.483060201118576,
+    "annVol": 9.65856980044297,
+    "maxDD": 11.660126227943028,
+    "sharpe": 0.8058191183503817,
+    "sortino": 1.5755324240852584,
+    "winRate": 60,
+    "phaseMetrics": {
+      "bullishHit": 57.14285714285714,
+      "bearishHit": 60.60606060606061,
+      "bullishCount": 7,
+      "bearishCount": 33
+    },
+    "phaseTransitions": 5
+  },
+  {
+    "name": "进取+5年 [智能选基+成本]",
+    "profile": {
+      "name": "进取+5年 [智能选基+成本]",
+      "riskProfile": "aggressive",
+      "horizon": 5,
+      "useSelect": true,
+      "applyCosts": true
+    },
+    "months": 45,
+    "cumulative": 27.390840542718742,
+    "annualized": 6.668663628446647,
+    "annVol": 9.66868921883743,
+    "maxDD": 15.677324746238085,
+    "sharpe": 0.5138921642828522,
+    "sortino": 0.9430987471978733,
+    "winRate": 55.55555555555556,
+    "phaseMetrics": {
+      "bullishHit": 57.14285714285714,
+      "bearishHit": 60.60606060606061,
+      "bullishCount": 7,
+      "bearishCount": 33
+    },
+    "phaseTransitions": 5
+  },
+  {
+    "name": "基线：等权 25%×4",
+    "profile": {
+      "name": "基线：等权 25%×4",
+      "fixedWeights": {
+        "active": 25,
+        "index": 25,
+        "bond": 25,
+        "qdii": 25,
+        "money": 0
+      },
+      "useSelect": false,
+      "applyCosts": false
+    },
+    "months": 45,
+    "cumulative": 41.60602488086433,
+    "annualized": 9.72067273649435,
+    "annVol": 16.99226683070803,
+    "maxDD": 23.24666893853411,
+    "sharpe": 0.4720189964295744,
+    "sortino": 0.9202765271492888,
+    "winRate": 46.666666666666664
+  },
+  {
+    "name": "基线：60/40 股债",
+    "profile": {
+      "name": "基线：60/40 股债",
+      "fixedWeights": {
+        "active": 30,
+        "index": 30,
+        "bond": 40,
+        "qdii": 0,
+        "money": 0
+      },
+      "useSelect": false,
+      "applyCosts": false
+    },
+    "months": 45,
+    "cumulative": 35.11027554654655,
+    "annualized": 8.355318885469654,
+    "annVol": 19.511305166607592,
+    "maxDD": 29.891285356415143,
+    "sharpe": 0.3411006505530868,
+    "sortino": 0.6632998350777592,
+    "winRate": 44.44444444444444
+  }
+]

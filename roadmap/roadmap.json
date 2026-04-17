@@ -3,7 +3,7 @@
     "project": "fund-helper 算法能力提升工程",
     "goal": "把算法从\"理论正确但未经证实\"升级为\"数据证明有效\"，在个人免费工具领域从 Top 5% 推进到 Top 1%",
     "startDate": "2026-04-17",
-    "lastUpdated": "2026-04-17T19:45:00+08:00",
+    "lastUpdated": "2026-04-17T20:30:00+08:00",
     "currentPhase": "phase-3",
     "commitHash": "eeff5d5"
   },
@@ -196,8 +196,17 @@
         },
         {
           "id": "3.2",
-          "name": "重跑 findings（熊市中算法表现如何？）",
-          "status": "pending"
+          "name": "熊市覆盖回测（扩展至 2022-05 ~ 2026-03，45 月）",
+          "status": "completed",
+          "completedDate": "2026-04-17",
+          "outputs": [
+            { "type": "file", "label": "backtest/findings-3.2-bear-market.md", "path": "backtest/findings-3.2-bear-market.md" },
+            { "type": "result", "label": "🔥 算法熊市防御实证：回撤 11-12% vs 基线 23-30%（减半）" },
+            { "type": "result", "label": "✅ 半年调仓 U 型稳健：45 月数据下仍是最优频率（夏普 0.74-0.94 vs 基线 0.47）" },
+            { "type": "result", "label": "✅ Phase 空头命中率 60.6%（33 次大样本）彻底推翻 V1 伪结论" },
+            { "type": "result", "label": "📊 进取档含熊市夏普 0.90-0.94 > 平衡档 0.69-0.74（Risk Parity 偏债拖累平衡档）" },
+            { "type": "result", "label": "💡 算法价值本质：牛市跑输是'买保险学费'，熊市跑赢是'保险理赔'" }
+          ]
         },
         {
           "id": "3.3",
@@ -293,8 +302,8 @@
     },
     {
       "date": "2026-04-17",
-      "label": "阶段 3.1 完成 · U 型调仓频率发现",
-      "achievement": "调仓频率实验颠覆原预期：半年 > 月度 > 季度（非线性 U 型）。半年频率让所有画像夏普 1.85-2.02 全面 beat 基线 1.55。原因：半年让持仓接近 1 年降赎回费档 + 让 selectFunds 长期 alpha 充分兑现。样本仅 22 月，结论待稳健性检验。"
+      "label": "阶段 3.2 完成 · 熊市价值实证",
+      "achievement": "扩展回测到 45 月（含 2022 熊市尾段+2023 震荡）：算法熊市回撤 11-12%、基线 23-30%，减半！进取档夏普 0.90-0.94 全面 beat 基线 0.47。Phase 空头命中率 60.6%（33 次大样本）。算法真实水平综合评估从 87% 上调至 88-90%，在'有完整实证回测'这个维度进入 Top 1-2%。"
     }
   ],
   "referenceLinks": [

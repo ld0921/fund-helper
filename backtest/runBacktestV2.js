@@ -34,11 +34,14 @@ const DEFAULT_MGR = 3;       // 经理任期，简化为常数 3 年
 const DEFAULT_SIZE = 20;     // 基金规模，简化为常数 20 亿
 
 // 回测起止：data 覆盖 2021-04-18 ~ 2026-04-15
-// 前 36 个月（2021-04 ~ 2024-04）作为初始化窗口，用于计算 r3/maxDD3y
-// 有效回测期：2024-04-30 ~ 2026-03-31 （24 个月，和方案 A 对齐以便对比）
-// 如需更长周期：改 START_TIME 和 END_TIME
-const START_DATE = '2024-04-30';
-const END_DATE   = '2026-03-31';
+// 默认起点 2024-04-30：前 36 月作初始化窗口，r3/maxDD3y 完整
+// 熊市起点 2022-05-31：前 13 月作初始化窗口，r3 使用可用历史（实际 ~1 年）
+//   此模式能覆盖 2022 熊市段 + 2023 震荡 + 2024 stagflation + 2025 rally，47 月
+// 用法: --start=2022-05-31 或 --start=2024-04-30
+const startArg = process.argv.find(a => a.startsWith('--start='));
+const endArg = process.argv.find(a => a.startsWith('--end='));
+const START_DATE = startArg ? startArg.split('=')[1] : '2024-04-30';
+const END_DATE = endArg ? endArg.split('=')[1] : '2026-03-31';
 
 const modeArg = process.argv.find(a => a.startsWith('--mode='));
 const MODE = modeArg ? modeArg.split('=')[1] : 'both'; // category | select | both
@@ -303,23 +306,24 @@ function generateMonthEnds(startDate, endDate) {
 }
 
 // 在 t 时点用历史数据重算基金指标
+// 若 <3 年数据（熊市起点早期月份），r3 用"自成立以来"累计收益替代（有损但可用）
 function computeStatsAtT(navs, t) {
   // navs: 升序的 {ts, nav}
   const navsBeforeT = navs.filter(p => p.ts <= t);
-  if (navsBeforeT.length < 24) return null; // 数据不足
+  if (navsBeforeT.length < 24) return null; // 数据不足（<约 1 个月）
 
   const navAtT = navsBeforeT[navsBeforeT.length - 1];
   const oneYearAgo = t - 365.25 * 24 * 60 * 60 * 1000;
   const threeYearsAgo = t - 3 * 365.25 * 24 * 60 * 60 * 1000;
 
-  // 近 1 年数据
+  // 近 1 年数据（若数据不足 1 年，用全部可得数据 → r1 实际是"自数据起始点累计"）
   const navs1y = navsBeforeT.filter(p => p.ts >= oneYearAgo);
   if (navs1y.length < 10) return null;
   const r1 = (navAtT.nav / navs1y[0].nav - 1) * 100;
 
-  // 近 3 年数据
+  // 近 3 年数据（同理，数据不足则用可得的全部）
   const navs3y = navsBeforeT.filter(p => p.ts >= threeYearsAgo);
-  if (navs3y.length < 30) return null;
+  if (navs3y.length < 20) return null; // 约 1 个月才算 r3
   const r3 = (navAtT.nav / navs3y[0].nav - 1) * 100;
 
   // 近 3 年最大回撤
