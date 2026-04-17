@@ -3,9 +3,9 @@
     "project": "fund-helper 算法能力提升工程",
     "goal": "把算法从\"理论正确但未经证实\"升级为\"数据证明有效\"，在个人免费工具领域从 Top 5% 推进到 Top 1%",
     "startDate": "2026-04-17",
-    "lastUpdated": "2026-04-17T07:30:00+08:00",
+    "lastUpdated": "2026-04-17T16:20:00+08:00",
     "currentPhase": "phase-2",
-    "commitHash": "f1b1bcf"
+    "commitHash": "pending"
   },
   "phases": [
     {
@@ -94,15 +94,27 @@
         {
           "id": "2.1",
           "name": "历史净值拉取",
-          "status": "pending",
-          "note": "全市场 Top 500 × 5 年日净值 · 限速 2 req/s",
+          "status": "completed",
+          "completedDate": "2026-04-17",
+          "note": "实际拉到 338 只（全市场 Top 500 经规模/年限筛选后 340，2 只货币风格跳过）× 5 年日净值，40.8 万数据点",
           "subtasks": [
-            { "id": "2.1.A", "name": "数据拉取脚本 scripts/fetch-history-nav.js", "status": "pending" },
-            { "id": "2.1.B", "name": "全市场 Top 500 基金池构建", "status": "pending" },
-            { "id": "2.1.C", "name": "批量拉取 5 年日净值（预计 1.5 小时）", "status": "pending" },
-            { "id": "2.1.D", "name": "数据清洗 + SQLite 存储", "status": "pending" },
-            { "id": "2.1.E", "name": "增量更新机制（后续复用）", "status": "pending" },
-            { "id": "2.1.F", "name": "质量验证（对比当前 r1/r3）", "status": "pending" }
+            { "id": "2.1.A", "name": "数据拉取脚本 scripts/fetch-history-nav.js", "status": "completed" },
+            { "id": "2.1.B", "name": "全市场 Top 500 基金池构建（实际 340 只）", "status": "completed" },
+            { "id": "2.1.C", "name": "批量拉取 5 年日净值（实际用时 10.6 分钟）", "status": "completed" },
+            { "id": "2.1.D", "name": "SQLite 存储（Node 内置 node:sqlite，38.4MB）", "status": "completed" },
+            { "id": "2.1.E", "name": "增量更新机制（按 mtime 24 小时判定）", "status": "completed" },
+            { "id": "2.1.F", "name": "质量验证（r3/maxDD 完全匹配，r1 方法论差异 5-15%）", "status": "completed" }
+          ],
+          "outputs": [
+            { "type": "file", "label": "scripts/build-fund-pool.js", "path": "scripts/build-fund-pool.js" },
+            { "type": "file", "label": "scripts/fetch-history-nav.js", "path": "scripts/fetch-history-nav.js" },
+            { "type": "file", "label": "scripts/import-nav-to-sqlite.js", "path": "scripts/import-nav-to-sqlite.js" },
+            { "type": "file", "label": "scripts/validate-history-nav.js", "path": "scripts/validate-history-nav.js" },
+            { "type": "file", "label": "data/history-pool.json (340 只池)", "path": "data/history-pool.json" },
+            { "type": "result", "label": "338 只 × 5 年日净值 · 40.8 万数据点 · 38.4MB SQLite（gitignored，可本地重建）" },
+            { "type": "result", "label": "类别分布：active 155 · bond 93 · index 30 · qdii 60 · money 1" },
+            { "type": "result", "label": "时间跨度 2021-04-18 ~ 2026-04-15（含 2022 完整熊市）" },
+            { "type": "result", "label": "质量验证：r3/maxDD 完全匹配 curated-details（0 偏差），r1 有 5-15% 偏差属于 1 年窗口定义方法论差异" }
           ]
         },
         {
@@ -196,10 +208,15 @@
       "date": "2026-04-17",
       "label": "工程启动 · 阶段 1 完成",
       "achievement": "算法评估完成，方案 A 回测基础设施到位，1 次 P0 调参保留，识别出 24 月样本不足是核心瓶颈"
+    },
+    {
+      "date": "2026-04-17",
+      "label": "历史数据底座就绪 · 2.1 完成",
+      "achievement": "338 只基金 × 5 年日净值 · 40.8 万数据点导入 SQLite，含 2022 完整熊市，数据质量验证通过（r3/maxDD 完全匹配）"
     }
   ],
   "referenceLinks": [
-    { "label": "回测报告（方案 A）", "url": "/backtest" },
+    { "label": "回测报告（方案 A）", "url": "/backtest/" },
     { "label": "findings v1（12 条候选）", "url": "https://github.com/ld0921/fund-helper/blob/main/backtest/findings.md" },
     { "label": "findings v2（第 1 轮调参复盘）", "url": "https://github.com/ld0921/fund-helper/blob/main/backtest/findings-v2.md" },
     { "label": "代码仓库", "url": "https://github.com/ld0921/fund-helper" }

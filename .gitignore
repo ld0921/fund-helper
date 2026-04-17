@@ -1,0 +1,14 @@
+# 历史净值原始 JSON 文件（可从 scripts/fetch-history-nav.js 重新生成）
+data/history-nav/raw/
+data/history-nav/fetch-summary.json
+
+# 历史净值 SQLite（38MB，可由 scripts/import-nav-to-sqlite.js 重建）
+data/history-nav.sqlite
+
+# 临时/缓存
+.DS_Store
+*.log
+/tmp/
+
+# Node
+node_modules/
