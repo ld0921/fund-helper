@@ -31,6 +31,14 @@ function createShim() {
     MARKET_BENCHMARKS: {},
     DD_TO_VOL: { active: 2.8, index: 3.0, bond: 1.8, money: 1.2, qdii: 2.5 },
     CAT_NAMES: { active: '主动权益', index: '指数基金', bond: '债券基金', money: '货币基金', qdii: 'QDII海外' },
+    // config.js 里定义的暂停基金检查：回测里没人暂停申购，直接返回原 code
+    SUSPENDED_FUNDS: new Set(),
+    FUND_ALTERNATIVES: {},
+    checkFundAvailability: (code) => code,
+    getDefaultFee: (cat) => ({ active: 0.15, index: 0.012, bond: 0.05, money: 0, qdii: 0.08 }[cat] || 0.10),
+    // V2.C 回测需要：FUND_VALUATION_MAP 置空则 getValuationAdj 返回 0（不做估值调整）
+    FUND_VALUATION_MAP: {},
+    INDEX_VALUATION: {},
     // 辅助：重置 phase 历史，保证每次回测从干净状态开始
     _resetPhaseHistory: () => mockStorage.clear(),
   };
@@ -49,8 +57,10 @@ function createShim() {
     sandbox,
     inferMomentumPhase: sandbox.inferMomentumPhase,
     computeWeights: sandbox.computeWeights,
+    selectFunds: sandbox.selectFunds,
     resetPhaseHistory: () => mockStorage.clear(),
     setBenchmarks: (mb) => { sandbox.MARKET_BENCHMARKS = mb; context.MARKET_BENCHMARKS = mb; },
+    setCuratedFunds: (funds) => { sandbox.CURATED_FUNDS = funds; context.CURATED_FUNDS = funds; },
   };
 }
 

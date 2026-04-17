@@ -3,16 +3,22 @@
 //   V1（方案 A）：只用类别月度收益做资产配置层回测
 //   V2（方案 B）：单基金日净值 → 按月重算 r1/r3/maxDD → scoreF 选基 → selectFunds → computeWeights → 月度 rebalance
 //
+// 2.2.C 扩展：接入 selectFunds 选基层
+//   两种模式：
+//     --mode=category  类别均值（每个类别用全部基金的平均月收益）
+//     --mode=select    真实选基（selectFunds 选出 1-3 只后按 pct 分配）
+//     --mode=both      同时跑两种，便于对比（默认）
+//
 // 简化假设（写进 findings-v3 的局限性）：
 //   - mgrYears/size/fee：用 data/history-pool.json 当时值（2026-04 时点），不模拟历史变化
 //   - risk 字段：按类别默认（active/index/qdii → R4, bond → R2, money → R1）
 //   - INDEX_VALUATION：方案 B 不模拟历史 PE 百分位（valuationAdj=0）
 //   - 幸存者偏差：用 Top 340 池，但每月按"基金是否在 t 时有 ≥3 年历史"过滤
-//   - 持仓跟踪简化：用类别级权重 × 类别平均月收益，不逐基金跟踪（待 2.2.C 扩展为完整选基）
+//   - manager/tags 无数据：selectFunds 的经理/标签去重降级
 //
 // 用法:
 //   node backtest/runBacktestV2.js
-//   node backtest/runBacktestV2.js --profile=balanced --horizon=5
+//   node backtest/runBacktestV2.js --mode=select
 
 const fs = require('fs');
 const path = require('path');
@@ -33,6 +39,9 @@ const DEFAULT_SIZE = 20;     // 基金规模，简化为常数 20 亿
 // 如需更长周期：改 START_TIME 和 END_TIME
 const START_DATE = '2024-04-30';
 const END_DATE   = '2026-03-31';
+
+const modeArg = process.argv.find(a => a.startsWith('--mode='));
+const MODE = modeArg ? modeArg.split('=')[1] : 'both'; // category | select | both
 
 function main() {
   if (!fs.existsSync(DB_PATH)) {
@@ -82,9 +91,26 @@ function main() {
   ];
 
   const results = {};
-  [...profiles, ...baselines].forEach(p => {
-    results[p.name] = { profile: p, monthlyReturns: [], phases: [], weightHistory: [] };
-  });
+  const initResult = (name, profile) => {
+    results[name] = { profile, monthlyReturns: [], phases: [], weightHistory: [] };
+  };
+
+  // 在 both 模式下，每个用户画像跑两组：类别均值版 + 选基版
+  const profileVariants = [];
+  for (const p of profiles) {
+    if (MODE === 'category' || MODE === 'both') {
+      profileVariants.push({ ...p, name: `${p.name} [类别均值]`, useSelect: false });
+    }
+    if (MODE === 'select' || MODE === 'both') {
+      profileVariants.push({ ...p, name: `${p.name} [智能选基]`, useSelect: true });
+    }
+  }
+  // 基线不用选基
+  for (const b of baselines) {
+    profileVariants.push({ ...b, name: b.name, useSelect: false });
+  }
+
+  profileVariants.forEach(p => initResult(p.name, p));
 
   for (let i = 0; i < monthEnds.length - 1; i++) {
     const t = monthEnds[i];
@@ -109,17 +135,18 @@ function main() {
         maxDD3y: stats.maxDD3y,
         mgr: DEFAULT_MGR,
         mgrYears: DEFAULT_MGR,
+        manager: meta.code, // 无真实经理数据，用 code 当唯一 id（selectFunds 经理去重会降级为只选 1 只/基金）
+        tags: [],          // 无标签，selectFunds 会自动跳过标签去重
         size: poolInfo.size || DEFAULT_SIZE,
         fee: poolInfo.fee !== undefined ? poolInfo.fee : DEFAULT_FEE[meta.cat],
         monthlyReturns: stats.monthlyReturns,
-        composite: 0, // 待后续算
+        composite: 0, // 下一步计算
       });
     }
 
     // (b) 构建 MARKET_BENCHMARKS（按类别汇总）
     const mb = buildMarketBenchmarks(fundsAtT);
     shim.setBenchmarks(mb);
-    // _catBench 是 score.js 读的全局，需要同步注入
     const catBench = {};
     Object.keys(mb).forEach(c => {
       if (mb[c] && typeof mb[c] === 'object' && mb[c].avgR1 !== undefined) {
@@ -127,15 +154,21 @@ function main() {
       }
     });
     shim.sandbox._catBench = catBench;
+    shim.setCuratedFunds(fundsAtT);
 
-    // (c) 构建 catRanks（方案 A 兼容格式）
+    // (c) 计算每个基金的 composite（模拟 analyzeCategoryPerf 的算法）
+    fundsAtT.forEach(f => {
+      f.composite = computeComposite(f, catBench[f.cat]);
+    });
+
+    // (d) 构建 catRanks
     const catRanks = buildCatRanks(fundsAtT, mb);
 
-    // (d) 运行 inferMomentumPhase
+    // (e) 运行 inferMomentumPhase
     const phase = shim.inferMomentumPhase(catRanks);
 
-    // 对每个画像/基线跑 computeWeights
-    for (const p of [...profiles, ...baselines]) {
+    // 对每个 profile variant 跑 computeWeights + 可选的 selectFunds
+    for (const p of profileVariants) {
       let weights;
       if (p.fixedWeights) {
         weights = p.fixedWeights;
@@ -143,10 +176,15 @@ function main() {
         weights = shim.computeWeights(p.riskProfile, p.horizon, catRanks, phase);
       }
 
-      // (e) 组合月收益 = Σ weight × 该类别在 [t, tNext] 的月收益均值
-      //     V2 初版：类别层月收益（用该类别所有基金 [t, tNext] 的平均）
-      //     下一迭代：接入 selectFunds 逐基金回测
-      const ret = computeCategoryMonthReturn(weights, fundsAtT, fundNavs, t, tNext);
+      let ret;
+      if (p.useSelect) {
+        // 智能选基模式：对每个类别调用 selectFunds，按 pick.pct 分配组合权重
+        const picks = runSelectForAllCats(shim, catRanks, weights, p.riskProfile);
+        ret = computePickedMonthReturn(picks, fundNavs, t, tNext);
+      } else {
+        // 类别均值模式：每类别所有基金等权
+        ret = computeCategoryMonthReturn(weights, fundsAtT, fundNavs, t, tNext);
+      }
       results[p.name].monthlyReturns.push(ret);
       results[p.name].phases.push(phase.phase);
       results[p.name].weightHistory.push({ t: tDateStr, weights, phase: phase.phase });
@@ -359,6 +397,57 @@ function findLastNavBefore(navs, ts) {
     else hi = mid - 1;
   }
   return best;
+}
+
+// 计算基金的 composite 分数（模拟 market.js 的 analyzeCategoryPerf 内部逻辑）
+// 和生产保持一致：calmar 50% + trendConsistency 25% + stability 20% + todayChg 5%(回测无 todayChg 所以是 0)
+function computeComposite(f, bench) {
+  const dd3y = f.maxDD3y || f.maxDD || 1;
+  const r3Ann = f.r3 > -100 ? (Math.pow(1 + f.r3 / 100, 1 / 3) - 1) * 100 : 0;
+  const alpha1 = bench ? f.r1 - bench.avgR1 : f.r1 - 1.7;
+  const alpha3 = bench && bench.avgR3 ? r3Ann - (Math.pow(1 + bench.avgR3 / 100, 1 / 3) - 1) * 100 : r3Ann - 1.7;
+  const calmarShort = dd3y > 0 ? alpha1 / dd3y : 0;
+  const calmarLong = f.maxDD > 0 ? alpha3 / f.maxDD : 0;
+  const calmar = calmarShort * 0.6 + calmarLong * 0.4;
+  const trendScore = 0 * 0.2 + f.r1 * 0.5 + r3Ann * 0.3; // todayChg=0
+  const trendConsistency = trendScore > 2 ? 3 : trendScore > 0.5 ? 2 : trendScore > 0 ? 1 : trendScore > -0.5 ? -1 : trendScore > -2 ? -2 : -3;
+  const stability = Math.min(f.mgrYears, 15) / 15 * 10;
+  return calmar * 10 * 0.5 + trendConsistency * 4 * 0.25 + stability * 0.20;
+}
+
+// 对所有类别调 selectFunds，返回所有 picks 的合集
+function runSelectForAllCats(shim, catRanks, weights, riskProfile) {
+  const allPicks = [];
+  const cats = ['active', 'index', 'bond', 'qdii', 'money'];
+  for (const cat of cats) {
+    const w = weights[cat] || 0;
+    if (w === 0) continue;
+    const catData = catRanks.find(c => c.cat === cat);
+    if (!catData || !catData.topFunds || catData.topFunds.length === 0) continue;
+    try {
+      const picks = shim.selectFunds(cat, catData, riskProfile, w, 10000);
+      allPicks.push(...picks);
+    } catch (e) {
+      console.warn(`  ⚠️ selectFunds 失败 cat=${cat}: ${e.message}`);
+    }
+  }
+  return allPicks;
+}
+
+// 基于 picks (每个带 pct) 计算组合 [t, tNext] 月收益
+function computePickedMonthReturn(picks, fundNavs, t, tNext) {
+  let ret = 0;
+  for (const p of picks) {
+    const navs = fundNavs[p.code];
+    if (!navs) continue;
+    const a = findLastNavBefore(navs, t);
+    const b = findLastNavBefore(navs, tNext);
+    if (a && b && a.nav > 0) {
+      const fundRet = (b.nav / a.nav - 1) * 100;
+      ret += (p.pct / 100) * fundRet;
+    }
+  }
+  return ret;
 }
 
 // 构建每个类别在各月末的月度收益序列（用于 metrics.js phase 命中率）
