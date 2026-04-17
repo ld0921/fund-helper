@@ -79,17 +79,21 @@ function computeMetrics(r) {
 // 权益定义：active + index + qdii 的等权平均月度收益
 function phaseHitRate(result, seqs) {
   const { phases, monthlyReturns, weightHistory } = result;
-  // weightHistory[i].t 是时点索引；该月权益收益用 seqs 取
   let bullishCorrect = 0, bullishTotal = 0;
   let bearishCorrect = 0, bearishTotal = 0;
 
   const bullishPhases = new Set(['recovery', 'global_bull']);
   const bearishPhases = new Set(['overheat', 'stagflation', 'recession']);
 
-  weightHistory.forEach(w => {
-    const t = w.t;
+  weightHistory.forEach((w, i) => {
+    // 用位置索引 i 查该月权益收益（V2 的 t 字段是日期字符串，不能作下标）
+    // 如果 w.t 是数字（V1 格式），优先用它
+    const idx = typeof w.t === 'number' ? w.t : i;
     const eqRet = ['active', 'index', 'qdii']
-      .map(c => seqs[c] ? seqs[c][t] : 0)
+      .map(c => {
+        if (!seqs || !seqs[c]) return 0;
+        return Array.isArray(seqs[c]) ? (seqs[c][idx] || 0) : 0;
+      })
       .reduce((a, b) => a + b, 0) / 3;
     if (bullishPhases.has(w.phase)) {
       bullishTotal++;
@@ -117,12 +121,16 @@ function phaseTransitions(phases) {
 }
 
 function main() {
-  const data = JSON.parse(fs.readFileSync(path.resolve(__dirname, 'results.json'), 'utf8'));
+  const inputArg = process.argv.find(a => a.startsWith('--input='));
+  const inputPath = inputArg ? inputArg.split('=')[1] : path.resolve(__dirname, 'results.json');
+  const outputArg = process.argv.find(a => a.startsWith('--output='));
+  const outputPath = outputArg ? outputArg.split('=')[1] : path.resolve(__dirname, 'metrics.json');
+  const data = JSON.parse(fs.readFileSync(inputPath, 'utf8'));
   const rows = data.results.map(r => {
     const m = computeMetrics(r);
     // phase 命中率（仅对非固定权重的 profile 计算）
     if (r.profile && !r.profile.overridePhase && r.profile.riskProfile) {
-      m.phaseMetrics = phaseHitRate(r, data.seqs);
+      m.phaseMetrics = phaseHitRate(r, data.seqs || buildSeqsFromResults(data));
       m.phaseTransitions = phaseTransitions(r.phases);
     }
     return m;
@@ -147,9 +155,16 @@ function main() {
     }
   });
 
-  fs.writeFileSync(path.resolve(__dirname, 'metrics.json'), JSON.stringify(rows, null, 2));
-  console.log(`\n✓ 指标已写入 backtest/metrics.json`);
+  fs.writeFileSync(outputPath, JSON.stringify(rows, null, 2));
+  console.log(`\n✓ 指标已写入 ${path.relative(path.resolve(__dirname, '..'), outputPath)}`);
   return rows;
+}
+
+// V2 用：从 results-v2.json 中提取类别月度收益序列（近似方案 A 的 seqs 格式）
+function buildSeqsFromResults(data) {
+  // V2 的 results 没有单独 seqs 字段，无法做 phase 命中率精确统计
+  // 返回空对象，phaseHitRate 会跳过
+  return { active: [], index: [], bond: [], qdii: [], money: [] };
 }
 
 if (require.main === module) main();

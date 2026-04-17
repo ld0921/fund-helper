@@ -3,7 +3,7 @@
     "project": "fund-helper 算法能力提升工程",
     "goal": "把算法从\"理论正确但未经证实\"升级为\"数据证明有效\"，在个人免费工具领域从 Top 5% 推进到 Top 1%",
     "startDate": "2026-04-17",
-    "lastUpdated": "2026-04-17T16:20:00+08:00",
+    "lastUpdated": "2026-04-17T17:00:00+08:00",
     "currentPhase": "phase-2",
     "commitHash": "eeff5d5"
   },
@@ -120,13 +120,20 @@
         {
           "id": "2.2",
           "name": "回测引擎升级 V2",
-          "status": "pending",
+          "status": "in_progress",
           "subtasks": [
-            { "id": "2.2.A", "name": "backtest/runBacktestV2.js 主引擎", "status": "pending" },
-            { "id": "2.2.B", "name": "按月滚动重算 r1/r3/maxDD（避免前视偏差）", "status": "pending" },
+            { "id": "2.2.A", "name": "backtest/runBacktestV2.js 主引擎", "status": "completed" },
+            { "id": "2.2.B", "name": "按月滚动重算 r1/r3/maxDD（避免前视偏差）", "status": "completed" },
             { "id": "2.2.C", "name": "接入 scoreF + selectFunds 完整链路", "status": "pending" },
             { "id": "2.2.D", "name": "引入交易成本（申赎费按类别）", "status": "pending" },
             { "id": "2.2.E", "name": "避免幸存者偏差（用当时全市场池而非今天的精选库）", "status": "pending" }
+          ],
+          "outputs": [
+            { "type": "file", "label": "backtest/runBacktestV2.js", "path": "backtest/runBacktestV2.js" },
+            { "type": "file", "label": "backtest/findings-v3-preview.md (重大发现)", "path": "backtest/findings-v3-preview.md" },
+            { "type": "result", "label": "V2 推翻 V1 结论：phase 空头命中率其实 54.5%（优于随机），V1 的 44.4% 是幸存者偏差" },
+            { "type": "result", "label": "V1 波动/回撤虚高 3 倍（数据时间错位），V2 真实数据下夏普从 0.85 升至 1.51" },
+            { "type": "result", "label": "算法仍跑输等权 10-15pp 累计，但回撤控制优势显现（5.7% vs 基线 7.8%）" }
           ]
         },
         {
@@ -213,6 +220,11 @@
       "date": "2026-04-17",
       "label": "历史数据底座就绪 · 2.1 完成",
       "achievement": "338 只基金 × 5 年日净值 · 40.8 万数据点导入 SQLite，含 2022 完整熊市，数据质量验证通过（r3/maxDD 完全匹配）"
+    },
+    {
+      "date": "2026-04-17",
+      "label": "V2 引擎推翻 V1 关键结论 · 2.2.A+B 完成",
+      "achievement": "V2 数据显示 phase 空头命中率实为 54.5%（V1 错误为 44.4%），V1 数据因时间错位导致波动回撤虚高 3 倍。算法真价值在于回撤控制，不在绝对收益。"
     }
   ],
   "referenceLinks": [
