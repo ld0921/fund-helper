@@ -12,6 +12,7 @@ backtest/
 ├── metrics.js          # 指标计算（夏普/Sortino/最大回撤/phase 命中率）
 ├── results.json        # 回测原始结果（月度收益序列、phase、权重）
 ├── metrics.json        # 汇总指标
+├── index.html          # 可视化报告（部署入口）
 └── findings.md         # 完整发现和优化建议
 ```
 
@@ -20,12 +21,12 @@ backtest/
 ```bash
 node backtest/runBacktest.js   # 生成 results.json
 node backtest/metrics.js       # 生成 metrics.json，打印汇总表
-# 将 results.json + metrics.json + docs/backtest/index.html 一起部署
+# 将 results.json + metrics.json + index.html 一起部署
 ```
 
 或直接打开本地报告：
 ```bash
-cd docs/backtest && python3 -m http.server 8765
+cd backtest && python3 -m http.server 8765
 # 浏览器访问 http://localhost:8765/
 ```
 

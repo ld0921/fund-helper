@@ -45,7 +45,7 @@
           "completedDate": "2026-04-17",
           "outputs": [
             { "type": "link", "label": "打开回测报告", "url": "/backtest" },
-            { "type": "file", "label": "docs/backtest/index.html", "path": "docs/backtest/index.html" }
+            { "type": "file", "label": "backtest/index.html", "path": "backtest/index.html" }
           ]
         },
         {
