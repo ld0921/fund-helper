@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>基金助手 · 算法回测报告</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root{--pri:#1677ff;--muted:#8c8c8c;--bg:#f7f9fc;--card:#fff;--border:#e8eaed;--ok:#52c41a;--bad:#ff4d4f;--warn:#faad14;}
+  body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC',sans-serif;background:var(--bg);margin:0;padding:20px;color:#222;line-height:1.6;}
+  .container{max-width:1100px;margin:0 auto;}
+  h1{font-size:24px;margin-bottom:4px;}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:24px;}
+  .card{background:var(--card);border-radius:8px;padding:20px;margin-bottom:16px;border:1px solid var(--border);}
+  h2{font-size:18px;margin:0 0 12px;border-left:3px solid var(--pri);padding-left:10px;}
+  h3{font-size:15px;margin:12px 0 8px;color:#444;}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th,td{padding:8px 10px;text-align:right;border-bottom:1px solid #f0f0f0;}
+  th{background:#fafbfc;font-weight:600;text-align:left;}
+  td:first-child,th:first-child{text-align:left;}
+  .good{color:var(--ok);font-weight:600;}
+  .bad{color:var(--bad);font-weight:600;}
+  .warn{color:var(--warn);font-weight:600;}
+  .muted{color:var(--muted);}
+  canvas{max-height:320px;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr;}}
+  .finding{padding:10px 12px;background:#fff7e6;border-left:3px solid var(--warn);margin:8px 0;font-size:13px;}
+  .finding.critical{background:#fff1f0;border-color:var(--bad);}
+  .finding.positive{background:#f6ffed;border-color:var(--ok);}
+  pre{background:#f5f5f5;padding:10px;border-radius:4px;font-size:12px;overflow-x:auto;}
+  .tag{display:inline-block;padding:2px 8px;border-radius:3px;font-size:11px;margin-right:4px;}
+  .t-rec{background:#e6f4ff;color:#1677ff;}
+  .t-bull{background:#f6ffed;color:#52c41a;}
+  .t-over{background:#fff7e6;color:#fa8c16;}
+  .t-stag{background:#fff1f0;color:#ff4d4f;}
+  .t-rcs{background:#efdbff;color:#722ed1;}
+  .t-qdii{background:#e6fffb;color:#13c2c2;}
+  .t-trans{background:#f0f0f0;color:#666;}
+  .t-unknown{background:#fafafa;color:#999;}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>fund-helper · 算法回测报告</h1>
+  <div class="sub" id="meta"></div>
+
+  <div class="card">
+    <h2>执行摘要</h2>
+    <div id="summary"></div>
+  </div>
+
+  <div class="card">
+    <h2>汇总指标表</h2>
+    <div id="metricsTable"></div>
+  </div>
+
+  <div class="card">
+    <h2>净值曲线对比</h2>
+    <p class="muted">横轴为月数（从初始化窗口之后开始），纵轴为累计净值（起点=1.0）</p>
+    <canvas id="navChart"></canvas>
+  </div>
+
+  <div class="card">
+    <h2>回撤曲线</h2>
+    <p class="muted">各画像从峰值的最大跌幅演化</p>
+    <canvas id="ddChart"></canvas>
+  </div>
+
+  <div class="card">
+    <h2>Phase 时间线</h2>
+    <p class="muted">算法判断的市场 phase 随月份变化（以"进取+5年"为代表）</p>
+    <div id="phaseTimeline"></div>
+  </div>
+
+  <div class="card">
+    <h2>Phase 命中率诊断</h2>
+    <div id="phaseHit"></div>
+  </div>
+
+  <div class="card">
+    <h2>关键发现 & 优化建议（Findings）</h2>
+    <div id="findings"></div>
+  </div>
+
+  <div class="card">
+    <h2>局限性声明</h2>
+    <div id="limitations"></div>
+  </div>
+</div>
+
+<script>
+// 数据由 runBacktest.js 和 metrics.js 生成后注入
+// 通过 fetch 加载 JSON
+async function main(){
+  const [results, metrics] = await Promise.all([
+    fetch('results.json').then(r=>r.json()),
+    fetch('metrics.json').then(r=>r.json()),
+  ]);
+
+  // 元信息
+  document.getElementById('meta').textContent =
+    `数据窗口 ${results.totalMonths} 个月 · 有效回测期 ${results.totalMonths - results.windowSize} 个月 · 生成于 ${new Date(results.dataTimestamp).toLocaleString('zh-CN')}`;
+
+  renderSummary(metrics);
+  renderMetricsTable(metrics);
+  renderNavChart(results, metrics);
+  renderDDChart(results, metrics);
+  renderPhaseTimeline(results);
+  renderPhaseHit(metrics);
+  renderFindings(results, metrics);
+  renderLimitations();
+}
+
+function renderSummary(metrics){
+  const best = metrics.filter(m=>!m.name.includes('基线')).reduce((a,b)=>a.sharpe>b.sharpe?a:b);
+  const eq = metrics.find(m=>m.name.includes('等权'));
+  const sf = metrics.find(m=>m.name.includes('纯风险平价'));
+  const recovery = metrics.find(m=>m.name.includes('永久recovery'));
+  const bestProj = metrics.filter(m=>!m.name.includes('基线')).reduce((a,b)=>a.cumulative>b.cumulative?a:b);
+
+  const html = `
+    <ul>
+      <li><b>最高夏普画像</b>：${best.name}，夏普 <span class="good">${best.sharpe.toFixed(2)}</span></li>
+      <li><b>最高累计收益画像</b>：${bestProj.name}，${bestProj.cumulative.toFixed(2)}%</li>
+      <li><b>vs 等权基线</b>：算法最高累计 ${bestProj.cumulative.toFixed(2)}% vs 等权 <span class="good">${eq.cumulative.toFixed(2)}%</span>
+        → 差 <span class="bad">${(eq.cumulative - bestProj.cumulative).toFixed(2)}pp</span></li>
+      <li><b>动量信号价值</b>：带动量 vs 去动量（纯风险平价） = 夏普 ${bestProj.sharpe.toFixed(2)} vs ${sf.sharpe.toFixed(2)}
+        → <span class="${Math.abs(bestProj.sharpe-sf.sharpe)<0.05?'warn':'good'}">边际影响 ${(bestProj.sharpe-sf.sharpe).toFixed(2)}</span></li>
+      <li><b>永久 recovery 基线夏普</b>：<span class="warn">${recovery.sharpe.toFixed(2)}</span>（比算法切换还高一点 → phase 切换本身未创造价值）</li>
+    </ul>`;
+  document.getElementById('summary').innerHTML = html;
+}
+
+function renderMetricsTable(metrics){
+  let html = `<table>
+    <thead><tr>
+      <th>画像 / 基线</th><th>复利累计%</th><th>年化%</th><th>年化波动%</th>
+      <th>最大回撤%</th><th>夏普</th><th>Sortino</th><th>月度胜率%</th>
+    </tr></thead><tbody>`;
+  metrics.forEach(m=>{
+    const isBase = m.name.includes('基线');
+    html += `<tr${isBase?' style="background:#fafbfc"':''}>
+      <td>${isBase?'<span class="muted">'+m.name+'</span>':'<b>'+m.name+'</b>'}</td>
+      <td>${m.cumulative.toFixed(2)}</td>
+      <td>${m.annualized.toFixed(2)}</td>
+      <td>${m.annVol.toFixed(2)}</td>
+      <td class="${m.maxDD>30?'bad':'muted'}">${m.maxDD.toFixed(2)}</td>
+      <td class="${m.sharpe>=0.85?'good':m.sharpe>=0.75?'':'bad'}">${m.sharpe.toFixed(2)}</td>
+      <td>${m.sortino.toFixed(2)}</td>
+      <td>${m.winRate.toFixed(1)}</td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  document.getElementById('metricsTable').innerHTML = html;
+}
+
+function cumulativeSeries(monthlyReturns){
+  const out = [1]; let cum = 1;
+  monthlyReturns.forEach(r=>{ cum *= (1 + r/100); out.push(cum); });
+  return out;
+}
+function drawdownSeries(monthlyReturns){
+  const out = [0]; let peak = 1, cum = 1;
+  monthlyReturns.forEach(r=>{
+    cum *= (1 + r/100);
+    if(cum>peak) peak=cum;
+    out.push(-((peak-cum)/peak*100));
+  });
+  return out;
+}
+
+function renderNavChart(results, metrics){
+  const labels = Array.from({length: results.totalMonths - results.windowSize + 1}, (_,i)=>'M'+i);
+  const palette = ['#1677ff','#52c41a','#fa8c16','#722ed1','#13c2c2','#eb2f96','#f5222d',
+                   '#bfbfbf','#8c8c8c','#595959','#262626'];
+  const datasets = results.results.map((r, i) => ({
+    label: r.name,
+    data: cumulativeSeries(r.monthlyReturns),
+    borderColor: palette[i % palette.length],
+    backgroundColor: 'transparent',
+    borderWidth: r.name.includes('基线') ? 1.5 : 2.5,
+    borderDash: r.name.includes('基线') ? [4,4] : [],
+    pointRadius: 0,
+    tension: 0.1,
+  }));
+  new Chart(document.getElementById('navChart'), {
+    type: 'line',
+    data: { labels, datasets },
+    options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } } }
+  });
+}
+
+function renderDDChart(results, metrics){
+  const labels = Array.from({length: results.totalMonths - results.windowSize + 1}, (_,i)=>'M'+i);
+  const palette = ['#1677ff','#52c41a','#fa8c16','#722ed1','#13c2c2','#eb2f96','#f5222d',
+                   '#bfbfbf','#8c8c8c','#595959','#262626'];
+  const datasets = results.results.map((r, i) => ({
+    label: r.name,
+    data: drawdownSeries(r.monthlyReturns),
+    borderColor: palette[i % palette.length],
+    backgroundColor: 'transparent',
+    borderWidth: r.name.includes('基线') ? 1.5 : 2.5,
+    borderDash: r.name.includes('基线') ? [4,4] : [],
+    pointRadius: 0,
+    tension: 0.1,
+  }));
+  new Chart(document.getElementById('ddChart'), {
+    type: 'line',
+    data: { labels, datasets },
+    options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } } }
+  });
+}
+
+function renderPhaseTimeline(results){
+  const repr = results.results.find(r=>r.name === '进取+5年') || results.results[0];
+  const phaseCls = { recovery:'t-rec', global_bull:'t-bull', overheat:'t-over',
+    stagflation:'t-stag', recession:'t-rcs', qdii_opp:'t-qdii',
+    transition:'t-trans', unknown:'t-unknown' };
+  const phaseLabel = { recovery:'权益强势', global_bull:'全球权益',
+    overheat:'权益过热', stagflation:'全面弱势', recession:'债券强势',
+    qdii_opp:'QDII机会', transition:'信号模糊', unknown:'未知' };
+  let html = '<div style="display:flex;flex-wrap:wrap;gap:2px">';
+  repr.phases.forEach((p,i)=>{
+    html += `<span class="tag ${phaseCls[p]||'t-trans'}" title="M${i}: ${phaseLabel[p]||p}">M${i}</span>`;
+  });
+  html += '</div>';
+  const counts = {};
+  repr.phases.forEach(p=>counts[p]=(counts[p]||0)+1);
+  html += '<p style="margin-top:10px"><b>Phase 分布</b>：' +
+    Object.entries(counts).map(([k,v])=>`<span class="tag ${phaseCls[k]||'t-trans'}">${phaseLabel[k]||k} ${v}次</span>`).join('') +
+    '</p>';
+  document.getElementById('phaseTimeline').innerHTML = html;
+}
+
+function renderPhaseHit(metrics){
+  const pm = metrics.filter(m=>m.phaseMetrics).slice(0,1)[0]; // 都一样，取第一个
+  if(!pm) return;
+  const { bullishHit, bearishHit, bullishCount, bearishCount } = pm.phaseMetrics;
+  const html = `
+    <table>
+      <thead><tr><th>判断类型</th><th>次数</th><th>命中率</th><th>评价</th></tr></thead>
+      <tbody>
+        <tr><td>多头判断（recovery / global_bull）</td>
+          <td>${bullishCount}</td>
+          <td class="${bullishHit>=60?'good':'bad'}">${bullishHit?.toFixed(1)}%</td>
+          <td>${bullishHit>=60?'优于随机':bullishHit>=50?'略优于随机':'弱于随机'}</td></tr>
+        <tr><td>空头判断（overheat / stagflation / recession）</td>
+          <td>${bearishCount}</td>
+          <td class="${bearishHit>=60?'good':'bad'}">${bearishHit?.toFixed(1)}%</td>
+          <td>${bearishHit>=60?'优于随机':bearishHit>=50?'略优于随机':'弱于随机'}</td></tr>
+      </tbody>
+    </table>
+    <p class="muted" style="margin-top:8px">命中定义：多头判断当月之后权益等权月收益为正；空头判断当月之后权益等权月收益为负。</p>`;
+  document.getElementById('phaseHit').innerHTML = html;
+}
+
+function renderFindings(results, metrics){
+  // 从 findings.md 的精选版渲染
+  const html = `
+    <div class="finding critical"><b>[关键]</b> 算法在 2024-2026 牛市段显著跑输等权/60/40 基线 10-15pp。<br>
+    <i>具体数据</i>：最高画像（进取+2年）复利累计 89%，等权 100%，60/40 101%。<br>
+    <i>可能原因</i>：Risk Parity 基础权重把货币/债券放到 40%+ 稀释了权益增长；反转保护（avgR1&gt;30 时权益 tilt 反转为负）在持续牛市中过早降权益。</div>
+
+    <div class="finding critical"><b>[关键]</b> Phase 空头判断命中率仅 44%（低于随机的 50%）。<br>
+    <i>数据</i>：9 次空头判断（overheat+stagflation），只有 4 次之后权益真的下跌。<br>
+    <i>影响</i>：equityMult 在这些时段降权益，反而错过反弹。<br>
+    <i>建议</i>：收紧 overheat 触发阈值（equitySig&gt;10 改为 &gt;15）；stagflation 逻辑增加债券强弱双重确认而非单边权益弱势。</div>
+
+    <div class="finding"><b>[次要]</b> 动量机制整体价值有限。<br>
+    <i>数据</i>：带动量 vs 纯风险平价（去动量）= 累计 67% vs 64%，夏普 0.84 vs 0.83。<br>
+    <i>建议</i>：保留 global_bull 和 recovery 的权益倾斜（多头判断命中率 73%），但可把 overheat/stagflation 的乘数设为 0.95（接近中性），避免频繁错误扣权益。</div>
+
+    <div class="finding"><b>[次要]</b> 永久 recovery 基线夏普 0.86，略高于所有切换画像。<br>
+    <i>含义</i>：在这段数据里，"一直看多 + 轻度倾斜权益" 比切换 phase 更好。<br>
+    <i>建议</i>：将 recovery 设为算法默认 phase，切换条件要求更强的信号确认（比如 spread &gt; 1.5×bondStd 才切换到 overheat/stagflation）。</div>
+
+    <div class="finding"><b>[次要]</b> 短期期限（horizon=1年）的 equityCap=30 过严。<br>
+    <i>数据</i>：平衡+1年 累计 58%，平衡+2年 68% → 年化差约 10pp。<br>
+    <i>建议</i>：1 年 equityCap 从 30 提至 40（牛市不错过太多），或保留 30 但加注释"本约束假设年内市场高波动，非牛市假设"。</div>
+
+    <div class="finding positive"><b>[正面]</b> 风险调整后表现与基线几乎持平。<br>
+    <i>数据</i>：进取+2年 夏普 0.85 vs 等权 0.82、60/40 0.79，<b>算法仍具备轻微的风险调整优势</b>。<br>
+    <i>含义</i>：算法在总收益上跑输，但同步把波动和回撤也降了下来。对风险厌恶型用户有价值，对追求绝对收益者则未必。</div>
+
+    <div class="finding positive"><b>[正面]</b> 月度胜率最高 75%（进取+2年）。<br>
+    <i>含义</i>：3/4 的月份正收益，用户体验层面比较稳定，不易让持有人恐慌赎回。</div>
+
+    <h3 style="margin-top:20px">汇总优化建议（按优先级）</h3>
+    <ol>
+      <li><b>P0</b>：重新审视 overheat / stagflation 触发阈值和乘数（命中率 44% 是最大问题）</li>
+      <li><b>P1</b>：评估是否提高保守/平衡档的权益下限（现在 40% 平衡下限在牛市里拖累过重）</li>
+      <li><b>P1</b>：反转保护（avgR1&gt;30 时 effectiveTilt 反转）需要与趋势持续性结合，不能单看单点</li>
+      <li><b>P2</b>：1年期限 equityCap=30 的基准场景重新评估</li>
+      <li><b>P3</b>：考虑引入"熊市专项回测" — 当前数据集无熊市样本，任何防御性逻辑都无法被正面验证</li>
+    </ol>`;
+  document.getElementById('findings').innerHTML = html;
+}
+
+function renderLimitations(){
+  document.getElementById('limitations').innerHTML = `
+    <ul>
+      <li><b>样本不足</b>：24 个有效回测月，统计显著性弱，结论仅作方向指引</li>
+      <li><b>数据仅覆盖牛市</b>：约 2024-04 ~ 2026-03，不含熊市/震荡市，无法验证算法防御能力</li>
+      <li><b>类别层回测</b>：使用各类别 "top 基金平均月收益"，已包含选股 alpha，本报告不能拆分配置层 vs 选基层的贡献</li>
+      <li><b>基准数据可能存在对齐偏差</b>：monthlyReturns 是各基金月度收益按位置索引求平均，不同成立时间的基金可能有轻度时间错位</li>
+      <li><b>无交易成本</b>：类别层月度 rebalance 不计申赎费/滑点，实际会降低 2-5pp 累计</li>
+      <li><b>货币基金用常数折算</b>：2% 年化按月折算，实际货币基金收益率在 1.5-3.0% 间波动</li>
+      <li><b>Phase 确认期通过 mock localStorage 模拟</b>：逻辑与生产一致，但生产跨会话持久化特性未测试</li>
+    </ul>`;
+}
+
+main().catch(e=>{
+  document.body.innerHTML = '<pre style="color:red">加载失败：' + e.message + '</pre>';
+});
+</script>
+</body>
+</html>

@@ -1,5 +1,8 @@
 {
   "rewrites": [
+    { "source": "/backtest", "destination": "/docs/backtest/index.html" },
+    { "source": "/backtest/", "destination": "/docs/backtest/index.html" },
+    { "source": "/backtest/:path*", "destination": "/docs/backtest/:path*" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [
