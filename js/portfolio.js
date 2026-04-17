@@ -612,7 +612,7 @@ function computeWeights(riskProfile, horizon, catRanks, macroClock){
   }
 
   // 4. 动量倾斜：基于类别行情强弱适当调整（含反转保护）
-  const maxTilt = { conservative:5, moderate:8, balanced:10, aggressive:12 }[riskProfile];
+  const maxTilt = { conservative:5, moderate:8, balanced:15, aggressive:15 }[riskProfile];
   if(catRanks.length >= 2){
     const top = catRanks[0].cat;
     const bottom = catRanks[catRanks.length-1].cat;
@@ -745,7 +745,7 @@ function selectFunds(cat, catData, riskProfile, pct, totalAmt){
     conservative: f => f.composite - (f.maxDD||0) * 0.3 + Math.min(f.mgrYears||0, 10) * 0.5,
     moderate:     f => f.composite,
     balanced:     f => f.composite + (f.r1||0) * 0.1,
-    aggressive:   f => f.composite + (f.r1||0) * 0.1,  // r1 系数从 0.2 降至 0.1，去掉 maxDD>25 的 +2 奖励
+    aggressive:   f => f.composite + (f.r1||0) * 0.15,  // r1 系数 0.15（在 0.1 和原 0.2 之间折中）
   };
   const adjustFn = riskAdjust[riskProfile] || riskAdjust.moderate;
   // 动量反转修正：超涨基金（>同类均值+1σ）降权，超跌基金（<均值-1σ）升权
@@ -786,8 +786,8 @@ function selectFunds(cat, catData, riskProfile, pct, totalAmt){
     deduped.push(f);
   });
 
-  // 选几只：≥35%选3只，≥25%选2只，其他1只
-  const pickCount = pct >= 35 && deduped.length >= 3 ? 3 : pct >= 25 && deduped.length >= 2 ? 2 : 1;
+  // 选几只：≥25%选3只，≥15%选2只，其他1只（V2 3.3-test2 更分散化）
+  const pickCount = pct >= 25 && deduped.length >= 3 ? 3 : pct >= 15 && deduped.length >= 2 ? 2 : 1;
   let picks = deduped.slice(0, pickCount);
 
   // 暂停申购检查：若基金暂停，替换为同类别替代基金
