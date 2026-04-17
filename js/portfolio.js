@@ -50,7 +50,7 @@ function calculateRebalanceCost(currentFund, targetFund, holdingDays, amount){
     expectedGainAmount,
     netGainAmount,
     breakEvenYears,
-    worthIt: netGainAmount > 0 && breakEvenYears < 2 // 2年内能回本才值得
+    worthIt: netGainAmount > 0 && breakEvenYears < 1.5 // 1.5 年内能回本才值得（2026-04 V2 回测证实月度换仓累计吞 3%/年，收紧门槛降低换手）
   };
 }
 
