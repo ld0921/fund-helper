@@ -1,0 +1,30 @@
+[
+  {
+    "label": "调参1: overheat阈值10→15",
+    "baselinePath": "backtest/baseline/metrics.json",
+    "candidatePath": "backtest/metrics.json",
+    "timestamp": "2026-04-17T07:08:00.477Z",
+    "avgSharpe": -0.0006153648075218106,
+    "avgCumulative": -0.06233239881202885,
+    "avgMaxDD": -3.045183153257572e-15,
+    "improvedCount": 1,
+    "worsenedCount": 6,
+    "neutralCount": 0,
+    "totalProfiles": 7,
+    "verdict": "🔴 建议回滚"
+  },
+  {
+    "label": "调参2: overheat equityMult 0.85→0.92",
+    "baselinePath": "backtest/baseline/metrics.json",
+    "candidatePath": "backtest/metrics.json",
+    "timestamp": "2026-04-17T07:08:57.341Z",
+    "avgSharpe": -0.00009826435904501465,
+    "avgCumulative": -0.011962539707110207,
+    "avgMaxDD": 2.0301221021717147e-15,
+    "improvedCount": 2,
+    "worsenedCount": 2,
+    "neutralCount": 3,
+    "totalProfiles": 7,
+    "verdict": "🟡 影响中性，根据具体指标判断"
+  }
+]

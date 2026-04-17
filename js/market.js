@@ -91,7 +91,7 @@ function inferMomentumPhase(catRanks){
 
   // phase 参数映射（用于确认期回退）
   const _phaseParams = {
-    overheat:    { label:'权益极端强势', equityMult:0.85, bondMult:0.95, desc:'权益涨幅显著高于历史均值且债券走弱，可能存在过热风险。建议控制仓位，警惕回调。' },
+    overheat:    { label:'权益极端强势', equityMult:0.92, bondMult:0.95, desc:'权益涨幅显著高于历史均值且债券走弱，可能存在过热风险。建议控制仓位，警惕回调。' },
     global_bull: { label:'全球权益强势', equityMult:1.08, bondMult:0.93, desc:'A股与海外权益同步强势，全球风险偏好上升。可适度超配权益和QDII。' },
     recovery:    { label:'权益强势期',   equityMult:1.10, bondMult:0.93, desc:'权益类资产相对强势，动量信号偏多。债券仍有正收益。建议适度超配权益类资产。' },
     stagflation: { label:'全面弱势期',   equityMult:0.85, bondMult:0.93, desc:'权益和债券均表现不佳，市场缺乏明确趋势。防御为主，建议超配货币和短债。' },
@@ -102,7 +102,7 @@ function inferMomentumPhase(catRanks){
 
   if(equityStrong && bondWeak && equitySig > 10){
     phase = 'overheat'; label = '权益极端强势';
-    equityMult = 0.85; bondMult = 0.95;
+    equityMult = 0.92; bondMult = 0.95;
     desc = '权益涨幅显著高于历史均值且债券走弱，可能存在过热风险。建议控制仓位，警惕回调。';
   } else if(qdiiStrong && equityStrong){
     phase = 'global_bull'; label = '全球权益强势';
