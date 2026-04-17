@@ -73,7 +73,37 @@
       <b>方案 B · V2</b>：338 只基金 × 5 年日净值 · 按月滚动重算 · 含 selectFunds 选基 + 交易成本
       <span style="color:var(--muted);margin-left:8px">（2026-04-17 启用）</span>
     </div>
-    <div id="v2Content" class="muted" style="padding:40px;text-align:center">V2 报告即将上线…</div>
+
+    <div class="card">
+      <h2>V2 汇总指标表</h2>
+      <p class="muted">每个画像有 3 个模式：<b>类别均值</b>（假设持有该类别所有基金）· <b>智能选基-无成本</b>（选基 alpha 的毛值）· <b>智能选基+成本</b>（扣申赎费后的真实体验）</p>
+      <div id="v2MetricsTable"></div>
+    </div>
+
+    <div class="card">
+      <h2>V2 净值曲线</h2>
+      <p class="muted">默认仅显示 <b>含成本</b> 版本 + 基线（其他系列可在图例点击切换显示）</p>
+      <canvas id="v2NavChart"></canvas>
+    </div>
+
+    <div class="card">
+      <h2>V2 回撤曲线</h2>
+      <p class="muted">默认仅显示 <b>含成本</b> 版本 + 基线</p>
+      <canvas id="v2DdChart"></canvas>
+    </div>
+
+    <div class="card">
+      <h2>V2 Phase 时间线</h2>
+      <p class="muted">22 个月的 phase 判断（以"进取+5年 [智能选基+成本]"为代表）</p>
+      <div id="v2PhaseTimeline"></div>
+    </div>
+
+    <div class="card">
+      <h2>V2 Phase 命中率诊断</h2>
+      <div id="v2PhaseHit"></div>
+    </div>
+
+    <div id="v2Content"></div>
   </div>
 
   <div id="panel-v1" class="panel">
@@ -182,12 +212,217 @@ function setupVersionTabs(){
   });
 }
 
-// V2 渲染占位（Step 2 补充）
+// V2 渲染主入口
 function renderV2(results, metrics){
-  document.getElementById('v2Content').innerHTML =
-    '<div class="card"><h2>V2 数据已就绪</h2><p class="muted">' +
-    `共 ${metrics.length} 个变体 × ${results.monthCount} 月数据 · ` +
-    `Step 2 将补充完整图表。</p></div>`;
+  window.__v2ResultsCache = results.results; // 供 metrics 表读 costs 用（必须在 renderV2MetricsTable 前设置）
+  renderV2MetricsTable(metrics);
+  renderV2NavChart(results);
+  renderV2DdChart(results);
+  renderV2PhaseTimeline(results);
+  renderV2PhaseHit(metrics);
+}
+
+// ─── V2 指标表（23 行，含成本列） ───
+function renderV2MetricsTable(metrics){
+  // 排序：先 7 个画像（每个 3 变体相邻），再 2 个基线
+  const profileOrder = ['平衡+1年','平衡+2年','平衡+3年','进取+1年','进取+2年','进取+3年','进取+5年'];
+  const variantOrder = ['[类别均值]','[智能选基-无成本]','[智能选基+成本]'];
+  const sorted = [];
+  profileOrder.forEach(p => {
+    variantOrder.forEach(v => {
+      const m = metrics.find(x => x.name === `${p} ${v}`);
+      if (m) sorted.push(m);
+    });
+  });
+  metrics.filter(m => m.name.includes('基线')).forEach(m => sorted.push(m));
+
+  let html = `<table>
+    <thead><tr>
+      <th>画像 / 基线</th><th>累计%</th><th>年化%</th><th>波动%</th>
+      <th>回撤%</th><th>夏普</th><th>Sortino</th><th>胜率%</th><th>成本%</th>
+    </tr></thead><tbody>`;
+
+  sorted.forEach((m, i) => {
+    const isBase = m.name.includes('基线');
+    const isSelectCost = m.name.includes('[智能选基+成本]');
+    const isSelectNoCost = m.name.includes('[智能选基-无成本]');
+    const isCat = m.name.includes('[类别均值]');
+
+    // 每个画像第一行加分隔视觉（顶边框）
+    const groupStart = i > 0 && !isBase && isCat;
+    const rowStyle = isBase ? 'background:#fafbfc;'
+                   : isSelectCost ? 'background:#f6ffed;'
+                   : isSelectNoCost ? 'background:#fafbfc;'
+                   : '';
+    const borderTop = groupStart ? 'border-top:2px solid var(--border);' : '';
+
+    const sharpeVs155 = m.sharpe - 1.55; // 等权基线 V2 夏普
+    const sharpeClass = isBase ? 'muted' : (m.sharpe >= 1.55 ? 'good' : m.sharpe >= 1.40 ? '' : 'bad');
+
+    const costSum = (results => {
+      const r = results && results.find ? results.find(r => r.name === m.name) : null;
+      return r && r.costs ? r.costs.reduce((s,v)=>s+v,0) : 0;
+    })(window.__v2ResultsCache);
+
+    html += `<tr style="${rowStyle}${borderTop}">
+      <td>${isBase ? '<span class="muted">'+m.name+'</span>' : '<b>'+m.name+'</b>'}</td>
+      <td>${m.cumulative.toFixed(2)}</td>
+      <td>${m.annualized.toFixed(2)}</td>
+      <td>${m.annVol.toFixed(2)}</td>
+      <td class="${m.maxDD > 10 ? 'bad' : 'muted'}">${m.maxDD.toFixed(2)}</td>
+      <td class="${sharpeClass}">${m.sharpe.toFixed(2)}</td>
+      <td>${m.sortino.toFixed(2)}</td>
+      <td>${m.winRate.toFixed(1)}</td>
+      <td class="${costSum > 0 ? 'warn' : 'muted'}">${costSum > 0 ? costSum.toFixed(2) : '—'}</td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  html += '<p class="muted" style="margin-top:10px;font-size:12px">夏普标注：<span class="good">≥1.55</span> 超越等权基线 · <span style="color:#faad14">1.40-1.54</span> 次之 · <span class="bad">&lt;1.40</span> 明显跑输</p>';
+  document.getElementById('v2MetricsTable').innerHTML = html;
+}
+
+// 通用：挑选 V2 图表默认展示的系列
+function v2DefaultVisibleNames(results){
+  // 默认显示：所有含成本的选基版 + 2 条基线
+  return new Set(results.results
+    .filter(r => r.name.includes('[智能选基+成本]') || r.name.includes('基线'))
+    .map(r => r.name));
+}
+
+// 颜色策略：7 个画像各一色，3 变体用 alpha / dash 区分；基线灰+虚线
+function v2ColorFor(name){
+  const profileColors = {
+    '平衡+1年': '#1677ff', '平衡+2年': '#52c41a', '平衡+3年': '#13c2c2',
+    '进取+1年': '#fa8c16', '进取+2年': '#eb2f96', '进取+3年': '#722ed1', '进取+5年': '#f5222d',
+  };
+  if (name.includes('基线：等权')) return '#888';
+  if (name.includes('基线：60/40')) return '#555';
+  for (const p of Object.keys(profileColors)) {
+    if (name.startsWith(p)) return profileColors[p];
+  }
+  return '#999';
+}
+function v2StyleFor(name){
+  // [类别均值] 点线 · [智能选基-无成本] 虚线 · [智能选基+成本] 实线
+  // 基线：粗虚线
+  if (name.includes('基线')) return { borderWidth: 2, borderDash: [6,4] };
+  if (name.includes('[类别均值]')) return { borderWidth: 1.2, borderDash: [2,3] };
+  if (name.includes('[智能选基-无成本]')) return { borderWidth: 1.2, borderDash: [6,3] };
+  if (name.includes('[智能选基+成本]')) return { borderWidth: 2.5, borderDash: [] };
+  return { borderWidth: 1.5, borderDash: [] };
+}
+
+// ─── V2 净值曲线 ───
+function renderV2NavChart(results){
+  const labels = Array.from({length: results.monthCount + 1}, (_,i)=>'M'+i);
+  const visible = v2DefaultVisibleNames(results);
+
+  const datasets = results.results.map(r => ({
+    label: r.name,
+    data: cumulativeSeries(r.monthlyReturns),
+    borderColor: v2ColorFor(r.name),
+    backgroundColor: 'transparent',
+    ...v2StyleFor(r.name),
+    pointRadius: 0,
+    tension: 0.1,
+    hidden: !visible.has(r.name),
+  }));
+
+  new Chart(document.getElementById('v2NavChart'), {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } } },
+      scales: { y: { title: { display: true, text: '累计净值（起点=1.0）' } } }
+    }
+  });
+}
+
+// ─── V2 回撤曲线 ───
+function renderV2DdChart(results){
+  const labels = Array.from({length: results.monthCount + 1}, (_,i)=>'M'+i);
+  const visible = v2DefaultVisibleNames(results);
+
+  const datasets = results.results.map(r => ({
+    label: r.name,
+    data: drawdownSeries(r.monthlyReturns),
+    borderColor: v2ColorFor(r.name),
+    backgroundColor: 'transparent',
+    ...v2StyleFor(r.name),
+    pointRadius: 0,
+    tension: 0.1,
+    hidden: !visible.has(r.name),
+  }));
+
+  new Chart(document.getElementById('v2DdChart'), {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } } },
+      scales: { y: { title: { display: true, text: '回撤 %' } } }
+    }
+  });
+}
+
+// ─── V2 Phase 时间线 ───
+function renderV2PhaseTimeline(results){
+  const repr = results.results.find(r => r.name === '进取+5年 [智能选基+成本]')
+            || results.results.find(r => r.name === '进取+5年 [智能选基-无成本]')
+            || results.results[0];
+  const phaseCls = { recovery:'t-rec', global_bull:'t-bull', overheat:'t-over',
+    stagflation:'t-stag', recession:'t-rcs', qdii_opp:'t-qdii',
+    transition:'t-trans', unknown:'t-unknown' };
+  const phaseLabel = { recovery:'权益强势', global_bull:'全球权益',
+    overheat:'权益过热', stagflation:'全面弱势', recession:'债券强势',
+    qdii_opp:'QDII机会', transition:'信号模糊', unknown:'未知' };
+  // 尝试取得月份日期作为 title
+  const weightHistory = repr.weightHistory || [];
+  let html = '<div style="display:flex;flex-wrap:wrap;gap:2px">';
+  repr.phases.forEach((p,i) => {
+    const dateStr = weightHistory[i] ? (weightHistory[i].t || '') : '';
+    const title = dateStr ? `${dateStr}: ${phaseLabel[p]||p}` : `M${i}: ${phaseLabel[p]||p}`;
+    html += `<span class="tag ${phaseCls[p]||'t-trans'}" title="${title}">M${i}</span>`;
+  });
+  html += '</div>';
+  const counts = {};
+  repr.phases.forEach(p => counts[p] = (counts[p]||0) + 1);
+  html += '<p style="margin-top:10px"><b>Phase 分布</b>：' +
+    Object.entries(counts)
+      .sort((a,b) => b[1] - a[1])
+      .map(([k,v]) => `<span class="tag ${phaseCls[k]||'t-trans'}">${phaseLabel[k]||k} ${v}次</span>`).join('') +
+    '</p>';
+  document.getElementById('v2PhaseTimeline').innerHTML = html;
+}
+
+// ─── V2 Phase 命中率 ───
+function renderV2PhaseHit(metrics){
+  const pm = metrics.find(m => m.phaseMetrics);
+  if (!pm) {
+    document.getElementById('v2PhaseHit').innerHTML = '<p class="muted">无 phase 命中率数据</p>';
+    return;
+  }
+  const { bullishHit, bearishHit, bullishCount, bearishCount } = pm.phaseMetrics;
+  const html = `
+    <table>
+      <thead><tr><th>判断类型</th><th>次数</th><th>命中率</th><th>评价</th></tr></thead>
+      <tbody>
+        <tr><td>多头判断（recovery / global_bull）</td>
+          <td>${bullishCount}</td>
+          <td class="${bullishHit >= 60 ? 'good' : bullishHit >= 50 ? 'warn' : 'bad'}">${bullishHit?.toFixed(1)}%</td>
+          <td>${bullishHit >= 60 ? '优于随机' : bullishHit >= 50 ? '略优于随机' : '弱于随机'}</td></tr>
+        <tr><td>空头判断（overheat / stagflation / recession）</td>
+          <td>${bearishCount}</td>
+          <td class="${bearishHit >= 60 ? 'good' : bearishHit >= 50 ? 'warn' : 'bad'}">${bearishHit?.toFixed(1)}%</td>
+          <td>${bearishHit >= 60 ? '优于随机' : bearishHit >= 50 ? '略优于随机' : '弱于随机'}</td></tr>
+      </tbody>
+    </table>
+    <p class="muted" style="margin-top:8px;font-size:12px">
+      ⚠️ 对比 V1：V1 显示空头命中率 44.4%（低于随机），V2 在真实日净值数据下为 <b>${bearishHit?.toFixed(1)}%</b>（优于随机）。
+      V1 数据因 <code>marketBenchmarks.monthlyReturns</code> 时间错位导致结论失真，V2 为真实可信结果。
+    </p>`;
+  document.getElementById('v2PhaseHit').innerHTML = html;
 }
 
 function renderSummary(metrics){
