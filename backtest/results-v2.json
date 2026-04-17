@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-17T08:05:10.149Z",
+  "generatedAt": "2026-04-17T08:10:41.181Z",
   "version": "V2",
   "startDate": "2024-04-30",
   "endDate": "2026-03-31",
@@ -134,7 +134,8 @@
         "name": "平衡+1年 [类别均值]",
         "riskProfile": "balanced",
         "horizon": 1,
-        "useSelect": false
+        "useSelect": false,
+        "applyCosts": false
       },
       "monthlyReturns": [
         -0.8750119367447384,
@@ -430,12 +431,13 @@
       ]
     },
     {
-      "name": "平衡+1年 [智能选基]",
+      "name": "平衡+1年 [智能选基-无成本]",
       "profile": {
-        "name": "平衡+1年 [智能选基]",
+        "name": "平衡+1年 [智能选基-无成本]",
         "riskProfile": "balanced",
         "horizon": 1,
-        "useSelect": true
+        "useSelect": true,
+        "applyCosts": false
       },
       "monthlyReturns": [
         0.9570137486616743,
@@ -731,12 +733,315 @@
       ]
     },
     {
+      "name": "平衡+1年 [智能选基+成本]",
+      "profile": {
+        "name": "平衡+1年 [智能选基+成本]",
+        "riskProfile": "balanced",
+        "horizon": 1,
+        "useSelect": true,
+        "applyCosts": true
+      },
+      "monthlyReturns": [
+        0.8766137486616743,
+        -0.5840743442053046,
+        -1.7753643616762076,
+        3.079188316979002,
+        0.11756004946104565,
+        0.28873612591163855,
+        0.47362120171818123,
+        0.5695852274319019,
+        3.187619519238062,
+        0.35493365972838664,
+        -1.704252658434825,
+        0.288665586345645,
+        4.42967395127877,
+        4.723725195245048,
+        9.602268633908901,
+        2.145328836166807,
+        -0.425326236580332,
+        -0.3378738611338775,
+        3.326733725156408,
+        5.666157053650559,
+        1.508447429868642,
+        -6.432703079188509
+      ],
+      "phases": [
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "qdii_opp",
+        "qdii_opp",
+        "qdii_opp",
+        "qdii_opp",
+        "recovery",
+        "recovery",
+        "recovery",
+        "recovery",
+        "recovery",
+        "recovery",
+        "recovery"
+      ],
+      "weightHistory": [
+        {
+          "t": "2024-05-30",
+          "weights": {
+            "money": 20,
+            "qdii": 13,
+            "bond": 38,
+            "active": 16,
+            "index": 13
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2024-06-29",
+          "weights": {
+            "money": 20,
+            "qdii": 13,
+            "bond": 38,
+            "active": 16,
+            "index": 13
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2024-07-30",
+          "weights": {
+            "money": 20,
+            "qdii": 13,
+            "bond": 38,
+            "active": 16,
+            "index": 13
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2024-08-30",
+          "weights": {
+            "money": 20,
+            "qdii": 13,
+            "bond": 38,
+            "index": 12,
+            "active": 17
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2024-09-29",
+          "weights": {
+            "money": 20,
+            "qdii": 13,
+            "bond": 38,
+            "index": 12,
+            "active": 17
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2024-10-30",
+          "weights": {
+            "money": 20,
+            "qdii": 13,
+            "bond": 38,
+            "index": 12,
+            "active": 17
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2024-11-29",
+          "weights": {
+            "money": 20,
+            "qdii": 13,
+            "bond": 38,
+            "index": 12,
+            "active": 17
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2024-12-30",
+          "weights": {
+            "money": 20,
+            "qdii": 13,
+            "bond": 38,
+            "index": 12,
+            "active": 17
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2025-01-30",
+          "weights": {
+            "qdii": 23,
+            "money": 20,
+            "bond": 35,
+            "index": 9,
+            "active": 13
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2025-02-27",
+          "weights": {
+            "qdii": 23,
+            "money": 20,
+            "bond": 35,
+            "index": 9,
+            "active": 13
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2025-03-30",
+          "weights": {
+            "qdii": 23,
+            "money": 20,
+            "bond": 35,
+            "index": 9,
+            "active": 13
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2025-04-29",
+          "weights": {
+            "qdii": 23,
+            "money": 20,
+            "bond": 36,
+            "index": 9,
+            "active": 12
+          },
+          "phase": "qdii_opp"
+        },
+        {
+          "t": "2025-05-30",
+          "weights": {
+            "qdii": 23,
+            "money": 20,
+            "bond": 36,
+            "index": 9,
+            "active": 12
+          },
+          "phase": "qdii_opp"
+        },
+        {
+          "t": "2025-06-29",
+          "weights": {
+            "qdii": 23,
+            "money": 20,
+            "bond": 36,
+            "index": 9,
+            "active": 12
+          },
+          "phase": "qdii_opp"
+        },
+        {
+          "t": "2025-07-30",
+          "weights": {
+            "qdii": 23,
+            "money": 20,
+            "index": 9,
+            "bond": 36,
+            "active": 12
+          },
+          "phase": "qdii_opp"
+        },
+        {
+          "t": "2025-08-30",
+          "weights": {
+            "qdii": 10,
+            "index": 8,
+            "active": 9,
+            "money": 20,
+            "bond": 53
+          },
+          "phase": "recovery"
+        },
+        {
+          "t": "2025-09-29",
+          "weights": {
+            "qdii": 10,
+            "index": 9,
+            "active": 9,
+            "bond": 52,
+            "money": 20
+          },
+          "phase": "recovery"
+        },
+        {
+          "t": "2025-10-30",
+          "weights": {
+            "qdii": 11,
+            "index": 8,
+            "active": 9,
+            "bond": 52,
+            "money": 20
+          },
+          "phase": "recovery"
+        },
+        {
+          "t": "2025-11-29",
+          "weights": {
+            "qdii": 11,
+            "index": 8,
+            "active": 9,
+            "bond": 52,
+            "money": 20
+          },
+          "phase": "recovery"
+        },
+        {
+          "t": "2025-12-30",
+          "weights": {
+            "qdii": 11,
+            "index": 8,
+            "active": 9,
+            "bond": 52,
+            "money": 20
+          },
+          "phase": "recovery"
+        },
+        {
+          "t": "2026-01-30",
+          "weights": {
+            "qdii": 11,
+            "index": 8,
+            "active": 9,
+            "bond": 52,
+            "money": 20
+          },
+          "phase": "recovery"
+        },
+        {
+          "t": "2026-02-27",
+          "weights": {
+            "qdii": 11,
+            "active": 10,
+            "index": 7,
+            "bond": 52,
+            "money": 20
+          },
+          "phase": "recovery"
+        }
+      ]
+    },
+    {
       "name": "平衡+2年 [类别均值]",
       "profile": {
         "name": "平衡+2年 [类别均值]",
         "riskProfile": "balanced",
         "horizon": 2,
-        "useSelect": false
+        "useSelect": false,
+        "applyCosts": false
       },
       "monthlyReturns": [
         -0.5832100286063014,
@@ -1032,12 +1337,13 @@
       ]
     },
     {
-      "name": "平衡+2年 [智能选基]",
+      "name": "平衡+2年 [智能选基-无成本]",
       "profile": {
-        "name": "平衡+2年 [智能选基]",
+        "name": "平衡+2年 [智能选基-无成本]",
         "riskProfile": "balanced",
         "horizon": 2,
-        "useSelect": true
+        "useSelect": true,
+        "applyCosts": false
       },
       "monthlyReturns": [
         1.8316915533722273,
@@ -1333,12 +1639,315 @@
       ]
     },
     {
+      "name": "平衡+2年 [智能选基+成本]",
+      "profile": {
+        "name": "平衡+2年 [智能选基+成本]",
+        "riskProfile": "balanced",
+        "horizon": 2,
+        "useSelect": true,
+        "applyCosts": true
+      },
+      "monthlyReturns": [
+        1.7451915533722273,
+        0.005016727569787494,
+        -1.5137099400015854,
+        3.8220316220393964,
+        -0.04790473499676812,
+        -0.21288606003285976,
+        0.43601328315741095,
+        0.6062322494005224,
+        3.3305112991382226,
+        0.21325502559771123,
+        -1.5675679664004718,
+        0.4173632456285994,
+        5.096362694671457,
+        6.424842669545296,
+        11.86723721017009,
+        2.316379457027575,
+        -0.32586267984303086,
+        -0.20739001012376554,
+        3.9400554242916024,
+        5.881752709799108,
+        1.9338716064702757,
+        -6.630981026304952
+      ],
+      "phases": [
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "qdii_opp",
+        "qdii_opp",
+        "qdii_opp",
+        "qdii_opp",
+        "recovery",
+        "recovery",
+        "recovery",
+        "recovery",
+        "recovery",
+        "recovery",
+        "recovery"
+      ],
+      "weightHistory": [
+        {
+          "t": "2024-05-30",
+          "weights": {
+            "money": 20,
+            "qdii": 17,
+            "bond": 24,
+            "active": 23,
+            "index": 16
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2024-06-29",
+          "weights": {
+            "money": 20,
+            "qdii": 17,
+            "bond": 24,
+            "active": 23,
+            "index": 16
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2024-07-30",
+          "weights": {
+            "money": 20,
+            "qdii": 17,
+            "bond": 24,
+            "active": 23,
+            "index": 16
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2024-08-30",
+          "weights": {
+            "money": 20,
+            "qdii": 17,
+            "bond": 24,
+            "index": 16,
+            "active": 23
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2024-09-29",
+          "weights": {
+            "money": 20,
+            "qdii": 18,
+            "bond": 22,
+            "index": 16,
+            "active": 24
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2024-10-30",
+          "weights": {
+            "money": 20,
+            "qdii": 18,
+            "bond": 22,
+            "index": 16,
+            "active": 24
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2024-11-29",
+          "weights": {
+            "money": 20,
+            "qdii": 18,
+            "bond": 22,
+            "index": 16,
+            "active": 24
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2024-12-30",
+          "weights": {
+            "money": 20,
+            "qdii": 18,
+            "bond": 24,
+            "index": 15,
+            "active": 23
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2025-01-30",
+          "weights": {
+            "qdii": 28,
+            "money": 20,
+            "bond": 20,
+            "index": 13,
+            "active": 19
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2025-02-27",
+          "weights": {
+            "qdii": 27,
+            "money": 20,
+            "bond": 21,
+            "index": 13,
+            "active": 19
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2025-03-30",
+          "weights": {
+            "qdii": 27,
+            "money": 20,
+            "bond": 21,
+            "index": 13,
+            "active": 19
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2025-04-29",
+          "weights": {
+            "qdii": 28,
+            "money": 20,
+            "bond": 23,
+            "index": 12,
+            "active": 17
+          },
+          "phase": "qdii_opp"
+        },
+        {
+          "t": "2025-05-30",
+          "weights": {
+            "qdii": 28,
+            "money": 20,
+            "bond": 23,
+            "index": 12,
+            "active": 17
+          },
+          "phase": "qdii_opp"
+        },
+        {
+          "t": "2025-06-29",
+          "weights": {
+            "qdii": 28,
+            "money": 20,
+            "bond": 22,
+            "index": 12,
+            "active": 18
+          },
+          "phase": "qdii_opp"
+        },
+        {
+          "t": "2025-07-30",
+          "weights": {
+            "qdii": 28,
+            "money": 20,
+            "index": 12,
+            "bond": 22,
+            "active": 18
+          },
+          "phase": "qdii_opp"
+        },
+        {
+          "t": "2025-08-30",
+          "weights": {
+            "qdii": 14,
+            "index": 11,
+            "active": 13,
+            "money": 20,
+            "bond": 42
+          },
+          "phase": "recovery"
+        },
+        {
+          "t": "2025-09-29",
+          "weights": {
+            "qdii": 14,
+            "index": 11,
+            "active": 13,
+            "bond": 42,
+            "money": 20
+          },
+          "phase": "recovery"
+        },
+        {
+          "t": "2025-10-30",
+          "weights": {
+            "qdii": 15,
+            "index": 11,
+            "active": 13,
+            "bond": 41,
+            "money": 20
+          },
+          "phase": "recovery"
+        },
+        {
+          "t": "2025-11-29",
+          "weights": {
+            "qdii": 15,
+            "index": 11,
+            "active": 13,
+            "bond": 41,
+            "money": 20
+          },
+          "phase": "recovery"
+        },
+        {
+          "t": "2025-12-30",
+          "weights": {
+            "qdii": 15,
+            "index": 10,
+            "active": 13,
+            "bond": 42,
+            "money": 20
+          },
+          "phase": "recovery"
+        },
+        {
+          "t": "2026-01-30",
+          "weights": {
+            "qdii": 15,
+            "index": 11,
+            "active": 13,
+            "bond": 41,
+            "money": 20
+          },
+          "phase": "recovery"
+        },
+        {
+          "t": "2026-02-27",
+          "weights": {
+            "qdii": 15,
+            "active": 15,
+            "index": 9,
+            "bond": 41,
+            "money": 20
+          },
+          "phase": "recovery"
+        }
+      ]
+    },
+    {
       "name": "平衡+3年 [类别均值]",
       "profile": {
         "name": "平衡+3年 [类别均值]",
         "riskProfile": "balanced",
         "horizon": 3,
-        "useSelect": false
+        "useSelect": false,
+        "applyCosts": false
       },
       "monthlyReturns": [
         -0.5798267556584802,
@@ -1634,12 +2243,13 @@
       ]
     },
     {
-      "name": "平衡+3年 [智能选基]",
+      "name": "平衡+3年 [智能选基-无成本]",
       "profile": {
-        "name": "平衡+3年 [智能选基]",
+        "name": "平衡+3年 [智能选基-无成本]",
         "riskProfile": "balanced",
         "horizon": 3,
-        "useSelect": true
+        "useSelect": true,
+        "applyCosts": false
       },
       "monthlyReturns": [
         1.6358587069425228,
@@ -1935,12 +2545,315 @@
       ]
     },
     {
+      "name": "平衡+3年 [智能选基+成本]",
+      "profile": {
+        "name": "平衡+3年 [智能选基+成本]",
+        "riskProfile": "balanced",
+        "horizon": 3,
+        "useSelect": true,
+        "applyCosts": true
+      },
+      "monthlyReturns": [
+        1.5522587069425229,
+        -0.2831194043290227,
+        -1.6481027305734508,
+        3.6453533146980295,
+        0.24215691621949492,
+        -0.1777100712725923,
+        0.5850989120831469,
+        0.6911349812586174,
+        3.310808305167838,
+        0.8303659316275308,
+        -1.3007383908163412,
+        0.2899052223332451,
+        4.421880596225592,
+        5.18375129855585,
+        10.635473822326116,
+        2.3710906828500526,
+        -0.23827268833061505,
+        0.012294483323629396,
+        3.6864412296813263,
+        5.9023663670274065,
+        1.9494938787155558,
+        -6.717570379294513
+      ],
+      "phases": [
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "qdii_opp",
+        "qdii_opp",
+        "qdii_opp",
+        "qdii_opp",
+        "recovery",
+        "recovery",
+        "recovery",
+        "recovery",
+        "recovery",
+        "recovery",
+        "recovery"
+      ],
+      "weightHistory": [
+        {
+          "t": "2024-05-30",
+          "weights": {
+            "money": 20,
+            "qdii": 19,
+            "bond": 27,
+            "active": 20,
+            "index": 14
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2024-06-29",
+          "weights": {
+            "money": 20,
+            "qdii": 19,
+            "bond": 27,
+            "active": 20,
+            "index": 14
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2024-07-30",
+          "weights": {
+            "money": 20,
+            "qdii": 19,
+            "bond": 27,
+            "active": 20,
+            "index": 14
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2024-08-30",
+          "weights": {
+            "money": 20,
+            "qdii": 19,
+            "bond": 27,
+            "index": 14,
+            "active": 20
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2024-09-29",
+          "weights": {
+            "money": 20,
+            "qdii": 20,
+            "bond": 26,
+            "index": 14,
+            "active": 20
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2024-10-30",
+          "weights": {
+            "money": 20,
+            "qdii": 20,
+            "bond": 26,
+            "index": 14,
+            "active": 20
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2024-11-29",
+          "weights": {
+            "money": 20,
+            "qdii": 20,
+            "bond": 26,
+            "index": 14,
+            "active": 20
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2024-12-30",
+          "weights": {
+            "money": 20,
+            "qdii": 20,
+            "bond": 27,
+            "index": 14,
+            "active": 19
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2025-01-30",
+          "weights": {
+            "qdii": 29,
+            "money": 20,
+            "bond": 25,
+            "index": 11,
+            "active": 15
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2025-02-27",
+          "weights": {
+            "qdii": 29,
+            "money": 20,
+            "bond": 25,
+            "index": 11,
+            "active": 15
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2025-03-30",
+          "weights": {
+            "qdii": 29,
+            "money": 20,
+            "bond": 25,
+            "index": 11,
+            "active": 15
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2025-04-29",
+          "weights": {
+            "qdii": 31,
+            "money": 20,
+            "bond": 26,
+            "index": 10,
+            "active": 13
+          },
+          "phase": "qdii_opp"
+        },
+        {
+          "t": "2025-05-30",
+          "weights": {
+            "qdii": 30,
+            "money": 20,
+            "bond": 27,
+            "index": 10,
+            "active": 13
+          },
+          "phase": "qdii_opp"
+        },
+        {
+          "t": "2025-06-29",
+          "weights": {
+            "qdii": 30,
+            "money": 20,
+            "bond": 26,
+            "index": 10,
+            "active": 14
+          },
+          "phase": "qdii_opp"
+        },
+        {
+          "t": "2025-07-30",
+          "weights": {
+            "qdii": 30,
+            "money": 20,
+            "index": 11,
+            "bond": 25,
+            "active": 14
+          },
+          "phase": "qdii_opp"
+        },
+        {
+          "t": "2025-08-30",
+          "weights": {
+            "qdii": 17,
+            "index": 10,
+            "active": 11,
+            "money": 20,
+            "bond": 42
+          },
+          "phase": "recovery"
+        },
+        {
+          "t": "2025-09-29",
+          "weights": {
+            "qdii": 17,
+            "index": 10,
+            "active": 11,
+            "bond": 42,
+            "money": 20
+          },
+          "phase": "recovery"
+        },
+        {
+          "t": "2025-10-30",
+          "weights": {
+            "qdii": 18,
+            "index": 10,
+            "active": 11,
+            "bond": 41,
+            "money": 20
+          },
+          "phase": "recovery"
+        },
+        {
+          "t": "2025-11-29",
+          "weights": {
+            "qdii": 18,
+            "index": 9,
+            "active": 11,
+            "bond": 42,
+            "money": 20
+          },
+          "phase": "recovery"
+        },
+        {
+          "t": "2025-12-30",
+          "weights": {
+            "qdii": 19,
+            "index": 9,
+            "active": 11,
+            "bond": 41,
+            "money": 20
+          },
+          "phase": "recovery"
+        },
+        {
+          "t": "2026-01-30",
+          "weights": {
+            "qdii": 18,
+            "index": 9,
+            "active": 11,
+            "bond": 42,
+            "money": 20
+          },
+          "phase": "recovery"
+        },
+        {
+          "t": "2026-02-27",
+          "weights": {
+            "qdii": 18,
+            "active": 13,
+            "index": 7,
+            "bond": 42,
+            "money": 20
+          },
+          "phase": "recovery"
+        }
+      ]
+    },
+    {
       "name": "进取+1年 [类别均值]",
       "profile": {
         "name": "进取+1年 [类别均值]",
         "riskProfile": "aggressive",
         "horizon": 1,
-        "useSelect": false
+        "useSelect": false,
+        "applyCosts": false
       },
       "monthlyReturns": [
         -1.019239484305099,
@@ -2236,12 +3149,13 @@
       ]
     },
     {
-      "name": "进取+1年 [智能选基]",
+      "name": "进取+1年 [智能选基-无成本]",
       "profile": {
-        "name": "进取+1年 [智能选基]",
+        "name": "进取+1年 [智能选基-无成本]",
         "riskProfile": "aggressive",
         "horizon": 1,
-        "useSelect": true
+        "useSelect": true,
+        "applyCosts": false
       },
       "monthlyReturns": [
         0.3429040191999193,
@@ -2537,12 +3451,315 @@
       ]
     },
     {
+      "name": "进取+1年 [智能选基+成本]",
+      "profile": {
+        "name": "进取+1年 [智能选基+成本]",
+        "riskProfile": "aggressive",
+        "horizon": 1,
+        "useSelect": true,
+        "applyCosts": true
+      },
+      "monthlyReturns": [
+        0.2592040191999193,
+        -1.2656408584321344,
+        -1.595914487658514,
+        3.60228934521452,
+        0.7566528271057313,
+        -0.8041614409504747,
+        0.09547624688009382,
+        2.4197026858510755,
+        2.1558562047672507,
+        1.2355955214495755,
+        -0.658600841596238,
+        0.2579478709656038,
+        3.5374746119649636,
+        3.047834240548487,
+        8.89088837508669,
+        3.388015625079567,
+        -0.40679408031072084,
+        -2.0618280877534865,
+        4.393705546001283,
+        6.737899601342534,
+        1.6180748173582327,
+        -9.821033017473145
+      ],
+      "phases": [
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "qdii_opp",
+        "qdii_opp",
+        "qdii_opp",
+        "qdii_opp",
+        "recovery",
+        "recovery",
+        "recovery",
+        "recovery",
+        "recovery",
+        "recovery",
+        "recovery"
+      ],
+      "weightHistory": [
+        {
+          "t": "2024-05-30",
+          "weights": {
+            "money": 10,
+            "qdii": 18,
+            "bond": 51,
+            "active": 11,
+            "index": 10
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2024-06-29",
+          "weights": {
+            "money": 10,
+            "qdii": 17,
+            "bond": 52,
+            "active": 11,
+            "index": 10
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2024-07-30",
+          "weights": {
+            "money": 10,
+            "qdii": 17,
+            "bond": 52,
+            "active": 11,
+            "index": 10
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2024-08-30",
+          "weights": {
+            "money": 10,
+            "qdii": 18,
+            "bond": 51,
+            "index": 10,
+            "active": 11
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2024-09-29",
+          "weights": {
+            "money": 10,
+            "qdii": 18,
+            "bond": 50,
+            "index": 10,
+            "active": 12
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2024-10-30",
+          "weights": {
+            "money": 10,
+            "qdii": 18,
+            "bond": 50,
+            "index": 10,
+            "active": 12
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2024-11-29",
+          "weights": {
+            "money": 10,
+            "qdii": 18,
+            "bond": 50,
+            "index": 10,
+            "active": 12
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2024-12-30",
+          "weights": {
+            "money": 10,
+            "qdii": 18,
+            "bond": 51,
+            "index": 10,
+            "active": 11
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2025-01-30",
+          "weights": {
+            "qdii": 28,
+            "money": 10,
+            "bond": 50,
+            "index": 6,
+            "active": 6
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2025-02-27",
+          "weights": {
+            "qdii": 27,
+            "money": 10,
+            "bond": 51,
+            "index": 6,
+            "active": 6
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2025-03-30",
+          "weights": {
+            "qdii": 27,
+            "money": 10,
+            "bond": 51,
+            "index": 6,
+            "active": 6
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2025-04-29",
+          "weights": {
+            "qdii": 29,
+            "money": 10,
+            "bond": 51,
+            "index": 5,
+            "active": 5
+          },
+          "phase": "qdii_opp"
+        },
+        {
+          "t": "2025-05-30",
+          "weights": {
+            "qdii": 28,
+            "money": 10,
+            "bond": 51,
+            "index": 6,
+            "active": 5
+          },
+          "phase": "qdii_opp"
+        },
+        {
+          "t": "2025-06-29",
+          "weights": {
+            "qdii": 28,
+            "money": 10,
+            "bond": 51,
+            "index": 6,
+            "active": 5
+          },
+          "phase": "qdii_opp"
+        },
+        {
+          "t": "2025-07-30",
+          "weights": {
+            "qdii": 28,
+            "money": 10,
+            "index": 6,
+            "bond": 51,
+            "active": 5
+          },
+          "phase": "qdii_opp"
+        },
+        {
+          "t": "2025-08-30",
+          "weights": {
+            "qdii": 16,
+            "index": 7,
+            "active": 5,
+            "money": 10,
+            "bond": 62
+          },
+          "phase": "recovery"
+        },
+        {
+          "t": "2025-09-29",
+          "weights": {
+            "qdii": 16,
+            "index": 7,
+            "active": 5,
+            "bond": 62,
+            "money": 10
+          },
+          "phase": "recovery"
+        },
+        {
+          "t": "2025-10-30",
+          "weights": {
+            "qdii": 16,
+            "index": 7,
+            "active": 5,
+            "bond": 62,
+            "money": 10
+          },
+          "phase": "recovery"
+        },
+        {
+          "t": "2025-11-29",
+          "weights": {
+            "qdii": 16,
+            "index": 7,
+            "active": 5,
+            "bond": 62,
+            "money": 10
+          },
+          "phase": "recovery"
+        },
+        {
+          "t": "2025-12-30",
+          "weights": {
+            "qdii": 17,
+            "index": 7,
+            "active": 5,
+            "bond": 61,
+            "money": 10
+          },
+          "phase": "recovery"
+        },
+        {
+          "t": "2026-01-30",
+          "weights": {
+            "qdii": 17,
+            "index": 7,
+            "active": 5,
+            "bond": 61,
+            "money": 10
+          },
+          "phase": "recovery"
+        },
+        {
+          "t": "2026-02-27",
+          "weights": {
+            "qdii": 17,
+            "active": 6,
+            "index": 6,
+            "bond": 61,
+            "money": 10
+          },
+          "phase": "recovery"
+        }
+      ]
+    },
+    {
       "name": "进取+2年 [类别均值]",
       "profile": {
         "name": "进取+2年 [类别均值]",
         "riskProfile": "aggressive",
         "horizon": 2,
-        "useSelect": false
+        "useSelect": false,
+        "applyCosts": false
       },
       "monthlyReturns": [
         -0.3641402389933087,
@@ -2838,12 +4055,13 @@
       ]
     },
     {
-      "name": "进取+2年 [智能选基]",
+      "name": "进取+2年 [智能选基-无成本]",
       "profile": {
-        "name": "进取+2年 [智能选基]",
+        "name": "进取+2年 [智能选基-无成本]",
         "riskProfile": "aggressive",
         "horizon": 2,
-        "useSelect": true
+        "useSelect": true,
+        "applyCosts": false
       },
       "monthlyReturns": [
         1.955237896339574,
@@ -3139,12 +4357,315 @@
       ]
     },
     {
+      "name": "进取+2年 [智能选基+成本]",
+      "profile": {
+        "name": "进取+2年 [智能选基+成本]",
+        "riskProfile": "aggressive",
+        "horizon": 2,
+        "useSelect": true,
+        "applyCosts": true
+      },
+      "monthlyReturns": [
+        1.856837896339574,
+        -1.2788891170361527,
+        -1.484690962607027,
+        6.773018363822216,
+        0.6077406237877959,
+        -3.2717993622270756,
+        0.3046474482507831,
+        2.661207977198136,
+        2.6778544923005283,
+        0.9904674408768936,
+        -1.7115942359446508,
+        0.4797292266429517,
+        6.705132271988854,
+        6.935746061075451,
+        15.594852737313296,
+        3.570474424953839,
+        -0.3961329482475155,
+        -2.384291200983741,
+        4.9446328524245,
+        7.722419950858775,
+        3.102677831262744,
+        -10.121683278253023
+      ],
+      "phases": [
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "qdii_opp",
+        "qdii_opp",
+        "qdii_opp",
+        "qdii_opp",
+        "recovery",
+        "recovery",
+        "recovery",
+        "recovery",
+        "recovery",
+        "recovery",
+        "recovery"
+      ],
+      "weightHistory": [
+        {
+          "t": "2024-05-30",
+          "weights": {
+            "money": 10,
+            "qdii": 26,
+            "bond": 19,
+            "active": 28,
+            "index": 17
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2024-06-29",
+          "weights": {
+            "money": 10,
+            "qdii": 26,
+            "bond": 19,
+            "active": 27,
+            "index": 18
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2024-07-30",
+          "weights": {
+            "money": 10,
+            "qdii": 26,
+            "bond": 19,
+            "active": 28,
+            "index": 17
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2024-08-30",
+          "weights": {
+            "money": 10,
+            "qdii": 26,
+            "bond": 19,
+            "index": 17,
+            "active": 28
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2024-09-29",
+          "weights": {
+            "money": 10,
+            "qdii": 29,
+            "bond": 15,
+            "index": 19,
+            "active": 27
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2024-10-30",
+          "weights": {
+            "money": 10,
+            "qdii": 29,
+            "bond": 15,
+            "index": 19,
+            "active": 27
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2024-11-29",
+          "weights": {
+            "money": 10,
+            "qdii": 29,
+            "bond": 15,
+            "index": 19,
+            "active": 27
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2024-12-30",
+          "weights": {
+            "money": 10,
+            "qdii": 29,
+            "bond": 16,
+            "index": 19,
+            "active": 26
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2025-01-30",
+          "weights": {
+            "qdii": 39,
+            "money": 10,
+            "bond": 14,
+            "index": 16,
+            "active": 21
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2025-02-27",
+          "weights": {
+            "qdii": 39,
+            "money": 10,
+            "bond": 14,
+            "index": 16,
+            "active": 21
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2025-03-30",
+          "weights": {
+            "qdii": 39,
+            "money": 10,
+            "bond": 14,
+            "index": 16,
+            "active": 21
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2025-04-29",
+          "weights": {
+            "qdii": 40,
+            "money": 10,
+            "bond": 18,
+            "index": 14,
+            "active": 18
+          },
+          "phase": "qdii_opp"
+        },
+        {
+          "t": "2025-05-30",
+          "weights": {
+            "qdii": 39,
+            "money": 10,
+            "bond": 17,
+            "index": 15,
+            "active": 19
+          },
+          "phase": "qdii_opp"
+        },
+        {
+          "t": "2025-06-29",
+          "weights": {
+            "qdii": 39,
+            "money": 10,
+            "bond": 17,
+            "index": 15,
+            "active": 19
+          },
+          "phase": "qdii_opp"
+        },
+        {
+          "t": "2025-07-30",
+          "weights": {
+            "qdii": 39,
+            "money": 10,
+            "index": 15,
+            "bond": 17,
+            "active": 19
+          },
+          "phase": "qdii_opp"
+        },
+        {
+          "t": "2025-08-30",
+          "weights": {
+            "qdii": 26,
+            "index": 13,
+            "active": 18,
+            "money": 10,
+            "bond": 33
+          },
+          "phase": "recovery"
+        },
+        {
+          "t": "2025-09-29",
+          "weights": {
+            "qdii": 26,
+            "index": 13,
+            "active": 18,
+            "bond": 33,
+            "money": 10
+          },
+          "phase": "recovery"
+        },
+        {
+          "t": "2025-10-30",
+          "weights": {
+            "qdii": 27,
+            "index": 13,
+            "active": 17,
+            "bond": 33,
+            "money": 10
+          },
+          "phase": "recovery"
+        },
+        {
+          "t": "2025-11-29",
+          "weights": {
+            "qdii": 27,
+            "index": 13,
+            "active": 17,
+            "bond": 33,
+            "money": 10
+          },
+          "phase": "recovery"
+        },
+        {
+          "t": "2025-12-30",
+          "weights": {
+            "qdii": 28,
+            "index": 13,
+            "active": 17,
+            "bond": 32,
+            "money": 10
+          },
+          "phase": "recovery"
+        },
+        {
+          "t": "2026-01-30",
+          "weights": {
+            "qdii": 28,
+            "index": 13,
+            "active": 17,
+            "bond": 32,
+            "money": 10
+          },
+          "phase": "recovery"
+        },
+        {
+          "t": "2026-02-27",
+          "weights": {
+            "qdii": 28,
+            "active": 19,
+            "index": 11,
+            "bond": 32,
+            "money": 10
+          },
+          "phase": "recovery"
+        }
+      ]
+    },
+    {
       "name": "进取+3年 [类别均值]",
       "profile": {
         "name": "进取+3年 [类别均值]",
         "riskProfile": "aggressive",
         "horizon": 3,
-        "useSelect": false
+        "useSelect": false,
+        "applyCosts": false
       },
       "monthlyReturns": [
         -0.4263880298845822,
@@ -3440,12 +4961,13 @@
       ]
     },
     {
-      "name": "进取+3年 [智能选基]",
+      "name": "进取+3年 [智能选基-无成本]",
       "profile": {
-        "name": "进取+3年 [智能选基]",
+        "name": "进取+3年 [智能选基-无成本]",
         "riskProfile": "aggressive",
         "horizon": 3,
-        "useSelect": true
+        "useSelect": true,
+        "applyCosts": false
       },
       "monthlyReturns": [
         1.8092344825370543,
@@ -3741,12 +5263,315 @@
       ]
     },
     {
+      "name": "进取+3年 [智能选基+成本]",
+      "profile": {
+        "name": "进取+3年 [智能选基+成本]",
+        "riskProfile": "aggressive",
+        "horizon": 3,
+        "useSelect": true,
+        "applyCosts": true
+      },
+      "monthlyReturns": [
+        1.7169344825370543,
+        -1.1051417707776734,
+        -1.150146649320804,
+        4.900075313889532,
+        1.1099924147380087,
+        -2.6225845805914982,
+        0.29824284213127683,
+        2.354140859186421,
+        2.4757045220168163,
+        1.7216017267015915,
+        -0.8267008436501275,
+        0.5714053755249128,
+        5.064607828835095,
+        5.367087911712247,
+        12.53809019912432,
+        3.7195641266060897,
+        -0.4429371833262741,
+        -2.513356303267819,
+        4.327973577908283,
+        7.869496846011639,
+        3.2143313911681095,
+        -10.43767760417842
+      ],
+      "phases": [
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "qdii_opp",
+        "qdii_opp",
+        "qdii_opp",
+        "qdii_opp",
+        "recovery",
+        "recovery",
+        "recovery",
+        "recovery",
+        "recovery",
+        "recovery",
+        "recovery"
+      ],
+      "weightHistory": [
+        {
+          "t": "2024-05-30",
+          "weights": {
+            "money": 10,
+            "qdii": 29,
+            "bond": 26,
+            "active": 21,
+            "index": 14
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2024-06-29",
+          "weights": {
+            "money": 10,
+            "qdii": 29,
+            "bond": 26,
+            "active": 21,
+            "index": 14
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2024-07-30",
+          "weights": {
+            "money": 10,
+            "qdii": 29,
+            "bond": 26,
+            "active": 21,
+            "index": 14
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2024-08-30",
+          "weights": {
+            "money": 10,
+            "qdii": 29,
+            "bond": 26,
+            "index": 14,
+            "active": 21
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2024-09-29",
+          "weights": {
+            "money": 10,
+            "qdii": 33,
+            "bond": 21,
+            "index": 16,
+            "active": 20
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2024-10-30",
+          "weights": {
+            "money": 10,
+            "qdii": 33,
+            "bond": 21,
+            "index": 16,
+            "active": 20
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2024-11-29",
+          "weights": {
+            "money": 10,
+            "qdii": 33,
+            "bond": 21,
+            "index": 16,
+            "active": 20
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2024-12-30",
+          "weights": {
+            "money": 10,
+            "qdii": 34,
+            "bond": 22,
+            "index": 15,
+            "active": 19
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2025-01-30",
+          "weights": {
+            "qdii": 42,
+            "money": 10,
+            "bond": 20,
+            "index": 13,
+            "active": 15
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2025-02-27",
+          "weights": {
+            "qdii": 42,
+            "money": 10,
+            "bond": 20,
+            "index": 13,
+            "active": 15
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2025-03-30",
+          "weights": {
+            "qdii": 41,
+            "money": 10,
+            "bond": 21,
+            "index": 13,
+            "active": 15
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2025-04-29",
+          "weights": {
+            "qdii": 43,
+            "money": 10,
+            "bond": 24,
+            "index": 11,
+            "active": 12
+          },
+          "phase": "qdii_opp"
+        },
+        {
+          "t": "2025-05-30",
+          "weights": {
+            "qdii": 43,
+            "money": 10,
+            "bond": 24,
+            "index": 11,
+            "active": 12
+          },
+          "phase": "qdii_opp"
+        },
+        {
+          "t": "2025-06-29",
+          "weights": {
+            "qdii": 43,
+            "money": 10,
+            "bond": 23,
+            "index": 11,
+            "active": 13
+          },
+          "phase": "qdii_opp"
+        },
+        {
+          "t": "2025-07-30",
+          "weights": {
+            "qdii": 43,
+            "money": 10,
+            "index": 11,
+            "bond": 23,
+            "active": 13
+          },
+          "phase": "qdii_opp"
+        },
+        {
+          "t": "2025-08-30",
+          "weights": {
+            "qdii": 31,
+            "index": 11,
+            "active": 14,
+            "money": 10,
+            "bond": 34
+          },
+          "phase": "recovery"
+        },
+        {
+          "t": "2025-09-29",
+          "weights": {
+            "qdii": 31,
+            "index": 11,
+            "active": 15,
+            "bond": 33,
+            "money": 10
+          },
+          "phase": "recovery"
+        },
+        {
+          "t": "2025-10-30",
+          "weights": {
+            "qdii": 33,
+            "index": 11,
+            "active": 14,
+            "bond": 32,
+            "money": 10
+          },
+          "phase": "recovery"
+        },
+        {
+          "t": "2025-11-29",
+          "weights": {
+            "qdii": 34,
+            "index": 10,
+            "active": 13,
+            "bond": 33,
+            "money": 10
+          },
+          "phase": "recovery"
+        },
+        {
+          "t": "2025-12-30",
+          "weights": {
+            "qdii": 34,
+            "index": 10,
+            "active": 13,
+            "bond": 33,
+            "money": 10
+          },
+          "phase": "recovery"
+        },
+        {
+          "t": "2026-01-30",
+          "weights": {
+            "qdii": 34,
+            "index": 10,
+            "active": 13,
+            "bond": 33,
+            "money": 10
+          },
+          "phase": "recovery"
+        },
+        {
+          "t": "2026-02-27",
+          "weights": {
+            "qdii": 34,
+            "active": 15,
+            "index": 8,
+            "bond": 33,
+            "money": 10
+          },
+          "phase": "recovery"
+        }
+      ]
+    },
+    {
       "name": "进取+5年 [类别均值]",
       "profile": {
         "name": "进取+5年 [类别均值]",
         "riskProfile": "aggressive",
         "horizon": 5,
-        "useSelect": false
+        "useSelect": false,
+        "applyCosts": false
       },
       "monthlyReturns": [
         -0.4465063909170941,
@@ -4042,12 +5867,13 @@
       ]
     },
     {
-      "name": "进取+5年 [智能选基]",
+      "name": "进取+5年 [智能选基-无成本]",
       "profile": {
-        "name": "进取+5年 [智能选基]",
+        "name": "进取+5年 [智能选基-无成本]",
         "riskProfile": "aggressive",
         "horizon": 5,
-        "useSelect": true
+        "useSelect": true,
+        "applyCosts": false
       },
       "monthlyReturns": [
         1.6227771915601854,
@@ -4343,6 +6169,308 @@
       ]
     },
     {
+      "name": "进取+5年 [智能选基+成本]",
+      "profile": {
+        "name": "进取+5年 [智能选基+成本]",
+        "riskProfile": "aggressive",
+        "horizon": 5,
+        "useSelect": true,
+        "applyCosts": true
+      },
+      "monthlyReturns": [
+        1.5337771915601854,
+        -1.1386557118949443,
+        -0.9110351598285701,
+        4.141918319527125,
+        1.2635839834814961,
+        -2.1824145352457966,
+        0.2703862363467307,
+        2.1345893044871045,
+        2.369018601969031,
+        1.9241641037933004,
+        -0.6268937845409437,
+        0.4258018668786208,
+        4.546322932782143,
+        4.722250873155767,
+        11.013863718249372,
+        3.284791902560781,
+        -0.17396901049097752,
+        -2.6747751778577955,
+        3.7365866695774095,
+        7.913264606560284,
+        3.25476961418282,
+        -10.389261039689412
+      ],
+      "phases": [
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "stagflation",
+        "qdii_opp",
+        "qdii_opp",
+        "qdii_opp",
+        "qdii_opp",
+        "recovery",
+        "recovery",
+        "recovery",
+        "recovery",
+        "recovery",
+        "recovery",
+        "recovery"
+      ],
+      "weightHistory": [
+        {
+          "t": "2024-05-30",
+          "weights": {
+            "money": 10,
+            "qdii": 30,
+            "bond": 31,
+            "active": 18,
+            "index": 11
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2024-06-29",
+          "weights": {
+            "money": 10,
+            "qdii": 29,
+            "bond": 32,
+            "active": 18,
+            "index": 11
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2024-07-30",
+          "weights": {
+            "money": 10,
+            "qdii": 29,
+            "bond": 32,
+            "active": 18,
+            "index": 11
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2024-08-30",
+          "weights": {
+            "money": 10,
+            "qdii": 30,
+            "bond": 31,
+            "index": 11,
+            "active": 18
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2024-09-29",
+          "weights": {
+            "money": 10,
+            "qdii": 33,
+            "bond": 26,
+            "index": 14,
+            "active": 17
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2024-10-30",
+          "weights": {
+            "money": 10,
+            "qdii": 33,
+            "bond": 26,
+            "index": 14,
+            "active": 17
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2024-11-29",
+          "weights": {
+            "money": 10,
+            "qdii": 33,
+            "bond": 26,
+            "index": 14,
+            "active": 17
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2024-12-30",
+          "weights": {
+            "money": 10,
+            "qdii": 34,
+            "bond": 27,
+            "index": 13,
+            "active": 16
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2025-01-30",
+          "weights": {
+            "qdii": 41,
+            "money": 10,
+            "bond": 26,
+            "index": 11,
+            "active": 12
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2025-02-27",
+          "weights": {
+            "qdii": 41,
+            "money": 10,
+            "bond": 26,
+            "index": 11,
+            "active": 12
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2025-03-30",
+          "weights": {
+            "qdii": 41,
+            "money": 10,
+            "bond": 26,
+            "index": 11,
+            "active": 12
+          },
+          "phase": "stagflation"
+        },
+        {
+          "t": "2025-04-29",
+          "weights": {
+            "qdii": 43,
+            "money": 10,
+            "bond": 30,
+            "index": 8,
+            "active": 9
+          },
+          "phase": "qdii_opp"
+        },
+        {
+          "t": "2025-05-30",
+          "weights": {
+            "qdii": 42,
+            "money": 10,
+            "bond": 29,
+            "index": 9,
+            "active": 10
+          },
+          "phase": "qdii_opp"
+        },
+        {
+          "t": "2025-06-29",
+          "weights": {
+            "qdii": 42,
+            "money": 10,
+            "bond": 29,
+            "index": 9,
+            "active": 10
+          },
+          "phase": "qdii_opp"
+        },
+        {
+          "t": "2025-07-30",
+          "weights": {
+            "qdii": 43,
+            "money": 10,
+            "index": 9,
+            "bond": 28,
+            "active": 10
+          },
+          "phase": "qdii_opp"
+        },
+        {
+          "t": "2025-08-30",
+          "weights": {
+            "qdii": 35,
+            "index": 9,
+            "active": 13,
+            "money": 10,
+            "bond": 33
+          },
+          "phase": "recovery"
+        },
+        {
+          "t": "2025-09-29",
+          "weights": {
+            "qdii": 35,
+            "index": 9,
+            "active": 13,
+            "bond": 33,
+            "money": 10
+          },
+          "phase": "recovery"
+        },
+        {
+          "t": "2025-10-30",
+          "weights": {
+            "qdii": 36,
+            "index": 9,
+            "active": 12,
+            "bond": 33,
+            "money": 10
+          },
+          "phase": "recovery"
+        },
+        {
+          "t": "2025-11-29",
+          "weights": {
+            "qdii": 37,
+            "index": 9,
+            "active": 11,
+            "bond": 33,
+            "money": 10
+          },
+          "phase": "recovery"
+        },
+        {
+          "t": "2025-12-30",
+          "weights": {
+            "qdii": 38,
+            "index": 8,
+            "active": 11,
+            "bond": 33,
+            "money": 10
+          },
+          "phase": "recovery"
+        },
+        {
+          "t": "2026-01-30",
+          "weights": {
+            "qdii": 38,
+            "index": 8,
+            "active": 11,
+            "bond": 33,
+            "money": 10
+          },
+          "phase": "recovery"
+        },
+        {
+          "t": "2026-02-27",
+          "weights": {
+            "qdii": 38,
+            "active": 13,
+            "index": 7,
+            "bond": 32,
+            "money": 10
+          },
+          "phase": "recovery"
+        }
+      ]
+    },
+    {
       "name": "基线：等权 25%×4",
       "profile": {
         "name": "基线：等权 25%×4",
@@ -4353,7 +6481,8 @@
           "qdii": 25,
           "money": 0
         },
-        "useSelect": false
+        "useSelect": false,
+        "applyCosts": false
       },
       "monthlyReturns": [
         -0.7534802229769977,
@@ -4659,7 +6788,8 @@
           "qdii": 0,
           "money": 0
         },
-        "useSelect": false
+        "useSelect": false,
+        "applyCosts": false
       },
       "monthlyReturns": [
         -1.4851300120800235,

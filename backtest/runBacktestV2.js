@@ -42,6 +42,17 @@ const END_DATE   = '2026-03-31';
 
 const modeArg = process.argv.find(a => a.startsWith('--mode='));
 const MODE = modeArg ? modeArg.split('=')[1] : 'both'; // category | select | both
+const NO_COSTS = process.argv.includes('--no-costs');
+
+// 交易成本参数（和生产 calculateRebalanceCost 对齐）
+const PURCHASE_FEE_BY_CAT = { active: 0.0015, index: 0.0012, bond: 0.0008, qdii: 0.0008, money: 0 };
+function redemptionFeeRate(holdDays) {
+  if (holdDays < 7) return 0.015;
+  if (holdDays < 365) return 0.005;
+  if (holdDays < 730) return 0.0025;
+  return 0;
+}
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
 function main() {
   if (!fs.existsSync(DB_PATH)) {
@@ -92,22 +103,27 @@ function main() {
 
   const results = {};
   const initResult = (name, profile) => {
-    results[name] = { profile, monthlyReturns: [], phases: [], weightHistory: [] };
+    results[name] = { profile, monthlyReturns: [], phases: [], weightHistory: [], costs: [], holdings: {} };
   };
 
   // 在 both 模式下，每个用户画像跑两组：类别均值版 + 选基版
   const profileVariants = [];
   for (const p of profiles) {
     if (MODE === 'category' || MODE === 'both') {
-      profileVariants.push({ ...p, name: `${p.name} [类别均值]`, useSelect: false });
+      profileVariants.push({ ...p, name: `${p.name} [类别均值]`, useSelect: false, applyCosts: false });
     }
     if (MODE === 'select' || MODE === 'both') {
-      profileVariants.push({ ...p, name: `${p.name} [智能选基]`, useSelect: true });
+      // 不含成本版（用于对比）
+      profileVariants.push({ ...p, name: `${p.name} [智能选基-无成本]`, useSelect: true, applyCosts: false });
+      // 含成本版（真实体验）
+      if (!NO_COSTS) {
+        profileVariants.push({ ...p, name: `${p.name} [智能选基+成本]`, useSelect: true, applyCosts: true });
+      }
     }
   }
-  // 基线不用选基
+  // 基线不用选基、不计交易成本（fixed weights, no rebalance）
   for (const b of baselines) {
-    profileVariants.push({ ...b, name: b.name, useSelect: false });
+    profileVariants.push({ ...b, name: b.name, useSelect: false, applyCosts: false });
   }
 
   profileVariants.forEach(p => initResult(p.name, p));
@@ -177,16 +193,27 @@ function main() {
       }
 
       let ret;
+      let cost = 0;
       if (p.useSelect) {
         // 智能选基模式：对每个类别调用 selectFunds，按 pick.pct 分配组合权重
         const picks = runSelectForAllCats(shim, catRanks, weights, p.riskProfile);
         ret = computePickedMonthReturn(picks, fundNavs, t, tNext);
+        if (p.applyCosts) {
+          // 对比 holdings（上月持仓） vs picks（本月目标），按 delta 计算成本
+          cost = applyRebalanceCosts(results[p.name].holdings, picks, t, fundsAtT);
+        } else {
+          // 无成本：直接更新 holdings（用于下月对比）
+          updateHoldingsNoCosts(results[p.name].holdings, picks, t);
+        }
       } else {
         // 类别均值模式：每类别所有基金等权
         ret = computeCategoryMonthReturn(weights, fundsAtT, fundNavs, t, tNext);
       }
-      results[p.name].monthlyReturns.push(ret);
+      // 扣除交易成本（cost 是 fraction，ret 是 %）
+      const netRet = ret - cost * 100;
+      results[p.name].monthlyReturns.push(netRet);
       results[p.name].phases.push(phase.phase);
+      results[p.name].costs.push(cost * 100); // 成本也按 % 存，便于分析
       results[p.name].weightHistory.push({ t: tDateStr, weights, phase: phase.phase });
     }
 
@@ -221,11 +248,12 @@ function main() {
 
   // 简单汇总
   console.log('\n═══ 快速预览 ═══');
-  console.log('| 画像/基线 | 月数 | 简单累计% |');
-  console.log('|---|---|---|');
+  console.log('| 画像/基线 | 月数 | 简单累计% | 成本累计% |');
+  console.log('|---|---|---|---|');
   Object.entries(results).forEach(([name, r]) => {
     const sum = r.monthlyReturns.reduce((s, v) => s + v, 0);
-    console.log(`| ${name} | ${r.monthlyReturns.length} | ${sum.toFixed(2)} |`);
+    const costSum = (r.costs || []).reduce((s, v) => s + v, 0);
+    console.log(`| ${name} | ${r.monthlyReturns.length} | ${sum.toFixed(2)} | ${costSum.toFixed(2)} |`);
   });
 
   db.close();
@@ -448,6 +476,77 @@ function computePickedMonthReturn(picks, fundNavs, t, tNext) {
     }
   }
   return ret;
+}
+
+// 交易成本：比较上月 holdings 和本月 picks，按 delta 扣费
+// 返回本月总成本（fraction，如 0.003 = 0.3%）
+// holdings: { code: { pct, avgBuyTs, cat } } - 传入对象会被修改
+// picks: [{ code, pct, cat }]
+// t: 当前月末时间戳
+// fundsAtT: 用于获取 cat 信息
+function applyRebalanceCosts(holdings, picks, t, fundsAtT) {
+  const catByCode = {};
+  fundsAtT.forEach(f => { catByCode[f.code] = f.cat; });
+  picks.forEach(p => { if (!catByCode[p.code]) catByCode[p.code] = p.cat; });
+
+  const newPctByCode = {};
+  picks.forEach(p => { newPctByCode[p.code] = (newPctByCode[p.code] || 0) + p.pct; });
+
+  const allCodes = new Set([...Object.keys(holdings), ...Object.keys(newPctByCode)]);
+  let totalCost = 0;
+
+  for (const code of allCodes) {
+    const oldPct = holdings[code] ? holdings[code].pct : 0;
+    const newPct = newPctByCode[code] || 0;
+    const delta = newPct - oldPct;
+    const cat = catByCode[code] || 'active';
+
+    if (delta > 0.1) {
+      // 买入（含新增和加仓）
+      const purchaseRate = PURCHASE_FEE_BY_CAT[cat] || 0.0015;
+      totalCost += (delta / 100) * purchaseRate;
+      // 更新 holdings：加权平均买入时间
+      if (!holdings[code]) {
+        holdings[code] = { pct: newPct, avgBuyTs: t, cat };
+      } else {
+        const totalPct = holdings[code].pct + delta;
+        holdings[code].avgBuyTs = (holdings[code].pct * holdings[code].avgBuyTs + delta * t) / totalPct;
+        holdings[code].pct = newPct;
+      }
+    } else if (delta < -0.1) {
+      // 卖出（含减仓和清仓）
+      const holdDays = (t - holdings[code].avgBuyTs) / ONE_DAY_MS;
+      const redemptionRate = redemptionFeeRate(holdDays);
+      totalCost += (Math.abs(delta) / 100) * redemptionRate;
+      if (newPct < 0.1) {
+        delete holdings[code];
+      } else {
+        holdings[code].pct = newPct;
+      }
+    } else if (newPct > 0) {
+      // 持仓基本不变，更新 pct（微调）
+      if (holdings[code]) {
+        holdings[code].pct = newPct;
+      }
+    }
+  }
+
+  return totalCost;
+}
+
+// 无成本模式下，也要维护 holdings（便于下一月 delta 对比）
+function updateHoldingsNoCosts(holdings, picks, t) {
+  const newPctByCode = {};
+  picks.forEach(p => { newPctByCode[p.code] = (newPctByCode[p.code] || 0) + p.pct; });
+  const allCodes = new Set([...Object.keys(holdings), ...Object.keys(newPctByCode)]);
+  for (const code of allCodes) {
+    const newPct = newPctByCode[code] || 0;
+    if (newPct < 0.1) {
+      delete holdings[code];
+    } else {
+      holdings[code] = { pct: newPct, avgBuyTs: holdings[code]?.avgBuyTs || t, cat: picks.find(p => p.code === code)?.cat };
+    }
+  }
 }
 
 // 构建每个类别在各月末的月度收益序列（用于 metrics.js phase 命中率）

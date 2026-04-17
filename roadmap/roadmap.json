@@ -3,7 +3,7 @@
     "project": "fund-helper 算法能力提升工程",
     "goal": "把算法从\"理论正确但未经证实\"升级为\"数据证明有效\"，在个人免费工具领域从 Top 5% 推进到 Top 1%",
     "startDate": "2026-04-17",
-    "lastUpdated": "2026-04-17T17:40:00+08:00",
+    "lastUpdated": "2026-04-17T18:10:00+08:00",
     "currentPhase": "phase-2",
     "commitHash": "eeff5d5"
   },
@@ -120,22 +120,23 @@
         {
           "id": "2.2",
           "name": "回测引擎升级 V2",
-          "status": "in_progress",
+          "status": "completed",
+          "completedDate": "2026-04-17",
           "subtasks": [
             { "id": "2.2.A", "name": "backtest/runBacktestV2.js 主引擎", "status": "completed" },
             { "id": "2.2.B", "name": "按月滚动重算 r1/r3/maxDD（避免前视偏差）", "status": "completed" },
             { "id": "2.2.C", "name": "接入 scoreF + selectFunds 完整链路（双模式对比）", "status": "completed" },
-            { "id": "2.2.D", "name": "引入交易成本（申赎费按类别）", "status": "pending" },
-            { "id": "2.2.E", "name": "避免幸存者偏差（用当时全市场池而非今天的精选库）", "status": "pending" }
+            { "id": "2.2.D", "name": "引入交易成本（申赎费按类别 + 持有天数分档）", "status": "completed" },
+            { "id": "2.2.E", "name": "避免幸存者偏差 — 推至阶段 4（需每月滚动拉历史排名，工作量半天+）", "status": "pending" }
           ],
           "outputs": [
-            { "type": "file", "label": "backtest/runBacktestV2.js（双模式）", "path": "backtest/runBacktestV2.js" },
-            { "type": "file", "label": "backtest/findings-v3.md (含选基 alpha 分析)", "path": "backtest/findings-v3.md" },
-            { "type": "result", "label": "✅ 首次算法 beat 基线：平衡+3年智能选基夏普 1.87 > 等权 1.55 > 60/40 1.46" },
-            { "type": "result", "label": "🔥 selectFunds 贡献 +5~+11pp 累计 alpha（平均 +7pp），证明选基逻辑有效" },
-            { "type": "result", "label": "🎯 平衡+2年智能选基胜率 86.4%（22 月 19 盈），远超基线 59%" },
-            { "type": "result", "label": "⚠️ 进取档智能选基回撤从 5.7% 扩大到 9.9%，riskAdjust 公式追高需调整" },
-            { "type": "result", "label": "🔬 分层诊断：选基层 +7pp alpha，配置层 -13pp 牛市拖累，合计仍跑输等权但风险调整占优" }
+            { "type": "file", "label": "backtest/runBacktestV2.js（双模式 + 交易成本）", "path": "backtest/runBacktestV2.js" },
+            { "type": "file", "label": "backtest/findings-v3.md （含成本最终版）", "path": "backtest/findings-v3.md" },
+            { "type": "result", "label": "🔥 findings.md 中 '换仓成本 0.0015 偏乐观' 被量化证实：实际 0.25%/月 vs 假设 0.15%/次" },
+            { "type": "result", "label": "💎 含成本后：平衡+2/3 年夏普 1.60-1.61 仍 beat 基线 1.55（微弱优势）" },
+            { "type": "result", "label": "⚠️ 交易成本吞噬选基 alpha 60-80%：毛 +7pp 净 +2pp" },
+            { "type": "result", "label": "🎯 本轮核心发现：调仓频率（月→季）可能是更大优化杠杆，降成本 50-66%" },
+            { "type": "result", "label": "❌ 进取档含成本夏普全部跑输基线（追高+高换手代价过大）" }
           ]
         },
         {
@@ -206,6 +207,11 @@
         },
         {
           "id": "4.4",
+          "name": "幸存者偏差修复（从阶段 2.2.E 挪过来）- 按月滚动拉历史排名",
+          "status": "pending"
+        },
+        {
+          "id": "4.5",
           "name": "算法实验室工具化（可复用给其他量化项目）",
           "status": "pending"
         }
@@ -232,6 +238,11 @@
       "date": "2026-04-17",
       "label": "算法首次 beat 基线 · 2.2.C 完成",
       "achievement": "接入 selectFunds 选基层后，平衡+3年智能选基夏普 1.87 超越等权 1.55 和 60/40 1.46。选基贡献 +5~+11pp 累计 alpha，平衡档胜率升至 86.4%。"
+    },
+    {
+      "date": "2026-04-17",
+      "label": "阶段 2 完成 · 数据建设闭环",
+      "achievement": "引入交易成本后最终定论：平衡+2/3年夏普 1.60 仍 beat 基线 1.55（微弱优势）。月度调仓每月吞 0.25%（超生产代码假设的 0.15%/次 67%）。下一步关键优化：降调仓频率至季度。"
     }
   ],
   "referenceLinks": [
