@@ -26,5 +26,19 @@
     "neutralCount": 3,
     "totalProfiles": 7,
     "verdict": "🟡 影响中性，根据具体指标判断"
+  },
+  {
+    "label": "调参3: stagflation equityMult 0.85→0.90",
+    "baselinePath": "backtest/baseline/metrics.json",
+    "candidatePath": "backtest/metrics.json",
+    "timestamp": "2026-04-17T07:09:42.992Z",
+    "avgSharpe": -0.0006142098126172359,
+    "avgCumulative": -0.07275480912494865,
+    "avgMaxDD": -3.045183153257572e-15,
+    "improvedCount": 2,
+    "worsenedCount": 5,
+    "neutralCount": 0,
+    "totalProfiles": 7,
+    "verdict": "🔴 建议回滚"
   }
 ]
