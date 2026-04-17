@@ -46,6 +46,7 @@ const END_DATE = endArg ? endArg.split('=')[1] : '2026-03-31';
 const modeArg = process.argv.find(a => a.startsWith('--mode='));
 const MODE = modeArg ? modeArg.split('=')[1] : 'both'; // category | select | both
 const NO_COSTS = process.argv.includes('--no-costs');
+const USE_SCOREF = process.argv.includes('--use-scoref'); // 3.4 实验：选基时用 scoreF 替代 composite
 
 // 调仓频率：monthly（每月）| quarterly（每季度）| semi-annual（每半年）
 const rebalArg = process.argv.find(a => a.startsWith('--rebalance='));
@@ -187,8 +188,15 @@ function main() {
     shim.setCuratedFunds(fundsAtT);
 
     // (c) 计算每个基金的 composite（模拟 analyzeCategoryPerf 的算法）
+    //     3.4 实验：--use-scoref 开关下，把 composite 覆盖为 scoreF 值
     fundsAtT.forEach(f => {
       f.composite = computeComposite(f, catBench[f.cat]);
+      if (USE_SCOREF) {
+        try {
+          const sf = shim.scoreF(f);
+          if (isFinite(sf)) f.composite = sf; // 替换排序依据
+        } catch (e) { /* fallback: keep original composite */ }
+      }
     });
 
     // (d) 构建 catRanks

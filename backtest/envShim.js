@@ -47,7 +47,8 @@ function createShim() {
 
   // 加载需要的源文件
   const repoRoot = path.resolve(__dirname, '..');
-  const files = ['js/market.js', 'js/portfolio.js'];
+  // 先加载 score.js（market.js 和 portfolio.js 里用 scoreF），然后加载其他
+  const files = ['js/score.js', 'js/market.js', 'js/portfolio.js'];
   for (const f of files) {
     const src = fs.readFileSync(path.join(repoRoot, f), 'utf8');
     vm.runInContext(src, context, { filename: f });
@@ -58,6 +59,7 @@ function createShim() {
     inferMomentumPhase: sandbox.inferMomentumPhase,
     computeWeights: sandbox.computeWeights,
     selectFunds: sandbox.selectFunds,
+    scoreF: sandbox.scoreF,
     resetPhaseHistory: () => mockStorage.clear(),
     setBenchmarks: (mb) => { sandbox.MARKET_BENCHMARKS = mb; context.MARKET_BENCHMARKS = mb; },
     setCuratedFunds: (funds) => { sandbox.CURATED_FUNDS = funds; context.CURATED_FUNDS = funds; },

@@ -124,5 +124,33 @@
     "neutralCount": 0,
     "totalProfiles": 21,
     "verdict": "🟢 建议保留"
+  },
+  {
+    "label": "test4: selectFunds 用 scoreF 替代 composite",
+    "baselinePath": "backtest/baseline-v2-bear/metrics.json",
+    "candidatePath": "backtest/metrics-v2-test4-scoref.json",
+    "timestamp": "2026-04-17T11:57:54.713Z",
+    "avgSharpe": -0.17719536935984767,
+    "avgCumulative": -8.686176922677888,
+    "avgMaxDD": 5.26626570790669,
+    "improvedCount": 0,
+    "worsenedCount": 21,
+    "neutralCount": 0,
+    "totalProfiles": 21,
+    "verdict": "🔴 建议回滚"
+  },
+  {
+    "label": "test4: scoreF 替代 composite",
+    "baselinePath": "backtest/baseline-v2-bear/metrics.json",
+    "candidatePath": "backtest/metrics-v2-test4-scoref.json",
+    "timestamp": "2026-04-17T11:58:02.966Z",
+    "avgSharpe": -0.17719536935984767,
+    "avgCumulative": -8.686176922677888,
+    "avgMaxDD": 5.26626570790669,
+    "improvedCount": 0,
+    "worsenedCount": 21,
+    "neutralCount": 0,
+    "totalProfiles": 21,
+    "verdict": "🔴 建议回滚"
   }
 ]
