@@ -38,6 +38,20 @@
   .t-qdii{background:#e6fffb;color:#13c2c2;}
   .t-trans{background:#f0f0f0;color:#666;}
   .t-unknown{background:#fafafa;color:#999;}
+
+  /* 版本 Tab 切换 */
+  .version-tabs{display:flex;gap:4px;margin-bottom:20px;background:#eef1f5;padding:4px;border-radius:8px;width:fit-content;}
+  .version-tab{background:transparent;border:none;padding:8px 16px;border-radius:6px;font-size:14px;cursor:pointer;color:#57606a;font-family:inherit;transition:all .15s;}
+  .version-tab:hover{background:#e1e5eb;}
+  .version-tab.active{background:var(--card);color:var(--pri);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,0.06);}
+  .version-tab .badge{font-size:11px;padding:1px 6px;border-radius:3px;margin-left:6px;color:white;}
+  .version-tab .badge.new{background:var(--ok);}
+  .version-tab .badge.legacy{background:#999;}
+  .panel{display:none;}
+  .panel.active{display:block;}
+  .version-banner{padding:12px 16px;margin-bottom:16px;border-radius:8px;font-size:13px;}
+  .version-banner.v2{background:#f6ffed;border:1px solid #b7eb8f;color:#2d4019;}
+  .version-banner.v1{background:#fffbe6;border:1px solid #ffe58f;color:#614700;}
 </style>
 </head>
 <body>
@@ -45,71 +59,135 @@
   <h1>fund-helper · 算法回测报告</h1>
   <div class="sub" id="meta"></div>
 
-  <div class="card">
-    <h2>执行摘要</h2>
-    <div id="summary"></div>
+  <div class="version-tabs" id="versionTabs">
+    <button class="version-tab active" data-panel="panel-v2">
+      方案 B（V2）<span class="badge new">最新</span>
+    </button>
+    <button class="version-tab" data-panel="panel-v1">
+      方案 A（V1）<span class="badge legacy">历史</span>
+    </button>
   </div>
 
-  <div class="card">
-    <h2>汇总指标表</h2>
-    <div id="metricsTable"></div>
+  <div id="panel-v2" class="panel active">
+    <div class="version-banner v2">
+      <b>方案 B · V2</b>：338 只基金 × 5 年日净值 · 按月滚动重算 · 含 selectFunds 选基 + 交易成本
+      <span style="color:var(--muted);margin-left:8px">（2026-04-17 启用）</span>
+    </div>
+    <div id="v2Content" class="muted" style="padding:40px;text-align:center">V2 报告即将上线…</div>
   </div>
 
-  <div class="card">
-    <h2>净值曲线对比</h2>
-    <p class="muted">横轴为月数（从初始化窗口之后开始），纵轴为累计净值（起点=1.0）</p>
-    <canvas id="navChart"></canvas>
-  </div>
+  <div id="panel-v1" class="panel">
+    <div class="version-banner v1">
+      <b>方案 A · V1</b>：基于 <code>marketBenchmarks.monthlyReturns</code> 的类别层回测
+      <span style="color:var(--muted);margin-left:8px">注意：本版本已在 V2 中被证实数据有时间错位偏差，夏普/波动虚高，结论仅作参考</span>
+    </div>
 
-  <div class="card">
-    <h2>回撤曲线</h2>
-    <p class="muted">各画像从峰值的最大跌幅演化</p>
-    <canvas id="ddChart"></canvas>
-  </div>
+    <div class="card">
+      <h2>执行摘要</h2>
+      <div id="summary"></div>
+    </div>
 
-  <div class="card">
-    <h2>Phase 时间线</h2>
-    <p class="muted">算法判断的市场 phase 随月份变化（以"进取+5年"为代表）</p>
-    <div id="phaseTimeline"></div>
-  </div>
+    <div class="card">
+      <h2>汇总指标表</h2>
+      <div id="metricsTable"></div>
+    </div>
 
-  <div class="card">
-    <h2>Phase 命中率诊断</h2>
-    <div id="phaseHit"></div>
-  </div>
+    <div class="card">
+      <h2>净值曲线对比</h2>
+      <p class="muted">横轴为月数（从初始化窗口之后开始），纵轴为累计净值（起点=1.0）</p>
+      <canvas id="navChart"></canvas>
+    </div>
 
-  <div class="card">
-    <h2>关键发现 & 优化建议（Findings）</h2>
-    <div id="findings"></div>
-  </div>
+    <div class="card">
+      <h2>回撤曲线</h2>
+      <p class="muted">各画像从峰值的最大跌幅演化</p>
+      <canvas id="ddChart"></canvas>
+    </div>
 
-  <div class="card">
-    <h2>局限性声明</h2>
-    <div id="limitations"></div>
+    <div class="card">
+      <h2>Phase 时间线</h2>
+      <p class="muted">算法判断的市场 phase 随月份变化（以"进取+5年"为代表）</p>
+      <div id="phaseTimeline"></div>
+    </div>
+
+    <div class="card">
+      <h2>Phase 命中率诊断</h2>
+      <div id="phaseHit"></div>
+    </div>
+
+    <div class="card">
+      <h2>关键发现 & 优化建议（Findings）</h2>
+      <div id="findings"></div>
+    </div>
+
+    <div class="card">
+      <h2>局限性声明</h2>
+      <div id="limitations"></div>
+    </div>
   </div>
 </div>
 
 <script>
-// 数据由 runBacktest.js 和 metrics.js 生成后注入
-// 通过 fetch 加载 JSON
+// 数据由 runBacktest.js/runBacktestV2.js 和 metrics.js 生成后注入
+// 通过 fetch 并行加载 V1 + V2 两套 JSON
 async function main(){
-  const [results, metrics] = await Promise.all([
-    fetch('results.json').then(r=>r.json()),
-    fetch('metrics.json').then(r=>r.json()),
+  const [v1Results, v1Metrics, v2Results, v2Metrics] = await Promise.all([
+    fetch('results.json?t=' + Date.now()).then(r=>r.json()),
+    fetch('metrics.json?t=' + Date.now()).then(r=>r.json()),
+    fetch('results-v2.json?t=' + Date.now()).then(r=>r.json()).catch(()=>null),
+    fetch('metrics-v2.json?t=' + Date.now()).then(r=>r.json()).catch(()=>null),
   ]);
 
-  // 元信息
-  document.getElementById('meta').textContent =
-    `数据窗口 ${results.totalMonths} 个月 · 有效回测期 ${results.totalMonths - results.windowSize} 个月 · 生成于 ${new Date(results.dataTimestamp).toLocaleString('zh-CN')}`;
+  // 元信息（两版共用）
+  const v1Range = `V1 数据 ${v1Results.totalMonths} 月 · 有效 ${v1Results.totalMonths - v1Results.windowSize} 月`;
+  const v2Range = v2Results
+    ? `V2 数据 ${v2Results.fundsLoaded} 基金 · 回测期 ${v2Results.monthCount} 月（${v2Results.startDate} ~ ${v2Results.endDate}）`
+    : 'V2 数据不可用';
+  document.getElementById('meta').textContent = `${v2Range} · ${v1Range}`;
 
-  renderSummary(metrics);
-  renderMetricsTable(metrics);
-  renderNavChart(results, metrics);
-  renderDDChart(results, metrics);
-  renderPhaseTimeline(results);
-  renderPhaseHit(metrics);
-  renderFindings(results, metrics);
+  // V1 渲染（原有逻辑）
+  renderSummary(v1Metrics);
+  renderMetricsTable(v1Metrics);
+  renderNavChart(v1Results);
+  renderDDChart(v1Results);
+  renderPhaseTimeline(v1Results);
+  renderPhaseHit(v1Metrics);
+  renderFindings();
   renderLimitations();
+
+  // V2 渲染（Step 2 将补充）
+  if (v2Results && v2Metrics) {
+    renderV2(v2Results, v2Metrics);
+  } else {
+    document.getElementById('v2Content').innerHTML =
+      '<div style="color:var(--bad);padding:20px;text-align:center">V2 数据加载失败，请确认 results-v2.json / metrics-v2.json 已生成</div>';
+  }
+
+  // Tab 切换
+  setupVersionTabs();
+}
+
+function setupVersionTabs(){
+  const tabs = document.querySelectorAll('.version-tab');
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      document.getElementById(tab.dataset.panel).classList.add('active');
+      // 切换到 V1 tab 时触发 chart 重绘（Chart.js 在隐藏容器里初始化会尺寸异常）
+      // 简单做法：重新 trigger resize
+      window.dispatchEvent(new Event('resize'));
+    });
+  });
+}
+
+// V2 渲染占位（Step 2 补充）
+function renderV2(results, metrics){
+  document.getElementById('v2Content').innerHTML =
+    '<div class="card"><h2>V2 数据已就绪</h2><p class="muted">' +
+    `共 ${metrics.length} 个变体 × ${results.monthCount} 月数据 · ` +
+    `Step 2 将补充完整图表。</p></div>`;
 }
 
 function renderSummary(metrics){
