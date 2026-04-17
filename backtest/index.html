@@ -75,6 +75,11 @@
     </div>
 
     <div class="card">
+      <h2>V2 执行摘要</h2>
+      <div id="v2Summary"></div>
+    </div>
+
+    <div class="card">
       <h2>V2 汇总指标表</h2>
       <p class="muted">每个画像有 3 个模式：<b>类别均值</b>（假设持有该类别所有基金）· <b>智能选基-无成本</b>（选基 alpha 的毛值）· <b>智能选基+成本</b>（扣申赎费后的真实体验）</p>
       <div id="v2MetricsTable"></div>
@@ -93,6 +98,12 @@
     </div>
 
     <div class="card">
+      <h2>V2 选基 alpha & 成本影响</h2>
+      <p class="muted">每个画像三个柱：<span style="color:#bfbfbf">类别均值（基底）</span> · <span style="color:#1677ff">智能选基-无成本（加上选基 alpha）</span> · <span style="color:#52c41a">智能选基+成本（扣除交易费后）</span>。柱高差异直观展示选基贡献和成本吞噬。</p>
+      <canvas id="v2CostChart"></canvas>
+    </div>
+
+    <div class="card">
       <h2>V2 Phase 时间线</h2>
       <p class="muted">22 个月的 phase 判断（以"进取+5年 [智能选基+成本]"为代表）</p>
       <div id="v2PhaseTimeline"></div>
@@ -103,7 +114,15 @@
       <div id="v2PhaseHit"></div>
     </div>
 
-    <div id="v2Content"></div>
+    <div class="card">
+      <h2>V2 关键发现 & 修订后的 findings</h2>
+      <div id="v2Findings"></div>
+    </div>
+
+    <div class="card">
+      <h2>V2 局限性声明</h2>
+      <div id="v2Limitations"></div>
+    </div>
   </div>
 
   <div id="panel-v1" class="panel">
@@ -215,11 +234,71 @@ function setupVersionTabs(){
 // V2 渲染主入口
 function renderV2(results, metrics){
   window.__v2ResultsCache = results.results; // 供 metrics 表读 costs 用（必须在 renderV2MetricsTable 前设置）
+  renderV2Summary(metrics);
   renderV2MetricsTable(metrics);
   renderV2NavChart(results);
   renderV2DdChart(results);
+  renderV2CostChart(metrics);
   renderV2PhaseTimeline(results);
   renderV2PhaseHit(metrics);
+  renderV2Findings(metrics);
+  renderV2Limitations();
+}
+
+// ─── V2 执行摘要 ───
+function renderV2Summary(metrics){
+  const findByName = n => metrics.find(m => m.name === n);
+  const best = metrics
+    .filter(m => m.name.includes('[智能选基+成本]'))
+    .reduce((a,b) => a.sharpe > b.sharpe ? a : b);
+  const bestCumul = metrics
+    .filter(m => m.name.includes('[智能选基+成本]'))
+    .reduce((a,b) => a.cumulative > b.cumulative ? a : b);
+  const eqBase = findByName('基线：等权 25%×4');
+  const p6040 = findByName('基线：60/40 股债');
+
+  // 选基 alpha 测算（以平衡+2 年为样本）
+  const bal2Cat = findByName('平衡+2年 [类别均值]');
+  const bal2Nc  = findByName('平衡+2年 [智能选基-无成本]');
+  const bal2Wc  = findByName('平衡+2年 [智能选基+成本]');
+  const alphaGross = bal2Nc && bal2Cat ? (bal2Nc.cumulative - bal2Cat.cumulative) : 0;
+  const costDrag   = bal2Nc && bal2Wc ? (bal2Nc.cumulative - bal2Wc.cumulative) : 0;
+  const alphaNet   = bal2Wc && bal2Cat ? (bal2Wc.cumulative - bal2Cat.cumulative) : 0;
+
+  // beat 基线的含成本变体数
+  const beatBase = metrics
+    .filter(m => m.name.includes('[智能选基+成本]'))
+    .filter(m => eqBase && m.sharpe >= eqBase.sharpe).length;
+
+  const html = `
+    <div class="finding positive">
+      <b>💎 最高夏普含成本画像</b>：<b>${best.name}</b> 夏普 <span class="good">${best.sharpe.toFixed(2)}</span>
+      ${eqBase ? `（等权基线 ${eqBase.sharpe.toFixed(2)}、60/40 基线 ${p6040?.sharpe.toFixed(2) || '—'}）` : ''}
+      · 累计 ${best.cumulative.toFixed(1)}%、年化 ${best.annualized.toFixed(1)}%、回撤 ${best.maxDD.toFixed(1)}%
+    </div>
+    <div class="finding positive">
+      <b>🔥 selectFunds 选基层 alpha 真实存在</b>（以平衡+2 年为例）：毛 alpha <span class="good">+${alphaGross.toFixed(1)}pp</span>，
+      扣除交易成本 <span class="bad">-${costDrag.toFixed(1)}pp</span> 后净 alpha <b>+${alphaNet.toFixed(1)}pp</b>
+    </div>
+    <div class="finding">
+      <b>⚠️ 交易成本吞噬选基 alpha ${alphaGross > 0 ? ((costDrag/alphaGross*100).toFixed(0)+'%') : '显著比例'}</b>：
+      月度 rebalance 累计成本约 5pp（22 月），折合月均约 0.25%。生产代码 <code>calculateRebalanceCost</code> 假设 0.15%/次 偏乐观 ~40%
+    </div>
+    <div class="finding ${beatBase >= 2 ? 'positive' : beatBase >= 1 ? '' : 'critical'}">
+      <b>📊 含成本后 beat 基线</b>：${beatBase}/7 个用户画像的 [智能选基+成本] 夏普 ≥ 等权基线
+      ${beatBase <= 2 ? '（主要是平衡档；进取档因追高+高换手全面跑输）' : ''}
+    </div>
+    <div class="finding critical">
+      <b>🔄 V1 关键结论被 V2 推翻</b>：
+      V1 数据（<code>marketBenchmarks.monthlyReturns</code>）因时间错位导致 phase 空头命中率看起来只有 44.4%（低于随机）。
+      V2 用真实日净值重算为 <b>${metrics.find(m=>m.phaseMetrics)?.phaseMetrics?.bearishHit?.toFixed(1) || '—'}%</b>（优于随机）
+      — findings.md 里"phase 有缺陷"的 P0 结论不成立
+    </div>
+    <div class="finding">
+      <b>🎯 下一步最高 ROI 优化</b>：将月度 rebalance 改为季度 rebalance，预计降成本 50-66%，
+      净 alpha 可从 +${alphaNet.toFixed(1)}pp 提升至约 +5pp
+    </div>`;
+  document.getElementById('v2Summary').innerHTML = html;
 }
 
 // ─── V2 指标表（23 行，含成本列） ───
@@ -423,6 +502,147 @@ function renderV2PhaseHit(metrics){
       V1 数据因 <code>marketBenchmarks.monthlyReturns</code> 时间错位导致结论失真，V2 为真实可信结果。
     </p>`;
   document.getElementById('v2PhaseHit').innerHTML = html;
+}
+
+// ─── V2 选基 alpha & 成本影响柱状图 ───
+function renderV2CostChart(metrics){
+  const profileOrder = ['平衡+1年','平衡+2年','平衡+3年','进取+1年','进取+2年','进取+3年','进取+5年'];
+  const findByName = n => metrics.find(m => m.name === n);
+
+  const catData = [];
+  const noCostData = [];
+  const costData = [];
+  profileOrder.forEach(p => {
+    catData.push(findByName(`${p} [类别均值]`)?.cumulative || 0);
+    noCostData.push(findByName(`${p} [智能选基-无成本]`)?.cumulative || 0);
+    costData.push(findByName(`${p} [智能选基+成本]`)?.cumulative || 0);
+  });
+
+  const eqBase = findByName('基线：等权 25%×4');
+  const eqBaseLine = eqBase ? eqBase.cumulative : null;
+
+  new Chart(document.getElementById('v2CostChart'), {
+    type: 'bar',
+    data: {
+      labels: profileOrder,
+      datasets: [
+        { label: '[类别均值]',       data: catData,    backgroundColor: '#bfbfbf' },
+        { label: '[智能选基-无成本]', data: noCostData, backgroundColor: '#1677ff' },
+        { label: '[智能选基+成本]',   data: costData,   backgroundColor: '#52c41a' },
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
+        annotation: eqBaseLine ? {
+          annotations: {
+            baseline: {
+              type: 'line', yMin: eqBaseLine, yMax: eqBaseLine,
+              borderColor: '#888', borderWidth: 1.5, borderDash: [6,4],
+              label: { content: `等权基线 ${eqBaseLine.toFixed(1)}%`, display: true, position: 'end', color: '#888', font: { size: 10 } }
+            }
+          }
+        } : {},
+      },
+      scales: {
+        y: { title: { display: true, text: '累计收益 %' }, beginAtZero: true }
+      }
+    }
+  });
+}
+
+// ─── V2 关键 Findings ───
+function renderV2Findings(metrics){
+  const html = `
+    <div class="finding positive">
+      <b>[正面-加强] F7 风险调整不输基线</b><br>
+      <i>V2 实测</i>：平衡+3年 [智能选基+成本] 夏普 <b>1.60</b> ≥ 等权基线 1.55；
+      不含成本时平衡+3年夏普达到 <b>1.87</b>（远超所有基线）<br>
+      <i>含义</i>：选基层真实产生了超额夏普（+0.45）；即使扣成本，平衡档仍微弱 beat 基线
+    </div>
+
+    <div class="finding positive">
+      <b>[正面-新增] selectFunds 选基 alpha 量化证实</b><br>
+      <i>V2 实测</i>：毛 alpha +5~+11pp 累计（平均 +7pp），扣成本后净 alpha +2~+3pp<br>
+      <i>含义</i>：多因子评分 + 核心-卫星架构选出的基金相对"类别均值持有"有显著超额能力，
+      这是 scoreF/composite 逻辑最大价值所在
+    </div>
+
+    <div class="finding positive">
+      <b>[正面-加强] F6 月度胜率高</b><br>
+      <i>V2 实测</i>：平衡+2年 [智能选基-无成本] 胜率 <b>86.4%</b>（22 月 19 盈），
+      扣成本后降至 68.2% 但仍高于基线 59.1%<br>
+      <i>含义</i>：用户体验层面非常稳定，不易出现长时间亏损窗口
+    </div>
+
+    <div class="finding critical">
+      <b>[关键-新增] 交易成本吞噬一半以上选基 alpha</b><br>
+      <i>V2 实测</i>：22 月累计交易成本 4.6-5.8pp（月均 0.25%），约是生产代码假设 0.15%/次 的 167%<br>
+      <i>影响</i>：毛 alpha +7pp → 净 alpha +2pp，60-80% 的选基价值被磨损掉<br>
+      <i>优化方向</i>：
+      <ol style="margin:4px 0 0 18px">
+        <li><b>首选</b>：月度 rebalance 改季度（预计降成本 50-66%，net alpha 升至 +5pp）</li>
+        <li>其次：把 <code>calculateRebalanceCost</code> 的 <code>scoreDiff × 0.0015</code> 改为 <code>× 0.003</code>（翻倍贴近真实）</li>
+        <li>在调仓建议 UI 显示"距上次换仓天数"，引导用户降低自主换手</li>
+      </ol>
+    </div>
+
+    <div class="finding">
+      <b>[证伪] F1 phase 空头命中率 44% 是 P0 问题</b><br>
+      <i>V1 结论</i>：<span class="bad">空头命中率 44.4%</span>（低于随机）→ 建议改 overheat/stagflation 阈值<br>
+      <i>V2 实测</i>：<span class="good">空头命中率 54.5%</span>（优于随机）<br>
+      <i>根因</i>：V1 用的 <code>marketBenchmarks.monthlyReturns</code> 因时间错位导致极端月度值（+78.96%/-50.67%），
+      phase 被错误数据误导。V2 用真实日净值重算后结论反转<br>
+      <i>建议</i>：<b>不要</b>按 V1 findings 里的 P0 建议改 phase 阈值
+    </div>
+
+    <div class="finding">
+      <b>[证伪] F4 永久 recovery 比切换更优</b><br>
+      <i>V1 结论</i>：永久 recovery 夏普略高于切换画像 → phase 切换无价值<br>
+      <i>V2 实测</i>：phase 切换在 V2 数据下有正 alpha，空头判断有效<br>
+      <i>建议</i>：保留当前 phase 切换逻辑
+    </div>
+
+    <div class="finding critical">
+      <b>[关键-新增] 进取档智能选基反而回撤扩大</b><br>
+      <i>V2 实测</i>：进取档 [智能选基] 回撤从类别均值的 5.7% 扩大到 <b>9.9%</b>（几乎翻倍），
+      含成本后夏普全部跑输基线<br>
+      <i>根因</i>：<code>selectFunds</code> 的 <code>riskAdjust.aggressive</code> 公式 <code>f.composite + f.r1*0.2 + (maxDD>25?2:0)</code>
+      鼓励选高动量、高回撤的基金<br>
+      <i>建议</i>：去掉 "maxDD>25 ? +2" 奖励；把 r1 系数从 0.2 降至 0.1（对齐 balanced 档）
+    </div>
+
+    <div class="finding">
+      <b>[仍成立] F5 短期期限 equityCap=30 过严</b><br>
+      <i>V2 实测</i>：平衡+1年 [智能选基+成本] 累计 32.51%，平衡+2年 43.14% · 差距 ~10pp<br>
+      <i>建议</i>：保留 F5 的产品文档提示（已在 F5 改进中完成），可考虑把 1 年 equityCap 30→40 在 recovery phase 下
+    </div>
+
+    <h3 style="margin-top:20px">修订后的参数调整优先级</h3>
+    <ol>
+      <li><b>P0</b>：降低调仓频率（月→季度），降成本 50-66%</li>
+      <li><b>P0</b>：换仓成本系数 <code>0.0015</code> → <code>0.003</code>（贴近真实）</li>
+      <li><b>P1</b>：进取档 riskAdjust 去掉 maxDD 奖励、r1 系数 0.2→0.1</li>
+      <li><b>P2</b>：1 年 equityCap 在 recovery phase 下放宽到 40</li>
+      <li><s><b>P0</b>：overheat/stagflation 阈值调整</s> ← 基于 V1 的建议，V2 证伪后移除</li>
+    </ol>`;
+  document.getElementById('v2Findings').innerHTML = html;
+}
+
+// ─── V2 局限性 ───
+function renderV2Limitations(){
+  document.getElementById('v2Limitations').innerHTML = `
+    <ul>
+      <li><b>样本量</b>：22 个有效回测月，方向结论可靠、具体数值仍需更长数据验证</li>
+      <li><b>数据仅覆盖后牛市段</b>：2024-05 ~ 2026-03，含 2024 stagflation 但不含 2022 大熊市（r3 需要 3 年历史窗口，起点至少 2024-04）</li>
+      <li><b>幸存者偏差未修复</b>：用今日 Top 340 池 + 月度"成立≥3年"过滤，今日头部基金在历史上本就是幸存者。学术研究预估消除偏差后 alpha 降 1-2pp（仍为正，但幅度减小）</li>
+      <li><b>基金元数据为当前快照</b>：<code>mgrYears</code> / <code>size</code> / <code>fee</code> 用 2026-04 当前值，不模拟历史变化</li>
+      <li><b>经理 / 标签数据缺失</b>：<code>selectFunds</code> 的经理去重和标签去重降级，可能同时选入相关性较高的基金</li>
+      <li><b>INDEX_VALUATION 空</b>：<code>getValuationAdj</code> 永远返回 0，scoreF 的估值修正未参与</li>
+      <li><b>未接入 scoreF</b>：本回测用 <code>analyzeCategoryPerf</code> 的 <code>composite</code> 分数（selectFunds 实际路径），scoreF 是展示层分数未参与选基决策 — 这反过来是 V2 的一个重要 finding</li>
+      <li><b>交易成本简化</b>：只扣申购/赎回费，未计净值滑点、T+1~T+3 资金占用机会成本</li>
+    </ul>`;
 }
 
 function renderSummary(metrics){
