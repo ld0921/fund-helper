@@ -740,12 +740,12 @@ function selectFunds(cat, catData, riskProfile, pct, totalAmt){
 
   // 风险偏好感知排名：不同偏好对同一基金的评价侧重不同
   // 保守型：重稳定性和低回撤（高maxDD扣分）
-  // 进取型：重收益动量（高r1/r3加分）
+  // 进取型：重收益动量，但不奖励高回撤（V2 回测证实旧版 maxDD>25 奖励让进取档回撤翻倍到 9.9%）
   const riskAdjust = {
     conservative: f => f.composite - (f.maxDD||0) * 0.3 + Math.min(f.mgrYears||0, 10) * 0.5,
     moderate:     f => f.composite,
     balanced:     f => f.composite + (f.r1||0) * 0.1,
-    aggressive:   f => f.composite + (f.r1||0) * 0.2 + ((f.maxDD||20) > 25 ? 2 : 0),
+    aggressive:   f => f.composite + (f.r1||0) * 0.1,  // r1 系数从 0.2 降至 0.1，去掉 maxDD>25 的 +2 奖励
   };
   const adjustFn = riskAdjust[riskProfile] || riskAdjust.moderate;
   // 动量反转修正：超涨基金（>同类均值+1σ）降权，超跌基金（<均值-1σ）升权
