@@ -44,6 +44,10 @@ const modeArg = process.argv.find(a => a.startsWith('--mode='));
 const MODE = modeArg ? modeArg.split('=')[1] : 'both'; // category | select | both
 const NO_COSTS = process.argv.includes('--no-costs');
 
+// 调仓频率：monthly（每月）| quarterly（每季度）| semi-annual（每半年）
+const rebalArg = process.argv.find(a => a.startsWith('--rebalance='));
+const REBALANCE_FREQ = rebalArg ? rebalArg.split('=')[1] : 'monthly';
+
 // 交易成本参数（和生产 calculateRebalanceCost 对齐）
 const PURCHASE_FEE_BY_CAT = { active: 0.0015, index: 0.0012, bond: 0.0008, qdii: 0.0008, money: 0 };
 function redemptionFeeRate(holdDays) {
@@ -128,10 +132,17 @@ function main() {
 
   profileVariants.forEach(p => initResult(p.name, p));
 
+  // 调仓频率控制：REBAL_EVERY 个月做一次新决策，中间月份保持上次持仓
+  const REBAL_EVERY = { monthly: 1, quarterly: 3, 'semi-annual': 6 }[REBALANCE_FREQ] || 1;
+  const lastPicksByProfile = {};   // { profileName: picks[] }
+  const lastWeightsByProfile = {}; // { profileName: weights }
+  console.log(`  调仓频率: ${REBALANCE_FREQ}（每 ${REBAL_EVERY} 月一次）`);
+
   for (let i = 0; i < monthEnds.length - 1; i++) {
     const t = monthEnds[i];
     const tNext = monthEnds[i + 1];
     const tDateStr = new Date(t).toISOString().slice(0, 10);
+    const isRebalMonth = (i % REBAL_EVERY === 0);
 
     // (a) 每基金按 t 时点重算 r1/r3/maxDD3y
     const fundsAtT = [];
@@ -186,23 +197,38 @@ function main() {
     // 对每个 profile variant 跑 computeWeights + 可选的 selectFunds
     for (const p of profileVariants) {
       let weights;
-      if (p.fixedWeights) {
-        weights = p.fixedWeights;
+      let picks = null;
+
+      if (isRebalMonth) {
+        // 调仓月：计算新的 weights + picks
+        if (p.fixedWeights) {
+          weights = p.fixedWeights;
+        } else {
+          weights = shim.computeWeights(p.riskProfile, p.horizon, catRanks, phase);
+        }
+        lastWeightsByProfile[p.name] = weights;
+
+        if (p.useSelect) {
+          picks = runSelectForAllCats(shim, catRanks, weights, p.riskProfile);
+          lastPicksByProfile[p.name] = picks;
+        }
       } else {
-        weights = shim.computeWeights(p.riskProfile, p.horizon, catRanks, phase);
+        // 非调仓月：沿用上次 weights + picks
+        weights = lastWeightsByProfile[p.name] || p.fixedWeights;
+        if (p.useSelect) {
+          picks = lastPicksByProfile[p.name];
+        }
       }
 
       let ret;
       let cost = 0;
-      if (p.useSelect) {
-        // 智能选基模式：对每个类别调用 selectFunds，按 pick.pct 分配组合权重
-        const picks = runSelectForAllCats(shim, catRanks, weights, p.riskProfile);
+      if (p.useSelect && picks) {
         ret = computePickedMonthReturn(picks, fundNavs, t, tNext);
-        if (p.applyCosts) {
-          // 对比 holdings（上月持仓） vs picks（本月目标），按 delta 计算成本
+        // 仅调仓月产生交易成本
+        if (isRebalMonth && p.applyCosts) {
           cost = applyRebalanceCosts(results[p.name].holdings, picks, t, fundsAtT);
-        } else {
-          // 无成本：直接更新 holdings（用于下月对比）
+        } else if (isRebalMonth) {
+          // 无成本但也要维护 holdings（首次持仓或换基）
           updateHoldingsNoCosts(results[p.name].holdings, picks, t);
         }
       } else {
@@ -214,7 +240,7 @@ function main() {
       results[p.name].monthlyReturns.push(netRet);
       results[p.name].phases.push(phase.phase);
       results[p.name].costs.push(cost * 100); // 成本也按 % 存，便于分析
-      results[p.name].weightHistory.push({ t: tDateStr, weights, phase: phase.phase });
+      results[p.name].weightHistory.push({ t: tDateStr, weights, phase: phase.phase, rebal: isRebalMonth });
     }
 
     if (i % 3 === 0 || i === monthEnds.length - 2) {

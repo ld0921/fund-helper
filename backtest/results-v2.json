@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-17T09:22:13.455Z",
+  "generatedAt": "2026-04-17T09:25:51.093Z",
   "version": "V2",
   "startDate": "2024-04-30",
   "endDate": "2026-03-31",
@@ -195,7 +195,8 @@
             "active": 16,
             "index": 13
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-06-29",
@@ -206,7 +207,8 @@
             "active": 16,
             "index": 13
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-07-30",
@@ -217,7 +219,8 @@
             "active": 16,
             "index": 13
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-08-30",
@@ -228,7 +231,8 @@
             "index": 12,
             "active": 17
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-09-29",
@@ -239,7 +243,8 @@
             "index": 12,
             "active": 17
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-10-30",
@@ -250,7 +255,8 @@
             "index": 12,
             "active": 17
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-11-29",
@@ -261,7 +267,8 @@
             "index": 12,
             "active": 17
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-12-30",
@@ -272,7 +279,8 @@
             "index": 12,
             "active": 17
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-01-30",
@@ -283,7 +291,8 @@
             "index": 9,
             "active": 13
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-02-27",
@@ -294,7 +303,8 @@
             "index": 9,
             "active": 13
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-03-30",
@@ -305,7 +315,8 @@
             "index": 9,
             "active": 13
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-04-29",
@@ -316,7 +327,8 @@
             "index": 9,
             "active": 12
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-05-30",
@@ -327,7 +339,8 @@
             "index": 9,
             "active": 12
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-06-29",
@@ -338,7 +351,8 @@
             "index": 9,
             "active": 12
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-07-30",
@@ -349,7 +363,8 @@
             "bond": 36,
             "active": 12
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-08-30",
@@ -360,7 +375,8 @@
             "money": 20,
             "bond": 53
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-09-29",
@@ -371,7 +387,8 @@
             "bond": 52,
             "money": 20
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-10-30",
@@ -382,7 +399,8 @@
             "bond": 52,
             "money": 20
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-11-29",
@@ -393,7 +411,8 @@
             "bond": 52,
             "money": 20
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-12-30",
@@ -404,7 +423,8 @@
             "bond": 52,
             "money": 20
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2026-01-30",
@@ -415,7 +435,8 @@
             "bond": 52,
             "money": 20
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2026-02-27",
@@ -426,7 +447,8 @@
             "bond": 52,
             "money": 20
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         }
       ]
     },
@@ -497,7 +519,8 @@
             "active": 16,
             "index": 13
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-06-29",
@@ -508,7 +531,8 @@
             "active": 16,
             "index": 13
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-07-30",
@@ -519,7 +543,8 @@
             "active": 16,
             "index": 13
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-08-30",
@@ -530,7 +555,8 @@
             "index": 12,
             "active": 17
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-09-29",
@@ -541,7 +567,8 @@
             "index": 12,
             "active": 17
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-10-30",
@@ -552,7 +579,8 @@
             "index": 12,
             "active": 17
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-11-29",
@@ -563,7 +591,8 @@
             "index": 12,
             "active": 17
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-12-30",
@@ -574,7 +603,8 @@
             "index": 12,
             "active": 17
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-01-30",
@@ -585,7 +615,8 @@
             "index": 9,
             "active": 13
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-02-27",
@@ -596,7 +627,8 @@
             "index": 9,
             "active": 13
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-03-30",
@@ -607,7 +639,8 @@
             "index": 9,
             "active": 13
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-04-29",
@@ -618,7 +651,8 @@
             "index": 9,
             "active": 12
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-05-30",
@@ -629,7 +663,8 @@
             "index": 9,
             "active": 12
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-06-29",
@@ -640,7 +675,8 @@
             "index": 9,
             "active": 12
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-07-30",
@@ -651,7 +687,8 @@
             "bond": 36,
             "active": 12
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-08-30",
@@ -662,7 +699,8 @@
             "money": 20,
             "bond": 53
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-09-29",
@@ -673,7 +711,8 @@
             "bond": 52,
             "money": 20
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-10-30",
@@ -684,7 +723,8 @@
             "bond": 52,
             "money": 20
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-11-29",
@@ -695,7 +735,8 @@
             "bond": 52,
             "money": 20
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-12-30",
@@ -706,7 +747,8 @@
             "bond": 52,
             "money": 20
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2026-01-30",
@@ -717,7 +759,8 @@
             "bond": 52,
             "money": 20
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2026-02-27",
@@ -728,7 +771,8 @@
             "bond": 52,
             "money": 20
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         }
       ]
     },
@@ -799,7 +843,8 @@
             "active": 16,
             "index": 13
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-06-29",
@@ -810,7 +855,8 @@
             "active": 16,
             "index": 13
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-07-30",
@@ -821,7 +867,8 @@
             "active": 16,
             "index": 13
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-08-30",
@@ -832,7 +879,8 @@
             "index": 12,
             "active": 17
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-09-29",
@@ -843,7 +891,8 @@
             "index": 12,
             "active": 17
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-10-30",
@@ -854,7 +903,8 @@
             "index": 12,
             "active": 17
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-11-29",
@@ -865,7 +915,8 @@
             "index": 12,
             "active": 17
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-12-30",
@@ -876,7 +927,8 @@
             "index": 12,
             "active": 17
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-01-30",
@@ -887,7 +939,8 @@
             "index": 9,
             "active": 13
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-02-27",
@@ -898,7 +951,8 @@
             "index": 9,
             "active": 13
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-03-30",
@@ -909,7 +963,8 @@
             "index": 9,
             "active": 13
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-04-29",
@@ -920,7 +975,8 @@
             "index": 9,
             "active": 12
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-05-30",
@@ -931,7 +987,8 @@
             "index": 9,
             "active": 12
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-06-29",
@@ -942,7 +999,8 @@
             "index": 9,
             "active": 12
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-07-30",
@@ -953,7 +1011,8 @@
             "bond": 36,
             "active": 12
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-08-30",
@@ -964,7 +1023,8 @@
             "money": 20,
             "bond": 53
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-09-29",
@@ -975,7 +1035,8 @@
             "bond": 52,
             "money": 20
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-10-30",
@@ -986,7 +1047,8 @@
             "bond": 52,
             "money": 20
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-11-29",
@@ -997,7 +1059,8 @@
             "bond": 52,
             "money": 20
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-12-30",
@@ -1008,7 +1071,8 @@
             "bond": 52,
             "money": 20
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2026-01-30",
@@ -1019,7 +1083,8 @@
             "bond": 52,
             "money": 20
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2026-02-27",
@@ -1030,7 +1095,8 @@
             "bond": 52,
             "money": 20
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         }
       ]
     },
@@ -1101,7 +1167,8 @@
             "active": 23,
             "index": 16
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-06-29",
@@ -1112,7 +1179,8 @@
             "active": 23,
             "index": 16
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-07-30",
@@ -1123,7 +1191,8 @@
             "active": 23,
             "index": 16
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-08-30",
@@ -1134,7 +1203,8 @@
             "index": 16,
             "active": 23
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-09-29",
@@ -1145,7 +1215,8 @@
             "index": 16,
             "active": 24
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-10-30",
@@ -1156,7 +1227,8 @@
             "index": 16,
             "active": 24
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-11-29",
@@ -1167,7 +1239,8 @@
             "index": 16,
             "active": 24
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-12-30",
@@ -1178,7 +1251,8 @@
             "index": 15,
             "active": 23
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-01-30",
@@ -1189,7 +1263,8 @@
             "index": 13,
             "active": 19
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-02-27",
@@ -1200,7 +1275,8 @@
             "index": 13,
             "active": 19
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-03-30",
@@ -1211,7 +1287,8 @@
             "index": 13,
             "active": 19
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-04-29",
@@ -1222,7 +1299,8 @@
             "index": 12,
             "active": 17
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-05-30",
@@ -1233,7 +1311,8 @@
             "index": 12,
             "active": 17
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-06-29",
@@ -1244,7 +1323,8 @@
             "index": 12,
             "active": 18
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-07-30",
@@ -1255,7 +1335,8 @@
             "bond": 22,
             "active": 18
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-08-30",
@@ -1266,7 +1347,8 @@
             "money": 20,
             "bond": 42
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-09-29",
@@ -1277,7 +1359,8 @@
             "bond": 42,
             "money": 20
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-10-30",
@@ -1288,7 +1371,8 @@
             "bond": 41,
             "money": 20
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-11-29",
@@ -1299,7 +1383,8 @@
             "bond": 41,
             "money": 20
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-12-30",
@@ -1310,7 +1395,8 @@
             "bond": 42,
             "money": 20
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2026-01-30",
@@ -1321,7 +1407,8 @@
             "bond": 41,
             "money": 20
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2026-02-27",
@@ -1332,7 +1419,8 @@
             "bond": 41,
             "money": 20
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         }
       ]
     },
@@ -1403,7 +1491,8 @@
             "active": 23,
             "index": 16
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-06-29",
@@ -1414,7 +1503,8 @@
             "active": 23,
             "index": 16
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-07-30",
@@ -1425,7 +1515,8 @@
             "active": 23,
             "index": 16
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-08-30",
@@ -1436,7 +1527,8 @@
             "index": 16,
             "active": 23
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-09-29",
@@ -1447,7 +1539,8 @@
             "index": 16,
             "active": 24
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-10-30",
@@ -1458,7 +1551,8 @@
             "index": 16,
             "active": 24
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-11-29",
@@ -1469,7 +1563,8 @@
             "index": 16,
             "active": 24
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-12-30",
@@ -1480,7 +1575,8 @@
             "index": 15,
             "active": 23
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-01-30",
@@ -1491,7 +1587,8 @@
             "index": 13,
             "active": 19
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-02-27",
@@ -1502,7 +1599,8 @@
             "index": 13,
             "active": 19
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-03-30",
@@ -1513,7 +1611,8 @@
             "index": 13,
             "active": 19
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-04-29",
@@ -1524,7 +1623,8 @@
             "index": 12,
             "active": 17
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-05-30",
@@ -1535,7 +1635,8 @@
             "index": 12,
             "active": 17
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-06-29",
@@ -1546,7 +1647,8 @@
             "index": 12,
             "active": 18
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-07-30",
@@ -1557,7 +1659,8 @@
             "bond": 22,
             "active": 18
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-08-30",
@@ -1568,7 +1671,8 @@
             "money": 20,
             "bond": 42
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-09-29",
@@ -1579,7 +1683,8 @@
             "bond": 42,
             "money": 20
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-10-30",
@@ -1590,7 +1695,8 @@
             "bond": 41,
             "money": 20
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-11-29",
@@ -1601,7 +1707,8 @@
             "bond": 41,
             "money": 20
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-12-30",
@@ -1612,7 +1719,8 @@
             "bond": 42,
             "money": 20
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2026-01-30",
@@ -1623,7 +1731,8 @@
             "bond": 41,
             "money": 20
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2026-02-27",
@@ -1634,7 +1743,8 @@
             "bond": 41,
             "money": 20
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         }
       ]
     },
@@ -1705,7 +1815,8 @@
             "active": 23,
             "index": 16
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-06-29",
@@ -1716,7 +1827,8 @@
             "active": 23,
             "index": 16
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-07-30",
@@ -1727,7 +1839,8 @@
             "active": 23,
             "index": 16
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-08-30",
@@ -1738,7 +1851,8 @@
             "index": 16,
             "active": 23
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-09-29",
@@ -1749,7 +1863,8 @@
             "index": 16,
             "active": 24
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-10-30",
@@ -1760,7 +1875,8 @@
             "index": 16,
             "active": 24
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-11-29",
@@ -1771,7 +1887,8 @@
             "index": 16,
             "active": 24
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-12-30",
@@ -1782,7 +1899,8 @@
             "index": 15,
             "active": 23
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-01-30",
@@ -1793,7 +1911,8 @@
             "index": 13,
             "active": 19
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-02-27",
@@ -1804,7 +1923,8 @@
             "index": 13,
             "active": 19
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-03-30",
@@ -1815,7 +1935,8 @@
             "index": 13,
             "active": 19
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-04-29",
@@ -1826,7 +1947,8 @@
             "index": 12,
             "active": 17
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-05-30",
@@ -1837,7 +1959,8 @@
             "index": 12,
             "active": 17
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-06-29",
@@ -1848,7 +1971,8 @@
             "index": 12,
             "active": 18
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-07-30",
@@ -1859,7 +1983,8 @@
             "bond": 22,
             "active": 18
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-08-30",
@@ -1870,7 +1995,8 @@
             "money": 20,
             "bond": 42
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-09-29",
@@ -1881,7 +2007,8 @@
             "bond": 42,
             "money": 20
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-10-30",
@@ -1892,7 +2019,8 @@
             "bond": 41,
             "money": 20
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-11-29",
@@ -1903,7 +2031,8 @@
             "bond": 41,
             "money": 20
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-12-30",
@@ -1914,7 +2043,8 @@
             "bond": 42,
             "money": 20
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2026-01-30",
@@ -1925,7 +2055,8 @@
             "bond": 41,
             "money": 20
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2026-02-27",
@@ -1936,7 +2067,8 @@
             "bond": 41,
             "money": 20
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         }
       ]
     },
@@ -2007,7 +2139,8 @@
             "active": 20,
             "index": 14
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-06-29",
@@ -2018,7 +2151,8 @@
             "active": 20,
             "index": 14
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-07-30",
@@ -2029,7 +2163,8 @@
             "active": 20,
             "index": 14
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-08-30",
@@ -2040,7 +2175,8 @@
             "index": 14,
             "active": 20
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-09-29",
@@ -2051,7 +2187,8 @@
             "index": 14,
             "active": 20
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-10-30",
@@ -2062,7 +2199,8 @@
             "index": 14,
             "active": 20
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-11-29",
@@ -2073,7 +2211,8 @@
             "index": 14,
             "active": 20
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-12-30",
@@ -2084,7 +2223,8 @@
             "index": 14,
             "active": 19
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-01-30",
@@ -2095,7 +2235,8 @@
             "index": 11,
             "active": 15
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-02-27",
@@ -2106,7 +2247,8 @@
             "index": 11,
             "active": 15
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-03-30",
@@ -2117,7 +2259,8 @@
             "index": 11,
             "active": 15
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-04-29",
@@ -2128,7 +2271,8 @@
             "index": 10,
             "active": 13
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-05-30",
@@ -2139,7 +2283,8 @@
             "index": 10,
             "active": 13
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-06-29",
@@ -2150,7 +2295,8 @@
             "index": 10,
             "active": 14
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-07-30",
@@ -2161,7 +2307,8 @@
             "bond": 25,
             "active": 14
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-08-30",
@@ -2172,7 +2319,8 @@
             "money": 20,
             "bond": 42
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-09-29",
@@ -2183,7 +2331,8 @@
             "bond": 42,
             "money": 20
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-10-30",
@@ -2194,7 +2343,8 @@
             "bond": 41,
             "money": 20
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-11-29",
@@ -2205,7 +2355,8 @@
             "bond": 42,
             "money": 20
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-12-30",
@@ -2216,7 +2367,8 @@
             "bond": 41,
             "money": 20
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2026-01-30",
@@ -2227,7 +2379,8 @@
             "bond": 42,
             "money": 20
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2026-02-27",
@@ -2238,7 +2391,8 @@
             "bond": 42,
             "money": 20
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         }
       ]
     },
@@ -2309,7 +2463,8 @@
             "active": 20,
             "index": 14
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-06-29",
@@ -2320,7 +2475,8 @@
             "active": 20,
             "index": 14
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-07-30",
@@ -2331,7 +2487,8 @@
             "active": 20,
             "index": 14
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-08-30",
@@ -2342,7 +2499,8 @@
             "index": 14,
             "active": 20
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-09-29",
@@ -2353,7 +2511,8 @@
             "index": 14,
             "active": 20
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-10-30",
@@ -2364,7 +2523,8 @@
             "index": 14,
             "active": 20
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-11-29",
@@ -2375,7 +2535,8 @@
             "index": 14,
             "active": 20
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-12-30",
@@ -2386,7 +2547,8 @@
             "index": 14,
             "active": 19
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-01-30",
@@ -2397,7 +2559,8 @@
             "index": 11,
             "active": 15
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-02-27",
@@ -2408,7 +2571,8 @@
             "index": 11,
             "active": 15
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-03-30",
@@ -2419,7 +2583,8 @@
             "index": 11,
             "active": 15
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-04-29",
@@ -2430,7 +2595,8 @@
             "index": 10,
             "active": 13
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-05-30",
@@ -2441,7 +2607,8 @@
             "index": 10,
             "active": 13
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-06-29",
@@ -2452,7 +2619,8 @@
             "index": 10,
             "active": 14
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-07-30",
@@ -2463,7 +2631,8 @@
             "bond": 25,
             "active": 14
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-08-30",
@@ -2474,7 +2643,8 @@
             "money": 20,
             "bond": 42
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-09-29",
@@ -2485,7 +2655,8 @@
             "bond": 42,
             "money": 20
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-10-30",
@@ -2496,7 +2667,8 @@
             "bond": 41,
             "money": 20
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-11-29",
@@ -2507,7 +2679,8 @@
             "bond": 42,
             "money": 20
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-12-30",
@@ -2518,7 +2691,8 @@
             "bond": 41,
             "money": 20
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2026-01-30",
@@ -2529,7 +2703,8 @@
             "bond": 42,
             "money": 20
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2026-02-27",
@@ -2540,7 +2715,8 @@
             "bond": 42,
             "money": 20
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         }
       ]
     },
@@ -2611,7 +2787,8 @@
             "active": 20,
             "index": 14
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-06-29",
@@ -2622,7 +2799,8 @@
             "active": 20,
             "index": 14
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-07-30",
@@ -2633,7 +2811,8 @@
             "active": 20,
             "index": 14
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-08-30",
@@ -2644,7 +2823,8 @@
             "index": 14,
             "active": 20
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-09-29",
@@ -2655,7 +2835,8 @@
             "index": 14,
             "active": 20
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-10-30",
@@ -2666,7 +2847,8 @@
             "index": 14,
             "active": 20
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-11-29",
@@ -2677,7 +2859,8 @@
             "index": 14,
             "active": 20
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-12-30",
@@ -2688,7 +2871,8 @@
             "index": 14,
             "active": 19
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-01-30",
@@ -2699,7 +2883,8 @@
             "index": 11,
             "active": 15
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-02-27",
@@ -2710,7 +2895,8 @@
             "index": 11,
             "active": 15
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-03-30",
@@ -2721,7 +2907,8 @@
             "index": 11,
             "active": 15
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-04-29",
@@ -2732,7 +2919,8 @@
             "index": 10,
             "active": 13
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-05-30",
@@ -2743,7 +2931,8 @@
             "index": 10,
             "active": 13
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-06-29",
@@ -2754,7 +2943,8 @@
             "index": 10,
             "active": 14
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-07-30",
@@ -2765,7 +2955,8 @@
             "bond": 25,
             "active": 14
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-08-30",
@@ -2776,7 +2967,8 @@
             "money": 20,
             "bond": 42
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-09-29",
@@ -2787,7 +2979,8 @@
             "bond": 42,
             "money": 20
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-10-30",
@@ -2798,7 +2991,8 @@
             "bond": 41,
             "money": 20
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-11-29",
@@ -2809,7 +3003,8 @@
             "bond": 42,
             "money": 20
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-12-30",
@@ -2820,7 +3015,8 @@
             "bond": 41,
             "money": 20
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2026-01-30",
@@ -2831,7 +3027,8 @@
             "bond": 42,
             "money": 20
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2026-02-27",
@@ -2842,7 +3039,8 @@
             "bond": 42,
             "money": 20
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         }
       ]
     },
@@ -2913,7 +3111,8 @@
             "active": 11,
             "index": 10
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-06-29",
@@ -2924,7 +3123,8 @@
             "active": 11,
             "index": 10
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-07-30",
@@ -2935,7 +3135,8 @@
             "active": 11,
             "index": 10
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-08-30",
@@ -2946,7 +3147,8 @@
             "index": 10,
             "active": 11
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-09-29",
@@ -2957,7 +3159,8 @@
             "index": 10,
             "active": 12
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-10-30",
@@ -2968,7 +3171,8 @@
             "index": 10,
             "active": 12
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-11-29",
@@ -2979,7 +3183,8 @@
             "index": 10,
             "active": 12
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-12-30",
@@ -2990,7 +3195,8 @@
             "index": 10,
             "active": 11
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-01-30",
@@ -3001,7 +3207,8 @@
             "index": 6,
             "active": 6
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-02-27",
@@ -3012,7 +3219,8 @@
             "index": 6,
             "active": 6
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-03-30",
@@ -3023,7 +3231,8 @@
             "index": 6,
             "active": 6
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-04-29",
@@ -3034,7 +3243,8 @@
             "index": 5,
             "active": 5
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-05-30",
@@ -3045,7 +3255,8 @@
             "index": 6,
             "active": 5
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-06-29",
@@ -3056,7 +3267,8 @@
             "index": 6,
             "active": 5
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-07-30",
@@ -3067,7 +3279,8 @@
             "bond": 51,
             "active": 5
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-08-30",
@@ -3078,7 +3291,8 @@
             "money": 10,
             "bond": 62
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-09-29",
@@ -3089,7 +3303,8 @@
             "bond": 62,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-10-30",
@@ -3100,7 +3315,8 @@
             "bond": 62,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-11-29",
@@ -3111,7 +3327,8 @@
             "bond": 62,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-12-30",
@@ -3122,7 +3339,8 @@
             "bond": 61,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2026-01-30",
@@ -3133,7 +3351,8 @@
             "bond": 61,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2026-02-27",
@@ -3144,7 +3363,8 @@
             "bond": 61,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         }
       ]
     },
@@ -3215,7 +3435,8 @@
             "active": 11,
             "index": 10
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-06-29",
@@ -3226,7 +3447,8 @@
             "active": 11,
             "index": 10
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-07-30",
@@ -3237,7 +3459,8 @@
             "active": 11,
             "index": 10
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-08-30",
@@ -3248,7 +3471,8 @@
             "index": 10,
             "active": 11
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-09-29",
@@ -3259,7 +3483,8 @@
             "index": 10,
             "active": 12
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-10-30",
@@ -3270,7 +3495,8 @@
             "index": 10,
             "active": 12
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-11-29",
@@ -3281,7 +3507,8 @@
             "index": 10,
             "active": 12
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-12-30",
@@ -3292,7 +3519,8 @@
             "index": 10,
             "active": 11
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-01-30",
@@ -3303,7 +3531,8 @@
             "index": 6,
             "active": 6
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-02-27",
@@ -3314,7 +3543,8 @@
             "index": 6,
             "active": 6
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-03-30",
@@ -3325,7 +3555,8 @@
             "index": 6,
             "active": 6
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-04-29",
@@ -3336,7 +3567,8 @@
             "index": 5,
             "active": 5
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-05-30",
@@ -3347,7 +3579,8 @@
             "index": 6,
             "active": 5
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-06-29",
@@ -3358,7 +3591,8 @@
             "index": 6,
             "active": 5
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-07-30",
@@ -3369,7 +3603,8 @@
             "bond": 51,
             "active": 5
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-08-30",
@@ -3380,7 +3615,8 @@
             "money": 10,
             "bond": 62
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-09-29",
@@ -3391,7 +3627,8 @@
             "bond": 62,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-10-30",
@@ -3402,7 +3639,8 @@
             "bond": 62,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-11-29",
@@ -3413,7 +3651,8 @@
             "bond": 62,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-12-30",
@@ -3424,7 +3663,8 @@
             "bond": 61,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2026-01-30",
@@ -3435,7 +3675,8 @@
             "bond": 61,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2026-02-27",
@@ -3446,7 +3687,8 @@
             "bond": 61,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         }
       ]
     },
@@ -3517,7 +3759,8 @@
             "active": 11,
             "index": 10
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-06-29",
@@ -3528,7 +3771,8 @@
             "active": 11,
             "index": 10
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-07-30",
@@ -3539,7 +3783,8 @@
             "active": 11,
             "index": 10
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-08-30",
@@ -3550,7 +3795,8 @@
             "index": 10,
             "active": 11
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-09-29",
@@ -3561,7 +3807,8 @@
             "index": 10,
             "active": 12
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-10-30",
@@ -3572,7 +3819,8 @@
             "index": 10,
             "active": 12
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-11-29",
@@ -3583,7 +3831,8 @@
             "index": 10,
             "active": 12
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-12-30",
@@ -3594,7 +3843,8 @@
             "index": 10,
             "active": 11
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-01-30",
@@ -3605,7 +3855,8 @@
             "index": 6,
             "active": 6
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-02-27",
@@ -3616,7 +3867,8 @@
             "index": 6,
             "active": 6
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-03-30",
@@ -3627,7 +3879,8 @@
             "index": 6,
             "active": 6
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-04-29",
@@ -3638,7 +3891,8 @@
             "index": 5,
             "active": 5
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-05-30",
@@ -3649,7 +3903,8 @@
             "index": 6,
             "active": 5
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-06-29",
@@ -3660,7 +3915,8 @@
             "index": 6,
             "active": 5
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-07-30",
@@ -3671,7 +3927,8 @@
             "bond": 51,
             "active": 5
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-08-30",
@@ -3682,7 +3939,8 @@
             "money": 10,
             "bond": 62
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-09-29",
@@ -3693,7 +3951,8 @@
             "bond": 62,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-10-30",
@@ -3704,7 +3963,8 @@
             "bond": 62,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-11-29",
@@ -3715,7 +3975,8 @@
             "bond": 62,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-12-30",
@@ -3726,7 +3987,8 @@
             "bond": 61,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2026-01-30",
@@ -3737,7 +3999,8 @@
             "bond": 61,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2026-02-27",
@@ -3748,7 +4011,8 @@
             "bond": 61,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         }
       ]
     },
@@ -3819,7 +4083,8 @@
             "active": 28,
             "index": 17
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-06-29",
@@ -3830,7 +4095,8 @@
             "active": 27,
             "index": 18
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-07-30",
@@ -3841,7 +4107,8 @@
             "active": 28,
             "index": 17
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-08-30",
@@ -3852,7 +4119,8 @@
             "index": 17,
             "active": 28
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-09-29",
@@ -3863,7 +4131,8 @@
             "index": 19,
             "active": 27
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-10-30",
@@ -3874,7 +4143,8 @@
             "index": 19,
             "active": 27
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-11-29",
@@ -3885,7 +4155,8 @@
             "index": 19,
             "active": 27
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-12-30",
@@ -3896,7 +4167,8 @@
             "index": 19,
             "active": 26
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-01-30",
@@ -3907,7 +4179,8 @@
             "index": 16,
             "active": 21
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-02-27",
@@ -3918,7 +4191,8 @@
             "index": 16,
             "active": 21
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-03-30",
@@ -3929,7 +4203,8 @@
             "index": 16,
             "active": 21
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-04-29",
@@ -3940,7 +4215,8 @@
             "index": 14,
             "active": 18
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-05-30",
@@ -3951,7 +4227,8 @@
             "index": 15,
             "active": 19
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-06-29",
@@ -3962,7 +4239,8 @@
             "index": 15,
             "active": 19
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-07-30",
@@ -3973,7 +4251,8 @@
             "bond": 17,
             "active": 19
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-08-30",
@@ -3984,7 +4263,8 @@
             "money": 10,
             "bond": 33
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-09-29",
@@ -3995,7 +4275,8 @@
             "bond": 33,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-10-30",
@@ -4006,7 +4287,8 @@
             "bond": 33,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-11-29",
@@ -4017,7 +4299,8 @@
             "bond": 33,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-12-30",
@@ -4028,7 +4311,8 @@
             "bond": 32,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2026-01-30",
@@ -4039,7 +4323,8 @@
             "bond": 32,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2026-02-27",
@@ -4050,7 +4335,8 @@
             "bond": 32,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         }
       ]
     },
@@ -4121,7 +4407,8 @@
             "active": 28,
             "index": 17
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-06-29",
@@ -4132,7 +4419,8 @@
             "active": 27,
             "index": 18
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-07-30",
@@ -4143,7 +4431,8 @@
             "active": 28,
             "index": 17
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-08-30",
@@ -4154,7 +4443,8 @@
             "index": 17,
             "active": 28
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-09-29",
@@ -4165,7 +4455,8 @@
             "index": 19,
             "active": 27
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-10-30",
@@ -4176,7 +4467,8 @@
             "index": 19,
             "active": 27
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-11-29",
@@ -4187,7 +4479,8 @@
             "index": 19,
             "active": 27
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-12-30",
@@ -4198,7 +4491,8 @@
             "index": 19,
             "active": 26
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-01-30",
@@ -4209,7 +4503,8 @@
             "index": 16,
             "active": 21
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-02-27",
@@ -4220,7 +4515,8 @@
             "index": 16,
             "active": 21
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-03-30",
@@ -4231,7 +4527,8 @@
             "index": 16,
             "active": 21
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-04-29",
@@ -4242,7 +4539,8 @@
             "index": 14,
             "active": 18
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-05-30",
@@ -4253,7 +4551,8 @@
             "index": 15,
             "active": 19
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-06-29",
@@ -4264,7 +4563,8 @@
             "index": 15,
             "active": 19
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-07-30",
@@ -4275,7 +4575,8 @@
             "bond": 17,
             "active": 19
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-08-30",
@@ -4286,7 +4587,8 @@
             "money": 10,
             "bond": 33
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-09-29",
@@ -4297,7 +4599,8 @@
             "bond": 33,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-10-30",
@@ -4308,7 +4611,8 @@
             "bond": 33,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-11-29",
@@ -4319,7 +4623,8 @@
             "bond": 33,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-12-30",
@@ -4330,7 +4635,8 @@
             "bond": 32,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2026-01-30",
@@ -4341,7 +4647,8 @@
             "bond": 32,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2026-02-27",
@@ -4352,7 +4659,8 @@
             "bond": 32,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         }
       ]
     },
@@ -4423,7 +4731,8 @@
             "active": 28,
             "index": 17
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-06-29",
@@ -4434,7 +4743,8 @@
             "active": 27,
             "index": 18
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-07-30",
@@ -4445,7 +4755,8 @@
             "active": 28,
             "index": 17
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-08-30",
@@ -4456,7 +4767,8 @@
             "index": 17,
             "active": 28
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-09-29",
@@ -4467,7 +4779,8 @@
             "index": 19,
             "active": 27
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-10-30",
@@ -4478,7 +4791,8 @@
             "index": 19,
             "active": 27
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-11-29",
@@ -4489,7 +4803,8 @@
             "index": 19,
             "active": 27
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-12-30",
@@ -4500,7 +4815,8 @@
             "index": 19,
             "active": 26
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-01-30",
@@ -4511,7 +4827,8 @@
             "index": 16,
             "active": 21
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-02-27",
@@ -4522,7 +4839,8 @@
             "index": 16,
             "active": 21
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-03-30",
@@ -4533,7 +4851,8 @@
             "index": 16,
             "active": 21
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-04-29",
@@ -4544,7 +4863,8 @@
             "index": 14,
             "active": 18
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-05-30",
@@ -4555,7 +4875,8 @@
             "index": 15,
             "active": 19
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-06-29",
@@ -4566,7 +4887,8 @@
             "index": 15,
             "active": 19
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-07-30",
@@ -4577,7 +4899,8 @@
             "bond": 17,
             "active": 19
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-08-30",
@@ -4588,7 +4911,8 @@
             "money": 10,
             "bond": 33
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-09-29",
@@ -4599,7 +4923,8 @@
             "bond": 33,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-10-30",
@@ -4610,7 +4935,8 @@
             "bond": 33,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-11-29",
@@ -4621,7 +4947,8 @@
             "bond": 33,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-12-30",
@@ -4632,7 +4959,8 @@
             "bond": 32,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2026-01-30",
@@ -4643,7 +4971,8 @@
             "bond": 32,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2026-02-27",
@@ -4654,7 +4983,8 @@
             "bond": 32,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         }
       ]
     },
@@ -4725,7 +5055,8 @@
             "active": 21,
             "index": 14
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-06-29",
@@ -4736,7 +5067,8 @@
             "active": 21,
             "index": 14
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-07-30",
@@ -4747,7 +5079,8 @@
             "active": 21,
             "index": 14
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-08-30",
@@ -4758,7 +5091,8 @@
             "index": 14,
             "active": 21
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-09-29",
@@ -4769,7 +5103,8 @@
             "index": 16,
             "active": 20
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-10-30",
@@ -4780,7 +5115,8 @@
             "index": 16,
             "active": 20
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-11-29",
@@ -4791,7 +5127,8 @@
             "index": 16,
             "active": 20
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-12-30",
@@ -4802,7 +5139,8 @@
             "index": 15,
             "active": 19
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-01-30",
@@ -4813,7 +5151,8 @@
             "index": 13,
             "active": 15
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-02-27",
@@ -4824,7 +5163,8 @@
             "index": 13,
             "active": 15
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-03-30",
@@ -4835,7 +5175,8 @@
             "index": 13,
             "active": 15
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-04-29",
@@ -4846,7 +5187,8 @@
             "index": 11,
             "active": 12
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-05-30",
@@ -4857,7 +5199,8 @@
             "index": 11,
             "active": 12
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-06-29",
@@ -4868,7 +5211,8 @@
             "index": 11,
             "active": 13
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-07-30",
@@ -4879,7 +5223,8 @@
             "bond": 23,
             "active": 13
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-08-30",
@@ -4890,7 +5235,8 @@
             "money": 10,
             "bond": 34
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-09-29",
@@ -4901,7 +5247,8 @@
             "bond": 33,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-10-30",
@@ -4912,7 +5259,8 @@
             "bond": 32,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-11-29",
@@ -4923,7 +5271,8 @@
             "bond": 33,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-12-30",
@@ -4934,7 +5283,8 @@
             "bond": 33,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2026-01-30",
@@ -4945,7 +5295,8 @@
             "bond": 33,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2026-02-27",
@@ -4956,7 +5307,8 @@
             "bond": 33,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         }
       ]
     },
@@ -5027,7 +5379,8 @@
             "active": 21,
             "index": 14
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-06-29",
@@ -5038,7 +5391,8 @@
             "active": 21,
             "index": 14
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-07-30",
@@ -5049,7 +5403,8 @@
             "active": 21,
             "index": 14
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-08-30",
@@ -5060,7 +5415,8 @@
             "index": 14,
             "active": 21
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-09-29",
@@ -5071,7 +5427,8 @@
             "index": 16,
             "active": 20
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-10-30",
@@ -5082,7 +5439,8 @@
             "index": 16,
             "active": 20
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-11-29",
@@ -5093,7 +5451,8 @@
             "index": 16,
             "active": 20
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-12-30",
@@ -5104,7 +5463,8 @@
             "index": 15,
             "active": 19
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-01-30",
@@ -5115,7 +5475,8 @@
             "index": 13,
             "active": 15
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-02-27",
@@ -5126,7 +5487,8 @@
             "index": 13,
             "active": 15
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-03-30",
@@ -5137,7 +5499,8 @@
             "index": 13,
             "active": 15
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-04-29",
@@ -5148,7 +5511,8 @@
             "index": 11,
             "active": 12
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-05-30",
@@ -5159,7 +5523,8 @@
             "index": 11,
             "active": 12
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-06-29",
@@ -5170,7 +5535,8 @@
             "index": 11,
             "active": 13
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-07-30",
@@ -5181,7 +5547,8 @@
             "bond": 23,
             "active": 13
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-08-30",
@@ -5192,7 +5559,8 @@
             "money": 10,
             "bond": 34
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-09-29",
@@ -5203,7 +5571,8 @@
             "bond": 33,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-10-30",
@@ -5214,7 +5583,8 @@
             "bond": 32,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-11-29",
@@ -5225,7 +5595,8 @@
             "bond": 33,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-12-30",
@@ -5236,7 +5607,8 @@
             "bond": 33,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2026-01-30",
@@ -5247,7 +5619,8 @@
             "bond": 33,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2026-02-27",
@@ -5258,7 +5631,8 @@
             "bond": 33,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         }
       ]
     },
@@ -5329,7 +5703,8 @@
             "active": 21,
             "index": 14
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-06-29",
@@ -5340,7 +5715,8 @@
             "active": 21,
             "index": 14
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-07-30",
@@ -5351,7 +5727,8 @@
             "active": 21,
             "index": 14
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-08-30",
@@ -5362,7 +5739,8 @@
             "index": 14,
             "active": 21
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-09-29",
@@ -5373,7 +5751,8 @@
             "index": 16,
             "active": 20
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-10-30",
@@ -5384,7 +5763,8 @@
             "index": 16,
             "active": 20
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-11-29",
@@ -5395,7 +5775,8 @@
             "index": 16,
             "active": 20
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-12-30",
@@ -5406,7 +5787,8 @@
             "index": 15,
             "active": 19
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-01-30",
@@ -5417,7 +5799,8 @@
             "index": 13,
             "active": 15
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-02-27",
@@ -5428,7 +5811,8 @@
             "index": 13,
             "active": 15
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-03-30",
@@ -5439,7 +5823,8 @@
             "index": 13,
             "active": 15
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-04-29",
@@ -5450,7 +5835,8 @@
             "index": 11,
             "active": 12
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-05-30",
@@ -5461,7 +5847,8 @@
             "index": 11,
             "active": 12
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-06-29",
@@ -5472,7 +5859,8 @@
             "index": 11,
             "active": 13
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-07-30",
@@ -5483,7 +5871,8 @@
             "bond": 23,
             "active": 13
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-08-30",
@@ -5494,7 +5883,8 @@
             "money": 10,
             "bond": 34
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-09-29",
@@ -5505,7 +5895,8 @@
             "bond": 33,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-10-30",
@@ -5516,7 +5907,8 @@
             "bond": 32,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-11-29",
@@ -5527,7 +5919,8 @@
             "bond": 33,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-12-30",
@@ -5538,7 +5931,8 @@
             "bond": 33,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2026-01-30",
@@ -5549,7 +5943,8 @@
             "bond": 33,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2026-02-27",
@@ -5560,7 +5955,8 @@
             "bond": 33,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         }
       ]
     },
@@ -5631,7 +6027,8 @@
             "active": 18,
             "index": 11
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-06-29",
@@ -5642,7 +6039,8 @@
             "active": 18,
             "index": 11
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-07-30",
@@ -5653,7 +6051,8 @@
             "active": 18,
             "index": 11
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-08-30",
@@ -5664,7 +6063,8 @@
             "index": 11,
             "active": 18
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-09-29",
@@ -5675,7 +6075,8 @@
             "index": 14,
             "active": 17
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-10-30",
@@ -5686,7 +6087,8 @@
             "index": 14,
             "active": 17
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-11-29",
@@ -5697,7 +6099,8 @@
             "index": 14,
             "active": 17
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-12-30",
@@ -5708,7 +6111,8 @@
             "index": 13,
             "active": 16
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-01-30",
@@ -5719,7 +6123,8 @@
             "index": 11,
             "active": 12
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-02-27",
@@ -5730,7 +6135,8 @@
             "index": 11,
             "active": 12
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-03-30",
@@ -5741,7 +6147,8 @@
             "index": 11,
             "active": 12
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-04-29",
@@ -5752,7 +6159,8 @@
             "index": 8,
             "active": 9
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-05-30",
@@ -5763,7 +6171,8 @@
             "index": 9,
             "active": 10
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-06-29",
@@ -5774,7 +6183,8 @@
             "index": 9,
             "active": 10
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-07-30",
@@ -5785,7 +6195,8 @@
             "bond": 28,
             "active": 10
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-08-30",
@@ -5796,7 +6207,8 @@
             "money": 10,
             "bond": 33
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-09-29",
@@ -5807,7 +6219,8 @@
             "bond": 33,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-10-30",
@@ -5818,7 +6231,8 @@
             "bond": 33,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-11-29",
@@ -5829,7 +6243,8 @@
             "bond": 33,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-12-30",
@@ -5840,7 +6255,8 @@
             "bond": 33,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2026-01-30",
@@ -5851,7 +6267,8 @@
             "bond": 33,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2026-02-27",
@@ -5862,7 +6279,8 @@
             "bond": 32,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         }
       ]
     },
@@ -5933,7 +6351,8 @@
             "active": 18,
             "index": 11
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-06-29",
@@ -5944,7 +6363,8 @@
             "active": 18,
             "index": 11
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-07-30",
@@ -5955,7 +6375,8 @@
             "active": 18,
             "index": 11
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-08-30",
@@ -5966,7 +6387,8 @@
             "index": 11,
             "active": 18
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-09-29",
@@ -5977,7 +6399,8 @@
             "index": 14,
             "active": 17
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-10-30",
@@ -5988,7 +6411,8 @@
             "index": 14,
             "active": 17
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-11-29",
@@ -5999,7 +6423,8 @@
             "index": 14,
             "active": 17
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-12-30",
@@ -6010,7 +6435,8 @@
             "index": 13,
             "active": 16
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-01-30",
@@ -6021,7 +6447,8 @@
             "index": 11,
             "active": 12
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-02-27",
@@ -6032,7 +6459,8 @@
             "index": 11,
             "active": 12
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-03-30",
@@ -6043,7 +6471,8 @@
             "index": 11,
             "active": 12
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-04-29",
@@ -6054,7 +6483,8 @@
             "index": 8,
             "active": 9
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-05-30",
@@ -6065,7 +6495,8 @@
             "index": 9,
             "active": 10
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-06-29",
@@ -6076,7 +6507,8 @@
             "index": 9,
             "active": 10
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-07-30",
@@ -6087,7 +6519,8 @@
             "bond": 28,
             "active": 10
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-08-30",
@@ -6098,7 +6531,8 @@
             "money": 10,
             "bond": 33
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-09-29",
@@ -6109,7 +6543,8 @@
             "bond": 33,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-10-30",
@@ -6120,7 +6555,8 @@
             "bond": 33,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-11-29",
@@ -6131,7 +6567,8 @@
             "bond": 33,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-12-30",
@@ -6142,7 +6579,8 @@
             "bond": 33,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2026-01-30",
@@ -6153,7 +6591,8 @@
             "bond": 33,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2026-02-27",
@@ -6164,7 +6603,8 @@
             "bond": 32,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         }
       ]
     },
@@ -6235,7 +6675,8 @@
             "active": 18,
             "index": 11
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-06-29",
@@ -6246,7 +6687,8 @@
             "active": 18,
             "index": 11
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-07-30",
@@ -6257,7 +6699,8 @@
             "active": 18,
             "index": 11
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-08-30",
@@ -6268,7 +6711,8 @@
             "index": 11,
             "active": 18
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-09-29",
@@ -6279,7 +6723,8 @@
             "index": 14,
             "active": 17
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-10-30",
@@ -6290,7 +6735,8 @@
             "index": 14,
             "active": 17
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-11-29",
@@ -6301,7 +6747,8 @@
             "index": 14,
             "active": 17
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-12-30",
@@ -6312,7 +6759,8 @@
             "index": 13,
             "active": 16
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-01-30",
@@ -6323,7 +6771,8 @@
             "index": 11,
             "active": 12
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-02-27",
@@ -6334,7 +6783,8 @@
             "index": 11,
             "active": 12
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-03-30",
@@ -6345,7 +6795,8 @@
             "index": 11,
             "active": 12
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-04-29",
@@ -6356,7 +6807,8 @@
             "index": 8,
             "active": 9
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-05-30",
@@ -6367,7 +6819,8 @@
             "index": 9,
             "active": 10
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-06-29",
@@ -6378,7 +6831,8 @@
             "index": 9,
             "active": 10
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-07-30",
@@ -6389,7 +6843,8 @@
             "bond": 28,
             "active": 10
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-08-30",
@@ -6400,7 +6855,8 @@
             "money": 10,
             "bond": 33
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-09-29",
@@ -6411,7 +6867,8 @@
             "bond": 33,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-10-30",
@@ -6422,7 +6879,8 @@
             "bond": 33,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-11-29",
@@ -6433,7 +6891,8 @@
             "bond": 33,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-12-30",
@@ -6444,7 +6903,8 @@
             "bond": 33,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2026-01-30",
@@ -6455,7 +6915,8 @@
             "bond": 33,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2026-02-27",
@@ -6466,7 +6927,8 @@
             "bond": 32,
             "money": 10
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         }
       ]
     },
@@ -6542,7 +7004,8 @@
             "qdii": 25,
             "money": 0
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-06-29",
@@ -6553,7 +7016,8 @@
             "qdii": 25,
             "money": 0
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-07-30",
@@ -6564,7 +7028,8 @@
             "qdii": 25,
             "money": 0
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-08-30",
@@ -6575,7 +7040,8 @@
             "qdii": 25,
             "money": 0
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-09-29",
@@ -6586,7 +7052,8 @@
             "qdii": 25,
             "money": 0
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-10-30",
@@ -6597,7 +7064,8 @@
             "qdii": 25,
             "money": 0
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-11-29",
@@ -6608,7 +7076,8 @@
             "qdii": 25,
             "money": 0
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-12-30",
@@ -6619,7 +7088,8 @@
             "qdii": 25,
             "money": 0
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-01-30",
@@ -6630,7 +7100,8 @@
             "qdii": 25,
             "money": 0
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-02-27",
@@ -6641,7 +7112,8 @@
             "qdii": 25,
             "money": 0
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-03-30",
@@ -6652,7 +7124,8 @@
             "qdii": 25,
             "money": 0
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-04-29",
@@ -6663,7 +7136,8 @@
             "qdii": 25,
             "money": 0
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-05-30",
@@ -6674,7 +7148,8 @@
             "qdii": 25,
             "money": 0
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-06-29",
@@ -6685,7 +7160,8 @@
             "qdii": 25,
             "money": 0
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-07-30",
@@ -6696,7 +7172,8 @@
             "qdii": 25,
             "money": 0
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-08-30",
@@ -6707,7 +7184,8 @@
             "qdii": 25,
             "money": 0
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-09-29",
@@ -6718,7 +7196,8 @@
             "qdii": 25,
             "money": 0
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-10-30",
@@ -6729,7 +7208,8 @@
             "qdii": 25,
             "money": 0
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-11-29",
@@ -6740,7 +7220,8 @@
             "qdii": 25,
             "money": 0
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-12-30",
@@ -6751,7 +7232,8 @@
             "qdii": 25,
             "money": 0
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2026-01-30",
@@ -6762,7 +7244,8 @@
             "qdii": 25,
             "money": 0
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2026-02-27",
@@ -6773,7 +7256,8 @@
             "qdii": 25,
             "money": 0
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         }
       ]
     },
@@ -6849,7 +7333,8 @@
             "qdii": 0,
             "money": 0
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-06-29",
@@ -6860,7 +7345,8 @@
             "qdii": 0,
             "money": 0
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-07-30",
@@ -6871,7 +7357,8 @@
             "qdii": 0,
             "money": 0
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-08-30",
@@ -6882,7 +7369,8 @@
             "qdii": 0,
             "money": 0
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-09-29",
@@ -6893,7 +7381,8 @@
             "qdii": 0,
             "money": 0
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-10-30",
@@ -6904,7 +7393,8 @@
             "qdii": 0,
             "money": 0
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-11-29",
@@ -6915,7 +7405,8 @@
             "qdii": 0,
             "money": 0
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2024-12-30",
@@ -6926,7 +7417,8 @@
             "qdii": 0,
             "money": 0
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-01-30",
@@ -6937,7 +7429,8 @@
             "qdii": 0,
             "money": 0
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-02-27",
@@ -6948,7 +7441,8 @@
             "qdii": 0,
             "money": 0
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-03-30",
@@ -6959,7 +7453,8 @@
             "qdii": 0,
             "money": 0
           },
-          "phase": "stagflation"
+          "phase": "stagflation",
+          "rebal": true
         },
         {
           "t": "2025-04-29",
@@ -6970,7 +7465,8 @@
             "qdii": 0,
             "money": 0
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-05-30",
@@ -6981,7 +7477,8 @@
             "qdii": 0,
             "money": 0
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-06-29",
@@ -6992,7 +7489,8 @@
             "qdii": 0,
             "money": 0
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-07-30",
@@ -7003,7 +7501,8 @@
             "qdii": 0,
             "money": 0
           },
-          "phase": "qdii_opp"
+          "phase": "qdii_opp",
+          "rebal": true
         },
         {
           "t": "2025-08-30",
@@ -7014,7 +7513,8 @@
             "qdii": 0,
             "money": 0
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-09-29",
@@ -7025,7 +7525,8 @@
             "qdii": 0,
             "money": 0
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-10-30",
@@ -7036,7 +7537,8 @@
             "qdii": 0,
             "money": 0
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-11-29",
@@ -7047,7 +7549,8 @@
             "qdii": 0,
             "money": 0
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2025-12-30",
@@ -7058,7 +7561,8 @@
             "qdii": 0,
             "money": 0
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2026-01-30",
@@ -7069,7 +7573,8 @@
             "qdii": 0,
             "money": 0
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         },
         {
           "t": "2026-02-27",
@@ -7080,7 +7585,8 @@
             "qdii": 0,
             "money": 0
           },
-          "phase": "recovery"
+          "phase": "recovery",
+          "rebal": true
         }
       ]
     }
