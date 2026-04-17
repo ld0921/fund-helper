@@ -225,7 +225,16 @@
         {
           "id": "3.4",
           "name": "验证选基层（scoreF / selectFunds 真的选出超额基金吗？）",
-          "status": "pending"
+          "status": "completed",
+          "completedDate": "2026-04-17",
+          "outputs": [
+            { "type": "file", "label": "backtest/diag-score-vs-composite.js", "path": "backtest/diag-score-vs-composite.js" },
+            { "type": "file", "label": "backtest/findings-3.4-scoref-vs-composite.md", "path": "backtest/findings-3.4-scoref-vs-composite.md" },
+            { "type": "result", "label": "✅ 厘清两套评分系统：composite 选基（80% Calmar）· scoreF 诊断（更全面）· 各司其职非 bug" },
+            { "type": "result", "label": "🔬 对照实验：selectFunds 用 scoreF 替代 composite → 21/21 画像恶化，夏普 -0.18 累计 -8.7pp" },
+            { "type": "result", "label": "🔍 Spearman 相关 0.62-0.95（边界有差属正常）· Top-10 重合 4-10" },
+            { "type": "result", "label": "📝 结论：保留现状，composite 确实是选基正解" }
+          ]
         },
         {
           "id": "3.5",
