@@ -3,7 +3,7 @@
     "project": "fund-helper 算法能力提升工程",
     "goal": "把算法从\"理论正确但未经证实\"升级为\"数据证明有效\"，在个人免费工具领域从 Top 5% 推进到 Top 1%",
     "startDate": "2026-04-17",
-    "lastUpdated": "2026-04-17T18:40:00+08:00",
+    "lastUpdated": "2026-04-17T19:10:00+08:00",
     "currentPhase": "phase-3",
     "commitHash": "eeff5d5"
   },
@@ -162,31 +162,53 @@
       "id": "phase-3",
       "name": "阶段 3：真证据调参",
       "goal": "在 5 年数据下逐条验证/推翻 findings 的参数",
-      "status": "pending",
+      "status": "in_progress",
+      "startDate": "2026-04-17",
       "tasks": [
         {
+          "id": "3.0",
+          "name": "基于 V2 findings 批改高信心代码",
+          "status": "completed",
+          "completedDate": "2026-04-17",
+          "subtasks": [
+            { "id": "3.0.A", "name": "换仓回本门槛 2 年 → 1.5 年", "status": "completed" },
+            { "id": "3.0.B", "name": "进取档 riskAdjust 去追高（r1系数0.2→0.1、去掉maxDD奖励）", "status": "completed" }
+          ],
+          "outputs": [
+            { "type": "result", "label": "进取+2年 含成本夏普 1.36 → 1.85 · 回撤 10.12% → 7.38%" },
+            { "type": "result", "label": "含成本 beat 等权基线的画像：2 → 5（新增进取 2/3/5年+1年）" },
+            { "type": "result", "label": "平衡档完全不变（预期）" }
+          ]
+        },
+        {
           "id": "3.1",
+          "name": "调仓频率实验（月度 vs 季度 vs 半年）",
+          "status": "pending",
+          "note": "findings-v3 预计最高 ROI：季度 rebalance 降成本 50-66%，净 alpha 可从 +2pp 升至 +5pp"
+        },
+        {
+          "id": "3.2",
           "name": "重跑 findings（熊市中算法表现如何？）",
           "status": "pending"
         },
         {
-          "id": "3.2",
+          "id": "3.3",
           "name": "12 条参数候选逐条调参（每条带 compare 证据）",
           "status": "pending"
         },
         {
-          "id": "3.3",
+          "id": "3.4",
           "name": "验证选基层（scoreF / selectFunds 真的选出超额基金吗？）",
           "status": "pending"
         },
         {
-          "id": "3.4",
+          "id": "3.5",
           "name": "验证换仓成本 0.0015 系数（你自己怀疑过偏乐观）",
           "status": "pending"
         },
         {
-          "id": "3.5",
-          "name": "生成 findings-v3.md 带证据的最终结论",
+          "id": "3.6",
+          "name": "生成 findings-v4.md 带证据的最终结论",
           "status": "pending"
         }
       ]
@@ -255,6 +277,11 @@
       "date": "2026-04-17",
       "label": "V2 报告页上线 · /backtest 全面升级",
       "achievement": "V1/V2 Tab 切换就位。V2 默认展示含 8 个区块：执行摘要/指标表/净值曲线/回撤曲线/成本影响柱图/phase 时间线/命中率/修订 findings/局限性。V1 保留作历史对照，明确标注数据有偏差。"
+    },
+    {
+      "date": "2026-04-17",
+      "label": "阶段 3 启动 · 批改代码首战告捷",
+      "achievement": "基于 V2 findings 的 2 条高信心代码修改（换仓门槛 2→1.5 年、进取档 riskAdjust 去追高）立竿见影：进取档夏普平均 +0.45、回撤平均 -2.7pp。含成本 beat 等权基线的画像从 2 增至 5。"
     }
   ],
   "referenceLinks": [
