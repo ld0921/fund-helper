@@ -588,23 +588,22 @@
       <span class="icon icon-green">📅</span>我的定投计划
       <span style="font-size:12px;color:var(--muted);font-weight:400;margin-left:4px">— 记录每月自动扣款的定投基金</span>
     </div>
-    <div class="form-grid" style="margin-bottom:10px">
-      <div class="form-item" style="grid-column:1/-1">
+    <div style="display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap;align-items:flex-end">
+      <div class="form-item" style="flex:2;min-width:180px">
         <label>搜索基金（输入名称或6位代码）</label>
         <input id="dp-search" placeholder="如：沪深300 或 510300" oninput="smartFundSearch('dp',this.value)" list="dp-datalist" autocomplete="off">
         <datalist id="dp-datalist"></datalist>
-        <input type="hidden" id="dp-code"><input type="hidden" id="dp-name">
+        <input type="hidden" id="dp-code"><input type="hidden" id="dp-name"><input type="hidden" id="dp-type" value="股票型">
       </div>
-      <div class="form-item" id="dp-matched" style="display:none;grid-column:1/-1">
-        <div style="font-size:13px;padding:8px 12px;background:var(--primary-bg);border-radius:6px;display:flex;align-items:center;gap:8px">
-          <span style="font-weight:600" id="dp-matched-name"></span>
-          <code style="font-size:11px;color:var(--muted)" id="dp-matched-code"></code>
-          <button onclick="clearFundMatch('dp')" style="margin-left:auto;background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px">&times;</button>
-        </div>
+      <div class="form-item" style="flex:1;min-width:120px">
+        <label>每月定投金额(元)</label>
+        <input id="dp-monthly" type="number" placeholder="如：500">
       </div>
-      <div class="form-item"><label>每月定投金额(元)</label><input id="dp-monthly" type="number" placeholder="如：500"></div>
-      <div class="form-item"><label>开始定投日期</label><input id="dp-start" type="date"></div>
-      <div class="form-item">
+      <div class="form-item" style="flex:1;min-width:140px">
+        <label>开始定投日期</label>
+        <input id="dp-start" type="date">
+      </div>
+      <div class="form-item" style="flex:1;min-width:120px">
         <label>每月扣款日</label>
         <select id="dp-deduct-day">
           <option value="1">每月1号</option>
@@ -616,9 +615,12 @@
           <option value="28">每月28号</option>
         </select>
       </div>
-      <div class="form-item"><label>当前持仓市值(元)</label><input id="dp-curval" type="number" placeholder="最新估值，可不填"></div>
-      <div class="form-item"><label>基金类型</label>
-        <select id="dp-type"><option>股票型</option><option>混合型</option><option>债券型</option><option>指数型</option><option>货币型</option><option>QDII</option></select>
+    </div>
+    <div class="form-item" id="dp-matched" style="display:none;margin-bottom:10px">
+      <div style="font-size:13px;padding:8px 12px;background:var(--primary-bg);border-radius:6px;display:flex;align-items:center;gap:8px">
+        <span style="font-weight:600" id="dp-matched-name"></span>
+        <code style="font-size:11px;color:var(--muted)" id="dp-matched-code"></code>
+        <button onclick="clearFundMatch('dp')" style="margin-left:auto;background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px">&times;</button>
       </div>
     </div>
     <div class="action-bar">

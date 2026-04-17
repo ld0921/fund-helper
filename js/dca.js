@@ -536,7 +536,7 @@ function addDcaPlan(){
   const name=document.getElementById('dp-name').value.trim();
   const monthly=parseFloat(document.getElementById('dp-monthly').value)||0;
   const start=document.getElementById('dp-start').value;
-  const curval=parseFloat(document.getElementById('dp-curval').value)||0;
+  const curval=0;
   const type=document.getElementById('dp-type').value;
   const deductDay = parseInt(document.getElementById('dp-deduct-day').value) || 10;
   // 内联校验
@@ -551,7 +551,7 @@ function addDcaPlan(){
   FundDB.set('dcaPlans',dcaPlans);
   renderDcaPlans(); flashSaved('dp-section');
   clearFundMatch('dp');
-  ['dp-monthly','dp-curval'].forEach(id=>document.getElementById(id).value='');
+  ['dp-monthly'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('dca-ai-result').style.display='none';
 }
 
