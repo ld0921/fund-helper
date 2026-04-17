@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>fund-helper · 算法能力提升工程地图</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  :root{
+    --pri:#1677ff; --ok:#52c41a; --warn:#faad14; --bad:#ff4d4f; --muted:#8c8c8c;
+    --bg:#f4f6fa; --card:#fff; --border:#e8eaed; --border-strong:#d9dce1;
+    --text:#1f2328; --text-muted:#57606a;
+    --phase-done-bg:#e6f7ea; --phase-active-bg:#e6f0ff;
+    --phase-pending-bg:#fafafa;
+  }
+  *{box-sizing:border-box;}
+  body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Segoe UI",sans-serif;
+    background:var(--bg);margin:0;padding:24px 16px;color:var(--text);line-height:1.55;}
+  .container{max-width:1000px;margin:0 auto;}
+  header{margin-bottom:20px;}
+  h1{font-size:24px;margin:0 0 4px;letter-spacing:0.5px;}
+  .subtitle{color:var(--text-muted);font-size:13px;margin-bottom:4px;}
+  .meta{color:var(--muted);font-size:12px;}
+
+  .overall-card{background:var(--card);border-radius:10px;padding:20px;margin-bottom:16px;
+    border:1px solid var(--border);}
+  .overall-title{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px;}
+  .overall-title .label{font-size:14px;color:var(--text-muted);}
+  .overall-title .percent{font-size:28px;font-weight:600;color:var(--pri);}
+  .progress-bar{height:10px;background:#eef1f5;border-radius:5px;overflow:hidden;}
+  .progress-fill{height:100%;background:linear-gradient(90deg,#1677ff,#52c41a);transition:width .6s;}
+
+  .current-chip{display:inline-block;margin-top:10px;padding:4px 10px;border-radius:6px;
+    background:#e6f0ff;color:#1677ff;font-size:12px;font-weight:500;}
+
+  .phase{background:var(--card);border-radius:10px;margin-bottom:14px;border:1px solid var(--border);overflow:hidden;}
+  .phase-head{padding:14px 18px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:12px;}
+  .phase-head:hover{background:#fafbfc;}
+  .phase-head.completed{background:var(--phase-done-bg);}
+  .phase-head.in_progress{background:var(--phase-active-bg);}
+  .phase-title{display:flex;align-items:center;gap:10px;flex:1;min-width:0;}
+  .phase-icon{width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;
+    justify-content:center;font-size:14px;font-weight:600;flex-shrink:0;}
+  .phase-icon.completed{background:var(--ok);color:white;}
+  .phase-icon.in_progress{background:var(--pri);color:white;}
+  .phase-icon.pending{background:#d9dce1;color:#606770;}
+  .phase-name{font-size:16px;font-weight:600;}
+  .phase-goal{font-size:12px;color:var(--text-muted);margin-top:2px;}
+  .phase-progress-right{display:flex;align-items:center;gap:10px;flex-shrink:0;}
+  .phase-mini-bar{width:70px;height:6px;background:#eef1f5;border-radius:3px;overflow:hidden;}
+  .phase-mini-fill{height:100%;background:var(--pri);}
+  .phase-mini-fill.completed{background:var(--ok);}
+  .phase-pct{font-size:13px;font-weight:600;color:var(--text);min-width:32px;text-align:right;}
+  .phase-chevron{transition:transform .2s;color:var(--muted);}
+  .phase.open .phase-chevron{transform:rotate(90deg);}
+
+  .phase-body{padding:0 18px 6px;display:none;border-top:1px solid var(--border);}
+  .phase.open .phase-body{display:block;}
+
+  .task{padding:10px 0;border-bottom:1px dashed #eef0f3;}
+  .task:last-child{border-bottom:none;}
+  .task-head{display:flex;align-items:center;gap:10px;}
+  .task-status-icon{width:18px;height:18px;border-radius:50%;flex-shrink:0;
+    display:inline-flex;align-items:center;justify-content:center;font-size:11px;}
+  .task-status-icon.completed{background:var(--ok);color:white;}
+  .task-status-icon.in_progress{background:var(--pri);color:white;}
+  .task-status-icon.pending{background:transparent;border:2px solid #d9dce1;}
+  .task-status-icon.blocked{background:var(--bad);color:white;}
+  .task-id{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px;
+    color:var(--muted);min-width:30px;}
+  .task-name{flex:1;font-size:14px;}
+  .task-name.completed{color:var(--text-muted);}
+  .task-date{font-size:11px;color:var(--muted);}
+  .task-note{margin-left:28px;font-size:12px;color:var(--text-muted);margin-top:2px;}
+
+  .subtasks{margin:6px 0 0 28px;padding:6px 0 4px 10px;border-left:2px solid #eef0f3;}
+  .subtask{display:flex;align-items:center;gap:8px;padding:3px 0;font-size:12.5px;}
+
+  .outputs{margin:6px 0 0 28px;display:flex;flex-wrap:wrap;gap:6px;}
+  .output{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:4px;
+    font-size:11.5px;background:#f4f6fa;border:1px solid var(--border);color:var(--text-muted);
+    text-decoration:none;}
+  .output:hover{background:#eef1f5;}
+  .output.file{color:#1677ff;}
+  .output.link{color:#52c41a;font-weight:500;}
+  .output.result{color:#5a4a00;background:#fffbe6;border-color:#ffe58f;}
+  .output.note{font-style:italic;}
+
+  .milestones{background:var(--card);border-radius:10px;padding:18px;margin-top:16px;border:1px solid var(--border);}
+  .milestones h2{margin-top:0;font-size:16px;}
+  .milestone{display:flex;gap:14px;padding:8px 0;border-bottom:1px dashed #eef0f3;}
+  .milestone:last-child{border-bottom:none;}
+  .milestone-date{font-family:ui-monospace,monospace;font-size:12px;color:var(--muted);
+    flex-shrink:0;width:90px;padding-top:2px;}
+  .milestone-body .label{font-size:14px;font-weight:500;}
+  .milestone-body .ach{font-size:12.5px;color:var(--text-muted);margin-top:2px;}
+
+  .refs{background:var(--card);border-radius:10px;padding:14px 18px;margin-top:12px;border:1px solid var(--border);}
+  .refs h2{margin:0 0 6px;font-size:14px;color:var(--text-muted);}
+  .refs a{color:var(--pri);text-decoration:none;font-size:13px;margin-right:12px;}
+  .refs a:hover{text-decoration:underline;}
+
+  footer{text-align:center;color:var(--muted);font-size:11px;margin-top:20px;padding:14px 0;}
+  footer code{background:#eef1f5;padding:1px 5px;border-radius:3px;font-size:11px;}
+
+  .loading{text-align:center;padding:40px;color:var(--muted);}
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>🗺️ fund-helper · 算法能力提升工程</h1>
+    <div class="subtitle" id="goal">加载中…</div>
+    <div class="meta" id="meta"></div>
+  </header>
+
+  <div id="content" class="loading">加载中…</div>
+</div>
+
+<script>
+const STATUS_LABEL = { completed: '完成', in_progress: '进行中', pending: '未开始', blocked: '阻塞' };
+const STATUS_ICON = { completed: '✓', in_progress: '→', pending: '', blocked: '!' };
+
+async function main(){
+  try {
+    const data = await fetch('roadmap.json?t=' + Date.now()).then(r => r.json());
+    render(data);
+  } catch (e) {
+    document.getElementById('content').innerHTML = '<div style="color:#ff4d4f">加载失败：' + e.message + '</div>';
+  }
+}
+
+function taskProgress(task){
+  if(task.status === 'completed') return 100;
+  if(task.status === 'pending') return 0;
+  if(task.status === 'in_progress'){
+    if(task.subtasks && task.subtasks.length){
+      const done = task.subtasks.filter(s => s.status === 'completed').length;
+      const inprog = task.subtasks.filter(s => s.status === 'in_progress').length;
+      return Math.round((done + inprog * 0.5) / task.subtasks.length * 100);
+    }
+    return 50;
+  }
+  return 0;
+}
+
+function phaseProgress(phase){
+  if(phase.status === 'completed') return 100;
+  if(!phase.tasks || !phase.tasks.length) return 0;
+  const sum = phase.tasks.reduce((s, t) => s + taskProgress(t), 0);
+  return Math.round(sum / phase.tasks.length);
+}
+
+function overallProgress(phases){
+  if(!phases.length) return 0;
+  const sum = phases.reduce((s, p) => s + phaseProgress(p), 0);
+  return Math.round(sum / phases.length);
+}
+
+function fmtDate(d){ return d || ''; }
+
+function render(data){
+  const meta = data.meta || {};
+  document.getElementById('goal').textContent = meta.goal || '';
+  const overall = overallProgress(data.phases);
+
+  let metaStr = `启动 ${meta.startDate} · 最近更新 ${new Date(meta.lastUpdated).toLocaleString('zh-CN')}`;
+  if(meta.commitHash) metaStr += ` · commit <code style="background:#eef1f5;padding:1px 5px;border-radius:3px;">${meta.commitHash.slice(0,7)}</code>`;
+  document.getElementById('meta').innerHTML = metaStr;
+
+  const currentPhase = data.phases.find(p => p.id === meta.currentPhase);
+  const currentLabel = currentPhase ? currentPhase.name : '—';
+
+  let html = `
+    <div class="overall-card">
+      <div class="overall-title">
+        <span class="label">整体进度</span>
+        <span class="percent">${overall}%</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${overall}%"></div></div>
+      <span class="current-chip">🎯 当前：${currentLabel}</span>
+    </div>`;
+
+  data.phases.forEach((phase, idx) => {
+    const pct = phaseProgress(phase);
+    const isOpen = phase.status === 'in_progress' || (idx === 0 && data.phases.every(p => p.status === 'pending'));
+    html += renderPhase(phase, pct, isOpen);
+  });
+
+  // 里程碑
+  if(data.milestones && data.milestones.length){
+    html += '<div class="milestones"><h2>📍 里程碑</h2>';
+    data.milestones.forEach(m => {
+      html += `<div class="milestone">
+        <div class="milestone-date">${m.date}</div>
+        <div class="milestone-body">
+          <div class="label">${m.label}</div>
+          <div class="ach">${m.achievement}</div>
+        </div>
+      </div>`;
+    });
+    html += '</div>';
+  }
+
+  // 相关链接
+  if(data.referenceLinks && data.referenceLinks.length){
+    html += '<div class="refs"><h2>相关链接</h2>';
+    data.referenceLinks.forEach(l => {
+      html += `<a href="${l.url}" target="_blank">${l.label} →</a>`;
+    });
+    html += '</div>';
+  }
+
+  html += `<footer>roadmap.json 由 Claude Code 在每次关键任务完成后同步更新 · 版本 ${meta.commitHash||'dev'}</footer>`;
+
+  document.getElementById('content').innerHTML = html;
+  document.getElementById('content').classList.remove('loading');
+
+  // 绑定展开/收起
+  document.querySelectorAll('.phase-head').forEach(head => {
+    head.addEventListener('click', () => {
+      head.closest('.phase').classList.toggle('open');
+    });
+  });
+}
+
+function renderPhase(phase, pct, openByDefault){
+  const openClass = openByDefault ? 'open' : '';
+  const statusClass = phase.status;
+  const statusIcon = STATUS_ICON[phase.status] || '';
+  const miniFillClass = phase.status === 'completed' ? 'completed' : '';
+
+  let html = `<div class="phase ${openClass}">
+    <div class="phase-head ${statusClass}">
+      <div class="phase-title">
+        <span class="phase-icon ${statusClass}">${statusIcon}</span>
+        <div>
+          <div class="phase-name">${phase.name}</div>
+          <div class="phase-goal">${phase.goal || ''}</div>
+        </div>
+      </div>
+      <div class="phase-progress-right">
+        <div class="phase-mini-bar"><div class="phase-mini-fill ${miniFillClass}" style="width:${pct}%"></div></div>
+        <span class="phase-pct">${pct}%</span>
+        <span class="phase-chevron">›</span>
+      </div>
+    </div>
+    <div class="phase-body">`;
+
+  (phase.tasks || []).forEach(task => {
+    html += renderTask(task);
+  });
+
+  html += '</div></div>';
+  return html;
+}
+
+function renderTask(task){
+  const iconChar = STATUS_ICON[task.status] || '';
+  let html = `<div class="task">
+    <div class="task-head">
+      <span class="task-status-icon ${task.status}">${iconChar}</span>
+      <span class="task-id">${task.id}</span>
+      <span class="task-name ${task.status}">${task.name}</span>
+      ${task.completedDate ? `<span class="task-date">${fmtDate(task.completedDate)}</span>` : ''}
+    </div>`;
+
+  if(task.note){
+    html += `<div class="task-note">${task.note}</div>`;
+  }
+
+  if(task.subtasks && task.subtasks.length){
+    html += '<div class="subtasks">';
+    task.subtasks.forEach(sub => {
+      html += `<div class="subtask">
+        <span class="task-status-icon ${sub.status}">${STATUS_ICON[sub.status]||''}</span>
+        <span class="task-id">${sub.id}</span>
+        <span class="task-name ${sub.status}">${sub.name}</span>
+      </div>`;
+    });
+    html += '</div>';
+  }
+
+  if(task.outputs && task.outputs.length){
+    html += '<div class="outputs">';
+    task.outputs.forEach(out => {
+      if(out.type === 'link' && out.url){
+        html += `<a class="output link" href="${out.url}" target="_blank">🔗 ${out.label}</a>`;
+      } else if(out.type === 'file' && out.path){
+        const gh = `https://github.com/ld0921/fund-helper/blob/main/${out.path}`;
+        html += `<a class="output file" href="${gh}" target="_blank">📄 ${out.label}</a>`;
+      } else if(out.type === 'result'){
+        html += `<span class="output result">💡 ${out.label}</span>`;
+      } else {
+        html += `<span class="output note">${out.label}</span>`;
+      }
+    });
+    html += '</div>';
+  }
+
+  html += '</div>';
+  return html;
+}
+
+main();
+</script>
+</body>
+</html>

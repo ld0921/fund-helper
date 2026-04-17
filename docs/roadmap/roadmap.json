@@ -1,0 +1,207 @@
+{
+  "meta": {
+    "project": "fund-helper 算法能力提升工程",
+    "goal": "把算法从\"理论正确但未经证实\"升级为\"数据证明有效\"，在个人免费工具领域从 Top 5% 推进到 Top 1%",
+    "startDate": "2026-04-17",
+    "lastUpdated": "2026-04-17T07:30:00+08:00",
+    "currentPhase": "phase-2",
+    "commitHash": "f1b1bcf"
+  },
+  "phases": [
+    {
+      "id": "phase-1",
+      "name": "阶段 1：评估与诊断",
+      "goal": "搞清楚算法现在什么水平，问题出在哪",
+      "status": "completed",
+      "startDate": "2026-04-17",
+      "completedDate": "2026-04-17",
+      "tasks": [
+        {
+          "id": "1.1",
+          "name": "算法多维评估（6 维度 × 3 模块）",
+          "status": "completed",
+          "completedDate": "2026-04-17",
+          "outputs": [
+            { "type": "result", "label": "智能推荐 87% · 定投 82% · 诊断 81%" },
+            { "type": "result", "label": "综合定位：个人免费工具 Top 5%" }
+          ]
+        },
+        {
+          "id": "1.2",
+          "name": "构建回测基础设施（方案 A）",
+          "status": "completed",
+          "completedDate": "2026-04-17",
+          "outputs": [
+            { "type": "file", "label": "backtest/envShim.js", "path": "backtest/envShim.js" },
+            { "type": "file", "label": "backtest/runBacktest.js", "path": "backtest/runBacktest.js" },
+            { "type": "file", "label": "backtest/metrics.js", "path": "backtest/metrics.js" },
+            { "type": "note", "label": "零侵入：通过 Node vm 加载生产代码，不改 js/" }
+          ]
+        },
+        {
+          "id": "1.3",
+          "name": "方案 A 回测报告（已部署）",
+          "status": "completed",
+          "completedDate": "2026-04-17",
+          "outputs": [
+            { "type": "link", "label": "打开回测报告", "url": "/backtest" },
+            { "type": "file", "label": "docs/backtest/index.html", "path": "docs/backtest/index.html" }
+          ]
+        },
+        {
+          "id": "1.4",
+          "name": "Findings v1 · 12 条参数调整候选",
+          "status": "completed",
+          "completedDate": "2026-04-17",
+          "outputs": [
+            { "type": "file", "label": "backtest/findings.md", "path": "backtest/findings.md" },
+            { "type": "result", "label": "发现 3 个真问题：phase 空头命中率 44% · 跑输等权 10pp · 动量贡献边际" }
+          ]
+        },
+        {
+          "id": "1.5",
+          "name": "第 1 轮 P0 调参（3 次，1 次保留）",
+          "status": "completed",
+          "completedDate": "2026-04-17",
+          "outputs": [
+            { "type": "result", "label": "保留：overheat equityMult 0.85→0.92" },
+            { "type": "result", "label": "回滚：overheat 阈值 10→15、stagflation equityMult 0.85→0.90" },
+            { "type": "result", "label": "核心洞察：24 月样本不足是真瓶颈，改参在噪声里打转" },
+            { "type": "file", "label": "backtest/findings-v2.md", "path": "backtest/findings-v2.md" },
+            { "type": "file", "label": "backtest/tuning-log.json", "path": "backtest/tuning-log.json" },
+            { "type": "file", "label": "backtest/compare.js (参数调整度量器)", "path": "backtest/compare.js" }
+          ]
+        },
+        {
+          "id": "1.6",
+          "name": "零风险文档改进（F5 + F7）",
+          "status": "completed",
+          "completedDate": "2026-04-17",
+          "outputs": [
+            { "type": "result", "label": "1 年期限加防御性警告" },
+            { "type": "result", "label": "风险偏好对话框加\"算法价值定位\"说明（强调风险调整后表现）" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "phase-2",
+      "name": "阶段 2：数据建设",
+      "goal": "打破 24 月数据瓶颈，拿到 5 年含熊市数据底座",
+      "status": "in_progress",
+      "startDate": "2026-04-17",
+      "tasks": [
+        {
+          "id": "2.1",
+          "name": "历史净值拉取",
+          "status": "pending",
+          "note": "全市场 Top 500 × 5 年日净值 · 限速 2 req/s",
+          "subtasks": [
+            { "id": "2.1.A", "name": "数据拉取脚本 scripts/fetch-history-nav.js", "status": "pending" },
+            { "id": "2.1.B", "name": "全市场 Top 500 基金池构建", "status": "pending" },
+            { "id": "2.1.C", "name": "批量拉取 5 年日净值（预计 1.5 小时）", "status": "pending" },
+            { "id": "2.1.D", "name": "数据清洗 + SQLite 存储", "status": "pending" },
+            { "id": "2.1.E", "name": "增量更新机制（后续复用）", "status": "pending" },
+            { "id": "2.1.F", "name": "质量验证（对比当前 r1/r3）", "status": "pending" }
+          ]
+        },
+        {
+          "id": "2.2",
+          "name": "回测引擎升级 V2",
+          "status": "pending",
+          "subtasks": [
+            { "id": "2.2.A", "name": "backtest/runBacktestV2.js 主引擎", "status": "pending" },
+            { "id": "2.2.B", "name": "按月滚动重算 r1/r3/maxDD（避免前视偏差）", "status": "pending" },
+            { "id": "2.2.C", "name": "接入 scoreF + selectFunds 完整链路", "status": "pending" },
+            { "id": "2.2.D", "name": "引入交易成本（申赎费按类别）", "status": "pending" },
+            { "id": "2.2.E", "name": "避免幸存者偏差（用当时全市场池而非今天的精选库）", "status": "pending" }
+          ]
+        },
+        {
+          "id": "2.3",
+          "name": "方案 B 新基线",
+          "status": "pending",
+          "subtasks": [
+            { "id": "2.3.A", "name": "跑一次完整 V2 回测（5 年数据）", "status": "pending" },
+            { "id": "2.3.B", "name": "生成新 baseline-metrics-v2.json", "status": "pending" },
+            { "id": "2.3.C", "name": "更新报告页加入 V2 对比数据", "status": "pending" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "phase-3",
+      "name": "阶段 3：真证据调参",
+      "goal": "在 5 年数据下逐条验证/推翻 findings 的参数",
+      "status": "pending",
+      "tasks": [
+        {
+          "id": "3.1",
+          "name": "重跑 findings（熊市中算法表现如何？）",
+          "status": "pending"
+        },
+        {
+          "id": "3.2",
+          "name": "12 条参数候选逐条调参（每条带 compare 证据）",
+          "status": "pending"
+        },
+        {
+          "id": "3.3",
+          "name": "验证选基层（scoreF / selectFunds 真的选出超额基金吗？）",
+          "status": "pending"
+        },
+        {
+          "id": "3.4",
+          "name": "验证换仓成本 0.0015 系数（你自己怀疑过偏乐观）",
+          "status": "pending"
+        },
+        {
+          "id": "3.5",
+          "name": "生成 findings-v3.md 带证据的最终结论",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": "phase-4",
+      "name": "阶段 4：持续优化循环",
+      "goal": "算法不是一劳永逸，建立长期维护机制",
+      "status": "pending",
+      "tasks": [
+        {
+          "id": "4.1",
+          "name": "每月增量数据重跑 baseline（自动化 CI 工作流）",
+          "status": "pending"
+        },
+        {
+          "id": "4.2",
+          "name": "参数漂移监控（发现历史最优参数偏离时告警）",
+          "status": "pending"
+        },
+        {
+          "id": "4.3",
+          "name": "新因子 A/B 回测机制（加任何新因子前先回测验证）",
+          "status": "pending"
+        },
+        {
+          "id": "4.4",
+          "name": "算法实验室工具化（可复用给其他量化项目）",
+          "status": "pending"
+        }
+      ]
+    }
+  ],
+  "milestones": [
+    {
+      "date": "2026-04-17",
+      "label": "工程启动 · 阶段 1 完成",
+      "achievement": "算法评估完成，方案 A 回测基础设施到位，1 次 P0 调参保留，识别出 24 月样本不足是核心瓶颈"
+    }
+  ],
+  "referenceLinks": [
+    { "label": "回测报告（方案 A）", "url": "/backtest" },
+    { "label": "findings v1（12 条候选）", "url": "https://github.com/ld0921/fund-helper/blob/main/backtest/findings.md" },
+    { "label": "findings v2（第 1 轮调参复盘）", "url": "https://github.com/ld0921/fund-helper/blob/main/backtest/findings-v2.md" },
+    { "label": "代码仓库", "url": "https://github.com/ld0921/fund-helper" }
+  ]
+}
