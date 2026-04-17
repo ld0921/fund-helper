@@ -1,9 +1,11 @@
 {
+  "redirects": [
+    { "source": "/backtest", "destination": "/backtest/", "statusCode": 301 },
+    { "source": "/roadmap", "destination": "/roadmap/", "statusCode": 301 }
+  ],
   "rewrites": [
-    { "source": "/backtest", "destination": "/docs/backtest/index.html" },
     { "source": "/backtest/", "destination": "/docs/backtest/index.html" },
     { "source": "/backtest/:path*", "destination": "/docs/backtest/:path*" },
-    { "source": "/roadmap", "destination": "/docs/roadmap/index.html" },
     { "source": "/roadmap/", "destination": "/docs/roadmap/index.html" },
     { "source": "/roadmap/:path*", "destination": "/docs/roadmap/:path*" },
     { "source": "/(.*)", "destination": "/index.html" }
