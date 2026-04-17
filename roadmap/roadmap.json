@@ -142,11 +142,15 @@
         {
           "id": "2.3",
           "name": "方案 B 新基线",
-          "status": "pending",
+          "status": "in_progress",
           "subtasks": [
-            { "id": "2.3.A", "name": "跑一次完整 V2 回测（5 年数据）", "status": "pending" },
-            { "id": "2.3.B", "name": "生成新 baseline-metrics-v2.json", "status": "pending" },
-            { "id": "2.3.C", "name": "更新报告页加入 V2 对比数据", "status": "pending" }
+            { "id": "2.3.A", "name": "跑一次完整 V2 回测（5 年数据）", "status": "completed" },
+            { "id": "2.3.B", "name": "生成新 baseline-metrics-v2.json", "status": "completed" },
+            { "id": "2.3.C", "name": "更新 /backtest 报告页加入 V2 对比数据", "status": "pending" }
+          ],
+          "outputs": [
+            { "type": "file", "label": "backtest/baseline-v2/ （含成本+选基完整版）", "path": "backtest/baseline-v2/metrics.json" },
+            { "type": "result", "label": "V2 基线已就位：22 变体 × 22 月 · 可作后续调参对照" }
           ]
         }
       ]
