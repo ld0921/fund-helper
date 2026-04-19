@@ -400,6 +400,20 @@ function runHealthMonitor(){
   });
 
   const catRanksCache = Object.keys(navCache).length>0 ? analyzeCategoryPerf() : null;
+
+  // 读取最新智能推荐方案，用于联动诊断（避免对"建议加仓/持有"的基金发出矛盾黄警）
+  // 只信任 7 天内的方案，过期则忽略
+  let latestPlanActions = {};
+  try {
+    const raw = localStorage.getItem('lastRebalancePlan');
+    if(raw){
+      const plan = JSON.parse(raw);
+      const age = Date.now() - (plan.timestamp || 0);
+      if(age < 7 * 24 * 60 * 60 * 1000 && Array.isArray(plan.actions)){
+        plan.actions.forEach(a => { if(a.code) latestPlanActions[a.code] = a.action; });
+      }
+    }
+  } catch(e){ console.warn('读取 lastRebalancePlan 失败:', e); }
   // 集中度和总市值计算时去重（同一基金不重复计入）
   const uniqueHeld = [];
   const seenCodes = new Set();
@@ -501,11 +515,14 @@ function runHealthMonitor(){
       if(level==='green') level='yellow';
     }
 
-    // 类别行情末位且仓位大
+    // 类别行情末位且仓位大（注意：这里是"类别级"表现，不是基金在类别内的排名）
+    // 联动：若智能推荐最新结论为"加仓/持有/新建仓"，说明算法已综合类别强弱后仍建议保留，跳过此黄警避免矛盾
     if(catRanksCache){
       const catRank = catRanksCache.findIndex(c=>c.cat===fd.cat);
-      if(catRank>=3 && h.value > 5000){
-        issues.push(`所属类别「${fd.label}」当前行情排名第${catRank+1}位（末段），持仓市值 ¥${h.value.toLocaleString()}`);
+      const recAction = latestPlanActions[h.code];
+      const recommendedKeep = recAction && ['buy','buy_more','hold'].includes(recAction);
+      if(catRank>=3 && h.value > 5000 && !recommendedKeep){
+        issues.push(`「${fd.label}」类别整体表现在 5 类资产中偏弱（第${catRank+1}位/共5类），你在该类别持仓 ¥${h.value.toLocaleString()}，注意权重配比`);
         if(level==='green') level='yellow';
       }
     }
