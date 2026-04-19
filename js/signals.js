@@ -447,7 +447,8 @@ function runHealthMonitor(){
   holdings.forEach(h=>{
     const fd = CURATED_FUNDS.find(f=>f.code===h.code);
     const nav = navCache[h.code];
-    const todayChg = nav ? parseFloat(nav.gszzl)||0 : null;
+    // 非交易日（周末/节假日）的估值数据是上一交易日残留，不应作为"今日"展示
+    const todayChg = (nav && typeof isTradingDay === 'function' && isTradingDay()) ? parseFloat(nav.gszzl)||0 : null;
     const pnlPct = h.cost>0 ? (h.value-h.cost)/h.cost*100 : null;
     const pct = totalPortValue > 0 ? h.value / totalPortValue * 100 : 0;
     const issues = [];
@@ -579,7 +580,8 @@ function runHealthMonitor(){
   dcaHoldings.forEach(h=>{
     const fd = CURATED_FUNDS.find(f=>f.code===h.code);
     const nav = navCache[h.code];
-    const todayChg = nav ? parseFloat(nav.gszzl)||0 : null;
+    // 非交易日（周末/节假日）的估值数据是上一交易日残留，不应作为"今日"展示
+    const todayChg = (nav && typeof isTradingDay === 'function' && isTradingDay()) ? parseFloat(nav.gszzl)||0 : null;
     const pnlPct = h.cost>0 ? (h.value-h.cost)/h.cost*100 : null;
     const pct = totalPortValue > 0 ? h.value / totalPortValue * 100 : 0;
     const issues = [];
