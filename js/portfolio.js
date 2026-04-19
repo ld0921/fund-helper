@@ -1528,6 +1528,14 @@ function _doGenerate(shouldScroll){
   }
   // 确保所有基金 pct 与 amt 一致
   finalPicks.forEach(f => { f.pct = Math.round(f.amt / portfolioTotal * 100); });
+  // 累积舍入误差校正：分别 Math.round 后总和可能 ≠ 100（渲染时分组求和会露出），
+  // 把差额补到 pct 最大的那只基金上，确保总和恰好 100
+  const finalPctSum = finalPicks.reduce((s, f) => s + f.pct, 0);
+  if(finalPctSum !== 100 && finalPicks.length > 0){
+    const pctDiff = 100 - finalPctSum;
+    const maxPctPick = [...finalPicks].sort((a,b) => b.pct - a.pct)[0];
+    maxPctPick.pct += pctDiff;
+  }
 
   // 重新同步selectedPicks：确保computeRebalancePlan使用的是过滤和调整后的数据
   Object.keys(selectedPicks).forEach(cat => {
