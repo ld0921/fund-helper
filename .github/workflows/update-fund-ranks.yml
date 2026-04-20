@@ -2,8 +2,10 @@ name: 更新全市场基金排名数据
 
 on:
   schedule:
-    # 每周一、四早上9点（北京时间）= UTC 01:00
-    - cron: '0 1 * * 1,4'
+    # 每周一、四 UTC 02:17 = 北京时间 10:17
+    # 注意：GitHub Actions schedule 在整点（尤其 UTC 00/01 点）高峰期容易被延迟或跳过，
+    # 故选择非整点时段。实际执行可能仍有数分钟到 1 小时左右的延迟。
+    - cron: '17 2 * * 1,4'
   workflow_dispatch: # 支持手动触发
 
 permissions:
