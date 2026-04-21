@@ -1425,19 +1425,6 @@ function _getRiskAlertCodes(){
 }
 
 // 从 lastRebalancePlan 提取即将被换掉的 code（避免与换仓建议重复提示"减仓"）
-function _getSwapCandidateCodes(){
-  const set = new Set();
-  try {
-    const plan = JSON.parse(localStorage.getItem('lastRebalancePlan') || '{}');
-    if(plan && Array.isArray(plan.actions)){
-      plan.actions.forEach(a => {
-        if(a.action === 'sell' || a.action === 'reduce') set.add(a.code);
-      });
-    }
-  } catch(_){}
-  return set;
-}
-
 // 核心：基于 scheme + 持仓 + 信号，生成 decisions
 function computeActionDecisions(){
   const scheme = (typeof loadMyHoldingScheme === 'function') ? loadMyHoldingScheme() : null;
@@ -1445,7 +1432,6 @@ function computeActionDecisions(){
 
   const holdingMap = _buildHoldingMap();
   const riskCodes = _getRiskAlertCodes();
-  const swapCodes = _getSwapCandidateCodes();
   const latestTradeDate = getLatestTradingDay();
 
   // 构建目标映射
@@ -1506,10 +1492,10 @@ function computeActionDecisions(){
         const triggerTol = pctDelta > tol.pct && absDelta > tol.abs && absDelta >= MIN_ACTION_AMT;
         if(triggerTol && delta > 0){
           action = 'increase';
-          reason = `目标 ¥${targetAmt.toLocaleString()}，当前 ¥${currentAmt.toLocaleString()}（${(pctDelta*100).toFixed(0)}% 偏低）`;
+          reason = `仓位偏低：目标 ¥${targetAmt.toLocaleString()}，当前 ¥${currentAmt.toLocaleString()}（偏低 ${(pctDelta*100).toFixed(0)}%）`;
         } else if(triggerTol && delta < 0){
           action = 'decrease';
-          reason = `目标 ¥${targetAmt.toLocaleString()}，当前 ¥${currentAmt.toLocaleString()}（${(pctDelta*100).toFixed(0)}% 偏高）`;
+          reason = `仓位偏高：目标 ¥${targetAmt.toLocaleString()}，当前 ¥${currentAmt.toLocaleString()}（偏高 ${(pctDelta*100).toFixed(0)}%）`;
         } else {
           action = 'hold';
           reason = `仓位在容忍区间内（目标 ¥${targetAmt.toLocaleString()} ± ${(tol.pct*100).toFixed(0)}%）`;
@@ -1521,11 +1507,6 @@ function computeActionDecisions(){
     if(riskCodes.has(code) && action !== 'discontinued'){
       action = 'risk';
       reason = '触发风险信号（见上方"持仓健康诊断"或顶部智能监控），请优先处理风险';
-    }
-    // 换仓建议去重：如果同时出现 decrease 且该基金在换仓候选中 → 显示"见换仓建议"
-    if(action === 'decrease' && swapCodes.has(code)){
-      action = 'swap';
-      reason = '该基金已进入主动调仓建议（见下方"主动调仓建议"卡片）';
     }
 
     decisions.push({
