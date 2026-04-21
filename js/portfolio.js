@@ -2151,6 +2151,15 @@ function saveMyHoldingScheme(){
     localStorage.setItem(MY_SCHEME_KEY, JSON.stringify(scheme));
     if(typeof showToast === 'function') showToast(prev ? '方案已替换保存' : '方案已保存', 'success');
     renderMyHoldingScheme();
+    // 保存后立即把页面恢复到"初始 + 我的持有方案"状态：
+    // 隐藏整个 #portfolio-result（调仓建议/行情分析/AI配置方案/压力测试/分步执行 等），
+    // 同时把"我的持有方案"折叠块展开让用户看到刚保存的内容
+    const resultEl = document.getElementById('portfolio-result');
+    if(resultEl) resultEl.style.display = 'none';
+    const schemeBlock = document.getElementById('my-scheme-block');
+    if(schemeBlock) schemeBlock.open = true;
+    // 滚动定位到"我的持有方案"区块
+    if(schemeBlock) setTimeout(()=>schemeBlock.scrollIntoView({behavior:'smooth', block:'start'}), 100);
     // 若当前在诊断 tab 或页面已初始化，刷新行动决策区块
     if(typeof renderActionDecisions === 'function'){
       try { renderActionDecisions(); } catch(e){ console.warn('刷新行动决策失败:', e); }
