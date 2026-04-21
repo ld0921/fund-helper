@@ -822,6 +822,7 @@ function renderDcaPlans(){
   const summaryEl=document.getElementById('dp-summary');
   if(!dcaPlans.length){
     listEl.style.display='none'; emptyEl.style.display='block'; summaryEl.style.display='none';
+    renderDcaTracker(); // 清空后同步刷新跟踪区块
     return;
   }
   emptyEl.style.display='none'; listEl.style.display='block';
