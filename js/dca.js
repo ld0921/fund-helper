@@ -503,6 +503,10 @@ function importDcaAiToPlan(planArr){
     FundDB.set('dcaPlans', dcaPlans);
     renderDcaPlans();
 
+    // 加入计划后隐藏方案结果区（回到初始状态），与智能方案模块行为一致
+    const resultEl = document.getElementById('dca-ai-result');
+    if(resultEl) resultEl.style.display = 'none';
+
     // 更新按钮状态
     const btn = document.getElementById('dca-import-btn');
     if(btn) {
