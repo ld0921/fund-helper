@@ -1882,6 +1882,30 @@ function _doGenerate(shouldScroll){
     }
   } catch(e){ console.warn('记录推荐历史失败:', e); }
 
+  // 暴露刚生成的方案数据给"保存为我的方案"按钮使用（闭包外访问入口）
+  window._lastGeneratedScheme = {
+    picks: finalPicks.map(p => ({
+      code: p.code, name: p.name, cat: p.cat,
+      pct: p.pct, amt: p.amt,
+      score: (typeof scoreF === 'function' && CURATED_FUNDS.find(f=>f.code===p.code)) ? scoreF(CURATED_FUNDS.find(f=>f.code===p.code)) : (p.score||0),
+      r1: p.r1, r3: p.r3,
+      mdd: p.maxDD
+    })),
+    totalTarget: totalAmt + existTotal,
+    weights: weights,
+    phase: macroClock ? macroClock.phase : 'unknown',
+    phaseLabel: macroClock ? macroClock.label : '',
+    risk: riskP,
+    horizon: horizon
+  };
+
+  // 显示"保存为我的方案"按钮条（生成成功后才出现）
+  const schemeActionsEl = document.getElementById('scheme-actions');
+  if(schemeActionsEl) schemeActionsEl.style.display = 'flex';
+
+  // 渲染"我的持有方案"折叠块（如果已有保存，显示当前状态；过期则提示）
+  if(typeof renderMyHoldingScheme === 'function') renderMyHoldingScheme();
+
   return true;
 }
 
@@ -2078,4 +2102,164 @@ function renderRiskMeter(blendedDD, riskP){
   }).join('');
   document.getElementById('risk-meter-desc').textContent=`组合加权历史最大跌幅约 ${blendedDD.toFixed(1)}%（您的风险容忍上限 ${maxDD}%），风险占用 ${pct.toFixed(0)}%，处于${zone}区间。`;
 }
+
+// ═══════════════ 我的持有方案（一键保存 AI 智能配置方案）═══════════════
+// 数据流：_doGenerate → window._lastGeneratedScheme → saveMyHoldingScheme → localStorage
+//        localStorage → loadMyHoldingScheme → signals.js 的行动决策层读取
+//        覆盖保存时 code 集变化 → 清空 _actionHistory（避免历史计数污染新方案）
+const MY_SCHEME_KEY = 'myHoldingScheme';
+const ACTION_HISTORY_KEY = '_actionHistory';
+
+function loadMyHoldingScheme(){
+  try {
+    const raw = localStorage.getItem(MY_SCHEME_KEY);
+    if(!raw) return null;
+    return JSON.parse(raw);
+  } catch(e){
+    console.warn('[我的持有方案] 读取失败，数据可能损坏:', e);
+    try { localStorage.removeItem(MY_SCHEME_KEY); } catch(_){}
+    return null;
+  }
+}
+
+function saveMyHoldingScheme(){
+  const gen = window._lastGeneratedScheme;
+  if(!gen || !gen.picks || !gen.picks.length){
+    if(typeof showToast === 'function') showToast('请先生成方案后再保存', 'error');
+    return;
+  }
+  const prev = loadMyHoldingScheme();
+  const scheme = {
+    savedAt: Date.now(),
+    savedAtDate: new Date().toISOString().slice(0,10),
+    phase: gen.phase,
+    phaseLabel: gen.phaseLabel,
+    targetTotal: gen.totalTarget,
+    risk: gen.risk,
+    horizon: gen.horizon,
+    picks: gen.picks,
+    weights: gen.weights
+  };
+
+  // 覆盖保存：如果 code 集合变化，清空 actionHistory（冷静期从零开始）
+  if(prev){
+    const prevCodes = new Set((prev.picks||[]).map(p=>p.code));
+    const newCodes = new Set(scheme.picks.map(p=>p.code));
+    const sameSet = prevCodes.size === newCodes.size && [...prevCodes].every(c=>newCodes.has(c));
+    if(!sameSet){
+      try { localStorage.removeItem(ACTION_HISTORY_KEY); } catch(_){}
+    }
+  }
+
+  try {
+    localStorage.setItem(MY_SCHEME_KEY, JSON.stringify(scheme));
+    if(typeof showToast === 'function') showToast(prev ? '方案已替换保存' : '方案已保存', 'success');
+    renderMyHoldingScheme();
+    // 若当前在诊断 tab 或页面已初始化，刷新行动决策区块
+    if(typeof renderActionDecisions === 'function'){
+      try { renderActionDecisions(); } catch(e){ console.warn('刷新行动决策失败:', e); }
+    }
+  } catch(e){
+    console.error('[我的持有方案] 保存失败:', e);
+    if(typeof showToast === 'function') showToast('保存失败：存储空间不足', 'error');
+  }
+}
+
+function deleteMyHoldingScheme(){
+  if(!confirm('确认删除已保存的"我的持有方案"？删除后，持仓诊断将无法给出加仓/减仓建议。')) return;
+  try {
+    localStorage.removeItem(MY_SCHEME_KEY);
+    localStorage.removeItem(ACTION_HISTORY_KEY);
+    if(typeof showToast === 'function') showToast('方案已删除', 'success');
+    renderMyHoldingScheme();
+    if(typeof renderActionDecisions === 'function'){
+      try { renderActionDecisions(); } catch(_){}
+    }
+  } catch(e){
+    console.warn('[我的持有方案] 删除失败:', e);
+  }
+}
+
+function renderMyHoldingScheme(){
+  const block = document.getElementById('my-scheme-block');
+  const metaEl = document.getElementById('scheme-meta');
+  const body = document.getElementById('my-scheme-body');
+  const delBtn = document.getElementById('delete-scheme-btn');
+  const saveHint = document.getElementById('scheme-save-hint');
+  if(!block || !body) return;
+
+  const scheme = loadMyHoldingScheme();
+  if(!scheme){
+    block.style.display = 'none';
+    if(delBtn) delBtn.style.display = 'none';
+    if(saveHint) saveHint.textContent = '保存后，持仓诊断将基于此方案给出加仓/减仓建议';
+    return;
+  }
+
+  // 有已保存方案：显示折叠块 + 显示删除按钮
+  block.style.display = '';
+  if(delBtn) delBtn.style.display = '';
+
+  // 过期判断
+  const ageDays = Math.floor((Date.now() - scheme.savedAt) / 86400000);
+  let currentPhase = null;
+  try {
+    if(typeof analyzeCategoryPerf === 'function' && typeof inferMomentumPhase === 'function' && CURATED_FUNDS.length > 0){
+      const catRanks = analyzeCategoryPerf();
+      const macro = inferMomentumPhase(catRanks);
+      if(macro && macro.phase && macro.phase !== 'unknown') currentPhase = macro.phase;
+    }
+  } catch(_){ /* 数据未就绪时忽略 phase 对比 */ }
+
+  const ageExpired = ageDays > 30;
+  const phaseChanged = currentPhase && scheme.phase && currentPhase !== scheme.phase;
+
+  // summary meta 简述
+  if(metaEl){
+    const ageText = ageDays === 0 ? '今天保存' : `${ageDays} 天前保存`;
+    const warn = (ageExpired || phaseChanged) ? ' · ⚠️ 建议重新生成' : '';
+    metaEl.textContent = `· ${ageText} · ${scheme.phaseLabel || scheme.phase || ''}${warn}`;
+  }
+  if(saveHint) saveHint.textContent = '再次生成方案并保存，将替换已有方案';
+
+  // 过期横幅
+  let banner = '';
+  if(ageExpired){
+    banner += `<div style="padding:10px 14px;background:#fffbe6;border-left:3px solid #faad14;border-radius:6px;font-size:12px;color:#ad6800;margin-bottom:10px;line-height:1.7">⚠️ 方案已保存 ${ageDays} 天，市场可能已变化，建议重新生成方案以获取最新配置。</div>`;
+  }
+  if(phaseChanged){
+    banner += `<div style="padding:10px 14px;background:#fff7e6;border-left:3px solid #fa8c16;border-radius:6px;font-size:12px;color:#ad4e00;margin-bottom:10px;line-height:1.7">🔄 市场阶段已从 <b>${escHtml(scheme.phaseLabel || scheme.phase)}</b> 切换，当前配置可能不再适配，建议重新生成。</div>`;
+  }
+
+  // picks 列表按类别分组
+  const byCat = {};
+  (scheme.picks || []).forEach(p => {
+    const c = p.cat || 'other';
+    if(!byCat[c]) byCat[c] = [];
+    byCat[c].push(p);
+  });
+  const catNames = { active:'主动型', index:'指数', bond:'债券', money:'货币', qdii:'QDII', other:'其他' };
+  const rows = Object.entries(byCat).map(([cat, picks]) => {
+    const sum = picks.reduce((s,p)=>s+(p.amt||0), 0);
+    const sumPct = picks.reduce((s,p)=>s+(p.pct||0), 0);
+    const items = picks.map(p => `<div style="display:flex;justify-content:space-between;gap:8px;padding:4px 0;font-size:12px"><span>${escHtml(p.name)} <span style="color:var(--muted);font-size:11px">(${p.code})</span></span><span style="color:var(--primary);font-weight:600;white-space:nowrap">${p.pct}% · ¥${(p.amt||0).toLocaleString()}</span></div>`).join('');
+    return `<div style="border:1px solid var(--border);border-radius:6px;padding:8px 12px;margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;padding-bottom:6px;border-bottom:1px dashed var(--border)">
+        <span style="font-size:13px;font-weight:600">${catNames[cat]||cat}</span>
+        <span style="font-size:12px;color:var(--muted)">${sumPct.toFixed(0)}% · ¥${sum.toLocaleString()}</span>
+      </div>
+      ${items}
+    </div>`;
+  }).join('');
+
+  body.innerHTML = `${banner}
+    <div style="margin-bottom:10px;font-size:12px;color:var(--muted);line-height:1.7">
+      保存时间：${scheme.savedAtDate} · 目标总额 ¥${(scheme.targetTotal||0).toLocaleString()} · ${scheme.risk || ''} · ${scheme.horizon || ''}年
+    </div>
+    ${rows}
+    <div style="margin-top:8px;font-size:11px;color:var(--muted);line-height:1.6">
+      💡 持仓诊断 tab 会基于此方案对比当前持仓，给出具体的加仓/减仓/首次买入建议。
+    </div>`;
+}
+
 

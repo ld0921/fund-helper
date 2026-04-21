@@ -1033,6 +1033,10 @@ async function checkAndAutoRefresh(){
 
 // ═══════════════ 持仓诊断：主动调仓建议 ═══════════════
 function renderDiagnostics(){
+  // 先渲染"持仓行动建议"区块（基于 myHoldingScheme，独立于换仓建议）
+  try { if(typeof renderActionDecisions === 'function') renderActionDecisions(); }
+  catch(e){ console.warn('[行动决策] 渲染失败:', e); }
+
   const wrap = document.getElementById('diagnostics-rebal-wrap');
   const emptyEl = document.getElementById('diag-empty');
   if(!wrap) return;
@@ -1273,3 +1277,398 @@ function renderDiagMarket(){
 }
 
 // ═══════════════ 新手引导 ═══════════════
+
+// ═══════════════ 持仓诊断：行动决策层（加/减仓/首次买入/清仓评估 + 冷静期）═══════════════
+// 数据流：myHoldingScheme (localStorage) → 对比 existingHoldings+dcaPlans → decisions
+//        每次渲染更新 _actionHistory，按交易日去重，满足阈值 confirmedDays 才从"观察中"升级为正式建议
+// 阈值设计：加仓 3 天（避免追高）、减仓/换仓 2 天、风险信号 0 天（保命）
+
+const ACTION_TOL = {
+  money:  { pct: 0.10, abs: 300 },
+  bond:   { pct: 0.10, abs: 500 },
+  index:  { pct: 0.15, abs: 800 },
+  active: { pct: 0.20, abs: 800 },
+  qdii:   { pct: 0.20, abs: 800 }
+};
+const MIN_ACTION_AMT = 500;              // 低于此金额建议一律降级为"持有"
+const STALE_TRADING_DAYS = 10;           // 超过 10 天无触发 → 清零历史（交易日近似 2 周）
+const CONFIRM_DAYS = {
+  risk:         0,   // 风险信号立即触发
+  swap:         2,
+  discontinued: 0,   // 基金已移出白名单 → 立即
+  decrease:     2,
+  evaluate:     0,   // 状态描述，不设冷静期
+  increase:     3,
+  init:         3,
+  'hold-oop':   0,
+  hold:         0
+};
+const ACTION_PRIORITY = { risk:9, swap:8, discontinued:7, decrease:6, evaluate:5, increase:4, init:3, 'hold-oop':2, hold:1 };
+
+function getLatestTradingDay(){
+  // 从 navCache 中取 jzrq 最大值（ISO 日期字符串可直接字符串比较）
+  let maxDate = '';
+  try {
+    Object.values(navCache || {}).forEach(nav => {
+      if(!nav) return;
+      const d = nav.jzrq || (nav.gztime ? nav.gztime.slice(0,10) : '');
+      if(d && d > maxDate) maxDate = d;
+    });
+  } catch(_){}
+  if(maxDate) return maxDate;
+  // fallback：当前日期往前找最近的交易日
+  const d = new Date();
+  while(typeof isCNTradingDay === 'function' && !isCNTradingDay(d)) d.setDate(d.getDate()-1);
+  return d.toISOString().slice(0,10);
+}
+
+function _loadActionHistory(){
+  try { return JSON.parse(localStorage.getItem('_actionHistory') || '{}'); }
+  catch(e){ try{ localStorage.removeItem('_actionHistory'); }catch(_){}; return {}; }
+}
+function _saveActionHistory(hist){
+  try { localStorage.setItem('_actionHistory', JSON.stringify(hist)); }
+  catch(e){ console.warn('[行动决策] 保存冷静期历史失败:', e); }
+}
+function resetActionHistoryFor(code){
+  const hist = _loadActionHistory();
+  if(hist[code]){ delete hist[code]; _saveActionHistory(hist); }
+}
+
+// 计算两个 ISO 日期间的自然日差（用于"超过 N 交易日未触发 → 清零"的近似判断）
+function _daysBetween(d1, d2){
+  if(!d1 || !d2) return 0;
+  const t1 = new Date(d1).getTime(), t2 = new Date(d2).getTime();
+  return Math.floor(Math.abs(t2 - t1) / 86400000);
+}
+
+// 冷静期确认：更新 _actionHistory[code]，返回 { confirmed, confirmedDays, required }
+function confirmActionBySession(code, action, latestTradeDate){
+  const required = CONFIRM_DAYS[action] || 0;
+  if(required === 0){
+    return { confirmed: true, confirmedDays: 0, required: 0 };
+  }
+  const hist = _loadActionHistory();
+  let entry = hist[code];
+
+  // action 变化 或 超 10 天未触发 → 重置
+  const staleDays = entry && entry.lastTriggerDate ? _daysBetween(entry.lastTriggerDate, latestTradeDate) : 999;
+  if(!entry || entry.action !== action || staleDays > STALE_TRADING_DAYS * 1.5){
+    entry = {
+      action,
+      firstTriggerDate: latestTradeDate,
+      lastTriggerDate: latestTradeDate,
+      triggerDates: [latestTradeDate]
+    };
+  } else if(!entry.triggerDates.includes(latestTradeDate)){
+    // 新交易日首次触发 → push（同一天多次打开不推进）
+    entry.triggerDates.push(latestTradeDate);
+    entry.lastTriggerDate = latestTradeDate;
+  }
+
+  const confirmedDays = entry.triggerDates.length;
+  entry.confirmed = confirmedDays >= required;
+  hist[code] = entry;
+  _saveActionHistory(hist);
+
+  return { confirmed: entry.confirmed, confirmedDays, required };
+}
+
+// 清理：decision 消失或变成 hold 时清除对应 code 的历史
+function _gcActionHistory(activeCodes){
+  const hist = _loadActionHistory();
+  let changed = false;
+  Object.keys(hist).forEach(code => {
+    if(!activeCodes.has(code)){
+      delete hist[code];
+      changed = true;
+    }
+  });
+  if(changed) _saveActionHistory(hist);
+}
+
+// 构建 code → {currentAmt, source, value} 的持仓映射
+function _buildHoldingMap(){
+  const map = {};
+  (typeof existingHoldings !== 'undefined' ? existingHoldings : []).forEach(h => {
+    const amt = h.amount || h.value || 0;
+    if(!map[h.code]){
+      map[h.code] = { currentAmt: amt, value: h.value || amt, source: 'existing', date: h.date, name: h.name };
+    } else {
+      map[h.code].currentAmt += amt;
+      map[h.code].value += (h.value || amt);
+    }
+  });
+  (typeof dcaPlans !== 'undefined' ? dcaPlans : []).forEach(d => {
+    if(map[d.code]) return;
+    if(!d.curval || d.curval <= 0) return;
+    const executedCount = d.execLog ? Object.keys(d.execLog).filter(k => d.execLog[k]).length : 0;
+    const cost = executedCount > 0 ? executedCount * d.monthly
+      : (d.start ? Math.max(0, Math.floor((Date.now()-new Date(d.start).getTime())/30/86400000)) * d.monthly : 0);
+    map[d.code] = { currentAmt: cost, value: d.curval, source: 'dca', date: d.start, name: d.name };
+  });
+  return map;
+}
+
+// 从 _currentSignals 提取当前有危险/警告的 code（与信号引擎联动，风险信号覆盖行动决策）
+function _getRiskAlertCodes(){
+  const set = new Set();
+  try {
+    const sigs = (typeof window !== 'undefined' && window._currentSignals) ? window._currentSignals : [];
+    sigs.forEach(s => {
+      if(s.type === 'danger' || (s.type === 'warning' && s.priority === 0)){
+        if(s.code) set.add(s.code);
+      }
+    });
+  } catch(_){}
+  return set;
+}
+
+// 从 lastRebalancePlan 提取即将被换掉的 code（避免与换仓建议重复提示"减仓"）
+function _getSwapCandidateCodes(){
+  const set = new Set();
+  try {
+    const plan = JSON.parse(localStorage.getItem('lastRebalancePlan') || '{}');
+    if(plan && Array.isArray(plan.actions)){
+      plan.actions.forEach(a => {
+        if(a.action === 'sell' || a.action === 'reduce') set.add(a.code);
+      });
+    }
+  } catch(_){}
+  return set;
+}
+
+// 核心：基于 scheme + 持仓 + 信号，生成 decisions
+function computeActionDecisions(){
+  const scheme = (typeof loadMyHoldingScheme === 'function') ? loadMyHoldingScheme() : null;
+  if(!scheme) return { hasScheme: false, decisions: [], scheme: null, latestTradeDate: getLatestTradingDay() };
+
+  const holdingMap = _buildHoldingMap();
+  const riskCodes = _getRiskAlertCodes();
+  const swapCodes = _getSwapCandidateCodes();
+  const latestTradeDate = getLatestTradingDay();
+
+  // 构建目标映射
+  const targetMap = {};
+  (scheme.picks || []).forEach(p => { targetMap[p.code] = p; });
+
+  const decisions = [];
+  const allCodes = new Set([...Object.keys(targetMap), ...Object.keys(holdingMap)]);
+
+  allCodes.forEach(code => {
+    const target = targetMap[code];
+    const held = holdingMap[code];
+    const fd = (typeof CURATED_FUNDS !== 'undefined') ? CURATED_FUNDS.find(f => f.code === code) : null;
+    const cat = target ? target.cat : (fd ? fd.cat : 'active');
+    const tol = ACTION_TOL[cat] || ACTION_TOL.active;
+    const targetAmt = target ? (target.amt || 0) : 0;
+    const currentAmt = held ? (held.currentAmt || 0) : 0;
+    const currentValue = held ? (held.value || currentAmt) : 0;
+    const delta = targetAmt - currentAmt; // 正=需要加仓，负=需要减仓
+    const name = target ? target.name : (held ? held.name : (fd ? fd.name : code));
+
+    let action = 'hold';
+    let reason = '';
+
+    if(!target && held){
+      // 方案外持仓
+      const score = fd ? (typeof scoreF === 'function' ? scoreF(fd) : 60) : 0;
+      if(!fd){
+        action = 'evaluate';
+        reason = '已不在精选基金库，建议评估是否清仓';
+      } else if(score >= 60 && !riskCodes.has(code)){
+        action = 'hold-oop';
+        reason = `方案外持有，评分 ${score} 尚可，可保留观察`;
+      } else {
+        action = 'evaluate';
+        reason = `方案外持有，评分 ${score}${score<60?'偏低':''}，建议评估是否清仓或纳入方案`;
+      }
+    } else if(target && !held){
+      // 方案内、未建仓
+      if(!fd){
+        action = 'discontinued';
+        reason = '方案中该基金已移出精选库，建议重新生成方案';
+      } else if(targetAmt >= MIN_ACTION_AMT){
+        action = 'init';
+        reason = `方案目标 ¥${targetAmt.toLocaleString()}，尚未建仓`;
+      } else {
+        action = 'hold';
+        reason = '目标金额过小，暂不建议建仓';
+      }
+    } else if(target && held){
+      // 方案内、有持仓 → 对比差值
+      if(!fd){
+        action = 'discontinued';
+        reason = '该基金已移出精选库，建议清仓并重新生成方案';
+      } else {
+        const absDelta = Math.abs(delta);
+        const pctDelta = targetAmt > 0 ? absDelta / targetAmt : 0;
+        const triggerTol = pctDelta > tol.pct && absDelta > tol.abs && absDelta >= MIN_ACTION_AMT;
+        if(triggerTol && delta > 0){
+          action = 'increase';
+          reason = `目标 ¥${targetAmt.toLocaleString()}，当前 ¥${currentAmt.toLocaleString()}（${(pctDelta*100).toFixed(0)}% 偏低）`;
+        } else if(triggerTol && delta < 0){
+          action = 'decrease';
+          reason = `目标 ¥${targetAmt.toLocaleString()}，当前 ¥${currentAmt.toLocaleString()}（${(pctDelta*100).toFixed(0)}% 偏高）`;
+        } else {
+          action = 'hold';
+          reason = `仓位在容忍区间内（目标 ¥${targetAmt.toLocaleString()} ± ${(tol.pct*100).toFixed(0)}%）`;
+        }
+      }
+    }
+
+    // 风险信号覆盖
+    if(riskCodes.has(code) && action !== 'discontinued'){
+      action = 'risk';
+      reason = '触发风险信号（见上方"持仓健康诊断"或顶部智能监控），请优先处理风险';
+    }
+    // 换仓建议去重：如果同时出现 decrease 且该基金在换仓候选中 → 显示"见换仓建议"
+    if(action === 'decrease' && swapCodes.has(code)){
+      action = 'swap';
+      reason = '该基金已进入主动调仓建议（见下方"主动调仓建议"卡片）';
+    }
+
+    decisions.push({
+      code, name, cat, action, reason,
+      targetAmt, currentAmt, currentValue, delta: Math.abs(delta),
+      source: held ? held.source : null,
+      score: fd && typeof scoreF === 'function' ? scoreF(fd) : null
+    });
+  });
+
+  // 冷静期确认
+  decisions.forEach(d => {
+    const r = confirmActionBySession(d.code, d.action, latestTradeDate);
+    d.confirmed = r.confirmed;
+    d.confirmedDays = r.confirmedDays;
+    d.requiredDays = r.required;
+  });
+
+  // 清理 _actionHistory 中已失效的 code
+  _gcActionHistory(new Set(decisions.filter(d => d.action !== 'hold' && d.action !== 'hold-oop').map(d => d.code)));
+
+  // 排序：优先级高在前；同优先级内 confirmed 在前，delta 大在前
+  decisions.sort((a, b) => {
+    const pa = ACTION_PRIORITY[a.action] || 0, pb = ACTION_PRIORITY[b.action] || 0;
+    if(pa !== pb) return pb - pa;
+    if(a.confirmed !== b.confirmed) return a.confirmed ? -1 : 1;
+    return b.delta - a.delta;
+  });
+
+  return { hasScheme: true, scheme, decisions, latestTradeDate };
+}
+
+// 渲染"持仓行动建议"区块到 #action-decisions-wrap
+function renderActionDecisions(){
+  const wrap = document.getElementById('action-decisions-wrap');
+  if(!wrap) return;
+
+  // 净值过期守卫：与 runSignalEngine 一致
+  const lastRefreshTime = localStorage.getItem('lastNavRefreshTime');
+  if(lastRefreshTime && (Date.now() - parseInt(lastRefreshTime)) > 24*60*60*1000){
+    wrap.innerHTML = `<div class="card"><div class="card-title"><span class="icon icon-orange">🎯</span>持仓行动建议</div><div style="padding:10px 0;color:var(--muted);font-size:13px">⚠️ 净值数据已过期，请先刷新净值后再查看行动建议。</div></div>`;
+    return;
+  }
+
+  const { hasScheme, scheme, decisions, latestTradeDate } = computeActionDecisions();
+
+  if(!hasScheme){
+    wrap.innerHTML = `<div class="card">
+      <div class="card-title"><span class="icon icon-blue">🎯</span>持仓行动建议</div>
+      <div style="padding:14px;background:#f0f5ff;border-radius:6px;font-size:13px;color:#1d39c4;line-height:1.8">
+        💡 还没有保存"我的持有方案"。<br>
+        请先到「🎯 智能方案」tab 生成方案并点击 <b>💾 保存为我的方案</b>，本模块将基于该方案对比当前持仓，给出具体的加仓/减仓/首次买入建议。
+      </div>
+      <div style="text-align:center;margin-top:12px">
+        <button class="btn btn-primary btn-sm" onclick="switchTab(0)" style="padding:8px 20px">前往智能方案 →</button>
+      </div>
+    </div>`;
+    return;
+  }
+
+  if(!decisions.length){
+    wrap.innerHTML = `<div class="card"><div class="card-title"><span class="icon icon-green">🎯</span>持仓行动建议</div><div style="padding:14px 0;color:var(--muted);font-size:13px;text-align:center">✅ 当前持仓与方案目标一致，无需调整</div></div>`;
+    return;
+  }
+
+  // 方案过期判断（同 portfolio.js，行动决策层展示时一并提示）
+  const ageDays = Math.floor((Date.now() - scheme.savedAt) / 86400000);
+  const schemeStaleTag = ageDays > 30 ? `<span style="font-size:11px;color:#ad6800;background:#fffbe6;padding:2px 6px;border-radius:4px;margin-left:6px">方案 ${ageDays} 天前保存</span>` : '';
+
+  // 汇总统计
+  const stat = { increase:0, decrease:0, init:0, risk:0, swap:0, evaluate:0, discontinued:0, 'hold-oop':0, hold:0 };
+  let addAmt = 0, reduceAmt = 0, initAmt = 0;
+  decisions.forEach(d => {
+    stat[d.action] = (stat[d.action]||0) + 1;
+    if(d.confirmed){
+      if(d.action === 'increase') addAmt += d.delta;
+      else if(d.action === 'decrease') reduceAmt += d.delta;
+      else if(d.action === 'init') initAmt += d.targetAmt;
+    }
+  });
+  const summaryParts = [];
+  if(stat.risk) summaryParts.push(`<span style="color:#cf1322;font-weight:600">🔴 紧急 ${stat.risk} 笔</span>`);
+  if(addAmt) summaryParts.push(`<span style="color:#389e0d">🟢 加仓 ${stat.increase} 笔 ¥${addAmt.toLocaleString()}</span>`);
+  if(reduceAmt) summaryParts.push(`<span style="color:#d46b08">🟠 减仓 ${stat.decrease} 笔 ¥${reduceAmt.toLocaleString()}</span>`);
+  if(initAmt) summaryParts.push(`<span style="color:#1890ff">✨ 首次买入 ${stat.init} 笔 ¥${initAmt.toLocaleString()}</span>`);
+  const watchCount = decisions.filter(d => !d.confirmed && (d.action==='increase'||d.action==='decrease'||d.action==='init')).length;
+  if(watchCount) summaryParts.push(`<span style="color:var(--muted)">🟡 观察 ${watchCount} 笔</span>`);
+  if(stat.evaluate) summaryParts.push(`<span style="color:#cf1322">⚠️ 评估清仓 ${stat.evaluate} 笔</span>`);
+  if(stat['hold-oop']) summaryParts.push(`<span style="color:var(--muted)">📎 方案外 ${stat['hold-oop']} 笔</span>`);
+
+  // 渲染行
+  const actionLabel = (d) => {
+    switch(d.action){
+      case 'risk': return { icon: '🔴', text: '紧急处理', color: '#cf1322', bg: '#fff1f0', border: '#ffccc7' };
+      case 'swap': return { icon: '🔄', text: '建议换仓', color: '#d48806', bg: '#fff7e6', border: '#ffd591' };
+      case 'discontinued': return { icon: '⛔', text: '建议清仓', color: '#cf1322', bg: '#fff1f0', border: '#ffccc7' };
+      case 'increase':
+        return d.confirmed
+          ? { icon: '🟢', text: `建议加仓 ¥${d.delta.toLocaleString()}`, color: '#389e0d', bg: '#f6ffed', border: '#b7eb8f' }
+          : { icon: '🟡', text: `观察中 ${d.confirmedDays}/${d.requiredDays} 交易日`, color: '#ad6800', bg: '#fffbe6', border: '#ffe58f' };
+      case 'decrease':
+        return d.confirmed
+          ? { icon: '🟠', text: `建议减仓 ¥${d.delta.toLocaleString()}`, color: '#d46b08', bg: '#fff7e6', border: '#ffd591' }
+          : { icon: '🟡', text: `观察中 ${d.confirmedDays}/${d.requiredDays} 交易日`, color: '#ad6800', bg: '#fffbe6', border: '#ffe58f' };
+      case 'init':
+        return d.confirmed
+          ? { icon: '✨', text: `建议首次买入 ¥${d.targetAmt.toLocaleString()}`, color: '#1890ff', bg: '#e6f7ff', border: '#91d5ff' }
+          : { icon: '🟡', text: `观察中 ${d.confirmedDays}/${d.requiredDays} 交易日`, color: '#ad6800', bg: '#fffbe6', border: '#ffe58f' };
+      case 'evaluate': return { icon: '⚠️', text: '建议评估', color: '#cf1322', bg: '#fff1f0', border: '#ffccc7' };
+      case 'hold-oop': return { icon: '📎', text: '方案外持有', color: '#595959', bg: '#f5f5f5', border: '#d9d9d9' };
+      default: return { icon: '✓', text: '持有', color: '#8c8c8c', bg: '#fafafa', border: '#f0f0f0' };
+    }
+  };
+
+  // 只渲染非 hold 的条目（hold 是合理状态，省略能让视觉更清爽）
+  const visibleDecisions = decisions.filter(d => d.action !== 'hold');
+  const rows = visibleDecisions.map(d => {
+    const lab = actionLabel(d);
+    const catNames = { active:'主动', index:'指数', bond:'债券', money:'货币', qdii:'QDII' };
+    const catTag = `<span style="font-size:10px;padding:2px 6px;background:#f0f5ff;color:#2f54eb;border-radius:4px;margin-left:6px">${catNames[d.cat]||d.cat}</span>`;
+    const srcTag = d.source === 'dca' ? '<span style="font-size:10px;padding:2px 6px;background:#e6f7ff;color:#1890ff;border-radius:4px;margin-left:4px">定投</span>' : '';
+    const scoreTag = d.score !== null ? `<span style="font-size:11px;color:var(--muted);margin-left:4px">评分 ${d.score}</span>` : '';
+    const staleNote = ageDays > 30 ? ` <span style="color:#ad6800;font-size:11px">(基于 ${ageDays} 天前方案)</span>` : '';
+    return `<div style="padding:12px 14px;border-bottom:1px solid #f0f0f0">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">
+        <span style="font-size:13px;font-weight:600">${escHtml(d.name)}</span>${catTag}${srcTag}${scoreTag}
+        <span style="margin-left:auto;font-size:12px;font-weight:600;color:${lab.color};background:${lab.bg};border:1px solid ${lab.border};padding:3px 10px;border-radius:6px;white-space:nowrap">${lab.icon} ${lab.text}</span>
+      </div>
+      <div style="font-size:12px;color:#595959;line-height:1.6;padding:6px 10px;background:#fafafa;border-radius:6px">
+        ${escHtml(d.reason)}${staleNote}
+      </div>
+    </div>`;
+  }).join('');
+
+  wrap.innerHTML = `<div class="card" style="padding:0;overflow:hidden">
+    <div style="padding:14px 16px;border-bottom:1px solid var(--border)">
+      <div class="card-title" style="margin:0"><span class="icon icon-orange">🎯</span>持仓行动建议 · ${visibleDecisions.length} 条${schemeStaleTag}</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:6px;line-height:1.7">${summaryParts.join(' · ') || '当前持仓与方案一致'}</div>
+    </div>
+    ${rows || '<div style="padding:14px 0;text-align:center;color:var(--muted);font-size:13px">✅ 当前持仓与方案目标一致</div>'}
+    <div style="padding:10px 14px;font-size:11px;color:var(--muted);background:#fafafa;line-height:1.7">
+      💡 <b>冷静期机制</b>：加仓需连续 3 个交易日触发、减仓/换仓需 2 个交易日，风险信号立即触发。同日多次打开不推进计数，基准为最新净值日（${latestTradeDate}）。
+    </div>
+  </div>`;
+}
+

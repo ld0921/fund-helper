@@ -384,6 +384,16 @@
 
   <div id="portfolio-result" style="display:none">
 
+    <!-- 我的持有方案（默认收起，仅当已保存方案时显示） -->
+    <details id="my-scheme-block" class="card" style="display:none;margin-bottom:12px">
+      <summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px">
+        <span class="icon icon-green">📋</span>
+        <div class="card-title" style="margin:0;flex:1">我的持有方案 <span id="scheme-meta" style="font-size:12px;color:var(--muted);font-weight:400"></span></div>
+        <span class="toggle-arrow" style="font-size:12px;color:var(--primary)"></span>
+      </summary>
+      <div id="my-scheme-body" style="margin-top:12px"></div>
+    </details>
+
     <!-- 生成中加载卡片（内联进度） -->
     <div class="card" id="gen-loading-card" style="display:none;text-align:center;padding:40px 20px">
       <div style="font-size:36px;margin-bottom:14px;animation:pulse 1.2s infinite" id="gen-loading-icon">📡</div>
@@ -398,6 +408,13 @@
 
     <!-- 方案摘要（一眼看到结论） -->
     <div class="plan-summary" id="plan-summary"></div>
+
+    <!-- 保存/删除方案按钮条（仅生成方案后显示） -->
+    <div id="scheme-actions" style="display:none;gap:8px;margin:8px 0;flex-wrap:wrap">
+      <button class="btn btn-primary btn-sm" id="save-scheme-btn" onclick="saveMyHoldingScheme()" style="padding:8px 16px">💾 保存为我的方案</button>
+      <button class="btn btn-ghost btn-sm" id="delete-scheme-btn" onclick="deleteMyHoldingScheme()" style="display:none;padding:8px 16px">🗑 删除已保存方案</button>
+      <span id="scheme-save-hint" style="font-size:12px;color:var(--muted);line-height:32px">保存后，持仓诊断将基于此方案给出加仓/减仓建议</span>
+    </div>
 
     <!-- 数据来源与时效说明 -->
     <div class="warning-notice" id="data-source-notice">
@@ -814,7 +831,10 @@
   <!-- 区块A：持仓健康诊断 -->
   <div id="health-monitor-wrap"></div>
 
-  <!-- 区块B：主动调仓建议 -->
+  <!-- 区块B：持仓行动建议（加仓/减仓/首次买入/清仓评估 + 冷静期） -->
+  <div id="action-decisions-wrap"></div>
+
+  <!-- 区块C：主动调仓建议 -->
   <div id="diagnostics-rebal-wrap"></div>
 
   <!-- 区块C：市场行情概览 -->
@@ -1509,9 +1529,18 @@ function switchTab(i){
   document.querySelectorAll('.panel').forEach((p,j)=>p.classList.toggle('active',i===j));
   window.scrollTo({top:0});
   // 只有在有持仓数据时才执行相关渲染
-  if(i===0 && existingHoldings.length > 0){
-    if(!_navFreshThisSession) refreshHoldingsNav(false);
-    else renderTodayOverview();
+  if(i===0){
+    if(typeof renderMyHoldingScheme === 'function'){
+      // 进入智能方案 tab 时，若已有保存方案则展示折叠块（含过期提示）
+      if(loadMyHoldingScheme()){
+        document.getElementById('portfolio-result').style.display = 'block';
+      }
+      renderMyHoldingScheme();
+    }
+    if(existingHoldings.length > 0){
+      if(!_navFreshThisSession) refreshHoldingsNav(false);
+      else renderTodayOverview();
+    }
   }
   if(i===2 && existingHoldings.length > 0){
     renderExistingHoldings();
@@ -2497,9 +2526,24 @@ if(document.readyState === 'loading'){
     if(h && tabs){
       tabs.style.top = h.offsetHeight + 'px';
     }
+    // 首次加载：若本地已有保存的"我的持有方案"，展示折叠块
+    if(typeof renderMyHoldingScheme === 'function' && typeof loadMyHoldingScheme === 'function'){
+      if(loadMyHoldingScheme()){
+        const resultEl = document.getElementById('portfolio-result');
+        if(resultEl) resultEl.style.display = 'block';
+      }
+      renderMyHoldingScheme();
+    }
   });
 } else {
   autoRefreshOnLoad();
+  if(typeof renderMyHoldingScheme === 'function' && typeof loadMyHoldingScheme === 'function'){
+    if(loadMyHoldingScheme()){
+      const resultEl = document.getElementById('portfolio-result');
+      if(resultEl) resultEl.style.display = 'block';
+    }
+    renderMyHoldingScheme();
+  }
 }
 
 // 表单输入时自动清除校验红框（事件委托，一次性覆盖所有 .form-item）
