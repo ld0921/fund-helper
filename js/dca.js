@@ -230,7 +230,15 @@ function _doGenerateDca(){
       // 阈值：权益类60分，指数50分，债券50分（与"及格线"对齐，避免推荐<50分基金）
       const dcaScoreThreshold = ['bond','index'].includes(cat) ? 50 : 60;
       const excluded = catData.topFunds.filter(f => !allPicks.some(p => p.code === f.code));
-      const qualified = excluded.filter(f => calcDCAScore(f) >= dcaScoreThreshold);
+      // 方案B：动态门槛 — 同类有 scoreF 更高≥10分的基金时，排除低分基金（避免推荐诊断模块会标"关注"的基金）
+      const qualified = excluded.filter(f => {
+        if(calcDCAScore(f) < dcaScoreThreshold) return false;
+        const myScore = scoreF(f);
+        if(myScore >= 55) return true; // scoreF≥55 直接通过，不做相对排除
+        // scoreF<55 时：若同类有 scoreF 更高≥10分且定投评分也达标的基金，则排除
+        const hasBetter = excluded.some(g => g.code !== f.code && scoreF(g) >= myScore + 10 && calcDCAScore(g) >= dcaScoreThreshold);
+        return !hasBetter;
+      });
       // 若阈值过滤后整个类别为空（如可转债等高波动品种、或市场整体高位）：
       // 按定投评分排序取 Top3 兜底，并标记 _dcaFallback 让 UI 显示警告
       const topFunds = qualified.length > 0

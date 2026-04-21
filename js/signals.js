@@ -653,7 +653,7 @@ function runHealthMonitor(){
       const betterFunds = sameCatFunds.filter(f=>scoreF(f) > currentScore + 10);
       if(betterFunds.length > 0){
         const best = betterFunds.sort((a,b)=>scoreF(b)-scoreF(a))[0];
-        issues.push(`综合评分 ${currentScore}分（较低），同类有更优选择（${best.name} ${scoreF(best)}分）${statusHint}。定投评分 ${dcaScore}分`);
+        issues.push(`综合评分 ${currentScore}分（较低），同类有更优选择（${best.name} ${scoreF(best)}分）${statusHint}。定投评分 ${dcaScore}分（定投适配度独立评估，与综合评分维度不同）`);
         level = 'yellow';
       }
     } else if(dcaScore < 60 && sameCatFunds.length > 0){
@@ -661,7 +661,7 @@ function runHealthMonitor(){
       const betterDcaFunds = sameCatFunds.filter(f=>calcDCAScore(f) > dcaScore + 15);
       if(betterDcaFunds.length > 0){
         const best = betterDcaFunds.sort((a,b)=>calcDCAScore(b)-calcDCAScore(a))[0];
-        issues.push(`定投评分 ${dcaScore}分（不及格），同类有更适合定投的基金（${best.name} ${calcDCAScore(best)}分）${statusHint}`);
+        issues.push(`定投评分 ${dcaScore}分（不及格），同类有更适合定投的基金（${best.name} ${calcDCAScore(best)}分）${statusHint}。综合评分 ${currentScore}分`);
         if(level==='green') level='yellow';
       }
     }
