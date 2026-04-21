@@ -382,17 +382,17 @@
     <button class="btn btn-primary btn-sm" onclick="generateSmartPortfolio();this.parentElement.classList.remove('show')" style="margin-left:8px">🔄 重新生成方案</button>
   </div>
 
-  <div id="portfolio-result" style="display:none">
+  <!-- 我的持有方案（独立于方案生成结果，仅当已保存时显示；默认收起） -->
+  <details id="my-scheme-block" class="card" style="display:none;margin-bottom:12px">
+    <summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px">
+      <span class="icon icon-green">📋</span>
+      <div class="card-title" style="margin:0;flex:1">我的持有方案 <span id="scheme-meta" style="font-size:12px;color:var(--muted);font-weight:400"></span></div>
+      <span class="toggle-arrow" style="font-size:12px;color:var(--primary)"></span>
+    </summary>
+    <div id="my-scheme-body" style="margin-top:12px"></div>
+  </details>
 
-    <!-- 我的持有方案（默认收起，仅当已保存方案时显示） -->
-    <details id="my-scheme-block" class="card" style="display:none;margin-bottom:12px">
-      <summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px">
-        <span class="icon icon-green">📋</span>
-        <div class="card-title" style="margin:0;flex:1">我的持有方案 <span id="scheme-meta" style="font-size:12px;color:var(--muted);font-weight:400"></span></div>
-        <span class="toggle-arrow" style="font-size:12px;color:var(--primary)"></span>
-      </summary>
-      <div id="my-scheme-body" style="margin-top:12px"></div>
-    </details>
+  <div id="portfolio-result" style="display:none">
 
     <!-- 生成中加载卡片（内联进度） -->
     <div class="card" id="gen-loading-card" style="display:none;text-align:center;padding:40px 20px">
@@ -1530,13 +1530,8 @@ function switchTab(i){
   window.scrollTo({top:0});
   // 只有在有持仓数据时才执行相关渲染
   if(i===0){
-    if(typeof renderMyHoldingScheme === 'function'){
-      // 进入智能方案 tab 时，若已有保存方案则展示折叠块（含过期提示）
-      if(loadMyHoldingScheme()){
-        document.getElementById('portfolio-result').style.display = 'block';
-      }
-      renderMyHoldingScheme();
-    }
+    // 切到智能方案 tab 时，若已保存方案则展示"我的持有方案"折叠块
+    if(typeof renderMyHoldingScheme === 'function') renderMyHoldingScheme();
     if(existingHoldings.length > 0){
       if(!_navFreshThisSession) refreshHoldingsNav(false);
       else renderTodayOverview();
@@ -2526,24 +2521,12 @@ if(document.readyState === 'loading'){
     if(h && tabs){
       tabs.style.top = h.offsetHeight + 'px';
     }
-    // 首次加载：若本地已有保存的"我的持有方案"，展示折叠块
-    if(typeof renderMyHoldingScheme === 'function' && typeof loadMyHoldingScheme === 'function'){
-      if(loadMyHoldingScheme()){
-        const resultEl = document.getElementById('portfolio-result');
-        if(resultEl) resultEl.style.display = 'block';
-      }
-      renderMyHoldingScheme();
-    }
+    // 首次加载：若本地已有保存的"我的持有方案"，独立渲染折叠块（不连带显示 #portfolio-result）
+    if(typeof renderMyHoldingScheme === 'function') renderMyHoldingScheme();
   });
 } else {
   autoRefreshOnLoad();
-  if(typeof renderMyHoldingScheme === 'function' && typeof loadMyHoldingScheme === 'function'){
-    if(loadMyHoldingScheme()){
-      const resultEl = document.getElementById('portfolio-result');
-      if(resultEl) resultEl.style.display = 'block';
-    }
-    renderMyHoldingScheme();
-  }
+  if(typeof renderMyHoldingScheme === 'function') renderMyHoldingScheme();
 }
 
 // 表单输入时自动清除校验红框（事件委托，一次性覆盖所有 .form-item）
