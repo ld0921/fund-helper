@@ -227,12 +227,12 @@ function _doGenerateDca(){
       if(!catData) return;
 
       // 构建排除已选基金的候选池，叠加定投评分兜底过滤
-      // 阈值：权益类60分，指数50分，债券50分（与"及格线"对齐，避免推荐<50分基金）
+      // 阈值：权益类60分，指数51分，债券51分（严格大于50，50分"不及格"不应入选）
       const dcaScoreThreshold = ['bond','index'].includes(cat) ? 50 : 60;
       const excluded = catData.topFunds.filter(f => !allPicks.some(p => p.code === f.code));
       // 方案B：动态门槛 — 同类有 scoreF 更高≥10分的基金时，排除低分基金（避免推荐诊断模块会标"关注"的基金）
       const qualified = excluded.filter(f => {
-        if(calcDCAScore(f) < dcaScoreThreshold) return false;
+        if(calcDCAScore(f) <= dcaScoreThreshold) return false; // 严格大于阈值，50分不及格不入选
         const myScore = scoreF(f);
         if(myScore >= 55) return true; // scoreF≥55 直接通过，不做相对排除
         // scoreF<55 时：若同类有 scoreF 更高≥10分且定投评分也达标的基金，则排除
