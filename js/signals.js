@@ -1219,6 +1219,9 @@ function renderDiagnostics(){
       <div class="card-title" style="margin:0"><span class="icon icon-red">🔄</span>主动调仓建议 · ${totalCount} 条</div>
       <div style="font-size:12px;color:var(--muted);margin-top:4px">${headerHint}</div>
     </div>
+    <div style="padding:10px 14px;background:#fff1f0;border-bottom:1px solid var(--border);font-size:12px;color:#a8071a;line-height:1.7">
+      📊 <b>判断维度</b>：对比当前持仓评分 vs 同类最优基金评分，评分差 &gt;15 分且换仓成本划算时建议换仓（基于选基质量）。与上方"持仓行动建议"（基于仓位偏离）互补。
+    </div>
     ${rows}
     ${noAltRows}
     <div style="padding:10px 14px;font-size:11px;color:var(--muted);background:#fafafa">⚠️ 已计算换仓成本（赎回费+申购费+回本期），标注"暂不建议换"的基金持有满2年后再评估。定投基金暂停后建议评估是否转投其他类别。</div>
@@ -1641,15 +1644,21 @@ function renderActionDecisions(){
     </div>`;
   }).join('');
 
-  wrap.innerHTML = `<div class="card" style="padding:0;overflow:hidden">
-    <div style="padding:14px 16px;border-bottom:1px solid var(--border)">
-      <div class="card-title" style="margin:0"><span class="icon icon-orange">🎯</span>持仓行动建议 · ${visibleDecisions.length} 条${schemeStaleTag}</div>
-      <div style="font-size:12px;color:var(--muted);margin-top:6px;line-height:1.7">${summaryParts.join(' · ') || '当前持仓与方案一致'}</div>
+  wrap.innerHTML = `<details class="card" style="padding:0;overflow:hidden" open>
+    <summary style="padding:14px 16px;border-bottom:1px solid var(--border);cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px">
+      <div style="flex:1">
+        <div class="card-title" style="margin:0"><span class="icon icon-orange">🎯</span>持仓行动建议 · ${visibleDecisions.length} 条${schemeStaleTag}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:6px;line-height:1.7">${summaryParts.join(' · ') || '当前持仓与方案一致'}</div>
+      </div>
+      <span class="toggle-arrow" style="font-size:12px;color:var(--primary)"></span>
+    </summary>
+    <div style="padding:10px 14px;background:#f0f5ff;border-bottom:1px solid var(--border);font-size:12px;color:#1d39c4;line-height:1.7">
+      📊 <b>判断维度</b>：对比"我的持有方案"目标仓位 vs 当前持仓金额，给出加仓/减仓/首次买入建议（基于资金分配偏离）。与下方"调仓建议"（基于评分替换）互补。
     </div>
     ${rows || '<div style="padding:14px 0;text-align:center;color:var(--muted);font-size:13px">✅ 当前持仓与方案目标一致</div>'}
     <div style="padding:10px 14px;font-size:11px;color:var(--muted);background:#fafafa;line-height:1.7">
       💡 <b>冷静期机制</b>：加仓需连续 3 个交易日触发、减仓/换仓需 2 个交易日，风险信号立即触发。同日多次打开不推进计数，基准为最新净值日（${latestTradeDate}）。
     </div>
-  </div>`;
+  </details>`;
 }
 

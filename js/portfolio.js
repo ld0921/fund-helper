@@ -2236,22 +2236,33 @@ function renderMyHoldingScheme(){
     banner += `<div style="padding:10px 14px;background:#fff7e6;border-left:3px solid #fa8c16;border-radius:6px;font-size:12px;color:#ad4e00;margin-bottom:10px;line-height:1.7">🔄 市场阶段已从 <b>${escHtml(scheme.phaseLabel || scheme.phase)}</b> 切换，当前配置可能不再适配，建议重新生成。</div>`;
   }
 
-  // picks 列表按类别分组
+  // picks 列表按类别分组，用 Largest Remainder 归一化显示百分比（避免舍入后总和≠100%）
+  const allPicks = scheme.picks || [];
+  const totalAmt = allPicks.reduce((s,p)=>s+(p.amt||0), 0);
+  // 先按真实金额算精确百分比，再用 Largest Remainder 取整到整数且总和=100
+  const exactPcts = allPicks.map(p => totalAmt > 0 ? (p.amt||0)/totalAmt*100 : (p.pct||0));
+  const floors = exactPcts.map(v => Math.floor(v));
+  let remainder = 100 - floors.reduce((s,v)=>s+v, 0);
+  const remainders = exactPcts.map((v,i) => v - floors[i]);
+  const order = remainders.map((_,i)=>i).sort((a,b)=>remainders[b]-remainders[a]);
+  const displayPcts = [...floors];
+  for(let i=0; i<remainder; i++) displayPcts[order[i]]++;
+
   const byCat = {};
-  (scheme.picks || []).forEach(p => {
+  allPicks.forEach((p, i) => {
     const c = p.cat || 'other';
     if(!byCat[c]) byCat[c] = [];
-    byCat[c].push(p);
+    byCat[c].push({...p, _displayPct: displayPcts[i]});
   });
   const catNames = { active:'主动型', index:'指数', bond:'债券', money:'货币', qdii:'QDII', other:'其他' };
   const rows = Object.entries(byCat).map(([cat, picks]) => {
     const sum = picks.reduce((s,p)=>s+(p.amt||0), 0);
-    const sumPct = picks.reduce((s,p)=>s+(p.pct||0), 0);
-    const items = picks.map(p => `<div style="display:flex;justify-content:space-between;gap:8px;padding:4px 0;font-size:12px"><span>${escHtml(p.name)} <span style="color:var(--muted);font-size:11px">(${p.code})</span></span><span style="color:var(--primary);font-weight:600;white-space:nowrap">${p.pct}% · ¥${(p.amt||0).toLocaleString()}</span></div>`).join('');
+    const sumPct = picks.reduce((s,p)=>s+p._displayPct, 0);
+    const items = picks.map(p => `<div style="display:flex;justify-content:space-between;gap:8px;padding:4px 0;font-size:12px"><span>${escHtml(p.name)} <span style="color:var(--muted);font-size:11px">(${p.code})</span></span><span style="color:var(--primary);font-weight:600;white-space:nowrap">${p._displayPct}% · ¥${(p.amt||0).toLocaleString()}</span></div>`).join('');
     return `<div style="border:1px solid var(--border);border-radius:6px;padding:8px 12px;margin-bottom:8px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;padding-bottom:6px;border-bottom:1px dashed var(--border)">
         <span style="font-size:13px;font-weight:600">${catNames[cat]||cat}</span>
-        <span style="font-size:12px;color:var(--muted)">${sumPct.toFixed(0)}% · ¥${sum.toLocaleString()}</span>
+        <span style="font-size:12px;color:var(--muted)">${sumPct}% · ¥${sum.toLocaleString()}</span>
       </div>
       ${items}
     </div>`;
