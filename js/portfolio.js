@@ -131,33 +131,29 @@ function computeRebalancePlan(targetPicks, newMoney){
       actionDesc=`加仓 ¥${diff.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
       actionColor='act-buy_more';
     } else if(diff<-tol){
-      // 持有成本感知：计算换仓净收益，只有划算时才建议减仓
+      // 减仓判断：只评估赎回费（减仓 ≠ 换仓，不耦合申购费/同类最优/回本期）
+      // 原逻辑错误地用 calculateRebalanceCost 判断减仓，导致"民生增强收益债券A 超配176%被误标建议持有"
+      // 修复原则：减仓释放的资金回到余额或流向方案中其他加仓基金，与"换成同类最优"无关
       const held = existingHoldings.find(h=>h.code===pick.code);
       const holdingDays = held && held.date ? Math.floor((Date.now()-new Date(held.date).getTime())/86400000) : 365;
-      const fd = CURATED_FUNDS.find(f=>f.code===pick.code);
-      // 找同类最优基金作为换仓目标
-      const sameCat = CURATED_FUNDS.filter(f=>f.cat===pick.cat && f.code!==pick.code);
-      const bestAlt = sameCat.sort((a,b)=>scoreF(b)-scoreF(a))[0];
-      let costWorthIt = true;
-      if(fd && bestAlt && holdingDays < 730){
-        const cost = calculateRebalanceCost(fd, bestAlt, holdingDays, Math.abs(diff));
-        costWorthIt = cost.worthIt;
-        if(!costWorthIt){
-          action='hold'; actionAmt=0;
-          actionDesc=`仓位略超配，但换仓成本${(cost.totalCostRate*100).toFixed(2)}%需${cost.breakEvenYears.toFixed(1)}年回本，建议持有`;
-          actionColor='act-hold';
-        }
-      }
-      if(costWorthIt){
+      if(holdingDays < 7){
+        // 持有<7天：惩罚性赎回费1.5%，此时降级为持有是合理的（避免用户因再平衡吃大额费用）
+        action='hold'; actionAmt=0;
+        actionDesc=`持有仅${holdingDays}天，惩罚性赎回费1.5%（约¥${Math.round(Math.abs(diff)*0.015)}）过高，暂不建议减仓`;
+        actionColor='act-hold';
+      } else {
+        // 持有≥7天：赎回费≤0.5%，小于超配造成的再平衡损失，正常减仓
         action='reduce'; actionAmt=Math.abs(diff);
-        actionDesc=`减仓 ¥${Math.abs(diff).toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
+        const redeemRate = holdingDays < 365 ? 0.5 : (holdingDays < 730 ? 0.25 : 0);
+        const redeemNote = redeemRate > 0 ? `（赎回费约 ${redeemRate}%）` : '（已免赎回费）';
+        actionDesc=`减仓 ¥${Math.abs(diff).toLocaleString('zh-CN',{maximumFractionDigits:0})}${redeemNote}`;
         actionColor='act-reduce';
       }
 
       // 检测是否是最近推荐的基金需要大量减仓
       const recentRec = recentRecommends.find(r => r.code === pick.code);
       const reducePct = currentAmt > 0 ? (Math.abs(diff) / currentAmt * 100) : 0;
-      if(recentRec && reducePct > 20){
+      if(recentRec && reducePct > 20 && action === 'reduce'){
         const daysSince = Math.floor((Date.now() - new Date(recentRec.date).getTime()) / (24*60*60*1000));
         action = 'reduce_gentle'; // 标记为需要温和处理
         actionDesc = `建议减仓 ¥${Math.abs(diff).toLocaleString('zh-CN',{maximumFractionDigits:0})}（${daysSince}天前推荐买入）`;
