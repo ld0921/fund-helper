@@ -461,6 +461,20 @@ function runHealthMonitor(){
     }
 
     if(!fd){
+      // 检查是否是近期通过智能方案推荐加入的（recommendHistory 里有记录且不足4周）
+      let inProtection = false;
+      let weeksAgo = 99;
+      try {
+        const recHistory = JSON.parse(localStorage.getItem('recommendHistory') || '[]');
+        const rec = recHistory.filter(r => r.code === h.code).sort((a,b) => new Date(b.date) - new Date(a.date))[0];
+        if(rec){
+          weeksAgo = Math.floor((Date.now() - new Date(rec.date).getTime()) / (7 * 86400000));
+          inProtection = weeksAgo < 4;
+        }
+      } catch(_){}
+      const libNote = inProtection
+        ? `该基金已移出本周精选库（智能方案推荐 ${weeksAgo} 周前），可能因评分下滑/经理变更/规模异常被替换。建议重新生成方案评估是否换仓。`
+        : `该基金不在精选库中，无法进行详细诊断。建议重新生成智能方案，评估是否换入同类更优基金。`;
       if(pnlPct!==null && pnlPct < -15){
         issues.push(`持仓亏损 ${pnlPct.toFixed(1)}%，已超过-15%预警线。该基金不在精选库`);
         level = 'red';
@@ -468,9 +482,10 @@ function runHealthMonitor(){
       if(issues.length){
         holdingAlerts.push({code:h.code,name:h.name,level, desc:issues.join('；')+'。', action:level==='red'?'🔴 建议减仓':'🟡 需分散', source:'existing'});
       } else {
-        holdingOkList.push({code:h.code,name:h.name,level:'green',
-          desc:`该基金不在精选库中，无法进行详细诊断。${pnlPct!==null?`当前${pnlPct>=0?'盈利':'亏损'} ${Math.abs(pnlPct).toFixed(1)}%。`:''} ${todayChg!==null?`今日 ${todayChg>0?'+':''}${todayChg.toFixed(2)}%。`:''}建议自行评估。`,
-          action:'🟢 持有', source:'existing'});
+        holdingOkList.push({code:h.code,name:h.name,level: inProtection ? 'yellow' : 'green',
+          desc:`${libNote}${pnlPct!==null?` 当前${pnlPct>=0?'盈利':'亏损'} ${Math.abs(pnlPct).toFixed(1)}%。`:''} ${todayChg!==null?`今日 ${todayChg>0?'+':''}${todayChg.toFixed(2)}%。`:''}`,
+          action: inProtection ? '🟡 关注观察' : '🟢 持有', source:'existing',
+          extraAction: `<button onclick="switchTab(0)" style="margin-top:6px;padding:4px 12px;font-size:11px;background:var(--primary);color:#fff;border:none;border-radius:4px;cursor:pointer">重新生成智能方案 →</button>`});
       }
       return;
     }
