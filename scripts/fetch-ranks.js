@@ -80,7 +80,7 @@ function parseFund(item, catInfo) {
   const established = f[16] || '';
   const yearsOld = (Date.now() - new Date(established).getTime()) / (365.25*24*60*60*1000);
   if (yearsOld < 3 || size < 2) return null;
-  if (/后端|C$|E$/.test(name)) return null;
+  if (/后端|C$|E$|定期开放|定开/.test(name)) return null;
   return { code, name, type: catInfo.type, cat: catInfo.cat, label: catInfo.label, r1, r3, size, established };
 }
 
@@ -294,7 +294,7 @@ async function main() {
   for (const catInfo of CATEGORIES) {
     try {
       console.log(`  拉取 ${catInfo.label} Top ${catInfo.ft === 'zs' ? 100 : 50}…`);
-      const pn = catInfo.ft === 'zs' ? 100 : 50; // 指数基金拉取更多，弥补筛选后数量不足
+      const pn = catInfo.ft === 'zs' ? 100 : (catInfo.ft === 'hh' || catInfo.ft === 'zq' ? 100 : 50);
       const data = await fetchRank(catInfo.ft, pn);
       const allParsed = data.datas.map(item => parseFund(item, catInfo)).filter(Boolean);
 

@@ -229,7 +229,8 @@ function _doGenerateDca(){
       // 构建排除已选基金的候选池，叠加定投评分兜底过滤
       // 阈值：权益类60分，指数51分，债券51分（严格大于50，50分"不及格"不应入选）
       const dcaScoreThreshold = ['bond','index'].includes(cat) ? 50 : 60;
-      const excluded = catData.topFunds.filter(f => !allPicks.some(p => p.code === f.code));
+      // 过滤定期开放型基金（无法随时申购，不适合定投）
+      const excluded = catData.topFunds.filter(f => !allPicks.some(p => p.code === f.code) && !/定期开放|定开/.test(f.name||''));
       // 方案B：动态门槛 — 同类有 scoreF 更高≥10分的基金时，排除低分基金（避免推荐诊断模块会标"关注"的基金）
       const qualified = excluded.filter(f => {
         if(calcDCAScore(f) <= dcaScoreThreshold) return false; // 严格大于阈值，50分不及格不入选
