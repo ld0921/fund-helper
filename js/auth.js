@@ -220,6 +220,7 @@ async function applyCloudData(cloudData, version){
   existingHoldings = data.existingHoldings || [];
   dcaPlans = data.dcaPlans || [];
   navCache = data.navCache || {};
+  window._myHoldingScheme = data.myHoldingScheme || null;
   _cloudVersion = version;
   renderAll();
   showToast('已从云端同步最新数据','success');

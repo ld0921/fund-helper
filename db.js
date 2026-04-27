@@ -3,9 +3,9 @@ const FundDB = (function(){
   const DB_NAME = 'FundHelperDB';
   const DB_VERSION = 1;
   const STORE_NAME = 'appData';
-  const DATA_KEYS = ['funds','holdings','existingHoldings','dcaPlans','navCache'];
+  const DATA_KEYS = ['funds','holdings','existingHoldings','dcaPlans','navCache','myHoldingScheme'];
   // 需要同步到云端的 key（用户创建的数据，排除可重新拉取的缓存）
-  const SYNC_KEYS = ['funds','holdings','existingHoldings','dcaPlans'];
+  const SYNC_KEYS = ['funds','holdings','existingHoldings','dcaPlans','myHoldingScheme'];
 
   let _db = null;
   let _syncCallback = null; // 云端同步回调

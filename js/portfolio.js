@@ -2110,22 +2110,29 @@ function renderRiskMeter(blendedDD, riskP){
 }
 
 // ═══════════════ 我的持有方案（一键保存 AI 智能配置方案）═══════════════
-// 数据流：_doGenerate → window._lastGeneratedScheme → saveMyHoldingScheme → localStorage
-//        localStorage → loadMyHoldingScheme → signals.js 的行动决策层读取
-//        覆盖保存时 code 集变化 → 清空 _actionHistory（避免历史计数污染新方案）
+// 数据流：_doGenerate → window._lastGeneratedScheme → saveMyHoldingScheme → FundDB（云同步）
+//        window._myHoldingScheme（内存缓存）→ loadMyHoldingScheme → 各模块读取
+//        覆盖保存时 code 集变化 → 清空 _actionHistory
 const MY_SCHEME_KEY = 'myHoldingScheme';
 const ACTION_HISTORY_KEY = '_actionHistory';
 
+// 内存缓存，页面初始化时由 initMyHoldingScheme() 从 FundDB 加载
+window._myHoldingScheme = undefined; // undefined=未初始化，null=已初始化但无数据
+
 function loadMyHoldingScheme(){
+  return window._myHoldingScheme || null;
+}
+
+// 页面初始化时调用，从 FundDB 异步加载到内存缓存
+async function initMyHoldingScheme(){
   try {
-    const raw = localStorage.getItem(MY_SCHEME_KEY);
-    if(!raw) return null;
-    return JSON.parse(raw);
+    const data = await FundDB.get(MY_SCHEME_KEY);
+    window._myHoldingScheme = data || null;
   } catch(e){
-    console.warn('[我的持有方案] 读取失败，数据可能损坏:', e);
-    try { localStorage.removeItem(MY_SCHEME_KEY); } catch(_){}
-    return null;
+    console.warn('[我的持有方案] 初始化失败:', e);
+    window._myHoldingScheme = null;
   }
+  renderMyHoldingScheme();
 }
 
 function saveMyHoldingScheme(){
@@ -2147,7 +2154,7 @@ function saveMyHoldingScheme(){
     weights: gen.weights
   };
 
-  // 覆盖保存：如果 code 集合变化，清空 actionHistory（冷静期从零开始）
+  // 覆盖保存：如果 code 集合变化，清空 actionHistory（已废弃，保留兼容）
   if(prev){
     const prevCodes = new Set((prev.picks||[]).map(p=>p.code));
     const newCodes = new Set(scheme.picks.map(p=>p.code));
@@ -2158,41 +2165,29 @@ function saveMyHoldingScheme(){
   }
 
   try {
-    localStorage.setItem(MY_SCHEME_KEY, JSON.stringify(scheme));
+    window._myHoldingScheme = scheme;
+    FundDB.set(MY_SCHEME_KEY, scheme); // 异步写入 IndexedDB + 云同步
     if(typeof showToast === 'function') showToast(prev ? '方案已替换保存' : '方案已保存', 'success');
     renderMyHoldingScheme();
-    // 保存后立即把页面恢复到"初始 + 我的持有方案"状态：
-    // 隐藏整个 #portfolio-result（调仓建议/行情分析/AI配置方案/压力测试/分步执行 等），
-    // 同时把"我的持有方案"折叠块展开让用户看到刚保存的内容
+    // 保存后立即把页面恢复到"初始 + 我的持有方案"状态
     const resultEl = document.getElementById('portfolio-result');
     if(resultEl) resultEl.style.display = 'none';
     const schemeBlock = document.getElementById('my-scheme-block');
     if(schemeBlock) schemeBlock.open = true;
-    // 滚动定位到"我的持有方案"区块
     if(schemeBlock) setTimeout(()=>schemeBlock.scrollIntoView({behavior:'smooth', block:'start'}), 100);
-    // 若当前在诊断 tab 或页面已初始化，刷新行动决策区块
-    if(typeof renderActionDecisions === 'function'){
-      try { renderActionDecisions(); } catch(e){ console.warn('刷新行动决策失败:', e); }
-    }
   } catch(e){
     console.error('[我的持有方案] 保存失败:', e);
-    if(typeof showToast === 'function') showToast('保存失败：存储空间不足', 'error');
+    if(typeof showToast === 'function') showToast('保存失败', 'error');
   }
 }
 
 function deleteMyHoldingScheme(){
-  if(!confirm('确认删除已保存的"我的持有方案"？删除后，持仓诊断将无法给出加仓/减仓建议。')) return;
-  try {
-    localStorage.removeItem(MY_SCHEME_KEY);
-    localStorage.removeItem(ACTION_HISTORY_KEY);
-    if(typeof showToast === 'function') showToast('方案已删除', 'success');
-    renderMyHoldingScheme();
-    if(typeof renderActionDecisions === 'function'){
-      try { renderActionDecisions(); } catch(_){}
-    }
-  } catch(e){
-    console.warn('[我的持有方案] 删除失败:', e);
-  }
+  if(!confirm('确认删除已保存的"我的持有方案"？')) return;
+  window._myHoldingScheme = null;
+  FundDB.set(MY_SCHEME_KEY, null);
+  try { localStorage.removeItem(ACTION_HISTORY_KEY); } catch(_){}
+  if(typeof showToast === 'function') showToast('方案已删除', 'success');
+  renderMyHoldingScheme();
 }
 
 function renderMyHoldingScheme(){
@@ -2246,10 +2241,9 @@ function renderMyHoldingScheme(){
     banner += `<div style="padding:10px 14px;background:#fff7e6;border-left:3px solid #fa8c16;border-radius:6px;font-size:12px;color:#ad4e00;margin-bottom:10px;line-height:1.7">🔄 市场阶段已从 <b>${escHtml(scheme.phaseLabel || scheme.phase)}</b> 切换，当前配置可能不再适配，建议重新生成。</div>`;
   }
 
-  // picks 列表按类别分组，用 Largest Remainder 归一化显示百分比（避免舍入后总和≠100%）
+  // picks 列表按类别分组，用 Largest Remainder 归一化显示百分比
   const allPicks = scheme.picks || [];
   const totalAmt = allPicks.reduce((s,p)=>s+(p.amt||0), 0);
-  // 先按真实金额算精确百分比，再用 Largest Remainder 取整到整数且总和=100
   const exactPcts = allPicks.map(p => totalAmt > 0 ? (p.amt||0)/totalAmt*100 : (p.pct||0));
   const floors = exactPcts.map(v => Math.floor(v));
   let remainder = 100 - floors.reduce((s,v)=>s+v, 0);
@@ -2258,34 +2252,58 @@ function renderMyHoldingScheme(){
   const displayPcts = [...floors];
   for(let i=0; i<remainder; i++) displayPcts[order[i]]++;
 
-  const byCat = {};
-  allPicks.forEach((p, i) => {
-    const c = p.cat || 'other';
-    if(!byCat[c]) byCat[c] = [];
-    byCat[c].push({...p, _displayPct: displayPcts[i]});
-  });
-  const catNames = { active:'主动型', index:'指数', bond:'债券', money:'货币', qdii:'QDII', other:'其他' };
-  const rows = Object.entries(byCat).map(([cat, picks]) => {
-    const sum = picks.reduce((s,p)=>s+(p.amt||0), 0);
-    const sumPct = picks.reduce((s,p)=>s+p._displayPct, 0);
-    const items = picks.map(p => `<div style="display:flex;justify-content:space-between;gap:8px;padding:4px 0;font-size:12px"><span>${escHtml(p.name)} <span style="color:var(--muted);font-size:11px">(${p.code})</span></span><span style="color:var(--primary);font-weight:600;white-space:nowrap">${p._displayPct}% · ¥${(p.amt||0).toLocaleString()}</span></div>`).join('');
-    return `<div style="border:1px solid var(--border);border-radius:6px;padding:8px 12px;margin-bottom:8px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;padding-bottom:6px;border-bottom:1px dashed var(--border)">
-        <span style="font-size:13px;font-weight:600">${catNames[cat]||cat}</span>
-        <span style="font-size:12px;color:var(--muted)">${sumPct}% · ¥${sum.toLocaleString()}</span>
+  // 分组定义（与 renderAllocGroups 一致）
+  const groupDefs = [
+    { title:'🏦 基础防御仓', cats:['money','bond'], color:'#52c41a' },
+    { title:'📈 核心权益仓', cats:['index','active'], color:'#1677ff' },
+    { title:'🌍 全球分散仓', cats:['qdii'], color:'#722ed1' },
+  ];
+  const catNames = { active:'主动型', index:'指数', bond:'债券', money:'货币', qdii:'QDII' };
+  const catIcons = { money:'🏦', bond:'📑', index:'📊', active:'🎯', qdii:'🌍' };
+
+  // 给每个 pick 附上 displayPct
+  const picksWithPct = allPicks.map((p,i) => ({...p, _displayPct: displayPcts[i]}));
+
+  const groupRows = groupDefs.map(g => {
+    const picks = g.cats.flatMap(cat => picksWithPct.filter(p=>p.cat===cat)).filter(p=>p.amt>0);
+    if(!picks.length) return '';
+    const groupPct = picks.reduce((s,p)=>s+p._displayPct, 0);
+    const groupAmt = picks.reduce((s,p)=>s+(p.amt||0), 0);
+    const items = picks.map(p => {
+      const fd = (typeof CURATED_FUNDS !== 'undefined') ? CURATED_FUNDS.find(f=>f.code===p.code) : null;
+      const r1Str = (p.r1 !== undefined) ? `<span class="${p.r1>=0?'up':'down'}" style="font-size:11px">${p.r1>=0?'+':''}${p.r1}%</span>` : '';
+      const scoreStr = p.score ? `<span style="font-size:10px;color:var(--muted)">评分 ${Math.round(p.score)}</span>` : '';
+      return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f5f5f5">
+        <div style="width:32px;height:32px;border-radius:8px;background:${g.color}22;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px">${catIcons[p.cat]||'🎯'}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(p.name)}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">${catNames[p.cat]||p.cat} · ${p.code} · 近1年 ${r1Str} ${scoreStr}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-size:15px;font-weight:700;color:${g.color}">${p._displayPct}%</div>
+          <div style="font-size:11px;color:var(--muted)">¥${(p.amt||0).toLocaleString()}</div>
+        </div>
+      </div>`;
+    }).join('');
+    return `<div style="border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:${g.color}0d;border-bottom:1px solid ${g.color}33">
+        <span style="font-size:13px;font-weight:600;color:${g.color}">${g.title}</span>
+        <span style="font-size:13px;font-weight:700;color:${g.color}">${groupPct}% · ¥${groupAmt.toLocaleString()}</span>
       </div>
-      ${items}
+      <div style="padding:0 14px">${items}</div>
     </div>`;
   }).join('');
 
+  const riskLabel = { conservative:'保守型', moderate:'稳健型', balanced:'平衡型', aggressive:'进取型' };
   body.innerHTML = `${banner}
-    <div style="margin-bottom:10px;font-size:12px;color:var(--muted);line-height:1.7">
-      保存时间：${scheme.savedAtDate} · 目标总额 ¥${(scheme.targetTotal||0).toLocaleString()} · ${scheme.risk || ''} · ${scheme.horizon || ''}年
+    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px;padding:10px 14px;background:#f8f9fc;border-radius:8px;font-size:12px;color:#595959">
+      <span>📅 保存于 ${scheme.savedAtDate}</span>
+      <span>💰 目标总额 ¥${(scheme.targetTotal||0).toLocaleString()}</span>
+      <span>🛡️ ${riskLabel[scheme.risk]||scheme.risk||''}</span>
+      <span>⏱️ ${scheme.horizon||''}年期限</span>
+      <span>📡 ${scheme.phaseLabel||scheme.phase||''}</span>
     </div>
-    ${rows}
-    <div style="margin-top:8px;font-size:11px;color:var(--muted);line-height:1.6">
-      💡 持仓诊断 tab 会基于此方案对比当前持仓，给出具体的加仓/减仓/首次买入建议。
-    </div>`;
+    ${groupRows}`;
 }
 
 
