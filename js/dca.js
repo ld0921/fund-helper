@@ -496,7 +496,7 @@ function importDcaAiToPlan(planArr){
     arr.forEach(p=>{
       if(!dcaPlans.some(d=>d.code===p.code)){
         const today = new Date().toISOString().split('T')[0];
-        dcaPlans.push({code:p.code, name:p.name, monthly:p.monthly, start:today, curval:0, type:p.type});
+        dcaPlans.push({code:p.code, name:p.name, monthly:p.monthly, start:today, curval:0, type:p.type, addedAt:today});
         added++;
       }
     });

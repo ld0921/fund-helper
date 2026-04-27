@@ -591,6 +591,13 @@ function runHealthMonitor(){
     const statusHint = h.paused ? '（已暂停）' : `（每月¥${h.monthly}）`;
 
     if(!fd){
+      // 保护期判断：定投计划加入后4周内，即使移出精选库也给出友好提示而非直接标"建议评估"
+      const addedAt = h.addedAt || h.start;
+      const weeksSinceAdded = addedAt ? Math.floor((Date.now() - new Date(addedAt).getTime()) / (7 * 86400000)) : 99;
+      const inProtection = weeksSinceAdded < 4;
+      const libNote = inProtection
+        ? `该基金已移出本周精选库（加入定投 ${weeksSinceAdded} 周），可能因评分下滑/经理变更/规模异常被替换。建议在定投专区重新生成方案，评估是否换入同类更优基金。`
+        : `该基金不在精选库中，无法进行详细诊断${statusHint}。建议在定投专区重新生成方案，评估是否换入同类更优基金。`;
       if(pnlPct!==null && pnlPct < -25){
         issues.push(`定投亏损 ${pnlPct.toFixed(1)}%，已超过-25%预警线${statusHint}。该基金不在精选库`);
         level = 'red';
@@ -598,9 +605,10 @@ function runHealthMonitor(){
       if(issues.length){
         dcaAlerts.push({code:h.code,name:h.name,level, desc:issues.join('；')+'。', action:level==='red'?'🔴 考虑暂停':'🟡 关注', source:'dca'});
       } else {
-        dcaOkList.push({code:h.code,name:h.name,level:'green',
-          desc:`该基金不在精选库中，无法进行详细诊断${statusHint}。${pnlPct!==null?`当前${pnlPct>=0?'盈利':'亏损'} ${Math.abs(pnlPct).toFixed(1)}%。`:''} ${todayChg!==null?`今日 ${todayChg>0?'+':''}${todayChg.toFixed(2)}%。`:''}建议自行评估。`,
-          action:'🟢 继续定投', source:'dca'});
+        dcaOkList.push({code:h.code,name:h.name,level: inProtection ? 'yellow' : 'green',
+          desc:`${libNote}${pnlPct!==null?` 当前${pnlPct>=0?'盈利':'亏损'} ${Math.abs(pnlPct).toFixed(1)}%。`:''} ${todayChg!==null?`今日 ${todayChg>0?'+':''}${todayChg.toFixed(2)}%。`:''}`,
+          action: inProtection ? '🟡 关注观察' : '🟢 继续定投', source:'dca',
+          extraAction: `<button onclick="switchTab(1)" style="margin-top:6px;padding:4px 12px;font-size:11px;background:var(--primary);color:#fff;border:none;border-radius:4px;cursor:pointer">重新生成定投方案 →</button>`});
       }
       return;
     }
@@ -726,6 +734,7 @@ function runHealthMonitor(){
       <div class="health-fund">
         <div class="health-name">${escHtml(a.name)} <code style="font-size:10px;color:var(--muted)">${escHtml(a.code)}</code>${sourceLabel}</div>
         <div class="health-desc">${escHtml(a.desc)}</div>
+        ${a.extraAction || ''}
       </div>
       <div class="health-action" style="color:${a.level==='red'?'var(--danger)':a.level==='yellow'?'var(--warning)':'var(--success)'}">${escHtml(a.action)}</div>
     </div>`;
