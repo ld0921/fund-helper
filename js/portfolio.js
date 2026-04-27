@@ -1301,7 +1301,7 @@ function _doGenerate(shouldScroll){
       let method, role;
       if(diffAmt > tol){ method='加仓至目标配置'; role='已持有·加仓'; }
       else if(diffAmt < -tol){ method='减仓至目标配置'; role='已持有·减配'; }
-      else { method = h.keep ? '继续持有' : '建议逐步替换'; role = h.keep ? '已持有·保留' : '已持有·低分'; }
+      else { method = h.keep ? '继续持有' : '继续持有（评分偏低，可关注替换机会）'; role = h.keep ? '已持有·保留' : '已持有·低分'; }
       return {
         ...h.fundData,
         pct: Math.round(targetAmt / portfolioTotal * 100),
@@ -2029,10 +2029,20 @@ function renderAllocGroups(selectedPicks, weights){
     return `<span class="method-badge method-hold">${m}</span>`;
   };
   let html='';
-  groupDefs.forEach(g=>{
+  // 用 Largest Remainder 归一化三组百分比，保证加总恰好 = 100%
+  const groupData = groupDefs.map(g => {
     const picks = g.cats.flatMap(cat=>selectedPicks[cat]||[]).filter(f=>f.amt > 0);
-    if(!picks.length) return;
-    const groupPct = Math.round(picks.reduce((s,f)=>s+f.pct,0));
+    const exactPct = picks.reduce((s,f)=>s+f.pct, 0);
+    return { g, picks, exactPct };
+  }).filter(d => d.picks.length > 0);
+  const totalExact = groupData.reduce((s,d)=>s+d.exactPct, 0);
+  const floors = groupData.map(d => Math.floor(d.exactPct / totalExact * 100));
+  let rem = 100 - floors.reduce((s,v)=>s+v, 0);
+  const rems = groupData.map((d,i) => d.exactPct / totalExact * 100 - floors[i]);
+  rems.map((v,i)=>({v,i})).sort((a,b)=>b.v-a.v).forEach(({i}) => { if(rem>0){ floors[i]++; rem--; } });
+
+  groupData.forEach(({g, picks}, gi) => {
+    const groupPct = floors[gi];
     const groupAmt = Math.round(picks.reduce((s,f)=>s+f.amt,0));
     const targetGroupPct = Math.round(g.cats.reduce((s,cat)=>s+(weights[cat]||0),0));
     const targetNote = targetGroupPct !== groupPct
