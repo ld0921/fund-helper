@@ -841,7 +841,7 @@ function renderDcaPlans(){
     return;
   }
   emptyEl.style.display='none'; listEl.style.display='block';
-  const totalMonthly=dcaPlans.reduce((s,d)=>s+d.monthly,0);
+  const totalMonthly=dcaPlans.reduce((s,d)=>s+(d.frequency==='daily'?d.monthly*22:d.monthly),0);
   const totalCurval=dcaPlans.reduce((s,d)=>s+d.curval,0);
   listEl.innerHTML=dcaPlans.map((d,i)=>{
     const nav=navCache[d.code];
@@ -905,7 +905,7 @@ function renderDcaTracker(){
       <div style="font-size:11px;color:var(--muted);margin-bottom:8px">累计已投：<b>${executedCount}</b>期 · 共<b>¥${totalInvested.toLocaleString()}</b></div>
       <div style="display:flex;gap:8px;align-items:center">
         ${executed
-          ?`<span style="font-size:11px;color:var(--success);padding:4px 8px;background:#f6ffed;border-radius:4px;border:1px solid #b7eb8f">✅ 本月已执行</span>`
+          ?`<span style="font-size:11px;color:var(--success);padding:4px 8px;background:#f6ffed;border-radius:4px;border:1px solid #b7eb8f">✅ ${d.frequency==='daily'?'今天已执行':'本月已执行'}</span>`
           :`<button class="btn btn-sm" onclick="markDcaExecuted(${realIdx})" style="font-size:11px;padding:4px 12px">✓ 标记已执行</button>`
         }
         <button class="btn btn-danger btn-sm" onclick="clearDcaTracking(${realIdx})" style="font-size:11px;padding:4px 12px" title="清空跟踪记录">🗑️ 清空</button>
@@ -951,7 +951,7 @@ function markDcaExecuted(idx){
 
   renderDcaTracker();
   renderExistingHoldings();
-  showToast('已标记本月定投执行','success');
+  showToast(plan.frequency==='daily'?'今日定投成功':'已标记本月定投执行','success');
 }
 
 function clearDcaTracking(idx){
