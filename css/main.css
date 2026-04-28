@@ -8,11 +8,11 @@ input[type="number"]{-moz-appearance:textfield}
   --radius:12px;
 }
 body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;min-height:-webkit-fill-available;-webkit-text-size-adjust:100%;overscroll-behavior:none}
-.header{background:#fff;color:var(--text);padding:0 20px;padding-top:env(safe-area-inset-top);padding-left:calc(20px + env(safe-area-inset-left));padding-right:calc(20px + env(safe-area-inset-right));border-bottom:1px solid var(--border);position:sticky;top:0;z-index:101;display:flex;align-items:center;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.header{background:#fff;color:var(--text);padding:0 20px;padding-top:env(safe-area-inset-top);padding-left:calc(20px + env(safe-area-inset-left));padding-right:calc(20px + env(safe-area-inset-right));border-bottom:1px solid var(--border);position:sticky;top:0;z-index:101;display:flex;align-items:center;min-height:56px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
 .header h1{font-size:18px;font-weight:700;letter-spacing:.3px;color:var(--text);white-space:nowrap}
-.tabs-inline{display:flex;flex:1;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.tabs-inline{display:flex;flex:1;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;align-self:stretch}
 .tabs-inline::-webkit-scrollbar{display:none}
-.tab{padding:13px 16px;cursor:pointer;font-size:14px;font-weight:500;color:var(--muted);white-space:nowrap;border-bottom:2px solid transparent;transition:all .2s;-webkit-tap-highlight-color:transparent}
+.tab{padding:0 16px;cursor:pointer;font-size:14px;font-weight:500;color:var(--text);white-space:nowrap;border-bottom:2px solid transparent;transition:all .2s;-webkit-tap-highlight-color:transparent;display:flex;align-items:center}
 .tab-short{display:none}.tab-full{display:inline}
 @media(max-width:600px){.tab-short{display:inline}.tab-full{display:none}}
 .tab:hover{color:var(--primary)}.tab.active{color:var(--primary);border-bottom-color:var(--primary)}
