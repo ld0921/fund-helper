@@ -350,6 +350,8 @@ function runHealthMonitor(){
 
   existingHoldings.forEach(h=>{
     if(holdings.some(x=>x.code===h.code)) return;
+    // 纯定投持仓归入 dcaHoldings，不计入持仓基金诊断
+    if(h.source === 'dca' && !h.hasDca) return;
     const nav = navCache[h.code];
     const curNav = nav ? parseFloat(nav.gsz)||1 : 1;
     const cost = h.amount || h.value || 0;
