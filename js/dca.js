@@ -926,6 +926,22 @@ function markDcaExecuted(idx){
   }
 
   FundDB.set('dcaPlans',dcaPlans);
+
+  // 在持仓列表中创建/更新定投持仓记录（待确认状态）
+  const totalCost = executedCount * plan.monthly;
+  const existing = existingHoldings.find(h => h.code === plan.code && h.source === 'dca');
+  if(existing){
+    existing.amount = totalCost;
+  } else {
+    existingHoldings.push({
+      code: plan.code, name: plan.name, type: plan.type||'',
+      amount: totalCost, shares: 0, cost: 0, value: plan.curval||0,
+      status: 'pending', source: 'dca',
+      date: new Date(Date.now()+8*3600000).toISOString().slice(0,10)
+    });
+  }
+  FundDB.set('existingHoldings', existingHoldings);
+
   renderDcaTracker();
   renderExistingHoldings();
   showToast('已标记本月定投执行','success');
