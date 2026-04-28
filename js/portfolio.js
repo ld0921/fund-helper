@@ -2144,7 +2144,7 @@ function saveMyHoldingScheme(){
   const prev = loadMyHoldingScheme();
   const scheme = {
     savedAt: Date.now(),
-    savedAtDate: new Date().toISOString().slice(0,10),
+    savedAtDate: new Date(Date.now() + 8*3600000).toISOString().slice(0,10),
     phase: gen.phase,
     phaseLabel: gen.phaseLabel,
     targetTotal: gen.totalTarget,
@@ -2211,7 +2211,7 @@ function renderMyHoldingScheme(){
   if(delBtn) delBtn.style.display = '';
 
   // 过期判断
-  const todayStr = new Date().toISOString().slice(0,10);
+  const todayStr = new Date(Date.now() + 8*3600000).toISOString().slice(0,10);
   const ageDays = scheme.savedAtDate === todayStr ? 0 : Math.floor((Date.now() - scheme.savedAt) / 86400000);
   let currentPhase = null;
   try {
