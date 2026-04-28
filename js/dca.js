@@ -927,14 +927,11 @@ function markDcaExecuted(idx){
 
   FundDB.set('dcaPlans',dcaPlans);
 
-  // 在持仓列表中创建/更新定投持仓记录（待确认状态）
+  // 无论是否已有持仓，都创建一条 pending 记录，等用户确认份额后再合并
   const totalCost = executedCount * plan.monthly;
-  const confirmedHolding = existingHoldings.find(h => h.code === plan.code && h.status === 'confirmed');
   const dcaPending = existingHoldings.find(h => h.code === plan.code && h.source === 'dca' && h.status !== 'confirmed');
-  if(confirmedHolding){
-    // 已有确认持仓（直购或合并），不重复创建，只更新 curval
-  } else if(dcaPending){
-    dcaPending.amount = totalCost;
+  if(dcaPending){
+    dcaPending.amount = totalCost; // 更新累计投入
   } else {
     existingHoldings.push({
       code: plan.code, name: plan.name, type: plan.type||'',

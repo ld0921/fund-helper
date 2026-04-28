@@ -103,6 +103,7 @@ function confirmHolding(i){
       existing.cost = existing.amount / existing.shares;
       // 合并现金分红
       if(h.totalCashDividend) existing.totalCashDividend = (existing.totalCashDividend || 0) + h.totalCashDividend;
+      if(h.source === 'dca' || existing.source === 'dca') existing.hasDca = true;
       // 删除当前记录
       existingHoldings.splice(i, 1);
       showToast(`${h.name} 已确认并合并：总份额${existing.shares.toFixed(4)}份`, 'success');
