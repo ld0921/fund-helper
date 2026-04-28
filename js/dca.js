@@ -929,9 +929,12 @@ function markDcaExecuted(idx){
 
   // 在持仓列表中创建/更新定投持仓记录（待确认状态）
   const totalCost = executedCount * plan.monthly;
-  const existing = existingHoldings.find(h => h.code === plan.code && h.source === 'dca');
-  if(existing){
-    existing.amount = totalCost;
+  const confirmedHolding = existingHoldings.find(h => h.code === plan.code && h.status === 'confirmed');
+  const dcaPending = existingHoldings.find(h => h.code === plan.code && h.source === 'dca' && h.status !== 'confirmed');
+  if(confirmedHolding){
+    // 已有确认持仓（直购或合并），不重复创建，只更新 curval
+  } else if(dcaPending){
+    dcaPending.amount = totalCost;
   } else {
     existingHoldings.push({
       code: plan.code, name: plan.name, type: plan.type||'',
