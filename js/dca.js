@@ -578,8 +578,15 @@ function addDcaPlan(){
 function removeDcaPlan(i){
   const plan=dcaPlans[i]; if(!plan) return;
   if(!confirm(`确定删除「${plan.name}」的定投计划？`)) return;
+  const planCode = plan.code;
   dcaPlans.splice(i,1);
   FundDB.set('dcaPlans',dcaPlans);
+  // 若该基金已无任何定投计划，清除持仓记录上的 hasDca 标记
+  const stillHasDca = dcaPlans.some(p => p.code === planCode);
+  if(!stillHasDca){
+    existingHoldings.forEach(h => { if(h.code === planCode) h.hasDca = false; });
+    FundDB.set('existingHoldings', existingHoldings);
+  }
   renderDcaPlans(); renderExistingHoldings(); runHealthMonitor(); renderTodayOverview(); runSignalEngine();
   document.getElementById('dca-ai-result').style.display='none';
 }
