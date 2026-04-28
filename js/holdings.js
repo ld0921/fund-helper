@@ -915,7 +915,7 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
               const todayPnlStr=d.todayPnl!==null?` ${d.todayPnl>=0?'+':''}¥${Math.abs(d.todayPnl).toFixed(2)}`:'';
               const todayClass=d.todayChg!==null?(d.todayChg>=0?'up':'down'):'';
               const pnlClass=d.pnl>=0?'up':'down';
-              const srcLabel=d.hasDca?'<span style="font-size:10px;padding:2px 6px;border-radius:3px;background:#f9f0ff;color:#722ed1;border:1px solid #d3adf7">直购+定投</span>':d.source==='dca'?'<span style="font-size:10px;padding:2px 6px;border-radius:3px;background:#f9f0ff;color:#722ed1;border:1px solid #d3adf7">定投</span>':'<span style="font-size:10px;padding:2px 6px;border-radius:3px;background:#e6f4ff;color:#1677ff;border:1px solid #91caff">直购</span>';
+              const srcLabel=d.hasDca?'<span style="font-size:10px;padding:2px 6px;border-radius:3px;background:#f9f0ff;color:#722ed1;border:1px solid #d3adf7;white-space:nowrap">直购+定投</span>':d.source==='dca'?'<span style="font-size:10px;padding:2px 6px;border-radius:3px;background:#f9f0ff;color:#722ed1;border:1px solid #d3adf7;white-space:nowrap">定投</span>':'<span style="font-size:10px;padding:2px 6px;border-radius:3px;background:#e6f4ff;color:#1677ff;border:1px solid #91caff;white-space:nowrap">直购</span>';
               const dateStr=d.date?d.date.slice(2).replace(/-/g,'/'):'--';
               const estTag=d.isEstimated?'<span style="font-size:9px;padding:1px 3px;border-radius:2px;background:#e6f7ff;color:#1890ff;margin-left:2px">估</span>':'';
               const costStr=`成本¥${d.cost.toLocaleString('zh-CN',{minimumFractionDigits:0,maximumFractionDigits:0})}`;
