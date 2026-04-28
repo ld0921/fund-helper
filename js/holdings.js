@@ -612,7 +612,7 @@ async function renderExistingHoldings(){
             return `<span style="font-size:11px;color:var(--warning)">⏳确认中 · 预计${h.confirmDate||'--'}确认${diffDays>0?` (还有${diffDays}天)`:''}<br><span style="font-size:10px;color:var(--muted)">确认前不计入总资产</span></span>`;
           })());
     const sourceTag = h.hasDca
-      ? '<span style="font-size:10px;padding:2px 6px;border-radius:3px;background:#f9f0ff;color:#722ed1;border:1px solid #d3adf7;font-weight:500">💰 直购+定投</span>'
+      ? '<span style="font-size:10px;padding:2px 6px;border-radius:3px;background:#f9f0ff;color:#722ed1;border:1px solid #d3adf7;font-weight:500;white-space:nowrap">💰 直购+定投</span>'
       : h.source==='dca'
         ? '<span style="font-size:10px;padding:2px 6px;border-radius:3px;background:#f9f0ff;color:#722ed1;border:1px solid #d3adf7;font-weight:500">📅 定投</span>'
         : '<span style="font-size:10px;padding:2px 6px;border-radius:3px;background:#e6f4ff;color:#1677ff;border:1px solid #91caff;font-weight:500">💰 直购</span>';
