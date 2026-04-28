@@ -103,7 +103,7 @@ function confirmHolding(i){
       existing.cost = existing.amount / existing.shares;
       // 合并现金分红
       if(h.totalCashDividend) existing.totalCashDividend = (existing.totalCashDividend || 0) + h.totalCashDividend;
-      if(h.source === 'dca' || existing.source === 'dca') existing.hasDca = true;
+      if((h.source === 'dca') !== (existing.source === 'dca')) existing.hasDca = true;
       // 删除当前记录
       existingHoldings.splice(i, 1);
       showToast(`${h.name} 已确认并合并：总份额${existing.shares.toFixed(4)}份`, 'success');
@@ -489,7 +489,7 @@ async function renderExistingHoldings(){
         first.amount = (first.amount || 0) + (h.amount || 0);
         first.cost = first.shares > 0 ? first.amount / first.shares : first.cost;
         first.totalCashDividend = (first.totalCashDividend || 0) + (h.totalCashDividend || 0);
-        if(h.source === 'dca' || first.source === 'dca') first.hasDca = true;
+        if((h.source === 'dca') !== (first.source === 'dca')) first.hasDca = true;
         // 标记当前记录为待删除
         toRemove.push(idx);
       } else {
@@ -915,7 +915,7 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
               const todayPnlStr=d.todayPnl!==null?` ${d.todayPnl>=0?'+':''}¥${Math.abs(d.todayPnl).toFixed(2)}`:'';
               const todayClass=d.todayChg!==null?(d.todayChg>=0?'up':'down'):'';
               const pnlClass=d.pnl>=0?'up':'down';
-              const srcLabel=d.source==='dca'?'<span style="font-size:10px;padding:2px 6px;border-radius:3px;background:#f9f0ff;color:#722ed1;border:1px solid #d3adf7">定投</span>':'<span style="font-size:10px;padding:2px 6px;border-radius:3px;background:#e6f4ff;color:#1677ff;border:1px solid #91caff">直购</span>';
+              const srcLabel=d.hasDca?'<span style="font-size:10px;padding:2px 6px;border-radius:3px;background:#f9f0ff;color:#722ed1;border:1px solid #d3adf7">直购+定投</span>':d.source==='dca'?'<span style="font-size:10px;padding:2px 6px;border-radius:3px;background:#f9f0ff;color:#722ed1;border:1px solid #d3adf7">定投</span>':'<span style="font-size:10px;padding:2px 6px;border-radius:3px;background:#e6f4ff;color:#1677ff;border:1px solid #91caff">直购</span>';
               const dateStr=d.date?d.date.slice(2).replace(/-/g,'/'):'--';
               const estTag=d.isEstimated?'<span style="font-size:9px;padding:1px 3px;border-radius:2px;background:#e6f7ff;color:#1890ff;margin-left:2px">估</span>':'';
               const costStr=`成本¥${d.cost.toLocaleString('zh-CN',{minimumFractionDigits:0,maximumFractionDigits:0})}`;
