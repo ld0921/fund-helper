@@ -349,13 +349,14 @@ function runHealthMonitor(){
   const dcaHoldings = [];
 
   existingHoldings.forEach(h=>{
-    if(!holdings.some(x=>x.code===h.code)){
-      const nav = navCache[h.code];
-      const curNav = nav ? parseFloat(nav.gsz)||1 : 1;
-      const cost = h.amount || h.value || 0;
-      const value = h.amount ? (h.amount / (h.cost||curNav) * curNav) : (h.value||0);
-      holdings.push({code:h.code, name:h.name, value, cost, source:'existing', date:h.date});
-    }
+    if(holdings.some(x=>x.code===h.code)) return;
+    // 已在定投计划中的基金归入 dcaHoldings，不重复计入 holdings
+    if(dcaPlans.some(d=>d.code===h.code)) return;
+    const nav = navCache[h.code];
+    const curNav = nav ? parseFloat(nav.gsz)||1 : 1;
+    const cost = h.amount || h.value || 0;
+    const value = h.amount ? (h.amount / (h.cost||curNav) * curNav) : (h.value||0);
+    holdings.push({code:h.code, name:h.name, value, cost, source:'existing', date:h.date});
   });
 
   dcaPlans.forEach(d=>{

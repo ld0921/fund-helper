@@ -488,6 +488,7 @@ async function renderExistingHoldings(){
         first.amount = (first.amount || 0) + (h.amount || 0);
         first.cost = first.shares > 0 ? first.amount / first.shares : first.cost;
         first.totalCashDividend = (first.totalCashDividend || 0) + (h.totalCashDividend || 0);
+        if(h.source === 'dca' || first.source === 'dca') first.hasDca = true;
         // 标记当前记录为待删除
         toRemove.push(idx);
       } else {
@@ -609,9 +610,11 @@ async function renderExistingHoldings(){
             const diffDays=Math.ceil((confirmDay-today)/(1000*60*60*24));
             return `<span style="font-size:11px;color:var(--warning)">⏳确认中 · 预计${h.confirmDate||'--'}确认${diffDays>0?` (还有${diffDays}天)`:''}<br><span style="font-size:10px;color:var(--muted)">确认前不计入总资产</span></span>`;
           })());
-    const sourceTag = h.source==='dca'
-      ? '<span style="font-size:10px;padding:2px 6px;border-radius:3px;background:#f9f0ff;color:#722ed1;border:1px solid #d3adf7;font-weight:500">📅 定投</span>'
-      : '<span style="font-size:10px;padding:2px 6px;border-radius:3px;background:#e6f4ff;color:#1677ff;border:1px solid #91caff;font-weight:500">💰 直购</span>';
+    const sourceTag = h.hasDca
+      ? '<span style="font-size:10px;padding:2px 6px;border-radius:3px;background:#f9f0ff;color:#722ed1;border:1px solid #d3adf7;font-weight:500">💰 直购+定投</span>'
+      : h.source==='dca'
+        ? '<span style="font-size:10px;padding:2px 6px;border-radius:3px;background:#f9f0ff;color:#722ed1;border:1px solid #d3adf7;font-weight:500">📅 定投</span>'
+        : '<span style="font-size:10px;padding:2px 6px;border-radius:3px;background:#e6f4ff;color:#1677ff;border:1px solid #91caff;font-weight:500">💰 直购</span>';
     const nav = navCache[h.code];
     const yNav = yesterdayNav[h.code];
 

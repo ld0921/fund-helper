@@ -957,33 +957,35 @@ function importFromDcaPlans(){
   else showToast('定投计划中的基金已全部在已有持仓中','info');
 }
 
-// ═══════════════ 定投收益统计（基于实际持仓数据） ═══════════════
 function renderDcaPnlSummary(){
   const el = document.getElementById('dca-pnl-summary');
   if(!el) return;
 
-  const dcaHoldings = existingHoldings.filter(h => h.source === 'dca' && h.status === 'confirmed');
-  if(!dcaHoldings.length){
-    el.innerHTML = '';
-    return;
-  }
+  if(!dcaPlans.length){ el.innerHTML=''; return; }
 
-  const totalCost = dcaHoldings.reduce((s,h) => s + (h.amount||0), 0);
-  const totalVal = dcaHoldings.reduce((s,h) => s + (h.value||0), 0);
-  const totalCashDiv = dcaHoldings.reduce((s,h) => s + (h.totalCashDividend||0), 0);
-  const totalPnl = totalCost > 0 ? (totalVal + totalCashDiv - totalCost) : 0;
-  const totalPnlPct = totalCost > 0 ? (totalPnl / totalCost * 100) : 0;
+  const details = dcaPlans.map(d => {
+    // 优先用 existingHoldings 中对应记录的精确数据
+    const held = existingHoldings.find(h => h.code === d.code && h.status === 'confirmed');
+    const cost = held ? (held.amount||0) : (() => {
+      const executed = d.execLog ? Object.keys(d.execLog).filter(k=>d.execLog[k]).length : 0;
+      if(executed > 0) return executed * d.monthly;
+      const months = d.start ? Math.max(0, Math.floor((Date.now()-new Date(d.start))/30/86400000)) : 0;
+      return d.monthly * months;
+    })();
+    const value = held ? (held.value||0) : (d.curval||0);
+    const cashDiv = held ? (held.totalCashDividend||0) : 0;
+    const pnl = cost > 0 ? (value + cashDiv - cost) : 0;
+    const pct = cost > 0 ? (pnl / cost * 100) : 0;
+    return { name: d.name, code: d.code, cost, value, pnl, pct };
+  }).sort((a,b) => b.value - a.value);
+
+  const totalCost = details.reduce((s,d)=>s+d.cost,0);
+  const totalVal = details.reduce((s,d)=>s+d.value,0);
+  const totalPnl = details.reduce((s,d)=>s+d.pnl,0);
+  const totalPnlPct = totalCost > 0 ? (totalPnl/totalCost*100) : 0;
   const pnlColor = totalPnl >= 0 ? '#cf1322' : '#389e0d';
   const pnlBg = totalPnl >= 0 ? '#fff1f0' : '#f6ffed';
   const pnlBorder = totalPnl >= 0 ? '#ffccc7' : '#b7eb8f';
-
-  const details = dcaHoldings.map(h => {
-    const cost = h.amount || 0;
-    const cashDiv = h.totalCashDividend || 0;
-    const pnl = cost > 0 ? (h.value + cashDiv - cost) : 0;
-    const pct = cost > 0 ? (pnl / cost * 100) : 0;
-    return { name: h.name, code: h.code, cost, value: h.value||0, pnl, pct };
-  }).sort((a,b) => b.value - a.value);
 
   el.innerHTML = `
     <div class="card">
