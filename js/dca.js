@@ -890,7 +890,7 @@ function renderDcaTracker(){
     if(!d.execLog) d.execLog={};
     const executed=d.execLog[thisMonth]||false;
     const nextDay=d.deductDay||10;
-    const nextDate=now.getDate()>=nextDay?`下月${nextDay}号`:`本月${nextDay}号`;
+    const nextDate=d.frequency==='daily'?'每天':(now.getDate()>=nextDay?`下月${nextDay}号`:`本月${nextDay}号`);
 
     // 计算累计已投期数和金额
     const executedCount = Object.keys(d.execLog).filter(k => d.execLog[k]).length;
