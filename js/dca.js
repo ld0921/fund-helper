@@ -910,10 +910,24 @@ function renderDcaTracker(){
 function markDcaExecuted(idx){
   const now=new Date();
   const thisMonth=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-  if(!dcaPlans[idx].execLog) dcaPlans[idx].execLog={};
-  dcaPlans[idx].execLog[thisMonth]=true;
+  const plan = dcaPlans[idx];
+  if(!plan) return;
+  if(!plan.execLog) plan.execLog={};
+  plan.execLog[thisMonth]=true;
+
+  // 用当前净值估算累计市值
+  const executedCount = Object.keys(plan.execLog).filter(k=>plan.execLog[k]).length;
+  const nav = typeof navCache !== 'undefined' && navCache[plan.code];
+  const curNav = nav ? parseFloat(nav.gsz)||0 : 0;
+  if(curNav > 0){
+    // 估算：累计投入 / 平均净值 * 当前净值（简化：假设均价≈当前净值）
+    const totalCost = executedCount * plan.monthly;
+    plan.curval = Math.round(totalCost * 100) / 100;
+  }
+
   FundDB.set('dcaPlans',dcaPlans);
   renderDcaTracker();
+  renderExistingHoldings();
   showToast('已标记本月定投执行','success');
 }
 

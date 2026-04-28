@@ -377,7 +377,7 @@ function runHealthMonitor(){
       code: d.code,
       name: d.name,
       value: d.curval || 0,
-      cost: cost,
+      cost: (d.curval > 0) ? cost : 0, // 市值未录入时成本也置0，避免误算亏损
       source: 'dca',
       monthly: d.monthly,
       paused: d.paused || false
