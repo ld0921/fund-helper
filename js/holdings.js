@@ -828,7 +828,7 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
       isEstimated = nav.jzrq !== today;
     }
 
-    return {name:h.name, code:h.code, cost, value:(h.value||0), pnl, pct, todayChg, todayPnl, isEstimated, source:h.source, shares:h.shares||0, date:h.date, jzrq:nav?.jzrq};
+    return {name:h.name, code:h.code, cost, value:(h.value||0), pnl, pct, todayChg, todayPnl, isEstimated, source:h.source, hasDca:h.hasDca, shares:h.shares||0, date:h.date, jzrq:nav?.jzrq};
   }).sort((a,b)=>(b.value||0)-(a.value||0)); // 按市值降序
 
   // 按来源拆分收益：直购 vs 定投
