@@ -1000,7 +1000,7 @@ function renderDcaPnlSummary(){
           <div style="font-size:18px;font-weight:700;color:#0050b3">¥${totalVal.toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
         </div>
         <div style="padding:10px 12px;background:${pnlBg};border-radius:8px;border:1px solid ${pnlBorder}">
-          <div style="font-size:12px;color:${pnlColor};margin-bottom:4px">定投收益${totalCashDiv > 0 ? '(含分红)' : ''}</div>
+          <div style="font-size:12px;color:${pnlColor};margin-bottom:4px">定投收益</div>
           <div style="font-size:18px;font-weight:700;color:${pnlColor}">${totalPnl>=0?'+':''}¥${Math.abs(totalPnl).toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
         </div>
         <div style="padding:10px 12px;background:${pnlBg};border-radius:8px;border:1px solid ${pnlBorder}">
