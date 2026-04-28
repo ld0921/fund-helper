@@ -98,7 +98,7 @@ function confirmHolding(i){
     if(existingIndex !== -1){
       const existing = existingHoldings[existingIndex];
       // 合并：份额相加，金额相加，重新计算平均成本
-      existing.shares += h.shares;
+      existing.shares = (existing.shares || 0) + h.shares;
       existing.amount += h.amount;
       existing.cost = existing.amount / existing.shares;
       // 合并现金分红
