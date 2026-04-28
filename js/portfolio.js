@@ -2211,7 +2211,8 @@ function renderMyHoldingScheme(){
   if(delBtn) delBtn.style.display = '';
 
   // 过期判断
-  const ageDays = Math.floor((Date.now() - scheme.savedAt) / 86400000);
+  const todayStr = new Date().toISOString().slice(0,10);
+  const ageDays = scheme.savedAtDate === todayStr ? 0 : Math.floor((Date.now() - scheme.savedAt) / 86400000);
   let currentPhase = null;
   try {
     if(typeof analyzeCategoryPerf === 'function' && typeof inferMomentumPhase === 'function' && CURATED_FUNDS.length > 0){
