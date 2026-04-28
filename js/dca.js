@@ -861,7 +861,6 @@ function renderDcaPlans(){
   const pausedCount=dcaPlans.length-activeCount;
   summaryEl.innerHTML=`📅 共 <b>${dcaPlans.length}</b> 项定投计划${pausedCount>0?`（${pausedCount}项已暂停）`:''}，每月合计 <b>¥${totalMonthly.toLocaleString()}</b>${totalCurval>0?`，总持仓市值约 <b>¥${totalCurval.toLocaleString()}</b>`:''}。已自动同步至已有持仓与持仓统计。<div style="font-size:11px;color:var(--muted);margin-top:6px">💡 每月扣款后，工具会自动按期数估算累计投入。如需精确跟踪，可在持仓中更新确认份额。</div>`;
   renderDcaTracker();
-  renderDcaPnlSummary();
   // 更新定投预算提示
   updateDcaBudgetHint();
 }
@@ -955,81 +954,6 @@ function importFromDcaPlans(){
   renderExistingHoldings(); runHealthMonitor();
   if(added>0) showToast(`已从定投计划导入 ${added} 条持仓`,'success');
   else showToast('定投计划中的基金已全部在已有持仓中','info');
-}
-
-function renderDcaPnlSummary(){
-  const el = document.getElementById('dca-pnl-summary');
-  if(!el) return;
-
-  if(!dcaPlans.length){ el.innerHTML=''; return; }
-
-  const details = dcaPlans.map(d => {
-    // 只用 source==='dca' 的持仓记录，不混用直购持仓
-    const held = existingHoldings.find(h => h.code === d.code && h.status === 'confirmed' && h.source === 'dca');
-    const cost = held ? (held.amount||0) : (() => {
-      const executed = d.execLog ? Object.keys(d.execLog).filter(k=>d.execLog[k]).length : 0;
-      if(executed > 0) return executed * d.monthly;
-      const months = d.start ? Math.max(0, Math.floor((Date.now()-new Date(d.start))/30/86400000)) : 0;
-      return d.monthly * months;
-    })();
-    const value = held ? (held.value||0) : (d.curval||0);
-    const cashDiv = held ? (held.totalCashDividend||0) : 0;
-    const pnl = cost > 0 ? (value + cashDiv - cost) : 0;
-    const pct = cost > 0 ? (pnl / cost * 100) : 0;
-    return { name: d.name, code: d.code, cost, value, pnl, pct };
-  }).sort((a,b) => b.value - a.value);
-
-  const totalCost = details.reduce((s,d)=>s+d.cost,0);
-  const totalVal = details.reduce((s,d)=>s+d.value,0);
-  const totalPnl = details.reduce((s,d)=>s+d.pnl,0);
-  const totalPnlPct = totalCost > 0 ? (totalPnl/totalCost*100) : 0;
-  const pnlColor = totalPnl >= 0 ? '#cf1322' : '#389e0d';
-  const pnlBg = totalPnl >= 0 ? '#fff1f0' : '#f6ffed';
-  const pnlBorder = totalPnl >= 0 ? '#ffccc7' : '#b7eb8f';
-
-  el.innerHTML = `
-    <div class="card">
-      <div class="card-title"><span class="icon icon-purple">📊</span>定投收益统计</div>
-      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px">
-        <div style="padding:10px 12px;background:#f0f5ff;border-radius:8px;border:1px solid #adc6ff">
-          <div style="font-size:12px;color:#2f54eb;margin-bottom:4px">累计投入</div>
-          <div style="font-size:18px;font-weight:700;color:#1d39c4">¥${totalCost.toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
-        </div>
-        <div style="padding:10px 12px;background:#e6f7ff;border-radius:8px;border:1px solid #91d5ff">
-          <div style="font-size:12px;color:#096dd9;margin-bottom:4px">当前市值</div>
-          <div style="font-size:18px;font-weight:700;color:#0050b3">¥${totalVal.toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
-        </div>
-        <div style="padding:10px 12px;background:${pnlBg};border-radius:8px;border:1px solid ${pnlBorder}">
-          <div style="font-size:12px;color:${pnlColor};margin-bottom:4px">定投收益</div>
-          <div style="font-size:18px;font-weight:700;color:${pnlColor}">${totalPnl>=0?'+':''}¥${Math.abs(totalPnl).toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
-        </div>
-        <div style="padding:10px 12px;background:${pnlBg};border-radius:8px;border:1px solid ${pnlBorder}">
-          <div style="font-size:12px;color:${pnlColor};margin-bottom:4px">收益率</div>
-          <div style="font-size:18px;font-weight:700;color:${pnlColor}">${totalPnl>=0?'+':''}${totalPnlPct.toFixed(2)}%</div>
-        </div>
-      </div>
-      ${details.length > 0 ? `
-      <details>
-        <summary style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;font-size:13px;color:var(--primary);font-weight:500;padding:8px 0">
-          各定投基金收益明细 <span class="toggle-arrow" style="font-size:12px"></span>
-        </summary>
-        <div class="table-wrap" style="margin-top:8px">
-          <table style="width:100%;font-size:12px">
-            <thead><tr><th style="text-align:left">基金名称</th><th style="text-align:right">投入</th><th style="text-align:right">市值</th><th style="text-align:right">盈亏</th><th style="text-align:right">收益率</th></tr></thead>
-            <tbody>${details.map(d => `<tr>
-              <td style="font-weight:500;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(d.name)}</td>
-              <td style="text-align:right;color:var(--muted)">¥${d.cost.toLocaleString('zh-CN',{maximumFractionDigits:0})}</td>
-              <td style="text-align:right">¥${d.value.toLocaleString('zh-CN',{maximumFractionDigits:0})}</td>
-              <td style="text-align:right" class="${d.pnl>=0?'up':'down'}">${d.pnl>=0?'+':''}¥${Math.abs(d.pnl).toLocaleString('zh-CN',{maximumFractionDigits:2})}</td>
-              <td style="text-align:right;font-weight:600" class="${d.pnl>=0?'up':'down'}">${d.pnl>=0?'+':''}${d.pct.toFixed(1)}%</td>
-            </tr>`).join('')}</tbody>
-          </table>
-        </div>
-      </details>` : ''}
-      <div style="margin-top:8px;font-size:11px;color:var(--muted);line-height:1.5">
-        💡 数据基于已导入到持仓的定投基金（标记为"📅 定投"），收益 = 当前市值 + 累计分红 - 买入成本。请先在持仓中确认份额以获得准确数据。
-      </div>
-    </div>`;
 }
 
 // ═══════════════ 智能买卖信号引擎（均衡型灵敏度） ═══════════════
