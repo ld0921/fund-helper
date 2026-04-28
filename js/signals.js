@@ -350,8 +350,6 @@ function runHealthMonitor(){
 
   existingHoldings.forEach(h=>{
     if(holdings.some(x=>x.code===h.code)) return;
-    // 已在定投计划中的基金归入 dcaHoldings，不重复计入 holdings
-    if(dcaPlans.some(d=>d.code===h.code)) return;
     const nav = navCache[h.code];
     const curNav = nav ? parseFloat(nav.gsz)||1 : 1;
     const cost = h.amount || h.value || 0;

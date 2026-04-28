@@ -964,8 +964,8 @@ function renderDcaPnlSummary(){
   if(!dcaPlans.length){ el.innerHTML=''; return; }
 
   const details = dcaPlans.map(d => {
-    // 优先用 existingHoldings 中对应记录的精确数据
-    const held = existingHoldings.find(h => h.code === d.code && h.status === 'confirmed');
+    // 只用 source==='dca' 的持仓记录，不混用直购持仓
+    const held = existingHoldings.find(h => h.code === d.code && h.status === 'confirmed' && h.source === 'dca');
     const cost = held ? (held.amount||0) : (() => {
       const executed = d.execLog ? Object.keys(d.execLog).filter(k=>d.execLog[k]).length : 0;
       if(executed > 0) return executed * d.monthly;
