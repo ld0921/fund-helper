@@ -2227,7 +2227,7 @@ function renderMyHoldingScheme(){
 
   // summary meta 简述
   if(metaEl){
-    const ageText = ageDays === 0 ? '今天保存' : `${ageDays} 天前保存`;
+    const ageText = `保存于 ${scheme.savedAtDate}`;
     const warn = (ageExpired || phaseChanged) ? ' · ⚠️ 建议重新生成' : '';
     metaEl.textContent = `· ${ageText} · ${scheme.phaseLabel || scheme.phase || ''}${warn}`;
   }
