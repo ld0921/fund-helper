@@ -544,6 +544,12 @@ function dpAutoFill(code){
   if(f){ document.getElementById('dp-name').value=f.name; document.getElementById('dp-type').value=f.type; }
 }
 
+function toggleDcaFrequency(){
+  const daily = document.getElementById('dp-frequency').value === 'daily';
+  document.getElementById('dp-deduct-day-wrap').style.display = daily ? 'none' : '';
+  document.getElementById('dp-monthly-label').textContent = daily ? '每日定投金额(元)' : '每月定投金额(元)';
+}
+
 function addDcaPlan(){
   const code=document.getElementById('dp-code').value.trim();
   const name=document.getElementById('dp-name').value.trim();
@@ -552,15 +558,16 @@ function addDcaPlan(){
   const curval=0;
   const type=document.getElementById('dp-type').value;
   const deductDay = parseInt(document.getElementById('dp-deduct-day').value) || 10;
+  const frequency = document.getElementById('dp-frequency').value || 'monthly';
   // 内联校验
   let hasErr=false;
   const searchEmpty = !code || !name;
   document.getElementById('dp-search').closest('.form-item').classList.toggle('has-error',searchEmpty);
   document.getElementById('dp-monthly').closest('.form-item').classList.toggle('has-error',!monthly);
   if(searchEmpty || !monthly) hasErr=true;
-  if(hasErr){showToast(searchEmpty?'请先搜索并选择一只基金':'请填写每月定投金额','error');autoFadeErrors();return;}
+  if(hasErr){showToast(searchEmpty?'请先搜索并选择一只基金':'请填写定投金额','error');autoFadeErrors();return;}
   if(dcaPlans.some(d=>d.code===code)){showToast('该基金已在定投计划中','info');return;}
-  dcaPlans.push({code,name,monthly,start,curval,type,deductDay});
+  dcaPlans.push({code,name,monthly,start,curval,type,deductDay,frequency});
   FundDB.set('dcaPlans',dcaPlans);
   renderDcaPlans(); flashSaved('dp-section');
   clearFundMatch('dp');
@@ -589,7 +596,7 @@ async function checkDcaReminder(){
   if(dismissed[todayStr]) return;
 
   // 查找今天需要定投的计划
-  const todayPlans = dcaPlans.filter(p => p.deductDay === todayDay && !p.paused);
+  const todayPlans = dcaPlans.filter(p => !p.paused && (p.frequency === 'daily' || p.deductDay === todayDay));
   if(!todayPlans.length) return;
 
   // 显示提醒
@@ -838,9 +845,9 @@ function renderDcaPlans(){
     return `<div class="dp-item">
       <div class="dp-fund">
         <div class="dp-name">${escHtml(d.name)} <code class="code-copy" onclick="copyCode('${escHtml(d.code)}',this)" title="点击复制" style="font-size:11px;color:var(--muted)">${escHtml(d.code)}</code>${chg!==null?`<span style="margin-left:6px;font-size:11px;color:${chg>=0?'var(--danger)':'var(--success)'}">${chg>=0?'+':''}${chg}%</span>`:''}</div>
-        <div class="dp-meta">${escHtml(d.type)}${d.start?` · 始于 ${fmtDateCN(d.start)}`:''} · 已定投约 ${months} 期 · 累计约 ¥${invested.toLocaleString()}${d.deductDay ? ` · 每月${d.deductDay}号扣款` : ''}</div>
+        <div class="dp-meta">${escHtml(d.type)}${d.start?` · 始于 ${fmtDateCN(d.start)}`:''} · 已定投约 ${months} 期 · 累计约 ¥${invested.toLocaleString()}${d.frequency==='daily' ? ' · 每日定投' : (d.deductDay ? ` · 每月${d.deductDay}号扣款` : '')}</div>
       </div>
-      <div class="dp-monthly"><div class="dp-monthly-val">¥${d.monthly.toLocaleString()}</div><div class="dp-monthly-lbl">每月定投</div></div>
+      <div class="dp-monthly"><div class="dp-monthly-val">¥${d.monthly.toLocaleString()}</div><div class="dp-monthly-lbl">${d.frequency==='daily'?'每日定投':'每月定投'}</div></div>
       <div class="dp-total"><div class="dp-total-val">¥${d.curval>0?d.curval.toLocaleString():'--'}</div><div class="dp-total-lbl">当前市值</div></div>
       <div class="dp-actions">
         <button class="btn btn-ghost btn-sm" onclick="editDcaPlan(${i})" title="编辑金额">✏️</button>

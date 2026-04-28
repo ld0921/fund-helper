@@ -560,15 +560,21 @@
         <input type="hidden" id="dp-code"><input type="hidden" id="dp-name"><input type="hidden" id="dp-type" value="股票型">
       </div>
       <div class="form-item" style="flex:1;min-width:120px">
-        <label>每月定投金额(元)</label>
+        <label>定投频率</label>
+        <select id="dp-frequency" onchange="toggleDcaFrequency()">
+          <option value="monthly" selected>每月定投</option>
+          <option value="daily">每日定投</option>
+        </select>
+      </div>
+      <div class="form-item" style="flex:1;min-width:120px">
+        <label id="dp-monthly-label">每月定投金额(元)</label>
         <input id="dp-monthly" type="number" placeholder="如：500">
       </div>
       <div class="form-item" style="flex:1;min-width:140px">
         <label>开始定投日期</label>
         <input id="dp-start" type="date">
       </div>
-      <div class="form-item" style="flex:1;min-width:120px">
-        <label>每月扣款日</label>
+      <div class="form-item" id="dp-deduct-day-wrap" style="flex:1;min-width:120px">
         <select id="dp-deduct-day">
           <option value="1">每月1号</option>
           <option value="5">每月5号</option>
