@@ -78,8 +78,8 @@ function scoreF(f){
   const calmarShort = (r1 - benchmarkShort) / dd3yAdj;
   const calmarLong  = (r3Ann - benchmarkLong) / dd3yAdj;
   const calmar = calmarShort * 0.6 + calmarLong * 0.4;
-  // sigmoid中心点按类别调整：债券/货币基金calmar天然偏低，中心点下移避免系统性低估
-  const calmarCenter = (f.cat === 'bond' || f.cat === 'money') ? -0.3 : 0;
+  // sigmoid中心点动态跟随同类均值calmar，消除熊市中系统性低估和区分度崩溃
+  const calmarCenter = bench ? benchmarkLong / Math.max(bench.avgDD || 10, 1) : ((f.cat === 'bond' || f.cat === 'money') ? -0.3 : 0);
   const calmarScore = Math.round(32 / (1 + Math.exp(-(calmar - calmarCenter) * 1.5)));
 
   // 2. 收益一致性（权重 24%）
