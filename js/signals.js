@@ -220,15 +220,16 @@ function runSignalEngine(){
   // 按优先级排序
   signals.sort((a,b) => a.priority - b.priority);
 
-  // 去重：同一code只保留最高优先级信号；同一code+type组合24小时内不重复推送
+  // 去重：同一code+type组合24小时内不重复推送；但风险信号(priority<=1)不被同code其他信号屏蔽
   const todayKey = new Date(Date.now()+8*3600000).toISOString().slice(0,10);
   let signalCooldown = JSON.parse(localStorage.getItem('_signalCooldown')||'{}');
-  // 清理非今日记录
   if(signalCooldown._date !== todayKey) signalCooldown = {_date: todayKey};
-  const seen = new Set();
+  const seenCode = new Set();
   const uniqueSignals = signals.filter(s => {
-    if(seen.has(s.code)) return false;
-    seen.add(s.code);
+    // 风险信号(priority<=1)不受同code去重限制，确保不被低优先级信号屏蔽
+    if(s.priority > 1 && seenCode.has(s.code)) return false;
+    if(s.priority <= 1) seenCode.add(s.code); // 只有风险信号才占位
+    else if(!seenCode.has(s.code)) seenCode.add(s.code);
     const coolKey = s.code + '|' + s.type;
     if(signalCooldown[coolKey]) return false;
     signalCooldown[coolKey] = true;
@@ -368,7 +369,7 @@ function runHealthMonitor(){
     if(h.source === 'dca' && !h.hasDca) return;
     const nav = navCache[h.code];
     const curNav = nav ? parseFloat(nav.gsz)||1 : 1;
-    const cost = h.amount || h.value || 0;
+    const cost = h.amount || 0;
     const value = h.amount ? (h.amount / (h.cost||curNav) * curNav) : (h.value||0);
     holdings.push({code:h.code, name:h.name, value, cost, source:'existing', date:h.date});
   });
@@ -1083,10 +1084,9 @@ function renderDiagnostics(){
   const evalList = [];
   existingHoldings.forEach(h=>{
     const curNav = navCache[h.code] ? parseFloat(navCache[h.code].gsz)||1 : 1;
-    const cost = h.amount || h.value || 0;
+    const cost = h.amount || 0;
     const value = h.amount ? (h.amount / (h.cost||curNav) * curNav) : (h.value||0);
     evalList.push({ code:h.code, name:h.name, value, cost, source:'existing', paused:false, date:h.date });
-  });
   (typeof dcaPlans !== 'undefined' ? dcaPlans : []).forEach(d=>{
     if(evalList.some(x=>x.code===d.code)) return; // 已在持仓中
     if(!d.curval || d.curval <= 0) return;
