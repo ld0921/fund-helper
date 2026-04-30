@@ -237,7 +237,7 @@ function _doGenerateDca(){
         const myScore = scoreF(f);
         if(myScore >= 55) return true; // scoreF≥55 直接通过，不做相对排除
         // scoreF<55 时：若同类有 scoreF 更高≥10分且定投评分也达标的基金，则排除
-        const hasBetter = excluded.some(g => g.code !== f.code && scoreF(g) >= myScore + 10 && calcDCAScore(g) >= dcaScoreThreshold);
+        const hasBetter = excluded.some(g => g.code !== f.code && calcDCAScore(g) >= dcaScoreThreshold && scoreF(g) >= myScore + 10);
         return !hasBetter;
       });
       // 若阈值过滤后整个类别为空（如可转债等高波动品种、或市场整体高位）：

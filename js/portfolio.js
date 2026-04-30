@@ -754,7 +754,7 @@ function selectFunds(cat, catData, riskProfile, pct, totalAmt){
     if(bench && bench.stdR1 > 0){
       const z = ((f.r1||0) - bench.avgR1) / bench.stdR1;
       if(z > 1)  score -= Math.min(8, (z - 1) * 4);  // 超涨：最多扣8分
-      if(z < -1 && (f.r3||0) > 0) score += Math.min(5, (-z - 1) * 2.5); // 超跌加分：仅限r3>0（长期向上的回调），排除双负基金
+      if(z < -1 && (f.r3||0) > 5) score += Math.min(5, (-z - 1) * 2.5); // 超跌加分：仅限r3>5%（3年真正长期向上），排除长期横盘基金
     }
     return {...f, adjustedScore: score};
   }).sort((a,b) => b.adjustedScore - a.adjustedScore);
