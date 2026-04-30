@@ -139,6 +139,12 @@ function runSignalEngine(){
         desc:`近1年 ${fd.r1}%，近3年 ${fd.r3}%，持续下行趋势明显。建议考虑换入同类更优基金。`,
         action:'🔄 建议换基'
       });
+    } else if(fd && fd.r1 < 0 && fd.r3 < 0){
+      signals.push({type:'warning', priority:2, code:h.code, name:h.name,
+        title:`🟡 ${h.name} 近1年/3年均负收益`,
+        desc:`近1年 ${fd.r1}%，近3年 ${fd.r3}%，需关注下行趋势。`,
+        action:'👀 关注观察'
+      });
     }
   });
 
