@@ -1087,6 +1087,7 @@ function renderDiagnostics(){
     const cost = h.amount || 0;
     const value = h.amount ? (h.amount / (h.cost||curNav) * curNav) : (h.value||0);
     evalList.push({ code:h.code, name:h.name, value, cost, source:'existing', paused:false, date:h.date });
+  });
   (typeof dcaPlans !== 'undefined' ? dcaPlans : []).forEach(d=>{
     if(evalList.some(x=>x.code===d.code)) return; // 已在持仓中
     if(!d.curval || d.curval <= 0) return;
