@@ -649,10 +649,11 @@ function computeWeights(riskProfile, horizon, catRanks, macroClock){
   if(equityTotal > equityCap){
     const scale = equityCap / equityTotal;
     equityCats.forEach(c => { if(base[c]) base[c] *= scale; });
-    // 释放的权重分配给债券和货币
+    // 释放的权重按风险偏好分配：进取型多给money（step 6.5会从money补权益，避免bond虚高）
     const freed = equityTotal - equityCap;
-    base.bond = (base.bond||0) + freed * 0.6;
-    base.money = (base.money||0) + freed * 0.4;
+    const toBond = riskProfile === 'aggressive' ? 0.3 : riskProfile === 'balanced' ? 0.4 : 0.6;
+    base.bond = (base.bond||0) + freed * toBond;
+    base.money = (base.money||0) + freed * (1 - toBond);
   }
 
   // 6. 短期额外调整
