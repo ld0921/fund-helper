@@ -68,7 +68,7 @@ function runSignalEngine(){
       const totalValue = allHeld.reduce((s,x)=>s+x.value,0);
       const fundPct = totalValue > 0 ? h.value / totalValue * 100 : 0;
       // 超配阈值按类别差异化：货币基金作为现金储备通常是用户有意为之，提高容忍度
-      const owThreshold = {money:60, bond:35, active:25, index:25, qdii:20}[fd?.cat] || 25;
+      const owThreshold = {money:60, bond:35, active:25, index:25, qdii:28}[fd?.cat] || 25;
       const alreadyOverweight = fundPct > owThreshold;
       // 判断是否处于下跌趋势（r1<0 说明不只是单日波动）
       const inDowntrend = fd && fd.r1 < 0;
@@ -214,13 +214,21 @@ function runSignalEngine(){
   // 按优先级排序
   signals.sort((a,b) => a.priority - b.priority);
 
-  // 去重：同一code只保留最高优先级信号
+  // 去重：同一code只保留最高优先级信号；同一code+type组合24小时内不重复推送
+  const todayKey = new Date(Date.now()+8*3600000).toISOString().slice(0,10);
+  let signalCooldown = JSON.parse(localStorage.getItem('_signalCooldown')||'{}');
+  // 清理非今日记录
+  if(signalCooldown._date !== todayKey) signalCooldown = {_date: todayKey};
   const seen = new Set();
   const uniqueSignals = signals.filter(s => {
     if(seen.has(s.code)) return false;
     seen.add(s.code);
+    const coolKey = s.code + '|' + s.type;
+    if(signalCooldown[coolKey]) return false;
+    signalCooldown[coolKey] = true;
     return true;
   });
+  localStorage.setItem('_signalCooldown', JSON.stringify(signalCooldown));
 
   // 渲染信号横幅
   renderSignalBanner(uniqueSignals);

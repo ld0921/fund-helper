@@ -744,10 +744,12 @@ function selectFunds(cat, catData, riskProfile, pct, totalAmt){
     aggressive:   f => f.composite + (f.r1||0) * 0.15,  // r1 系数 0.15（在 0.1 和原 0.2 之间折中）
   };
   const adjustFn = riskAdjust[riskProfile] || riskAdjust.moderate;
+  // 债券/QDII用calcDCAScore替代composite排序（回测证实scoreF对这两类R²≈0.002，无预测力）
+  const useDcaScore = (cat === 'bond' || cat === 'qdii');
   // 动量反转修正：超涨基金（>同类均值+1σ）降权，超跌基金（<均值-1σ）升权
   // 基于A股均值回归特性，避免追高买入近期涨幅过大的基金
   pool = pool.map(f => {
-    let score = adjustFn(f);
+    let score = useDcaScore ? (calcDCAScore(f) * 0.5 + adjustFn(f) * 0.5) : adjustFn(f);
     const bench = _catBench[f.cat];
     if(bench && bench.stdR1 > 0){
       const z = ((f.r1||0) - bench.avgR1) / bench.stdR1;
