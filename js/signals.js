@@ -517,6 +517,11 @@ function runHealthMonitor(){
       issues.push(`近1年(${fd.r1}%)和近3年(${fd.r3}%)均为负收益，呈结构性下行趋势`);
       level = 'red';
     }
+    // 结构性下行（与信号引擎阈值对齐：r1<-5% 且 r3<-10%）
+    if(fd.r1 < -5 && fd.r3 < -10 && level !== 'red'){
+      issues.push(`近1年${fd.r1}%、近3年${fd.r3}%，持续下行，建议评估换基`);
+      level = 'yellow';
+    }
 
     // 当前亏损占最大回撤比例（考虑持有时长：持有超过1年的容忍度更高）
     if(pnlPct !== null && pnlPct < 0 && fd.maxDD > 0){

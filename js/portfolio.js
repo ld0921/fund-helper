@@ -805,16 +805,16 @@ function selectFunds(cat, catData, riskProfile, pct, totalAmt){
   const maxSingleFundPct = 30;
   let perPick;
   if(pickCount === 3){
-    const spread = picks[0].composite - picks[2].composite;
+    const spread = picks[0].adjustedScore - picks[2].adjustedScore;
     let coreRatio = Math.min(0.60, Math.max(0.40, 0.40 + spread * 0.004));
     // 确保核心仓不超过30%
     if(pct * coreRatio > maxSingleFundPct) coreRatio = maxSingleFundPct / pct;
-    const spread12 = picks[0].composite - picks[1].composite;
+    const spread12 = picks[0].adjustedScore - picks[1].adjustedScore;
     const satRatio2 = (1 - coreRatio) * (spread12 < 5 ? 0.5 : 0.6);
     const satRatio3 = 1 - coreRatio - satRatio2;
     perPick = [Math.round(pct*coreRatio), Math.round(pct*satRatio2), pct - Math.round(pct*coreRatio) - Math.round(pct*satRatio2)];
   } else if(pickCount === 2){
-    const spread = picks[0].composite - picks[1].composite;
+    const spread = picks[0].adjustedScore - picks[1].adjustedScore;
     let coreRatio = Math.min(0.80, Math.max(0.55, 0.55 + spread * 0.005));
     // 确保核心仓不超过30%
     if(pct * coreRatio > maxSingleFundPct) coreRatio = maxSingleFundPct / pct;
