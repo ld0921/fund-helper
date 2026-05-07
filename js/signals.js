@@ -709,7 +709,7 @@ function runHealthMonitor(){
       const betterDcaFunds = sameCatFunds.filter(f=>calcDCAScore(f) > dcaScore + 15);
       if(betterDcaFunds.length > 0){
         const best = betterDcaFunds.sort((a,b)=>calcDCAScore(b)-calcDCAScore(a))[0];
-        issues.push(`定投评分 ${dcaScore}分（不及格），同类有更适合定投的基金（${best.name} ${calcDCAScore(best)}分）${statusHint}${_useDca2 ? '' : `。综合评分 ${currentScore}分`}`);
+        issues.push(`${_useDca2 ? '定投适配评分' : '定投评分'} ${dcaScore}分（不及格），同类有更适合定投的基金（${best.name} ${calcDCAScore(best)}分）${statusHint}${_useDca2 ? '' : `。综合评分 ${currentScore}分`}`);
         if(level==='green') level='yellow';
       }
     }
