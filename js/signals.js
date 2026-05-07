@@ -563,29 +563,32 @@ function runHealthMonitor(){
     }
 
     // 性价比诊断
-    const currentScore = scoreF(fd);
+    const _useDca = (fd.cat === 'bond' || fd.cat === 'qdii');
+    const _scoreFn = f => _useDca ? calcDCAScore(f) : scoreF(f);
+    const _scoreLabel = _useDca ? '定投适配评分' : '综合评分';
+    const currentScore = _scoreFn(fd);
     const sameCatFunds = CURATED_FUNDS.filter(f=>f.cat===fd.cat && f.code!==fd.code);
 
     if(currentScore < 45){
       if(sameCatFunds.length > 0){
-        const betterFunds = sameCatFunds.filter(f=>scoreF(f) > currentScore + 10);
+        const betterFunds = sameCatFunds.filter(f=>_scoreFn(f) > currentScore + 10);
         if(betterFunds.length > 0){
-          const best = betterFunds.sort((a,b)=>scoreF(b)-scoreF(a))[0];
-          issues.push(`综合评分 ${currentScore}分（不及格），同类有更优选择（${best.name} ${scoreF(best)}分），建议换仓`);
+          const best = betterFunds.sort((a,b)=>_scoreFn(b)-_scoreFn(a))[0];
+          issues.push(`${_scoreLabel} ${currentScore}分（不及格），同类有更优选择（${best.name} ${_scoreFn(best)}分），建议换仓`);
           level = 'yellow';
         } else {
-          issues.push(`综合评分 ${currentScore}分（不及格），建议关注或考虑换入同类更优基金`);
+          issues.push(`${_scoreLabel} ${currentScore}分（不及格），建议关注或考虑换入同类更优基金`);
           if(level==='green') level='yellow';
         }
       } else {
-        issues.push(`综合评分 ${currentScore}分（不及格），建议关注基金表现`);
+        issues.push(`${_scoreLabel} ${currentScore}分（不及格），建议关注基金表现`);
         if(level==='green') level='yellow';
       }
     } else if(sameCatFunds.length > 0){
-      const betterFunds = sameCatFunds.filter(f=>scoreF(f) > currentScore + 15);
+      const betterFunds = sameCatFunds.filter(f=>_scoreFn(f) > currentScore + 15);
       if(betterFunds.length > 0){
-        const best = betterFunds.sort((a,b)=>scoreF(b)-scoreF(a))[0];
-        issues.push(`综合评分 ${currentScore}分，同类有更优选择（${best.name} ${scoreF(best)}分），可考虑换仓`);
+        const best = betterFunds.sort((a,b)=>_scoreFn(b)-_scoreFn(a))[0];
+        issues.push(`${_scoreLabel} ${currentScore}分，同类有更优选择（${best.name} ${_scoreFn(best)}分），可考虑换仓`);
         if(level==='green') level='yellow';
       }
     }
@@ -687,15 +690,18 @@ function runHealthMonitor(){
     }
 
     // 定投专用：性价比诊断（评分 < 50 才标记问题，比持仓更宽松）
-    const currentScore = scoreF(fd);
+    const _useDca2 = (fd.cat === 'bond' || fd.cat === 'qdii');
+    const _scoreFn2 = f => _useDca2 ? calcDCAScore(f) : scoreF(f);
+    const _scoreLabel2 = _useDca2 ? '定投适配评分' : '综合评分';
+    const currentScore = _scoreFn2(fd);
     const dcaScore = calcDCAScore(fd);
     const sameCatFunds = CURATED_FUNDS.filter(f=>f.cat===fd.cat && f.code!==fd.code);
 
     if(currentScore < 45){
-      const betterFunds = sameCatFunds.filter(f=>scoreF(f) > currentScore + 10);
+      const betterFunds = sameCatFunds.filter(f=>_scoreFn2(f) > currentScore + 10);
       if(betterFunds.length > 0){
-        const best = betterFunds.sort((a,b)=>scoreF(b)-scoreF(a))[0];
-        issues.push(`综合评分 ${currentScore}分（较低），同类有更优选择（${best.name} ${scoreF(best)}分）${statusHint}。定投评分 ${dcaScore}分（定投适配度独立评估，与综合评分维度不同）`);
+        const best = betterFunds.sort((a,b)=>_scoreFn2(b)-_scoreFn2(a))[0];
+        issues.push(`${_scoreLabel2} ${currentScore}分（较低），同类有更优选择（${best.name} ${_scoreFn2(best)}分）${statusHint}${_useDca2 ? '' : `。定投评分 ${dcaScore}分（定投适配度独立评估，与综合评分维度不同）`}`);
         level = 'yellow';
       }
     } else if(dcaScore < 60 && sameCatFunds.length > 0){
@@ -703,7 +709,7 @@ function runHealthMonitor(){
       const betterDcaFunds = sameCatFunds.filter(f=>calcDCAScore(f) > dcaScore + 15);
       if(betterDcaFunds.length > 0){
         const best = betterDcaFunds.sort((a,b)=>calcDCAScore(b)-calcDCAScore(a))[0];
-        issues.push(`定投评分 ${dcaScore}分（不及格），同类有更适合定投的基金（${best.name} ${calcDCAScore(best)}分）${statusHint}。综合评分 ${currentScore}分`);
+        issues.push(`定投评分 ${dcaScore}分（不及格），同类有更适合定投的基金（${best.name} ${calcDCAScore(best)}分）${statusHint}${_useDca2 ? '' : `。综合评分 ${currentScore}分`}`);
         if(level==='green') level='yellow';
       }
     }
@@ -1127,7 +1133,9 @@ function renderDiagnostics(){
   evalList.forEach(h=>{
     const fd = CURATED_FUNDS.find(f=>f.code===h.code);
     if(!fd) return;
-    const currentScore = scoreF(fd);
+    const _useDca3 = (fd.cat === 'bond' || fd.cat === 'qdii');
+    const _scoreFn3 = f => _useDca3 ? calcDCAScore(f) : scoreF(f);
+    const currentScore = _scoreFn3(fd);
     const sameCat = CURATED_FUNDS.filter(f=>f.cat===fd.cat && f.code!==fd.code);
     const pnlPct = h.cost>0 ? (h.value-h.cost)/h.cost*100 : null;
 
@@ -1140,8 +1148,8 @@ function renderDiagnostics(){
     const isProblem = isStructuralLoss || isSeverelyLagging || ddOverflow || currentScore < 45;
 
     // 找同类最优
-    const sortedSameCat = sameCat.slice().sort((a,b)=>scoreF(b)-scoreF(a));
-    const betterThan15 = sortedSameCat.filter(f=>scoreF(f) > currentScore + 15);
+    const sortedSameCat = sameCat.slice().sort((a,b)=>_scoreFn3(b)-_scoreFn3(a));
+    const betterThan15 = sortedSameCat.filter(f=>_scoreFn3(f) > currentScore + 15);
 
     let best = null, reason = '';
     if(isProblem && betterThan15.length){
@@ -1150,7 +1158,7 @@ function renderDiagnostics(){
     } else if(isProblem && sortedSameCat.length){
       // 标红但同类没有高15分更优 → 仍取同类最高作为候选，避免与健康监控矛盾
       const topCandidate = sortedSameCat[0];
-      if(scoreF(topCandidate) > currentScore){
+      if(_scoreFn3(topCandidate) > currentScore){
         best = topCandidate;
         reason = 'problem'; // 基金本身有问题，同类相对更优但差距不大
       } else {
@@ -1167,7 +1175,7 @@ function renderDiagnostics(){
     }
     suggestions.push({
       holding:h, fd, currentScore,
-      best, bestScore: best ? scoreF(best) : null,
+      best, bestScore: best ? _scoreFn3(best) : null,
       pnlPct, source:h.source, reason, isProblem,
       costInfo
     });
