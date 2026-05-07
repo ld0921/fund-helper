@@ -894,6 +894,15 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
     </div>
     <div class="card">
       <div class="card-title">
+        <span class="icon icon-blue">📈</span>组合收益走势
+        <span style="font-size:11px;color:var(--muted);font-weight:400;margin-left:6px">基于类别均值估算</span>
+      </div>
+      <div style="height:180px;position:relative">
+        <canvas id="portfolioReturnChart"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">
         <span class="icon icon-blue">📊</span>各基金收益明细
       </div>
             <div class="detail-row detail-header">
@@ -991,4 +1000,131 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
       });
     });
   },500);
+
+  // 渲染收益走势图
+  if(window.portfolioReturnRenderTimer) clearTimeout(window.portfolioReturnRenderTimer);
+  window.portfolioReturnRenderTimer = setTimeout(()=>{
+    const canvas = document.getElementById('portfolioReturnChart');
+    if(!canvas) return;
+    requestAnimationFrame(()=>{
+      if(window.portfolioReturnChartInstance){
+        window.portfolioReturnChartInstance.destroy();
+        window.portfolioReturnChartInstance = null;
+      }
+      const curve = buildPortfolioReturnCurve(holdings);
+      if(!curve) return;
+      const ctx = canvas.getContext('2d');
+      window.portfolioReturnChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: curve.labels,
+          datasets: [
+            {
+              label: '我的组合',
+              data: curve.portfolio,
+              borderColor: '#1677ff',
+              backgroundColor: 'rgba(22,119,255,0.08)',
+              borderWidth: 2,
+              pointRadius: 0,
+              fill: true,
+              tension: 0.3
+            },
+            {
+              label: '等权基准',
+              data: curve.equalWeight,
+              borderColor: '#faad14',
+              borderWidth: 1.5,
+              borderDash: [4,3],
+              pointRadius: 0,
+              fill: false,
+              tension: 0.3
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: 400 },
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { display: true, position: 'top', labels: { boxWidth: 12, font: { size: 11 }, padding: 12 } },
+            tooltip: {
+              callbacks: {
+                label: c => `${c.dataset.label}: ${c.parsed.y >= 0 ? '+' : ''}${c.parsed.y.toFixed(1)}%`
+              }
+            }
+          },
+          scales: {
+            x: { ticks: { font: { size: 10 }, maxTicksLimit: 8 }, grid: { display: false } },
+            y: {
+              ticks: { font: { size: 10 }, callback: v => `${v >= 0 ? '+' : ''}${v.toFixed(0)}%` },
+              grid: { color: 'rgba(0,0,0,0.05)' }
+            }
+          }
+        }
+      });
+    });
+  }, 600);
+}
+
+function buildPortfolioReturnCurve(holdings) {
+  if(!holdings.length || !MARKET_BENCHMARKS) return null;
+
+  // 确定数据起点：curated-details 的 timestamp 对应数组最后一个月
+  const ts = CURATED_TIMESTAMP || new Date().toISOString();
+  const dataEndDate = new Date(ts);
+  const mr = MARKET_BENCHMARKS;
+  const len = (mr.active?.monthlyReturns||[]).length;
+  if(!len) return null;
+
+  // 数组第0个元素对应的年月
+  const dataStartDate = new Date(dataEndDate);
+  dataStartDate.setMonth(dataStartDate.getMonth() - len + 1);
+  const dataStartYM = dataStartDate.getFullYear() * 12 + dataStartDate.getMonth();
+
+  // 找最早买入日期
+  const dates = holdings.map(h => h.date).filter(Boolean).sort();
+  if(!dates.length) return null;
+  const earliest = new Date(dates[0]);
+  const startYM = Math.max(
+    earliest.getFullYear() * 12 + earliest.getMonth(),
+    dataStartYM
+  );
+  const startIdx = startYM - dataStartYM;
+  if(startIdx >= len) return null;
+
+  // 按类别计算持仓权重
+  const totalCost = holdings.reduce((s,h) => s + (h.amount||0), 0);
+  if(!totalCost) return null;
+  const weights = { active: 0, index: 0, bond: 0, qdii: 0 };
+  holdings.forEach(h => {
+    const fd = CURATED_FUNDS.find(f => f.code === h.code);
+    const cat = fd?.cat;
+    if(cat && weights[cat] !== undefined) weights[cat] += (h.amount||0) / totalCost;
+  });
+
+  // 等权基准权重
+  const eqW = { active: 0.25, index: 0.25, bond: 0.25, qdii: 0.25 };
+
+  const labels = [], portfolio = [], equalWeight = [];
+  let pVal = 0, eVal = 0;
+
+  for(let i = startIdx; i < len; i++) {
+    const d = new Date(dataStartDate);
+    d.setMonth(d.getMonth() + i);
+    labels.push(`${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}`);
+
+    let pR = 0, eR = 0;
+    ['active','index','bond','qdii'].forEach(cat => {
+      const r = (mr[cat]?.monthlyReturns?.[i] || 0) / 100;
+      pR += weights[cat] * r;
+      eR += eqW[cat] * r;
+    });
+    pVal = (1 + pVal/100) * (1 + pR) * 100 - 100;
+    eVal = (1 + eVal/100) * (1 + eR) * 100 - 100;
+    portfolio.push(parseFloat(pVal.toFixed(2)));
+    equalWeight.push(parseFloat(eVal.toFixed(2)));
+  }
+
+  return { labels, portfolio, equalWeight };
 }

@@ -2,6 +2,7 @@
 let CURATED_FUNDS = [];
 // 记录精选库数据的更新时间（来自 curated-details.json 的 timestamp 字段）
 let _curatedTimestamp = null;
+let CURATED_TIMESTAMP = null;
 // 全市场基准统计（来自全市场扫描Top50/100，比精选库更广谱，用于z-score基准）
 let MARKET_BENCHMARKS = {};
 
@@ -44,6 +45,7 @@ async function loadCuratedFunds() {
     const res = await fetch('data/curated-details.json?_=' + Date.now());
     const data = await res.json();
     _curatedTimestamp = data.timestamp || null;
+    CURATED_TIMESTAMP = _curatedTimestamp;
     MARKET_BENCHMARKS = data.marketBenchmarks || {};
     // 动态覆盖指数估值数据（来自 fetch-ranks.js 自动爬取）
     if(data.indexValuation){
