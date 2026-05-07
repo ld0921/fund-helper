@@ -1,0 +1,50 @@
+name: 回测守护
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'js/score.js'
+      - 'js/portfolio.js'
+      - 'js/dca.js'
+      - 'js/signals.js'
+
+permissions:
+  contents: read
+
+jobs:
+  backtest-guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 运行回测
+        run: node backtest/runBacktest.js
+
+      - name: 对比 baseline
+        run: node -e "
+          const fs = require('fs');
+          const baseline = JSON.parse(fs.readFileSync('backtest/baseline-v2/metrics.json'));
+          const current = JSON.parse(fs.readFileSync('backtest/results.json')).metrics;
+
+          // 取「智能选基+成本」画像做对比
+          const KEY = '平衡+3年 [智能选基+成本]';
+          const base = baseline.find(m => m.name === KEY);
+          const curr = current.find(m => m.name === KEY);
+          if (!base || !curr) { console.log('未找到对比画像，跳过'); process.exit(0); }
+
+          const sharpeDrop = (base.sharpe - curr.sharpe) / base.sharpe;
+          console.log('baseline sharpe:', base.sharpe.toFixed(4));
+          console.log('current  sharpe:', curr.sharpe.toFixed(4));
+          console.log('下降幅度:', (sharpeDrop * 100).toFixed(1) + '%');
+
+          if (sharpeDrop > 0.05) {
+            console.error('夏普下降超过 5%，疑似算法退化，请检查改动');
+            process.exit(1);
+          }
+          console.log('回测守护通过');
+        "

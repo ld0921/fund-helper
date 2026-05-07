@@ -1,0 +1,10 @@
+{
+  "scripts": {
+    "backtest": "node backtest/runBacktest.js",
+    "backtest:v2": "node backtest/runBacktestV2.js",
+    "fetch": "node scripts/fetch-ranks.js",
+    "validate": "node scripts/validate-history-nav.js",
+    "test-scores": "node scripts/test-scores.js",
+    "compare": "node backtest/compare.js"
+  }
+}

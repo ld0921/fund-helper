@@ -1,0 +1,29 @@
+name: Roadmap 自动同步
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 同步 roadmap
+        run: node scripts/sync-roadmap.js "${{ github.event.head_commit.message }}"
+
+      - name: 提交更新
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add roadmap/roadmap.json
+          if git diff --staged --quiet; then
+            echo "roadmap 无变化，跳过"
+          else
+            git commit -m "chore: 自动同步 roadmap 状态"
+            git push
+          fi
