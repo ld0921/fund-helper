@@ -62,7 +62,7 @@ function scoreF(f){
 
   // 1. Calmar Ratio（风险调整收益，权重 32%）
   //    时间窗口匹配原则：收益率和回撤应使用相同的时间窗口
-  //    短期 Calmar = r1 / maxDD1y（都是近1年，时间窗口完全匹配，2026-05 对齐）
+  //    短期 Calmar = r1 / maxDD1y（都是近1年，2026-05-09 由 r1/maxDD3y 对齐而来）
   //    长期 Calmar = r3年化 / maxDD3y（都是近3年，时间窗口匹配）
   //    加权：短期60% + 长期40%，侧重近期表现但兼顾长期
   const r3Ann = r3 > -100 ? (Math.pow(1 + r3/100, 1/3) - 1) * 100 : 0; // r3累计转年化
@@ -72,7 +72,7 @@ function scoreF(f){
   // - 主动基金：与同类主动基金均值比，衡量选股超额能力
   // - QDII基金：与同类QDII均值比（不与A股比，投资市场不同）
   // - 指数/债券/货币：用无风险利率（它们本身就是基准或低风险资产）
-  // 时间窗口匹配：calmarShort 用1年基准(avgR1)/1年回撤(avgDD1y)，calmarLong 用3年年化基准(avgR3Ann)/3年回撤(avgDD3y回退到全期avgDD)
+  // 时间窗口匹配：calmarShort 用1年基准(avgR1)，calmarLong 用3年年化基准(avgR3Ann)
   const bench = _catBench[f.cat];
   // 所有类别统一用同类均值作基准，消除跨类别评分不均衡
   const benchmarkShort = bench ? bench.avgR1 : RISK_FREE;
@@ -80,13 +80,12 @@ function scoreF(f){
   const calmarShort = (r1 - benchmarkShort) / dd1yAdj;
   const calmarLong  = (r3Ann - benchmarkLong) / dd3yAdj;
   const calmar = calmarShort * 0.6 + calmarLong * 0.4;
-  // sigmoid中心点：拆成短期/长期分别匹配自己窗口的同类均值calmar，再加权对齐 calmar 加权
-  // - shortCenter: avgR1 / avgDD1y（1年/1年，旧数据无 avgDD1y 则回退 avgDD）
-  // - longCenter:  avgR3Ann / avgDD（3年年化/全期回撤，bench 暂无 avgDD3y 字段）
-  const fallbackCenter = (f.cat === 'bond' || f.cat === 'money') ? -0.3 : 0;
-  const shortCenter = bench ? benchmarkShort / Math.max(bench.avgDD1y || bench.avgDD || 10, 1) : fallbackCenter;
-  const longCenter  = bench ? benchmarkLong  / Math.max(bench.avgDD || 10, 1) : fallbackCenter;
-  const calmarCenter = shortCenter * 0.6 + longCenter * 0.4;
+  // sigmoid中心点动态跟随同类长期均值calmar，消除熊市中系统性低估和区分度崩溃
+  // 注：center 与 calmarShort 的 dd1y 量纲不严格匹配，是有意取舍——center 拆分版会导致
+  // 分数整体下移 2-5 分（avgR1 通常 > avgR3Ann + avgDD1y < avgDD），用户体感劣化。
+  // 当前实现只对齐了 calmar 分子分母窗口，center 沿用旧版（实证上分数稳定）。
+  // 数据端 fetch-ranks.js 已生成 avgDD1y 字段，未来若想启用拆分 center 直接接入即可。
+  const calmarCenter = bench ? benchmarkLong / Math.max(bench.avgDD || 10, 1) : ((f.cat === 'bond' || f.cat === 'money') ? -0.3 : 0);
   const calmarScore = Math.round(32 / (1 + Math.exp(-(calmar - calmarCenter) * 1.5)));
 
   // 2. 收益一致性（权重 24%）
