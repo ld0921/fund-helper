@@ -183,6 +183,22 @@ async function fetchFundDetail(code) {
             });
             result.maxDD3y = Math.round(maxDD3 * 10) / 10;
           }
+
+          // 近1年最大回撤（与r1时间窗口匹配，给scoreF短期Calmar用）
+          const oneYearAgo = Date.now() - 365.25 * 24 * 60 * 60 * 1000;
+          const nav1y = navData.filter(p => p.x >= oneYearAgo);
+          if (nav1y.length >= 10) {
+            let peak1 = 0, maxDD1 = 0;
+            nav1y.forEach(p => {
+              const v = p.y || 0;
+              if (v > peak1) peak1 = v;
+              if (peak1 > 0) {
+                const dd = (peak1 - v) / peak1 * 100;
+                if (dd > maxDD1) maxDD1 = dd;
+              }
+            });
+            result.maxDD1y = Math.round(maxDD1 * 10) / 10;
+          }
         }
       } catch (e) {}
     }
@@ -306,6 +322,7 @@ async function main() {
         if (detail) {
           if (detail.maxDD > 0 && detail.maxDD <= 100) f.maxDD = detail.maxDD;
           if (detail.maxDD3y > 0 && detail.maxDD3y <= 100) f.maxDD3y = detail.maxDD3y;
+          if (detail.maxDD1y > 0 && detail.maxDD1y <= 100) f.maxDD1y = detail.maxDD1y;
           if (detail.manager) f.manager = detail.manager;
           if (detail.mgrYears > 0) f.mgrYears = detail.mgrYears;
           if (detail.star >= 1 && detail.star <= 5) f.stars = detail.star;
@@ -380,6 +397,8 @@ async function main() {
     const stdR1 = r1s.length > 1 ? Math.sqrt(r1s.reduce((s, v) => s + (v - avgR1) ** 2, 0) / r1s.length) || 1 : 1;
     const dds = funds.map(f => f.maxDD).filter(v => v > 0);
     const avgDD = dds.length > 0 ? dds.reduce((s, v) => s + v, 0) / dds.length : 0;
+    const dd1ys = funds.map(f => f.maxDD1y).filter(v => v > 0);
+    const avgDD1y = dd1ys.length > 0 ? dd1ys.reduce((s, v) => s + v, 0) / dd1ys.length : 0;
     const r3s = funds.map(f => f.r3).filter(v => isFinite(v));
     const avgR3 = r3s.length > 0 ? r3s.reduce((s, v) => s + v, 0) / r3s.length : 0;
     // 月度收益序列：取各基金序列的逐月均值（用于前端动态计算相关性矩阵）
@@ -396,6 +415,7 @@ async function main() {
       avgR1: Math.round(avgR1 * 100) / 100,
       stdR1: Math.round(stdR1 * 100) / 100,
       avgDD: Math.round(avgDD * 100) / 100,
+      avgDD1y: Math.round(avgDD1y * 100) / 100,
       avgR3: Math.round(avgR3 * 100) / 100,
       count: r1s.length,
       ...(monthlyReturns.length >= 6 && { monthlyReturns })
@@ -404,7 +424,7 @@ async function main() {
   console.log('\n市场基准统计（基于全市场Top扫描，筛选前全量数据）:');
   for (const cat of Object.keys(finalBenchmarks)) {
     const b = finalBenchmarks[cat];
-    console.log(`  ${cat}: avgR1=${b.avgR1}% stdR1=${b.stdR1}% avgDD=${b.avgDD}% count=${b.count}`);
+    console.log(`  ${cat}: avgR1=${b.avgR1}% stdR1=${b.stdR1}% avgDD=${b.avgDD}% avgDD1y=${b.avgDD1y}% count=${b.count}`);
   }
 
   // ═══ 从全市场扫描结果构建动态精选库 ═══
@@ -434,7 +454,7 @@ async function main() {
       if (base && base.maxDD > 0) {
         // 已有完整详情，只补 r3
         r3 = await fetchFundR3(code);
-        detail = { r1: base.r1, maxDD: base.maxDD, maxDD3y: base.maxDD3y,
+        detail = { r1: base.r1, maxDD: base.maxDD, maxDD3y: base.maxDD3y, maxDD1y: base.maxDD1y,
           manager: base.manager, mgrYears: base.mgrYears, star: base.stars, fundSize: base.size,
           fee: base.fee };
       } else {
@@ -457,6 +477,7 @@ async function main() {
         if (r3 !== null) entry.r3 = r3;
         if (detail.maxDD > 0 && detail.maxDD <= 100) entry.maxDD = detail.maxDD;
         if (detail.maxDD3y > 0 && detail.maxDD3y <= 100) entry.maxDD3y = detail.maxDD3y;
+        if (detail.maxDD1y > 0 && detail.maxDD1y <= 100) entry.maxDD1y = detail.maxDD1y;
         if (detail.manager) entry.manager = detail.manager;
         if (detail.mgrYears > 0) entry.mgrYears = detail.mgrYears;
         if (detail.star >= 1 && detail.star <= 5) entry.stars = detail.star;

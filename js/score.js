@@ -57,29 +57,36 @@ function getValuationLabel(fundCode){
 function scoreF(f){
   const r1=+f.r1||0, r3=+f.r3||0, dd=+(f.dd||f.maxDD)||0, sz=+f.size||0, mg=+(f.mgr||f.mgrYears)||0;
   const dd3y=+(f.maxDD3y)||dd; // 近3年回撤，无则回退全期
+  const dd1y=+(f.maxDD1y)||dd3y; // 近1年回撤，无则回退近3年（旧数据兼容）
   const fee = f.fee !== undefined ? +f.fee : getDefaultFee(f.cat); // 费率
 
   // 1. Calmar Ratio（风险调整收益，权重 32%）
   //    时间窗口匹配原则：收益率和回撤应使用相同的时间窗口
-  //    短期 Calmar = r1 / maxDD3y（r1是近1年，maxDD3y是近3年，窗口不完全匹配但无更精确数据）
+  //    短期 Calmar = r1 / maxDD1y（都是近1年，时间窗口完全匹配，2026-05 对齐）
   //    长期 Calmar = r3年化 / maxDD3y（都是近3年，时间窗口匹配）
   //    加权：短期60% + 长期40%，侧重近期表现但兼顾长期
   const r3Ann = r3 > -100 ? (Math.pow(1 + r3/100, 1/3) - 1) * 100 : 0; // r3累计转年化
+  const dd1yAdj = Math.max(0.1, dd1y);
   const dd3yAdj = Math.max(0.1, dd3y);
   // Alpha基准：各类别使用同类均值，避免跨市场比较偏差
   // - 主动基金：与同类主动基金均值比，衡量选股超额能力
   // - QDII基金：与同类QDII均值比（不与A股比，投资市场不同）
   // - 指数/债券/货币：用无风险利率（它们本身就是基准或低风险资产）
-  // 时间窗口匹配：calmarShort 用1年基准(avgR1)，calmarLong 用3年年化基准(avgR3Ann)
+  // 时间窗口匹配：calmarShort 用1年基准(avgR1)/1年回撤(avgDD1y)，calmarLong 用3年年化基准(avgR3Ann)/3年回撤(avgDD3y回退到全期avgDD)
   const bench = _catBench[f.cat];
   // 所有类别统一用同类均值作基准，消除跨类别评分不均衡
   const benchmarkShort = bench ? bench.avgR1 : RISK_FREE;
   const benchmarkLong  = bench && bench.avgR3 ? (Math.pow(1 + bench.avgR3/100, 1/3) - 1) * 100 : RISK_FREE;
-  const calmarShort = (r1 - benchmarkShort) / dd3yAdj;
+  const calmarShort = (r1 - benchmarkShort) / dd1yAdj;
   const calmarLong  = (r3Ann - benchmarkLong) / dd3yAdj;
   const calmar = calmarShort * 0.6 + calmarLong * 0.4;
-  // sigmoid中心点动态跟随同类均值calmar，消除熊市中系统性低估和区分度崩溃
-  const calmarCenter = bench ? benchmarkLong / Math.max(bench.avgDD || 10, 1) : ((f.cat === 'bond' || f.cat === 'money') ? -0.3 : 0);
+  // sigmoid中心点：拆成短期/长期分别匹配自己窗口的同类均值calmar，再加权对齐 calmar 加权
+  // - shortCenter: avgR1 / avgDD1y（1年/1年，旧数据无 avgDD1y 则回退 avgDD）
+  // - longCenter:  avgR3Ann / avgDD（3年年化/全期回撤，bench 暂无 avgDD3y 字段）
+  const fallbackCenter = (f.cat === 'bond' || f.cat === 'money') ? -0.3 : 0;
+  const shortCenter = bench ? benchmarkShort / Math.max(bench.avgDD1y || bench.avgDD || 10, 1) : fallbackCenter;
+  const longCenter  = bench ? benchmarkLong  / Math.max(bench.avgDD || 10, 1) : fallbackCenter;
+  const calmarCenter = shortCenter * 0.6 + longCenter * 0.4;
   const calmarScore = Math.round(32 / (1 + Math.exp(-(calmar - calmarCenter) * 1.5)));
 
   // 2. 收益一致性（权重 24%）
