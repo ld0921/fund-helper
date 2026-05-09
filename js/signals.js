@@ -1406,12 +1406,16 @@ function renderTimingAdvice(){
   if(!wrap) return;
 
   // ── 1. 加仓时机：基于 phase + 估值 ──
-  const phaseResult = inferMomentumPhase();
+  const catRanks = typeof analyzeCategoryPerf === 'function' ? analyzeCategoryPerf() : [];
+  const phaseResult = inferMomentumPhase(catRanks);
   const phase = phaseResult.phase;
   const bondYield = (typeof MARKET_BENCHMARKS === 'object' && MARKET_BENCHMARKS._bondYield) || null;
 
-  // 宽基指数估值均值（取有数据的指数 PE 百分位均值）
-  const valPcts = Object.values(INDEX_VALUATION).map(v => v.pePct).filter(v => v > 0);
+  // 宽基指数估值均值（只取宽基，排除行业指数避免均值失真）
+  const broadBaseIds = new Set(['000300','000905','000852','399006','000016','000985']);
+  const valPcts = Object.entries(INDEX_VALUATION)
+    .filter(([k]) => broadBaseIds.has(k))
+    .map(([,v]) => v.pePct).filter(v => v > 0);
   const avgValPct = valPcts.length ? valPcts.reduce((s,v)=>s+v,0)/valPcts.length : null;
 
   // 加仓信号：phase + 估值双维度
@@ -1466,22 +1470,26 @@ function renderTimingAdvice(){
 
     if(fd){
       const score = scoreF(fd);
-      const sameCat = CURATED_FUNDS.filter(f=>f.cat===fd.cat && f.code!==fd.code);
-      const bestAlt = sameCat.sort((a,b)=>scoreF(b)-scoreF(a))[0];
+      const sameCat = CURATED_FUNDS.filter(f=>f.cat===fd.cat && f.code!==fd.code)
+        .map(f=>({f, s:scoreF(f)})).sort((a,b)=>b.s-a.s);
+      const bestAlt = sameCat[0];
 
       // 止盈：盈利 ≥ 25% + 市场过热或估值偏高
       if(pnlPct !== null && pnlPct >= 25 && (phaseBad || valPricey)){
         reasons.push(`盈利 ${pnlPct.toFixed(1)}%，当前市场「${phaseResult.label}」，建议锁定部分利润`);
         priority = Math.max(priority, 3);
       }
-      // 止盈：盈利 ≥ 40%（无论行情）
+      // 止盈：盈利 ≥ 40% 且年化收益 > 20%（排除长期持有低年化的情况）
       if(pnlPct !== null && pnlPct >= 40){
-        reasons.push(`盈利已达 ${pnlPct.toFixed(1)}%，可考虑止盈 30-50%`);
-        priority = Math.max(priority, 2);
+        const annPnl = holdDays > 30 ? (Math.pow(1 + pnlPct/100, 365/holdDays) - 1) * 100 : pnlPct;
+        if(annPnl > 20){
+          reasons.push(`盈利已达 ${pnlPct.toFixed(1)}%（年化 ${annPnl.toFixed(0)}%），可考虑止盈 30-50%`);
+          priority = Math.max(priority, 2);
+        }
       }
       // 减仓：评分低 + 同类有更优
-      if(score < 50 && bestAlt && scoreF(bestAlt) > score + 15){
-        reasons.push(`综合评分 ${score} 分，同类「${bestAlt.name}」评分 ${scoreF(bestAlt)} 分，建议换仓`);
+      if(score < 50 && bestAlt && bestAlt.s > score + 15){
+        reasons.push(`综合评分 ${score} 分，同类「${bestAlt.f.name}」评分 ${bestAlt.s} 分，建议换仓`);
         priority = Math.max(priority, 2);
       }
       // 减仓：结构性亏损（双负）
@@ -1499,8 +1507,8 @@ function renderTimingAdvice(){
 
     if(reasons.length > 0){
       // 赎回费提示
-      const feeInfo = typeof getHoldingDaysInfo === 'function' ? getHoldingDaysInfo(h.date, h.code) : null;
-      const feeNote = feeInfo ? `持有 ${holdDays} 天，赎回费 ${feeInfo.fee}` : '';
+      const fee = holdDays < 7 ? '1.50%' : holdDays < 30 ? '0.75%' : holdDays < 365 ? '0.50%' : '0%';
+      const feeNote = holdDays > 0 ? `持有 ${holdDays} 天，赎回费约 ${fee}` : '';
       sellCandidates.push({ name: h.name, code: h.code, value: h.value, pnlPct, reasons, priority, feeNote });
     }
   });
