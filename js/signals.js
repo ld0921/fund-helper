@@ -1528,12 +1528,16 @@ function renderActionPanel(){
   } catch(_){}
 
   const addHtml = `<div style="padding:12px 16px;border-bottom:1px solid #f0f0f0">
-    <div style="display:flex;align-items:flex-start;gap:10px">
-      <span style="font-size:13px;font-weight:700;color:${addColor};white-space:nowrap">${addSignal}</span>
-      <div style="font-size:12px;color:#595959;line-height:1.6">${escHtml(addDesc)}</div>
+    <div style="margin-bottom:8px">
+      <span style="font-size:14px;font-weight:700;color:${addColor}">${addSignal}</span>
+      <div style="font-size:12px;color:#595959;margin-top:4px;line-height:1.6">${escHtml(addDesc)}</div>
     </div>
-    ${concWarn}${directionHint}
-    <button onclick="switchTab(0)" style="margin-top:8px;padding:4px 12px;font-size:12px;background:var(--primary);color:#fff;border:none;border-radius:6px;cursor:pointer">生成加仓方案 →</button>
+    ${concWarn}
+    ${directionHint ? `<div style="margin-top:8px;padding:8px 10px;background:#f8f9fc;border-radius:6px">${directionHint}</div>` : ''}
+    <div style="display:flex;align-items:center;gap:8px;margin-top:10px">
+      <span style="font-size:12px;color:#595959">若决定加仓，可生成方案：</span>
+      <button onclick="switchTab(0)" style="padding:4px 12px;font-size:12px;background:var(--primary);color:#fff;border:none;border-radius:6px;cursor:pointer">生成加仓方案 →</button>
+    </div>
   </div>`;
 
   // ── B. 止盈/减仓候选（来自持仓） ──
@@ -1555,36 +1559,41 @@ function renderActionPanel(){
         const profit = h.value - (h.amount||h.value);
         const loAmt = Math.round(profit * 0.3 / 100) * 100;
         const hiAmt = Math.round(profit * 0.6 / 100) * 100;
-        const amtHint = loAmt > 0 ? `（参考范围 ¥${loAmt.toLocaleString()}–¥${hiAmt.toLocaleString()}，具体根据资金需求决定）` : '';
+        const amtHint = loAmt > 0 ? `参考范围 ¥${loAmt.toLocaleString()}–¥${hiAmt.toLocaleString()}` : '';
         // 再平衡周期提示：读取上次方案保存时间
         let rebalHint = '';
         try {
           const scheme = loadMyHoldingScheme();
           if(scheme && scheme.savedAt){
             const daysSince = Math.floor((Date.now() - new Date(scheme.savedAt).getTime()) / 86400000);
-            const daysToNext = Math.max(0, 180 - daysSince); // 半年调仓周期
+            const daysToNext = Math.max(0, 180 - daysSince);
             rebalHint = daysToNext <= 30
-              ? `距半年调仓周期仅剩 ${daysToNext} 天，可提前检视整体配置。`
-              : `距上次方案已 ${daysSince} 天，距半年调仓周期还有约 ${daysToNext} 天。`;
+              ? `距半年调仓周期仅剩 ${daysToNext} 天，建议提前检视整体配置`
+              : `距半年调仓周期还有约 ${daysToNext} 天`;
           }
         } catch(_){}
         const fundDest = phaseGood
-          ? '释放资金可重新生成智能方案补充低配类别。'
-          : '释放资金建议暂存货币基金或短债，等待市场回调后重新配置。';
-        reasons.push(`盈利 ${pnlPct.toFixed(1)}%，市场「${phaseResult.label}」估值偏高，建议部分止盈${amtHint}。${fundDest}${rebalHint}`);
+          ? '释放资金可重新生成智能方案，补充低配类别'
+          : '释放资金建议暂存货币基金或短债，等待市场回调后重新配置';
+        reasons.push({
+          main: `市场「${phaseResult.label}」估值偏高，建议部分止盈`,
+          amt: amtHint,
+          dest: fundDest,
+          rebal: rebalHint
+        });
         priority=Math.max(priority,3);
       }
       if(pnlPct!==null&&pnlPct>=40){ const ann=holdDays>30?(Math.pow(1+pnlPct/100,365/holdDays)-1)*100:pnlPct; if(ann>20){
         const profit = h.value - (h.amount||h.value);
         const loAmt = Math.round(profit * 0.4 / 100) * 100;
         const hiAmt = Math.round(profit * 0.7 / 100) * 100;
-        const amtHint = loAmt > 0 ? `（参考范围 ¥${loAmt.toLocaleString()}–¥${hiAmt.toLocaleString()}）` : '';
-        reasons.push(`盈利 ${pnlPct.toFixed(1)}%（年化 ${ann.toFixed(0)}%），年化收益已显著偏高，建议部分止盈${amtHint}，释放资金重新生成智能方案配置。`); priority=Math.max(priority,2);
+        reasons.push({main:`年化收益 ${ann.toFixed(0)}%，已显著偏高，建议部分止盈`,amt:loAmt>0?`参考范围 ¥${loAmt.toLocaleString()}–¥${hiAmt.toLocaleString()}`:'',dest:'释放资金重新生成智能方案配置',rebal:''});
+        priority=Math.max(priority,2);
       } }
-      if(score<50&&bestAlt&&bestAlt.s>score+15){ reasons.push(`评分 ${score} 分，同类「${bestAlt.f.name}」${bestAlt.s} 分，建议换仓`); priority=Math.max(priority,2); }
-      if(fd.r1<-5&&fd.r3<-10){ reasons.push(`近1年 ${fd.r1}%、近3年 ${fd.r3}%，持续下行，建议减仓止损`); priority=Math.max(priority,3); }
+      if(score<50&&bestAlt&&bestAlt.s>score+15){ reasons.push({main:`评分 ${score} 分，同类「${bestAlt.f.name}」${bestAlt.s} 分，建议换仓`,amt:'',dest:'',rebal:''}); priority=Math.max(priority,2); }
+      if(fd.r1<-5&&fd.r3<-10){ reasons.push({main:`近1年 ${fd.r1}%、近3年 ${fd.r3}%，持续下行`,amt:'',dest:'建议减仓止损',rebal:''}); priority=Math.max(priority,3); }
     } else if(pnlPct!==null&&pnlPct<-15){
-      reasons.push(`亏损 ${Math.abs(pnlPct).toFixed(1)}%，已移出精选库，建议评估止损`); priority=2;
+      reasons.push({main:`亏损 ${Math.abs(pnlPct).toFixed(1)}%，已移出精选库`,amt:'',dest:'建议评估止损',rebal:''}); priority=2;
     }
     if(reasons.length){
       const fee=holdDays<7?'1.50%':holdDays<30?'0.75%':holdDays<365?'0.50%':'0%';
@@ -1637,24 +1646,31 @@ function renderActionPanel(){
 
   const sellHtml = !hasSell
     ? `<div style="font-size:13px;color:var(--muted);padding:8px 0">当前持仓无明显止盈或减仓信号。</div>`
-    : sellItems.map(c=>`
-      <div style="padding:10px 12px;margin-bottom:8px;background:#fafafa;border-radius:8px;border:1px solid #f0f0f0">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+    : sellItems.map(c=>{
+      const reasonHtml = c.reasons.map(r=>{
+        const isObj = typeof r === 'object';
+        if(!isObj) return `<div style="font-size:12px;color:#595959">${escHtml(r)}</div>`;
+        return `<div style="font-size:13px;font-weight:600;color:#262626;margin-bottom:3px">${escHtml(r.main)}</div>`
+          + (r.amt ? `<div style="font-size:12px;color:#d48806">建议减仓金额：${escHtml(r.amt)}（具体根据资金需求决定）</div>` : '')
+          + (r.dest ? `<div style="font-size:12px;color:#595959">资金去向：${escHtml(r.dest)}</div>` : '')
+          + (r.rebal ? `<div style="font-size:11px;color:var(--muted);margin-top:2px">${escHtml(r.rebal)}</div>` : '');
+      }).join('');
+      return `<div style="padding:10px 12px;margin-bottom:8px;background:#fafafa;border-radius:8px;border:1px solid #f0f0f0">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
           <span style="font-size:14px;font-weight:700;color:#262626">${escHtml(c.name)}</span>
           ${c.pnlPct!==null?`<span style="font-size:13px;font-weight:700;color:${c.pnlPct>=0?'#389e0d':'#cf1322'};padding:1px 7px;background:${c.pnlPct>=0?'#f6ffed':'#fff1f0'};border-radius:4px">${c.pnlPct>=0?'+':''}${c.pnlPct.toFixed(1)}%</span>`:''}
           <span style="font-size:12px;color:var(--muted)">市值 ¥${(c.value||0).toLocaleString('zh-CN',{maximumFractionDigits:0})}</span>
         </div>
-        <div style="font-size:12px;color:#595959;line-height:1.7;padding:6px 8px;background:#fff;border-radius:6px;border-left:3px solid #faad14">
-          ${c.reasons.map(r=>`<div>${escHtml(r)}</div>`).join('')}
-        </div>
+        <div style="padding:8px 10px;background:#fff;border-radius:6px;border-left:3px solid #faad14">${reasonHtml}</div>
         ${c.feeNote?`<div style="font-size:11px;color:var(--muted);margin-top:5px">${escHtml(c.feeNote)}</div>`:''}
-      </div>`).join('');
+      </div>`;
+    }).join('');
 
   const rebalHtml = !hasRebal ? '' : rebalItems.map(s=>{
     const costNotWorth=s.costInfo&&!s.costInfo.worthIt;
     const actionLabel=costNotWorth?'👀 暂不建议换':s.source==='dca'?'🔄 换入定投':'🔄 建议换仓';
     const costNote=s.costInfo?(costNotWorth
-      ?`<div style="font-size:11px;color:#d46b08;margin-top:5px;padding:4px 8px;background:#fff7e6;border-radius:4px">换仓成本 ${(s.costInfo.totalCostRate*100).toFixed(2)}%，需 ${s.costInfo.breakEvenYears<99?s.costInfo.breakEvenYears.toFixed(1)+'年':'极长'} 回本，当前不划算</div>`
+      ?`<div style="font-size:11px;color:#d46b08;margin-top:5px;padding:4px 8px;background:#fff7e6;border-radius:4px">换仓成本 ${(s.costInfo.totalCostRate*100).toFixed(2)}%，回本周期${s.costInfo.breakEvenYears<99?s.costInfo.breakEvenYears.toFixed(1)+'年':'极长'}，当前不划算</div>`
       :`<div style="font-size:11px;color:#389e0d;margin-top:5px;padding:4px 8px;background:#f6ffed;border-radius:4px">换仓成本 ${(s.costInfo.totalCostRate*100).toFixed(2)}%，预计 ${s.costInfo.breakEvenYears.toFixed(1)} 年回本，划算</div>`):'';
     const actionStyle=costNotWorth?'color:var(--muted);background:#f5f5f5;border:1px solid #d9d9d9':'color:#d48806;background:#fff7e6;border:1px solid #ffd591';
     return `<div style="padding:10px 12px;margin-bottom:8px;background:#fafafa;border-radius:8px;border:1px solid #f0f0f0">
