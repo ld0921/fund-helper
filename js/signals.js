@@ -1693,9 +1693,9 @@ function renderActionPanel(){
     </div>`;
 
   wrap.innerHTML=`<div class="card" style="margin-bottom:12px">
-    <div class="card-title" style="display:flex;align-items:center;justify-content:space-between">
-      <span><span class="icon icon-blue">💡</span>行动建议</span>
-      <button class="help-btn" onclick="showHelpModal('💡 行动建议 · 理论依据', \`
+    <div class="card-title">
+      <span class="icon icon-blue">💡</span>行动建议
+      <button class="help-btn" style="margin-left:6px" onclick="showHelpModal('💡 行动建议 · 理论依据', \`
         <div style='margin-bottom:16px'>
           <div style='font-size:14px;font-weight:700;color:var(--primary);margin-bottom:6px'>💰 加仓时机</div>
           <div style='font-size:13px;color:#595959;line-height:1.8'>
