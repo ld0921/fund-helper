@@ -1536,7 +1536,7 @@ function renderActionPanel(){
     ${directionHint ? `<div style="margin-top:8px;padding:8px 10px;background:#f8f9fc;border-radius:6px">${directionHint}</div>` : ''}
     <div style="display:flex;align-items:center;gap:8px;margin-top:10px">
       <span style="font-size:12px;color:#595959">若决定加仓，可生成方案：</span>
-      <button onclick="switchTab(0)" style="padding:4px 12px;font-size:12px;background:var(--primary);color:#fff;border:none;border-radius:6px;cursor:pointer">生成加仓方案 →</button>
+      <button onclick="switchTab(0)" style="padding:4px 12px;font-size:12px;background:var(--primary);color:#fff;border:none;border-radius:6px;cursor:pointer">跳转至智能方案 →</button>
     </div>
   </div>`;
 
@@ -1646,25 +1646,27 @@ function renderActionPanel(){
 
   const sellHtml = !hasSell
     ? `<div style="font-size:13px;color:var(--muted);padding:8px 0">当前持仓无明显止盈或减仓信号。</div>`
-    : sellItems.map(c=>{
-      const reasonHtml = c.reasons.map(r=>{
-        const isObj = typeof r === 'object';
-        if(!isObj) return `<div style="font-size:12px;color:#595959">${escHtml(r)}</div>`;
-        return `<div style="font-size:13px;font-weight:600;color:#262626;margin-bottom:3px">${escHtml(r.main)}</div>`
-          + (r.amt ? `<div style="font-size:12px;color:#d48806">建议减仓金额：${escHtml(r.amt)}（具体根据资金需求决定）</div>` : '')
-          + (r.dest ? `<div style="font-size:12px;color:#595959">资金去向：${escHtml(r.dest)}</div>` : '')
-          + (r.rebal ? `<div style="font-size:11px;color:var(--muted);margin-top:2px">${escHtml(r.rebal)}</div>` : '');
-      }).join('');
-      return `<div style="padding:10px 12px;margin-bottom:8px;background:#fafafa;border-radius:8px;border:1px solid #f0f0f0">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-          <span style="font-size:14px;font-weight:700;color:#262626">${escHtml(c.name)}</span>
-          ${c.pnlPct!==null?`<span style="font-size:13px;font-weight:700;color:${c.pnlPct>=0?'#389e0d':'#cf1322'};padding:1px 7px;background:${c.pnlPct>=0?'#f6ffed':'#fff1f0'};border-radius:4px">${c.pnlPct>=0?'+':''}${c.pnlPct.toFixed(1)}%</span>`:''}
-          <span style="font-size:12px;color:var(--muted)">市值 ¥${(c.value||0).toLocaleString('zh-CN',{maximumFractionDigits:0})}</span>
-        </div>
-        <div style="padding:8px 10px;background:#fff;border-radius:6px;border-left:3px solid #faad14">${reasonHtml}</div>
-        ${c.feeNote?`<div style="font-size:11px;color:var(--muted);margin-top:5px">${escHtml(c.feeNote)}</div>`:''}
-      </div>`;
-    }).join('');
+    : `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">`
+      + sellItems.map(c=>{
+        const reasonHtml = c.reasons.map(r=>{
+          const isObj = typeof r === 'object';
+          if(!isObj) return `<div style="font-size:12px;color:#595959">${escHtml(r)}</div>`;
+          return `<div style="font-size:13px;font-weight:600;color:#262626;margin-bottom:3px">${escHtml(r.main)}</div>`
+            + (r.amt ? `<div style="font-size:12px;color:#d48806">建议减仓金额：${escHtml(r.amt)}（具体根据资金需求决定）</div>` : '')
+            + (r.dest ? `<div style="font-size:12px;color:#595959">资金去向：${escHtml(r.dest)}</div>` : '')
+            + (r.rebal ? `<div style="font-size:11px;color:var(--muted);margin-top:2px">${escHtml(r.rebal)}</div>` : '');
+        }).join('');
+        return `<div style="padding:10px 12px;background:#fafafa;border-radius:8px;border:1px solid #f0f0f0">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+            <span style="font-size:14px;font-weight:700;color:#262626">${escHtml(c.name)}</span>
+            ${c.pnlPct!==null?`<span style="font-size:13px;font-weight:700;color:${c.pnlPct>=0?'#389e0d':'#cf1322'};padding:1px 7px;background:${c.pnlPct>=0?'#f6ffed':'#fff1f0'};border-radius:4px">${c.pnlPct>=0?'+':''}${c.pnlPct.toFixed(1)}%</span>`:''}
+            <span style="font-size:12px;color:var(--muted)">¥${(c.value||0).toLocaleString('zh-CN',{maximumFractionDigits:0})}</span>
+          </div>
+          <div style="padding:8px 10px;background:#fff;border-radius:6px;border-left:3px solid #faad14">${reasonHtml}</div>
+          ${c.feeNote?`<div style="font-size:11px;color:var(--muted);margin-top:5px">${escHtml(c.feeNote)}</div>`:''}
+        </div>`;
+      }).join('')
+      + `</div>`;
 
   const rebalHtml = !hasRebal ? '' : rebalItems.map(s=>{
     const costNotWorth=s.costInfo&&!s.costInfo.worthIt;
@@ -1691,7 +1693,37 @@ function renderActionPanel(){
     </div>`;
 
   wrap.innerHTML=`<div class="card" style="margin-bottom:12px">
-    <div class="card-title"><span class="icon icon-blue">💡</span>操作建议</div>
+    <div class="card-title" style="display:flex;align-items:center;justify-content:space-between">
+      <span><span class="icon icon-blue">💡</span>行动建议</span>
+      <button class="help-btn" onclick="showHelpModal('💡 行动建议 · 理论依据', \`
+        <div style='margin-bottom:16px'>
+          <div style='font-size:14px;font-weight:700;color:var(--primary);margin-bottom:6px'>💰 加仓时机</div>
+          <div style='font-size:13px;color:#595959;line-height:1.8'>
+            · <b>市场阶段（phase）</b>：基于5类资产近期相对强弱推断动量状态，5年回测命中率60.6%<br>
+            · <b>PE百分位</b>：宽基指数估值百分位，Shiller CAPE研究证明估值对长期收益有预测力<br>
+            · <b>加仓方向</b>：用Risk Parity算法实时重算理论权重，对比实际持仓找出低配类别<br>
+            · <b>分批方式</b>：基于Vanguard 2012研究——低估值一次性优于分批，高估值分批优于一次性
+          </div>
+        </div>
+        <div style='margin-bottom:16px'>
+          <div style='font-size:14px;font-weight:700;color:#d48806;margin-bottom:6px'>📤 止盈 / 减仓</div>
+          <div style='font-size:13px;color:#595959;line-height:1.8'>
+            · <b>动态门槛</b>：市场高估值（PE&gt;70%）时门槛降至15%，正常市场25%——估值越高均值回归压力越大<br>
+            · <b>减仓金额范围</b>：只减浮动盈利的30%-60%，本金不动；不给精确数字避免虚假精确感<br>
+            · <b>再平衡周期</b>：提示距半年调仓周期还有多少天，依据：5年回测验证半年调仓最优（U型曲线）<br>
+            · <b>局限</b>：A股短期有动量效应，止盈信号在动量窗口内可能偏早触发
+          </div>
+        </div>
+        <div>
+          <div style='font-size:14px;font-weight:700;color:#cf1322;margin-bottom:6px'>🔄 换仓建议</div>
+          <div style='font-size:13px;color:#595959;line-height:1.8'>
+            · <b>触发条件</b>：结构性亏损 / 严重落后同类（Z&lt;-2.5σ）/ 回撤溢出 / 评分&lt;45，任一满足<br>
+            · <b>成本评估</b>：赎回费+申购费+回本期，回本期&lt;1.5年才建议换仓<br>
+            · <b>评分体系</b>：主动/指数用scoreF（Top-Bot差20-30pp有预测力），债券/QDII用混合评分（因scoreF对这两类R²≈0.002）
+          </div>
+        </div>
+      \`)" title="查看理论依据">?</button>
+    </div>
     ${sectionTitle('加仓时机','💰')}
     ${addHtml}
     ${sectionTitle('止盈 / 减仓','📤')}
