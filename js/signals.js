@@ -1508,19 +1508,35 @@ function renderActionPanel(){
       // 市场过热/估值偏高时门槛降至15%，正常市场25%
       const takeProfitThreshold = (phaseBad || valPricey) ? 15 : 25;
       if(pnlPct!==null&&pnlPct>=takeProfitThreshold&&(phaseBad||valPricey)){
-        const reduceRatio = pnlPct >= 25 ? 50 : 30;
-        const reduceAmt = Math.round(h.value * reduceRatio / 100 / 100) * 100; // 取整百
-        const afterAmt = Math.round(h.value - reduceAmt);
-        // 资金去向：根据 phase 给出建议
+        // 减仓金额：给范围（浮动盈利的 30%-60%），不给精确数字避免虚假精确
+        const profit = h.value - (h.amount||h.value);
+        const loAmt = Math.round(profit * 0.3 / 100) * 100;
+        const hiAmt = Math.round(profit * 0.6 / 100) * 100;
+        const amtHint = loAmt > 0 ? `（参考范围 ¥${loAmt.toLocaleString()}–¥${hiAmt.toLocaleString()}，具体根据资金需求决定）` : '';
+        // 再平衡周期提示：读取上次方案保存时间
+        let rebalHint = '';
+        try {
+          const scheme = loadMyHoldingScheme();
+          if(scheme && scheme.savedAt){
+            const daysSince = Math.floor((Date.now() - new Date(scheme.savedAt).getTime()) / 86400000);
+            const daysToNext = Math.max(0, 180 - daysSince); // 半年调仓周期
+            rebalHint = daysToNext <= 30
+              ? `距半年调仓周期仅剩 ${daysToNext} 天，可提前检视整体配置。`
+              : `距上次方案已 ${daysSince} 天，距半年调仓周期还有约 ${daysToNext} 天。`;
+          }
+        } catch(_){}
         const fundDest = phaseGood
-          ? '释放资金可重新生成智能方案，补充低配类别'
-          : '释放资金建议暂存货币基金或短债，等待更好时机';
-        reasons.push(`盈利 ${pnlPct.toFixed(1)}%，市场「${phaseResult.label}」估值偏高 → 建议减仓 ${reduceRatio}%（约 ¥${reduceAmt.toLocaleString()}），剩余 ¥${afterAmt.toLocaleString()}。${fundDest}`);
+          ? '释放资金可重新生成智能方案补充低配类别。'
+          : '释放资金建议暂存货币基金或短债，等待市场回调后重新配置。';
+        reasons.push(`盈利 ${pnlPct.toFixed(1)}%，市场「${phaseResult.label}」估值偏高，建议部分止盈${amtHint}。${fundDest}${rebalHint}`);
         priority=Math.max(priority,3);
       }
       if(pnlPct!==null&&pnlPct>=40){ const ann=holdDays>30?(Math.pow(1+pnlPct/100,365/holdDays)-1)*100:pnlPct; if(ann>20){
-        const reduceAmt = Math.round(h.value * 0.5 / 100) * 100;
-        reasons.push(`盈利 ${pnlPct.toFixed(1)}%（年化 ${ann.toFixed(0)}%）→ 建议减仓 50%（约 ¥${reduceAmt.toLocaleString()}），释放资金重新生成智能方案配置`); priority=Math.max(priority,2);
+        const profit = h.value - (h.amount||h.value);
+        const loAmt = Math.round(profit * 0.4 / 100) * 100;
+        const hiAmt = Math.round(profit * 0.7 / 100) * 100;
+        const amtHint = loAmt > 0 ? `（参考范围 ¥${loAmt.toLocaleString()}–¥${hiAmt.toLocaleString()}）` : '';
+        reasons.push(`盈利 ${pnlPct.toFixed(1)}%（年化 ${ann.toFixed(0)}%），年化收益已显著偏高，建议部分止盈${amtHint}，释放资金重新生成智能方案配置。`); priority=Math.max(priority,2);
       } }
       if(score<50&&bestAlt&&bestAlt.s>score+15){ reasons.push(`评分 ${score} 分，同类「${bestAlt.f.name}」${bestAlt.s} 分，建议换仓`); priority=Math.max(priority,2); }
       if(fd.r1<-5&&fd.r3<-10){ reasons.push(`近1年 ${fd.r1}%、近3年 ${fd.r3}%，持续下行，建议减仓止损`); priority=Math.max(priority,3); }
