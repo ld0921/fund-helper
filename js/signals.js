@@ -1484,12 +1484,55 @@ function renderActionPanel(){
   const equityPct = totalV>0 ? equityV/totalV*100 : 0;
   const concWarn = equityPct>70 ? `<div style="margin-top:4px;font-size:12px;color:#d48806">⚠️ 当前权益占比 ${equityPct.toFixed(0)}%，加仓前建议先检查持仓结构。</div>` : '';
 
+  // ── 加仓方向：对比理论权重 vs 实际持仓，找出低配类别 ──
+  let directionHint = '';
+  let batchHint = '';
+  try {
+    // 读取上次方案的风险偏好和期限，没有则用默认值
+    let riskP = 'balanced', horizon = 3;
+    const scheme = loadMyHoldingScheme();
+    if(scheme){ riskP = scheme.risk || riskP; horizon = scheme.horizon || horizon; }
+
+    // 用当前行情重算理论权重（不依赖保存的方案）
+    const theorWeights = computeWeights(riskP, horizon, catRanks, phaseResult);
+
+    // 计算实际各类别占比
+    const actual = {active:0,index:0,bond:0,money:0,qdii:0};
+    allHeld.forEach(h=>{
+      const fd=CURATED_FUNDS.find(f=>f.code===h.code);
+      if(fd&&actual[fd.cat]!==undefined) actual[fd.cat]+=(h.value||0);
+    });
+    const actualPct = {};
+    Object.keys(actual).forEach(k=>{ actualPct[k]=totalV>0?actual[k]/totalV*100:0; });
+
+    // 找出低配最多的类别（理论权重 - 实际占比，差值最大的）
+    const gaps = Object.keys(theorWeights)
+      .map(cat=>({ cat, gap: (theorWeights[cat]||0) - (actualPct[cat]||0) }))
+      .filter(x=>x.gap>5) // 低配超过5%才有意义
+      .sort((a,b)=>b.gap-a.gap);
+
+    if(gaps.length>0){
+      const top = gaps[0];
+      const catName = {active:'主动权益',index:'指数基金',bond:'债券',money:'货币',qdii:'QDII'}[top.cat]||top.cat;
+      directionHint = `<div style="margin-top:6px;font-size:12px;color:#595959">📌 <b>建议加仓方向</b>：当前${catName}低配（实际 ${actualPct[top.cat].toFixed(0)}% vs 理论 ${theorWeights[top.cat].toFixed(0)}%），优先补充该类别。</div>`;
+    }
+
+    // 分批建议：基于 PE 百分位（Vanguard 2012 研究：低估值一次性优于分批，高估值分批优于一次性）
+    if(avgValPct!==null){
+      if(avgValPct<40)      batchHint='可一次性买入（低估值区间，历史上一次性投入优于分批）。';
+      else if(avgValPct<60) batchHint='建议分 2 次买入，间隔 2-3 周（估值中性，分批降低时机风险）。';
+      else if(avgValPct<70) batchHint='建议分 3 次买入，间隔 3-4 周（估值偏高，分批摊薄成本）。';
+      else                  batchHint='建议分 4-6 次小额分批（估值偏高，降低一次性买入风险）。';
+    }
+    if(batchHint) directionHint += `<div style="margin-top:4px;font-size:12px;color:#595959">📌 <b>建议方式</b>：${batchHint}</div>`;
+  } catch(_){}
+
   const addHtml = `<div style="padding:12px 16px;border-bottom:1px solid #f0f0f0">
     <div style="display:flex;align-items:flex-start;gap:10px">
       <span style="font-size:13px;font-weight:700;color:${addColor};white-space:nowrap">${addSignal}</span>
       <div style="font-size:12px;color:#595959;line-height:1.6">${escHtml(addDesc)}</div>
     </div>
-    ${concWarn}
+    ${concWarn}${directionHint}
     <button onclick="switchTab(0)" style="margin-top:8px;padding:4px 12px;font-size:12px;background:var(--primary);color:#fff;border:none;border-radius:6px;cursor:pointer">生成加仓方案 →</button>
   </div>`;
 
