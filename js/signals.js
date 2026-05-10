@@ -1443,6 +1443,20 @@ function renderAllocOverview(){
   </div>`;
 }
 
+function recordTakeProfit(code, name){
+  try {
+    const log = JSON.parse(localStorage.getItem('_takeProfitLog') || '{}');
+    log[code] = new Date(Date.now()+8*3600000).toISOString().slice(0,10);
+    localStorage.setItem('_takeProfitLog', JSON.stringify(log));
+  } catch(_){}
+  showToast(`已记录「${name}」减仓操作，30天内不再重复提示`, 'success');
+  // 刷新面板 + 提示跳转
+  renderActionPanel();
+  setTimeout(()=>{
+    if(confirm('减仓后建议重新生成智能方案，配置释放的资金。现在跳转？')) switchTab(0);
+  }, 800);
+}
+
 // ═══════════════ 操作建议面板（调仓 + 止盈/减仓 + 加仓时机，统一优先级排序） ═══════════════
 function renderActionPanel(){
   const wrap = document.getElementById('action-panel-wrap');
@@ -1541,8 +1555,18 @@ function renderActionPanel(){
   </div>`;
 
   // ── B. 止盈/减仓候选（来自持仓） ──
+  // 读取止盈冷却记录（30天内已执行的不再触发）
+  let tpLog = {};
+  try { tpLog = JSON.parse(localStorage.getItem('_takeProfitLog') || '{}'); } catch(_){}
+  const today8 = new Date(Date.now()+8*3600000).toISOString().slice(0,10);
+
   const sellItems = [];
   allHeld.forEach(h=>{
+    // 冷却期检查：30天内已执行止盈的基金跳过
+    if(tpLog[h.code]){
+      const daysSince = Math.floor((Date.now()-new Date(tpLog[h.code]).getTime())/86400000);
+      if(daysSince < 30) return;
+    }
     const fd=CURATED_FUNDS.find(f=>f.code===h.code);
     // h.amount = 总成本金额，h.cost = 买入净值（单价），盈亏必须用总成本
     const pnlPct=h.amount>0?(h.value-h.amount)/h.amount*100:null;
@@ -1664,6 +1688,7 @@ function renderActionPanel(){
           </div>
           <div style="padding:8px 10px;background:#fff;border-radius:6px;border-left:3px solid #faad14">${reasonHtml}</div>
           ${c.feeNote?`<div style="font-size:11px;color:var(--muted);margin-top:5px">${escHtml(c.feeNote)}</div>`:''}
+          <button onclick="recordTakeProfit('${escHtml(c.code)}','${escHtml(c.name)}')" style="margin-top:8px;padding:3px 10px;font-size:11px;color:#595959;background:#f5f5f5;border:1px solid #d9d9d9;border-radius:5px;cursor:pointer">✅ 已执行减仓</button>
         </div>`;
       }).join('')
       + `</div>`;
