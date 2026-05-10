@@ -1507,8 +1507,21 @@ function renderActionPanel(){
       const bestAlt=sameCat[0];
       // 市场过热/估值偏高时门槛降至15%，正常市场25%
       const takeProfitThreshold = (phaseBad || valPricey) ? 15 : 25;
-      if(pnlPct!==null&&pnlPct>=takeProfitThreshold&&(phaseBad||valPricey)){ reasons.push(`盈利 ${pnlPct.toFixed(1)}%，市场「${phaseResult.label}」估值偏高，建议锁定部分利润`); priority=Math.max(priority,3); }
-      if(pnlPct!==null&&pnlPct>=40){ const ann=holdDays>30?(Math.pow(1+pnlPct/100,365/holdDays)-1)*100:pnlPct; if(ann>20){ reasons.push(`盈利 ${pnlPct.toFixed(1)}%（年化 ${ann.toFixed(0)}%），可考虑止盈 30-50%`); priority=Math.max(priority,2); } }
+      if(pnlPct!==null&&pnlPct>=takeProfitThreshold&&(phaseBad||valPricey)){
+        const reduceRatio = pnlPct >= 25 ? 50 : 30;
+        const reduceAmt = Math.round(h.value * reduceRatio / 100 / 100) * 100; // 取整百
+        const afterAmt = Math.round(h.value - reduceAmt);
+        // 资金去向：根据 phase 给出建议
+        const fundDest = phaseGood
+          ? '释放资金可重新生成智能方案，补充低配类别'
+          : '释放资金建议暂存货币基金或短债，等待更好时机';
+        reasons.push(`盈利 ${pnlPct.toFixed(1)}%，市场「${phaseResult.label}」估值偏高 → 建议减仓 ${reduceRatio}%（约 ¥${reduceAmt.toLocaleString()}），剩余 ¥${afterAmt.toLocaleString()}。${fundDest}`);
+        priority=Math.max(priority,3);
+      }
+      if(pnlPct!==null&&pnlPct>=40){ const ann=holdDays>30?(Math.pow(1+pnlPct/100,365/holdDays)-1)*100:pnlPct; if(ann>20){
+        const reduceAmt = Math.round(h.value * 0.5 / 100) * 100;
+        reasons.push(`盈利 ${pnlPct.toFixed(1)}%（年化 ${ann.toFixed(0)}%）→ 建议减仓 50%（约 ¥${reduceAmt.toLocaleString()}），释放资金重新生成智能方案配置`); priority=Math.max(priority,2);
+      } }
       if(score<50&&bestAlt&&bestAlt.s>score+15){ reasons.push(`评分 ${score} 分，同类「${bestAlt.f.name}」${bestAlt.s} 分，建议换仓`); priority=Math.max(priority,2); }
       if(fd.r1<-5&&fd.r3<-10){ reasons.push(`近1年 ${fd.r1}%、近3年 ${fd.r3}%，持续下行，建议减仓止损`); priority=Math.max(priority,3); }
     } else if(pnlPct!==null&&pnlPct<-15){
