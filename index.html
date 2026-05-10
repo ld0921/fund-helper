@@ -827,17 +827,11 @@
 <!-- ===================== 面板3: 持仓诊断 ===================== -->
 <div class="panel" id="panel3">
 
-  <!-- 区块A：持仓健康诊断 -->
+  <!-- 区块A：持仓总览（健康诊断 + 配比） -->
   <div id="health-monitor-wrap"></div>
 
-  <!-- 区块A2：加仓时机 + 止盈提示 -->
-  <div id="timing-advice-wrap"></div>
-
-  <!-- 区块B：当前持仓配比概览 -->
-  <div id="alloc-overview-wrap"></div>
-
-  <!-- 区块C：主动调仓建议 -->
-  <div id="diagnostics-rebal-wrap"></div>
+  <!-- 区块B：操作建议（调仓 + 止盈/减仓 + 加仓时机） -->
+  <div id="action-panel-wrap"></div>
 
   <!-- 区块C：市场行情概览 -->
   <div class="card" id="diag-market-card">
@@ -1547,9 +1541,7 @@ function switchTab(i){
   }
   if(i===3 && existingHoldings.length > 0){
     runHealthMonitor();
-    renderTimingAdvice();
-    renderAllocOverview();
-    renderDiagnostics();
+    renderActionPanel();
     renderDiagMarket();
   }
 }

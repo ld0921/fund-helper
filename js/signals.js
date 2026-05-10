@@ -875,10 +875,52 @@ function runHealthMonitor(){
     </div>
   </details>`;
 
+  // 配比概览（内联，作为健康诊断卡片的 header 补充）
+  const allocHtml = (()=>{
+    const actual = { active:0, index:0, bond:0, money:0, qdii:0 };
+    let actualTotal = 0;
+    existingHoldings.forEach(h => {
+      const fd = CURATED_FUNDS.find(f=>f.code===h.code);
+      const val = h.value || h.amount || 0;
+      if(fd && actual[fd.cat]!==undefined){ actual[fd.cat]+=val; actualTotal+=val; }
+    });
+    dcaPlans.forEach(d => {
+      if(existingHoldings.some(h=>h.code===d.code)) return;
+      const fd = CURATED_FUNDS.find(f=>f.code===d.code);
+      const val = d.curval||0;
+      if(fd && actual[fd.cat]!==undefined && val>0){ actual[fd.cat]+=val; actualTotal+=val; }
+    });
+    if(actualTotal===0) return '';
+    let scheme=null; try{ scheme=loadMyHoldingScheme(); }catch(_){}
+    const target={active:0,index:0,bond:0,money:0,qdii:0}; let targetTotal=0;
+    if(scheme&&scheme.picks) scheme.picks.forEach(p=>{ if(target[p.cat]!==undefined){target[p.cat]+=(p.pct||0);targetTotal+=(p.pct||0);} });
+    const catNames={active:'主动',index:'指数',bond:'债券',money:'货币',qdii:'QDII'};
+    const catColors={active:'#1677ff',index:'#52c41a',bond:'#faad14',money:'#13c2c2',qdii:'#722ed1'};
+    const rows=['active','index','bond','money','qdii'].map(cat=>{
+      if(actual[cat]===0&&(!scheme||target[cat]===0)) return '';
+      const ap=actualTotal>0?Math.round(actual[cat]/actualTotal*100):0;
+      const tp=targetTotal>0?Math.round(target[cat]/targetTotal*100):null;
+      const diff=tp!==null?ap-tp:null;
+      const diffStr=diff===null?'':diff>0?`<span style="color:#cf1322">+${diff}%</span>`:diff<0?`<span style="color:#1677ff">${diff}%</span>`:`<span style="color:#52c41a">持平</span>`;
+      return `<div style="display:flex;align-items:center;gap:8px;padding:4px 0">
+        <div style="width:36px;font-size:11px;color:#595959;flex-shrink:0">${catNames[cat]}</div>
+        <div style="flex:1;height:6px;background:#f0f0f0;border-radius:3px;overflow:hidden"><div style="height:100%;width:${Math.min(ap,100)}%;background:${catColors[cat]};border-radius:3px"></div></div>
+        <div style="width:28px;text-align:right;font-size:12px;font-weight:600;color:${catColors[cat]};flex-shrink:0">${ap}%</div>
+        <div style="width:52px;text-align:right;font-size:11px;flex-shrink:0">${tp!==null?`目标${tp}% `:''}${diffStr}</div>
+      </div>`;
+    }).filter(Boolean).join('');
+    const schemeNote=scheme?`对比目标：${scheme.savedAtDate} 方案`:'保存方案后可显示目标对比';
+    return `<div style="padding:10px 16px;border-top:1px solid #f0f0f0;background:#fafafa">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <span style="font-size:12px;font-weight:600;color:#595959">持仓配比 · 总市值 ¥${actualTotal.toLocaleString('zh-CN',{maximumFractionDigits:0})}</span>
+        <span style="font-size:11px;color:var(--muted)">${schemeNote}</span>
+      </div>${rows}</div>`;
+  })();
+
   wrap.innerHTML=`<details class="card ${headerClass} alert-card" style="cursor:pointer" ${hasIssues?'open':''}>
     <summary style="list-style:none;display:flex;align-items:center;justify-content:space-between;gap:8px">
       <div style="flex:1">
-        <div class="alert-card-title">${headerIcon} 持仓健康诊断 · ${holdings.length + dcaHoldings.length} 只基金</div>
+        <div class="alert-card-title">${headerIcon} 持仓总览 · ${holdings.length + dcaHoldings.length} 只基金</div>
         <div style="font-size:12px;color:var(--muted)">${headerMsg}</div>
       </div>
       <span class="toggle-arrow" style="font-size:12px;color:var(--primary);flex-shrink:0"></span>
@@ -887,6 +929,7 @@ function runHealthMonitor(){
     ${contentHtml}
     ${strategyHtml}
     </div>
+    ${allocHtml}
   </details>`;
 }
 
@@ -1397,6 +1440,163 @@ function renderAllocOverview(){
     </div>
     <div style="font-size:12px;color:var(--muted);margin-bottom:8px">总市值 ¥${actualTotal.toLocaleString('zh-CN',{maximumFractionDigits:0})}</div>
     ${rows}
+  </div>`;
+}
+
+// ═══════════════ 操作建议面板（调仓 + 止盈/减仓 + 加仓时机，统一优先级排序） ═══════════════
+function renderActionPanel(){
+  const wrap = document.getElementById('action-panel-wrap');
+  if(!wrap) return;
+
+  // ── A. 加仓时机信号 ──
+  const catRanks = typeof analyzeCategoryPerf === 'function' ? analyzeCategoryPerf() : [];
+  const phaseResult = inferMomentumPhase(catRanks);
+  const phase = phaseResult.phase;
+  const bondYield = (typeof MARKET_BENCHMARKS === 'object' && MARKET_BENCHMARKS._bondYield) || null;
+  const broadBaseIds = new Set(['000300','000905','000852','399006','000016','000985']);
+  const valPcts = Object.entries(INDEX_VALUATION).filter(([k])=>broadBaseIds.has(k)).map(([,v])=>v.pePct).filter(v=>v>0);
+  const avgValPct = valPcts.length ? valPcts.reduce((s,v)=>s+v,0)/valPcts.length : null;
+  const phaseGood = ['recovery','global_bull','recession'].includes(phase);
+  const phaseBad  = ['overheat','stagflation'].includes(phase);
+  const valCheap  = avgValPct !== null && avgValPct < 40;
+  const valPricey = avgValPct !== null && avgValPct > 70;
+
+  let addSignal, addColor, addDesc;
+  if(phaseGood && !valPricey){
+    addSignal='🟢 当前适合加仓'; addColor='#389e0d';
+    addDesc=`市场处于「${phaseResult.label}」阶段${valCheap?`，宽基估值偏低（PE均值 ${avgValPct.toFixed(0)}%）`:''}，加仓性价比较高。`;
+  } else if(phaseBad || valPricey){
+    addSignal='🔴 当前不建议加仓'; addColor='#cf1322';
+    addDesc=`市场处于「${phaseResult.label}」阶段${valPricey?`，宽基估值偏高（PE均值 ${avgValPct.toFixed(0)}%）`:''}，追加资金风险较高。`;
+  } else {
+    addSignal='🟡 当前时机中性'; addColor='#d48806';
+    addDesc=`市场处于「${phaseResult.label}」阶段${avgValPct!==null?`，宽基估值中性（PE均值 ${avgValPct.toFixed(0)}%）`:''}，可小额分批加仓。`;
+  }
+  if(bondYield!==null){
+    if(bondYield<2.3) addDesc+=` 国债收益率 ${bondYield.toFixed(2)}%（偏低），债券加仓性价比一般。`;
+    else if(bondYield>3.2) addDesc+=` 国债收益率 ${bondYield.toFixed(2)}%（偏高），债券具备配置价值。`;
+  }
+
+  // 权益超配警告
+  const allHeld = typeof existingHoldings !== 'undefined' ? existingHoldings : [];
+  const totalV = allHeld.reduce((s,h)=>s+(h.value||0),0);
+  const equityV = allHeld.reduce((s,h)=>{ const fd=CURATED_FUNDS.find(f=>f.code===h.code); return s+(['active','index','qdii'].includes(fd&&fd.cat)?(h.value||0):0); },0);
+  const equityPct = totalV>0 ? equityV/totalV*100 : 0;
+  const concWarn = equityPct>70 ? `<div style="margin-top:4px;font-size:12px;color:#d48806">⚠️ 当前权益占比 ${equityPct.toFixed(0)}%，加仓前建议先检查持仓结构。</div>` : '';
+
+  const addHtml = `<div style="padding:12px 16px;border-bottom:1px solid #f0f0f0">
+    <div style="display:flex;align-items:flex-start;gap:10px">
+      <span style="font-size:13px;font-weight:700;color:${addColor};white-space:nowrap">${addSignal}</span>
+      <div style="font-size:12px;color:#595959;line-height:1.6">${escHtml(addDesc)}</div>
+    </div>
+    ${concWarn}
+    <button onclick="switchTab(0)" style="margin-top:8px;padding:4px 12px;font-size:12px;background:var(--primary);color:#fff;border:none;border-radius:6px;cursor:pointer">生成加仓方案 →</button>
+  </div>`;
+
+  // ── B. 止盈/减仓候选（来自持仓） ──
+  const sellItems = [];
+  allHeld.forEach(h=>{
+    const fd=CURATED_FUNDS.find(f=>f.code===h.code);
+    const pnlPct=h.cost>0?(h.value-h.cost)/h.cost*100:null;
+    const holdDays=h.date?Math.floor((Date.now()-new Date(h.date).getTime())/86400000):0;
+    const reasons=[]; let priority=0;
+    if(fd){
+      const score=scoreF(fd);
+      const sameCat=CURATED_FUNDS.filter(f=>f.cat===fd.cat&&f.code!==fd.code).map(f=>({f,s:scoreF(f)})).sort((a,b)=>b.s-a.s);
+      const bestAlt=sameCat[0];
+      if(pnlPct!==null&&pnlPct>=25&&(phaseBad||valPricey)){ reasons.push(`盈利 ${pnlPct.toFixed(1)}%，市场「${phaseResult.label}」，建议锁定部分利润`); priority=Math.max(priority,3); }
+      if(pnlPct!==null&&pnlPct>=40){ const ann=holdDays>30?(Math.pow(1+pnlPct/100,365/holdDays)-1)*100:pnlPct; if(ann>20){ reasons.push(`盈利 ${pnlPct.toFixed(1)}%（年化 ${ann.toFixed(0)}%），可考虑止盈 30-50%`); priority=Math.max(priority,2); } }
+      if(score<50&&bestAlt&&bestAlt.s>score+15){ reasons.push(`评分 ${score} 分，同类「${bestAlt.f.name}」${bestAlt.s} 分，建议换仓`); priority=Math.max(priority,2); }
+      if(fd.r1<-5&&fd.r3<-10){ reasons.push(`近1年 ${fd.r1}%、近3年 ${fd.r3}%，持续下行，建议减仓止损`); priority=Math.max(priority,3); }
+    } else if(pnlPct!==null&&pnlPct<-15){
+      reasons.push(`亏损 ${Math.abs(pnlPct).toFixed(1)}%，已移出精选库，建议评估止损`); priority=2;
+    }
+    if(reasons.length){
+      const fee=holdDays<7?'1.50%':holdDays<30?'0.75%':holdDays<365?'0.50%':'0%';
+      sellItems.push({name:h.name,code:h.code,value:h.value,pnlPct,reasons,priority,feeNote:holdDays>0?`持有 ${holdDays} 天，赎回费约 ${fee}`:''});
+    }
+  });
+  sellItems.sort((a,b)=>b.priority-a.priority);
+
+  // ── C. 调仓建议（来自 renderDiagnostics 的逻辑，复用 evalList） ──
+  const evalList=[];
+  existingHoldings.forEach(h=>{
+    const curNav=navCache[h.code]?parseFloat(navCache[h.code].gsz)||1:1;
+    const cost=h.amount||0; const value=h.amount?(h.amount/(h.cost||curNav)*curNav):(h.value||0);
+    evalList.push({code:h.code,name:h.name,value,cost,source:'existing',date:h.date});
+  });
+  (typeof dcaPlans!=='undefined'?dcaPlans:[]).forEach(d=>{
+    if(evalList.some(x=>x.code===d.code)) return;
+    if(!d.curval||d.curval<=0) return;
+    const executedCount=d.execLog?Object.keys(d.execLog).filter(k=>d.execLog[k]).length:0;
+    const cost=executedCount>0?executedCount*d.monthly:Math.max(0,Math.floor((new Date()-new Date(d.start||Date.now()))/30/86400000))*d.monthly;
+    evalList.push({code:d.code,name:d.name,value:d.curval,cost,source:'dca',date:d.start});
+  });
+
+  const catStats={};
+  ['active','index','bond','money','qdii'].forEach(cat=>{
+    if(_catBench&&_catBench[cat]) catStats[cat]={avgR1:_catBench[cat].avgR1,stdR1:_catBench[cat].stdR1};
+    else { const fs=CURATED_FUNDS.filter(f=>f.cat===cat); if(!fs.length) return; const avg=fs.reduce((s,f)=>s+f.r1,0)/fs.length; catStats[cat]={avgR1:avg,stdR1:Math.sqrt(fs.reduce((s,f)=>s+(f.r1-avg)**2,0)/fs.length)||1}; }
+  });
+
+  const rebalItems=[];
+  evalList.forEach(h=>{
+    const fd=CURATED_FUNDS.find(f=>f.code===h.code); if(!fd) return;
+    const _useDca=(fd.cat==='bond'||fd.cat==='qdii');
+    const _score=f=>_useDca?calcDCAScore(f):scoreF(f);
+    const currentScore=_score(fd);
+    const stats=catStats[fd.cat]; const zScore=stats?(fd.r1-stats.avgR1)/stats.stdR1:0;
+    const isProblem=(fd.r1<-10&&fd.r3<-15)||(stats&&zScore<-2.5)||(fd.r1<0&&fd.maxDD>0&&(-fd.r1/fd.maxDD*100)>80)||currentScore<45;
+    if(!isProblem) return;
+    const sorted=CURATED_FUNDS.filter(f=>f.cat===fd.cat&&f.code!==fd.code).map(f=>({f,s:_score(f)})).sort((a,b)=>b.s-a.s);
+    const best=sorted[0];
+    if(!best) return;
+    const holdDays=h.date?Math.floor((Date.now()-new Date(h.date).getTime())/86400000):365;
+    const costInfo=typeof calculateRebalanceCost==='function'?calculateRebalanceCost(fd,best.f,holdDays,h.value):null;
+    rebalItems.push({h,fd,currentScore,best:best.f,bestScore:best.s,pnlPct:h.cost>0?(h.value-h.cost)/h.cost*100:null,source:h.source,costInfo});
+  });
+
+  // ── 合并渲染 ──
+  const hasSell=sellItems.length>0;
+  const hasRebal=rebalItems.length>0;
+
+  const sellHtml = !hasSell
+    ? `<div style="font-size:13px;color:var(--muted);padding:8px 0">当前持仓无明显止盈或减仓信号。</div>`
+    : sellItems.map(c=>`<div style="padding:8px 0;border-bottom:1px solid #f5f5f5">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
+          <span style="font-size:13px;font-weight:600">${escHtml(c.name)}</span>
+          ${c.pnlPct!==null?`<span style="font-size:12px;color:${c.pnlPct>=0?'#389e0d':'#cf1322'};font-weight:600">${c.pnlPct>=0?'+':''}${c.pnlPct.toFixed(1)}%</span>`:''}
+          <span style="font-size:12px;color:var(--muted)">¥${(c.value||0).toLocaleString('zh-CN',{maximumFractionDigits:0})}</span>
+        </div>
+        ${c.reasons.map(r=>`<div style="font-size:12px;color:#595959;padding-left:4px">· ${escHtml(r)}</div>`).join('')}
+        ${c.feeNote?`<div style="font-size:11px;color:var(--muted);padding-left:4px">${escHtml(c.feeNote)}</div>`:''}
+      </div>`).join('');
+
+  const rebalHtml = !hasRebal ? '' : rebalItems.map(s=>{
+    const costNotWorth=s.costInfo&&!s.costInfo.worthIt;
+    const actionLabel=costNotWorth?'👀 暂不建议换':s.source==='dca'?'🔄 换入定投':'🔄 建议换仓';
+    const costNote=s.costInfo?(costNotWorth
+      ?`<div style="font-size:11px;color:#d46b08;margin-top:3px">换仓成本 ${(s.costInfo.totalCostRate*100).toFixed(2)}%，需 ${s.costInfo.breakEvenYears<99?s.costInfo.breakEvenYears.toFixed(1)+'年':'极长'} 回本，当前不划算</div>`
+      :`<div style="font-size:11px;color:#389e0d;margin-top:3px">换仓成本 ${(s.costInfo.totalCostRate*100).toFixed(2)}%，预计 ${s.costInfo.breakEvenYears.toFixed(1)} 年回本，划算</div>`):'';
+    const actionStyle=costNotWorth?'color:var(--muted);background:#f5f5f5;border:1px solid #d9d9d9':'color:#d48806;background:#fff7e6;border:1px solid #ffd591';
+    return `<div style="padding:10px 0;border-bottom:1px solid #f5f5f5">
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        <span style="font-size:13px;font-weight:600;color:#cf1322;padding:3px 8px;background:#fff1f0;border:1px solid #ffccc7;border-radius:5px">${escHtml(s.fd.name)} <span style="font-size:11px;font-weight:400;color:var(--muted)">${s.currentScore}分</span></span>
+        <span style="color:var(--muted)">→</span>
+        <span style="font-size:13px;font-weight:600;color:#389e0d;padding:3px 8px;background:#f6ffed;border:1px solid #b7eb8f;border-radius:5px">${escHtml(s.best.name)} <span style="font-size:11px;font-weight:400;color:var(--muted)">${s.bestScore}分</span></span>
+        <span style="margin-left:auto;font-size:12px;font-weight:600;${actionStyle};padding:2px 8px;border-radius:5px;white-space:nowrap">${actionLabel}</span>
+      </div>
+      ${costNote}
+    </div>`;
+  }).join('');
+
+  wrap.innerHTML=`<div class="card" style="margin-bottom:12px">
+    <div class="card-title"><span class="icon icon-blue">💡</span>操作建议</div>
+    <div style="margin-bottom:4px;font-size:12px;font-weight:600;color:#595959">加仓时机</div>
+    ${addHtml}
+    <div style="margin:12px 0 4px;font-size:12px;font-weight:600;color:#595959">止盈 / 减仓</div>
+    ${sellHtml}
+    ${hasRebal?`<div style="margin:12px 0 4px;font-size:12px;font-weight:600;color:#595959">换仓建议</div>${rebalHtml}`:''}
   </div>`;
 }
 
