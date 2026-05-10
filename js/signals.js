@@ -1505,7 +1505,9 @@ function renderActionPanel(){
       const score=scoreF(fd);
       const sameCat=CURATED_FUNDS.filter(f=>f.cat===fd.cat&&f.code!==fd.code).map(f=>({f,s:scoreF(f)})).sort((a,b)=>b.s-a.s);
       const bestAlt=sameCat[0];
-      if(pnlPct!==null&&pnlPct>=25&&(phaseBad||valPricey)){ reasons.push(`盈利 ${pnlPct.toFixed(1)}%，市场「${phaseResult.label}」，建议锁定部分利润`); priority=Math.max(priority,3); }
+      // 市场过热/估值偏高时门槛降至15%，正常市场25%
+      const takeProfitThreshold = (phaseBad || valPricey) ? 15 : 25;
+      if(pnlPct!==null&&pnlPct>=takeProfitThreshold&&(phaseBad||valPricey)){ reasons.push(`盈利 ${pnlPct.toFixed(1)}%，市场「${phaseResult.label}」估值偏高，建议锁定部分利润`); priority=Math.max(priority,3); }
       if(pnlPct!==null&&pnlPct>=40){ const ann=holdDays>30?(Math.pow(1+pnlPct/100,365/holdDays)-1)*100:pnlPct; if(ann>20){ reasons.push(`盈利 ${pnlPct.toFixed(1)}%（年化 ${ann.toFixed(0)}%），可考虑止盈 30-50%`); priority=Math.max(priority,2); } }
       if(score<50&&bestAlt&&bestAlt.s>score+15){ reasons.push(`评分 ${score} 分，同类「${bestAlt.f.name}」${bestAlt.s} 分，建议换仓`); priority=Math.max(priority,2); }
       if(fd.r1<-5&&fd.r3<-10){ reasons.push(`近1年 ${fd.r1}%、近3年 ${fd.r3}%，持续下行，建议减仓止损`); priority=Math.max(priority,3); }
