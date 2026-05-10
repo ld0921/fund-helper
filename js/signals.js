@@ -1497,7 +1497,8 @@ function renderActionPanel(){
   const sellItems = [];
   allHeld.forEach(h=>{
     const fd=CURATED_FUNDS.find(f=>f.code===h.code);
-    const pnlPct=h.cost>0?(h.value-h.cost)/h.cost*100:null;
+    // h.amount = 总成本金额，h.cost = 买入净值（单价），盈亏必须用总成本
+    const pnlPct=h.amount>0?(h.value-h.amount)/h.amount*100:null;
     const holdDays=h.date?Math.floor((Date.now()-new Date(h.date).getTime())/86400000):0;
     const reasons=[]; let priority=0;
     if(fd){
