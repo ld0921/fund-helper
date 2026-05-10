@@ -1637,41 +1637,50 @@ function renderActionPanel(){
 
   const sellHtml = !hasSell
     ? `<div style="font-size:13px;color:var(--muted);padding:8px 0">当前持仓无明显止盈或减仓信号。</div>`
-    : sellItems.map(c=>`<div style="padding:8px 0;border-bottom:1px solid #f5f5f5">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
-          <span style="font-size:13px;font-weight:600">${escHtml(c.name)}</span>
-          ${c.pnlPct!==null?`<span style="font-size:12px;color:${c.pnlPct>=0?'#389e0d':'#cf1322'};font-weight:600">${c.pnlPct>=0?'+':''}${c.pnlPct.toFixed(1)}%</span>`:''}
-          <span style="font-size:12px;color:var(--muted)">¥${(c.value||0).toLocaleString('zh-CN',{maximumFractionDigits:0})}</span>
+    : sellItems.map(c=>`
+      <div style="padding:10px 12px;margin-bottom:8px;background:#fafafa;border-radius:8px;border:1px solid #f0f0f0">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <span style="font-size:14px;font-weight:700;color:#262626">${escHtml(c.name)}</span>
+          ${c.pnlPct!==null?`<span style="font-size:13px;font-weight:700;color:${c.pnlPct>=0?'#389e0d':'#cf1322'};padding:1px 7px;background:${c.pnlPct>=0?'#f6ffed':'#fff1f0'};border-radius:4px">${c.pnlPct>=0?'+':''}${c.pnlPct.toFixed(1)}%</span>`:''}
+          <span style="font-size:12px;color:var(--muted)">市值 ¥${(c.value||0).toLocaleString('zh-CN',{maximumFractionDigits:0})}</span>
         </div>
-        ${c.reasons.map(r=>`<div style="font-size:12px;color:#595959;padding-left:4px">· ${escHtml(r)}</div>`).join('')}
-        ${c.feeNote?`<div style="font-size:11px;color:var(--muted);padding-left:4px">${escHtml(c.feeNote)}</div>`:''}
+        <div style="font-size:12px;color:#595959;line-height:1.7;padding:6px 8px;background:#fff;border-radius:6px;border-left:3px solid #faad14">
+          ${c.reasons.map(r=>`<div>${escHtml(r)}</div>`).join('')}
+        </div>
+        ${c.feeNote?`<div style="font-size:11px;color:var(--muted);margin-top:5px">${escHtml(c.feeNote)}</div>`:''}
       </div>`).join('');
 
   const rebalHtml = !hasRebal ? '' : rebalItems.map(s=>{
     const costNotWorth=s.costInfo&&!s.costInfo.worthIt;
     const actionLabel=costNotWorth?'👀 暂不建议换':s.source==='dca'?'🔄 换入定投':'🔄 建议换仓';
     const costNote=s.costInfo?(costNotWorth
-      ?`<div style="font-size:11px;color:#d46b08;margin-top:3px">换仓成本 ${(s.costInfo.totalCostRate*100).toFixed(2)}%，需 ${s.costInfo.breakEvenYears<99?s.costInfo.breakEvenYears.toFixed(1)+'年':'极长'} 回本，当前不划算</div>`
-      :`<div style="font-size:11px;color:#389e0d;margin-top:3px">换仓成本 ${(s.costInfo.totalCostRate*100).toFixed(2)}%，预计 ${s.costInfo.breakEvenYears.toFixed(1)} 年回本，划算</div>`):'';
+      ?`<div style="font-size:11px;color:#d46b08;margin-top:5px;padding:4px 8px;background:#fff7e6;border-radius:4px">换仓成本 ${(s.costInfo.totalCostRate*100).toFixed(2)}%，需 ${s.costInfo.breakEvenYears<99?s.costInfo.breakEvenYears.toFixed(1)+'年':'极长'} 回本，当前不划算</div>`
+      :`<div style="font-size:11px;color:#389e0d;margin-top:5px;padding:4px 8px;background:#f6ffed;border-radius:4px">换仓成本 ${(s.costInfo.totalCostRate*100).toFixed(2)}%，预计 ${s.costInfo.breakEvenYears.toFixed(1)} 年回本，划算</div>`):'';
     const actionStyle=costNotWorth?'color:var(--muted);background:#f5f5f5;border:1px solid #d9d9d9':'color:#d48806;background:#fff7e6;border:1px solid #ffd591';
-    return `<div style="padding:10px 0;border-bottom:1px solid #f5f5f5">
+    return `<div style="padding:10px 12px;margin-bottom:8px;background:#fafafa;border-radius:8px;border:1px solid #f0f0f0">
       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
         <span style="font-size:13px;font-weight:600;color:#cf1322;padding:3px 8px;background:#fff1f0;border:1px solid #ffccc7;border-radius:5px">${escHtml(s.fd.name)} <span style="font-size:11px;font-weight:400;color:var(--muted)">${s.currentScore}分</span></span>
-        <span style="color:var(--muted)">→</span>
+        <span style="color:var(--muted);font-size:16px">→</span>
         <span style="font-size:13px;font-weight:600;color:#389e0d;padding:3px 8px;background:#f6ffed;border:1px solid #b7eb8f;border-radius:5px">${escHtml(s.best.name)} <span style="font-size:11px;font-weight:400;color:var(--muted)">${s.bestScore}分</span></span>
-        <span style="margin-left:auto;font-size:12px;font-weight:600;${actionStyle};padding:2px 8px;border-radius:5px;white-space:nowrap">${actionLabel}</span>
+        <span style="margin-left:auto;font-size:12px;font-weight:600;${actionStyle};padding:3px 10px;border-radius:5px;white-space:nowrap">${actionLabel}</span>
       </div>
       ${costNote}
     </div>`;
   }).join('');
 
+  const sectionTitle = (text, icon) =>
+    `<div style="display:flex;align-items:center;gap:6px;margin:14px 0 8px;padding-bottom:6px;border-bottom:2px solid #f0f0f0">
+      <span style="font-size:15px">${icon}</span>
+      <span style="font-size:14px;font-weight:700;color:#262626">${text}</span>
+    </div>`;
+
   wrap.innerHTML=`<div class="card" style="margin-bottom:12px">
     <div class="card-title"><span class="icon icon-blue">💡</span>操作建议</div>
-    <div style="margin-bottom:4px;font-size:12px;font-weight:600;color:#595959">加仓时机</div>
+    ${sectionTitle('加仓时机','💰')}
     ${addHtml}
-    <div style="margin:12px 0 4px;font-size:12px;font-weight:600;color:#595959">止盈 / 减仓</div>
+    ${sectionTitle('止盈 / 减仓','📤')}
     ${sellHtml}
-    ${hasRebal?`<div style="margin:12px 0 4px;font-size:12px;font-weight:600;color:#595959">换仓建议</div>${rebalHtml}`:''}
+    ${hasRebal?sectionTitle('换仓建议','🔄')+rebalHtml:''}
   </div>`;
 }
 
