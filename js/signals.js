@@ -206,18 +206,37 @@ function runSignalEngine(){
     if(duePlans.length > 0){
       const totalDue = duePlans.reduce((s,d)=>s+d.monthly,0);
       const planNames = duePlans.map(d=>`${d.name}(¥${d.monthly})`).join('、');
+      // 估值建议：基于宽基PE百分位给出方向性提示
+      const broadIds = new Set(['000300','000905','000852']);
+      const vPcts = Object.entries(INDEX_VALUATION||{}).filter(([k])=>broadIds.has(k)).map(([,v])=>v.pePct).filter(v=>v>0);
+      const avgPE = vPcts.length ? vPcts.reduce((s,v)=>s+v,0)/vPcts.length : null;
+      const phaseNow = (typeof inferMomentumPhase==='function' && catRanks) ? inferMomentumPhase(catRanks).phase : null;
+      let valuationHint = '';
+      if(avgPE !== null){
+        if(avgPE < 40) valuationHint = ` 当前宽基估值偏低（PE均值 ${avgPE.toFixed(0)}%），历史上此区间定投性价比较高，可考虑适当增加本月金额。`;
+        else if(avgPE > 70) valuationHint = ` 当前宽基估值偏高（PE均值 ${avgPE.toFixed(0)}%），可考虑适当减少本月金额或维持原额。`;
+        else if(['overheat','stagflation'].includes(phaseNow)) valuationHint = ` 当前市场处于「${phaseNow==='overheat'?'权益极端强势':'全面弱势'}」阶段，建议维持原定投金额，不宜追加。`;
+      }
       signals.push({type:'info', priority:4, code:'_dca_remind', name:'定投提醒',
         title:`📅 定投扣款提醒`,
-        desc:`${duePlans.length} 项定投即将扣款：${planNames}，合计 ¥${totalDue.toLocaleString()}。请确保支付宝余额充足。`,
+        desc:`${duePlans.length} 项定投即将扣款：${planNames}，合计 ¥${totalDue.toLocaleString()}。请确保支付宝余额充足。${valuationHint}`,
         action:'执行定投'
       });
     }
     // 月初总览提醒（1-2号）
     if(dayOfMonth <= 2){
       const totalMonthly = dcaPlans.reduce((s,d)=>s+d.monthly,0);
+      const broadIds2 = new Set(['000300','000905','000852']);
+      const vPcts2 = Object.entries(INDEX_VALUATION||{}).filter(([k])=>broadIds2.has(k)).map(([,v])=>v.pePct).filter(v=>v>0);
+      const avgPE2 = vPcts2.length ? vPcts2.reduce((s,v)=>s+v,0)/vPcts2.length : null;
+      let monthlyHint = '';
+      if(avgPE2 !== null){
+        if(avgPE2 < 40) monthlyHint = ` 当前宽基估值偏低（PE均值 ${avgPE2.toFixed(0)}%），本月可考虑适当增加定投金额。`;
+        else if(avgPE2 > 70) monthlyHint = ` 当前宽基估值偏高（PE均值 ${avgPE2.toFixed(0)}%），本月建议维持原额或适当减少。`;
+      }
       signals.push({type:'info', priority:5, code:'_dca_monthly', name:'本月定投总览',
         title:`📊 本月定投总览`,
-        desc:`共 ${dcaPlans.length} 项定投计划，本月需投入 ¥${totalMonthly.toLocaleString()}。坚持纪律是定投成功的关键。`,
+        desc:`共 ${dcaPlans.length} 项定投计划，本月需投入 ¥${totalMonthly.toLocaleString()}。坚持纪律是定投成功的关键。${monthlyHint}`,
         action:'查看计划'
       });
     }
