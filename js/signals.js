@@ -964,6 +964,7 @@ function runHealthMonitor(){
       <div style="flex:1">
         <div class="alert-card-title">${headerIcon} 持仓总览 · ${holdings.length + filteredDcaHoldings.length} 只基金</div>
         <div style="font-size:12px;color:var(--muted)">${headerMsg}</div>
+        ${mergedCodes.size > 0 ? `<div style="font-size:11px;color:var(--muted);margin-top:2px">· ${mergedCodes.size} 只基金同时有直购和定投，已合并为一条记录统一诊断</div>` : ''}
       </div>
       <span class="toggle-arrow" style="font-size:12px;color:var(--primary);flex-shrink:0"></span>
     </summary>
