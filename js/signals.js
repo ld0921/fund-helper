@@ -111,12 +111,18 @@ function runSignalEngine(){
     const overheated = catBench && catBench.stdR1 > 0 && fd.r1 > catBench.avgR1 + catBench.stdR1 * 1.5;
     if(chg >= 3 || (pnlPct !== null && pnlPct > 20 && overheated)){
       const triggerDesc = chg >= 3 ? `今日大涨 ${chg.toFixed(2)}%` : `近1年超涨（+${fd.r1}%，超同类均值${(fd.r1-catBench.avgR1).toFixed(1)}%）`;
+      // 检查操作建议面板的止盈冷却期：冷却期内降级提示，不屏蔽
+      let tpLog2 = {}; try{ tpLog2=JSON.parse(localStorage.getItem('_takeProfitLog')||'{}'); }catch(_){}
+      const tpDays = tpLog2[h.code] ? Math.floor((Date.now()-new Date(tpLog2[h.code]).getTime())/86400000) : 99;
+      const inTpCooldown = tpDays < 30;
       signals.push({type:'success', priority:2, code:h.code, name:h.name,
         title:`🚀 ${h.name} ${triggerDesc}`,
-        desc: pnlPct!==null && pnlPct > 20
-          ? `持仓已盈利 ${pnlPct.toFixed(1)}%，可考虑部分止盈锁定利润。`
-          : '涨幅可观，持续关注后续走势。',
-        action: pnlPct!==null && pnlPct>20 ? '💰 可部分止盈' : '✅ 继续持有'
+        desc: inTpCooldown
+          ? `${tpDays} 天前已记录减仓操作，继续观察后续走势。`
+          : pnlPct!==null && pnlPct > 20
+            ? `持仓已盈利 ${pnlPct.toFixed(1)}%，可考虑部分止盈锁定利润。`
+            : '涨幅可观，持续关注后续走势。',
+        action: inTpCooldown ? '👀 已有减仓记录' : pnlPct!==null && pnlPct>20 ? '💰 可部分止盈' : '✅ 继续持有'
       });
     }
 
