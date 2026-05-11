@@ -428,6 +428,21 @@ function runHealthMonitor(){
 
   if(!holdings.length && !dcaHoldings.length){ wrap.innerHTML=''; return; }
 
+  // 合并直购+定投重复基金：同一只基金既有直购又有定投时，合并为一条持仓记录
+  // 市值和成本相加，用持仓（严格）标准诊断，避免双重诊断和矛盾信号
+  const mergedCodes = new Set();
+  dcaHoldings.forEach(d => {
+    const existing = holdings.find(h => h.code === d.code);
+    if(existing){
+      existing.value += d.value;
+      existing.cost += d.cost;
+      existing.hasMergedDca = true;
+      mergedCodes.add(d.code);
+    }
+  });
+  const filteredDcaHoldings = dcaHoldings.filter(d => !mergedCodes.has(d.code));
+  if(!holdings.length && !filteredDcaHoldings.length){ wrap.innerHTML=''; return; }
+
   // 优先使用全市场基准（与 scoreF 的 _catBench 保持一致）
   const catStats = {};
   ['active','index','bond','money','qdii'].forEach(cat=>{
@@ -460,7 +475,7 @@ function runHealthMonitor(){
   // 集中度和总市值计算时去重（同一基金不重复计入）
   const uniqueHeld = [];
   const seenCodes = new Set();
-  [...holdings, ...dcaHoldings].forEach(h=>{
+  [...holdings, ...filteredDcaHoldings].forEach(h=>{
     if(!seenCodes.has(h.code)){ seenCodes.add(h.code); uniqueHeld.push(h); }
   });
   const totalPortValue = uniqueHeld.reduce((s,h)=>s+h.value,0);
@@ -641,7 +656,7 @@ function runHealthMonitor(){
   });
 
   // ========== 诊断定投基金（长期视角，宽松标准） ==========
-  dcaHoldings.forEach(h=>{
+  filteredDcaHoldings.forEach(h=>{
     const fd = CURATED_FUNDS.find(f=>f.code===h.code);
     const nav = navCache[h.code];
     // 非交易日（周末/节假日）的估值数据是上一交易日残留，不应作为"今日"展示
@@ -838,7 +853,7 @@ function runHealthMonitor(){
     const dcaHasIssues = dcaAlerts.length > 0;
     contentHtml += `<details class="diag-section" ${dcaHasIssues?'open':''}>
       <summary class="diag-header diag-header-dca">
-        <span class="diag-header-left">📈 定投基金诊断<span class="diag-count">（${dcaHoldings.length}只）</span></span>
+        <span class="diag-header-left">📈 定投基金诊断<span class="diag-count">（${filteredDcaHoldings.length}只）</span></span>
         <span class="diag-header-right">
           <span class="diag-badge${dcaHasIssues?'':' badge-ok'}">${dcaSummary}</span>
           <span class="diag-chevron">▸</span>
@@ -947,7 +962,7 @@ function runHealthMonitor(){
   wrap.innerHTML=`<details class="card ${headerClass} alert-card" style="cursor:pointer" ${hasIssues?'open':''}>
     <summary style="list-style:none;display:flex;align-items:center;justify-content:space-between;gap:8px">
       <div style="flex:1">
-        <div class="alert-card-title">${headerIcon} 持仓总览 · ${holdings.length + dcaHoldings.length} 只基金</div>
+        <div class="alert-card-title">${headerIcon} 持仓总览 · ${holdings.length + filteredDcaHoldings.length} 只基金</div>
         <div style="font-size:12px;color:var(--muted)">${headerMsg}</div>
       </div>
       <span class="toggle-arrow" style="font-size:12px;color:var(--primary);flex-shrink:0"></span>
