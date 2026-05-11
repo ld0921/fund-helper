@@ -1015,6 +1015,7 @@ function renderSignalItem(signal, timeStr){
     <div style="flex:1;min-width:0">
       <div style="font-size:13px;font-weight:600;color:${tc.color};margin-bottom:3px">${escHtml(signal.title)}</div>
       <div style="font-size:12px;color:var(--muted);line-height:1.6">${escHtml(signal.desc)}</div>
+      ${signal.desc2 ? `<div style="font-size:12px;color:#cf1322;line-height:1.6;margin-top:4px">${escHtml(signal.desc2)}</div>` : ''}
       ${timeStr ? `<div style="font-size:10px;color:var(--muted);margin-top:4px">已读时间: ${timeStr}</div>` : ''}
     </div>
     <div style="flex-shrink:0;font-size:12px;font-weight:600;color:${tc.color};padding:3px 8px;background:${tc.bg};border-radius:6px;white-space:nowrap">${escHtml(signal.action)}</div>

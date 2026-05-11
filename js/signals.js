@@ -219,7 +219,8 @@ function runSignalEngine(){
       }
       signals.push({type:'info', priority:4, code:'_dca_remind', name:'定投提醒',
         title:`📅 定投扣款提醒`,
-        desc:`${duePlans.length} 项定投即将扣款：${planNames}，合计 ¥${totalDue.toLocaleString()}。请确保支付宝余额充足。${valuationHint}`,
+        desc:`${duePlans.length} 项定投即将扣款：${planNames}，合计 ¥${totalDue.toLocaleString()}。请确保支付宝余额充足。`,
+        desc2: valuationHint.trim() || undefined,
         action:'执行定投'
       });
     }
@@ -236,7 +237,8 @@ function runSignalEngine(){
       }
       signals.push({type:'info', priority:5, code:'_dca_monthly', name:'本月定投总览',
         title:`📊 本月定投总览`,
-        desc:`共 ${dcaPlans.length} 项定投计划，本月需投入 ¥${totalMonthly.toLocaleString()}。坚持纪律是定投成功的关键。${monthlyHint}`,
+        desc:`共 ${dcaPlans.length} 项定投计划，本月需投入 ¥${totalMonthly.toLocaleString()}。坚持纪律是定投成功的关键。`,
+        desc2: monthlyHint.trim() || undefined,
         action:'查看计划'
       });
     }
