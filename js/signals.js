@@ -1502,7 +1502,10 @@ function renderActionPanel(){
           </div>
           <div style="padding:8px 10px;background:#fff;border-radius:6px;border-left:3px solid #faad14">${reasonHtml}</div>
           ${c.feeNote?`<div style="font-size:11px;color:var(--muted);margin-top:5px">${escHtml(c.feeNote)}</div>`:''}
-          <button onclick="recordTakeProfit('${escHtml(c.code)}','${escHtml(c.name)}')" style="margin-top:8px;padding:3px 10px;font-size:11px;color:#595959;background:#f5f5f5;border:1px solid #d9d9d9;border-radius:5px;cursor:pointer">✅ 已执行减仓</button>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
+            <button onclick="recordTakeProfit('${escHtml(c.code)}','${escHtml(c.name)}')" style="padding:3px 10px;font-size:11px;color:#fff;background:#52c41a;border:none;border-radius:5px;cursor:pointer">我已在支付宝完成减仓 →</button>
+            <span style="font-size:11px;color:var(--muted)">点击后30天内不再提示此基金止盈</span>
+          </div>
         </div>`;
       }).join('')
       + `</div>`;
