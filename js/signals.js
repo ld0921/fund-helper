@@ -1354,16 +1354,18 @@ function renderActionPanel(){
     if(batchHint) directionHint += `<div style="margin-top:4px;font-size:12px;color:#595959">📌 <b>建议方式</b>：${batchHint}</div>`;
   } catch(_){}
 
-  const addHtml = `<div style="padding:12px 16px;border-bottom:1px solid #f0f0f0">
-    <div style="margin-bottom:8px">
-      <span style="font-size:14px;font-weight:700;color:${addColor}">${addSignal}</span>
-      <div style="font-size:12px;color:#595959;margin-top:4px;line-height:1.6">${escHtml(addDesc)}</div>
+  const addHtml = `<div style="padding:10px 12px;background:#fafafa;border-radius:8px;border:1px solid #f0f0f0">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+      <span style="font-size:14px;font-weight:700;color:${addColor};padding:1px 8px;background:${addColor}15;border-radius:4px">${addSignal}</span>
     </div>
-    ${concWarn}
-    ${directionHint ? `<div style="margin-top:8px;padding:8px 10px;background:#f8f9fc;border-radius:6px">${directionHint}</div>` : ''}
-    <div style="display:flex;align-items:center;gap:8px;margin-top:10px">
-      <span style="font-size:12px;color:#595959">若决定加仓，可生成方案：</span>
-      <button onclick="switchTab(0)" style="padding:4px 12px;font-size:12px;background:var(--primary);color:#fff;border:none;border-radius:6px;cursor:pointer">跳转至智能方案 →</button>
+    <div style="padding:8px 10px;background:#fff;border-radius:6px;border-left:3px solid ${addColor}">
+      <div style="font-size:13px;font-weight:600;color:#262626;margin-bottom:3px">${escHtml(addDesc)}</div>
+      ${concWarn}
+      ${directionHint}
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
+      <span style="font-size:11px;color:var(--muted)">若决定加仓：</span>
+      <button onclick="switchTab(0)" style="padding:3px 10px;font-size:11px;color:#fff;background:var(--primary);border:none;border-radius:5px;cursor:pointer">跳转至智能方案 →</button>
     </div>
   </div>`;
 
