@@ -1444,6 +1444,7 @@ function renderAllocOverview(){
 }
 
 function recordTakeProfit(code, name){
+  if(!confirm(`确认已对「${name}」执行了减仓操作？\n\n确认后该基金将进入30天冷却期，不再重复提示止盈信号。`)) return;
   try {
     const log = JSON.parse(localStorage.getItem('_takeProfitLog') || '{}');
     log[code] = new Date(Date.now()+8*3600000).toISOString().slice(0,10);
