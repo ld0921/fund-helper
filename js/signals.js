@@ -1468,7 +1468,8 @@ function renderActionPanel(){
   const phaseResult = inferMomentumPhase(catRanks);
   const phase = phaseResult.phase;
   const bondYield = (typeof MARKET_BENCHMARKS === 'object' && MARKET_BENCHMARKS._bondYield) || null;
-  const broadBaseIds = new Set(['000300','000905','000852','399006','000016','000985']);
+  // PE均值只用沪深300+中证500+中证1000三个核心宽基，去掉创业板指避免系统性偏高
+  const broadBaseIds = new Set(['000300','000905','000852']);
   const valPcts = Object.entries(INDEX_VALUATION).filter(([k])=>broadBaseIds.has(k)).map(([,v])=>v.pePct).filter(v=>v>0);
   const avgValPct = valPcts.length ? valPcts.reduce((s,v)=>s+v,0)/valPcts.length : null;
   const phaseGood = ['recovery','global_bull','recession'].includes(phase);
@@ -1577,8 +1578,9 @@ function renderActionPanel(){
       const score=scoreF(fd);
       const sameCat=CURATED_FUNDS.filter(f=>f.cat===fd.cat&&f.code!==fd.code).map(f=>({f,s:scoreF(f)})).sort((a,b)=>b.s-a.s);
       const bestAlt=sameCat[0];
-      // 市场过热/估值偏高时门槛降至15%，正常市场25%
-      const takeProfitThreshold = (phaseBad || valPricey) ? 15 : 25;
+      // 赎回费高（持有<30天，费率≥0.75%）时止盈阈值上调5pp，避免短期持有被赎回费吃掉收益
+      const redeemFeeHigh = holdDays < 30;
+      const takeProfitThreshold = ((phaseBad || valPricey) ? 15 : 25) + (redeemFeeHigh ? 5 : 0);
       if(pnlPct!==null&&pnlPct>=takeProfitThreshold&&(phaseBad||valPricey)){
         // 减仓金额：给范围（浮动盈利的 30%-60%），不给精确数字避免虚假精确
         const profit = h.value - (h.amount||h.value);
