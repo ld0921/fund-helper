@@ -1412,25 +1412,25 @@ function renderActionPanel(){
     }
     if(batchHint) directionHint += `<div style="margin-top:4px;font-size:12px;color:#595959">📌 <b>建议方式</b>：${batchHint}</div>`;
 
-    // 加仓力度建议：phase + PE 双维度综合判断
-    // 强：低估值+偏多phase → 历史上此类组合加仓胜率最高
-    // 弱：高估值+偏空phase → 加仓风险最大
+    // 加仓力度建议：与加仓信号保持一致
+    // 信号"不建议加仓"时，力度上限为"弱"，避免与顶部信号矛盾
     let intensityLabel='', intensityColor='', intensityDesc='';
     const peScore = avgValPct===null ? 0 : avgValPct<40 ? 2 : avgValPct<60 ? 1 : avgValPct<70 ? 0 : -1;
     const phaseScore = phaseGood ? 2 : phaseBad ? -2 : 0;
     const totalScore = peScore + phaseScore;
-    if(totalScore >= 3){
+    const isNotRecommended = phaseBad || valPricey; // 与顶部"不建议加仓"信号一致
+    if(!isNotRecommended && totalScore >= 3){
       intensityLabel='💪 强'; intensityColor='#389e0d';
       intensityDesc='估值低+动量偏多，历史上此区间加仓胜率最高，可适当加大投入。';
-    } else if(totalScore >= 1){
+    } else if(!isNotRecommended && totalScore >= 1){
       intensityLabel='👍 中'; intensityColor='#1677ff';
       intensityDesc='市场条件尚可，正常力度加仓即可，无需刻意加大或减少。';
-    } else if(totalScore === 0){
-      intensityLabel='🤏 弱'; intensityColor='#d48806';
-      intensityDesc='市场信号中性，建议小额试探性加仓，保留更多子弹等待更好时机。';
-    } else {
+    } else if(totalScore <= -1 || (isNotRecommended && totalScore < 1)){
       intensityLabel='⚠️ 暂缓'; intensityColor='#cf1322';
       intensityDesc='估值偏高或动量偏空，建议暂缓加仓或仅维持定投，不宜追加大额资金。';
+    } else {
+      intensityLabel='🤏 弱'; intensityColor='#d48806';
+      intensityDesc='市场信号偏谨慎，建议小额试探性加仓，保留更多子弹等待更好时机。';
     }
     directionHint += `<div style="margin-top:6px;font-size:12px;color:#595959">📌 <b>建议加仓力度</b>：<span style="font-weight:700;color:${intensityColor}">${intensityLabel}</span> — ${intensityDesc}</div>`;
   } catch(_){}
