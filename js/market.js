@@ -144,6 +144,20 @@ function inferMomentumPhase(catRanks){
     }
   }
 
+  // 沪深300 200日均线修正：领先信号，提前识别牛熊转换
+  const sh300Ma200 = (typeof MARKET_BENCHMARKS === 'object' && MARKET_BENCHMARKS._sh300Ma200) || null;
+  if(sh300Ma200 !== null){
+    if(!sh300Ma200.above && sh300Ma200.deviation < -5){
+      // 跌破均线超过5%：提前进入防御，下调权益乘数
+      equityMult *= 0.95;
+      desc += ` 沪深300跌破200日均线（偏离 ${sh300Ma200.deviation}%），趋势转弱，适当降低权益敞口。`;
+    } else if(sh300Ma200.above && sh300Ma200.deviation > 5){
+      // 站上均线超过5%：趋势确认，小幅上调权益乘数
+      equityMult *= 1.03;
+      desc += ` 沪深300站上200日均线（偏离 +${sh300Ma200.deviation}%），趋势向好。`;
+    }
+  }
+
   // phase 确认期：新 phase 需连续出现2次才切换，防止频繁调仓
   const prevPhaseData = JSON.parse(localStorage.getItem('_phaseHistory') || '{}');
   const prevPhase = prevPhaseData.phase || phase;

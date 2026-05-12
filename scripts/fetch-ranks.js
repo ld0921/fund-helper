@@ -553,9 +553,37 @@ async function main() {
     console.log(`  债券基金近1年均收益: ${bondBench.avgR1.toFixed(2)}% → 推算利率环境: ${bondYield.toFixed(3)}%`);
   }
 
+  // ═══ 沪深300 200日均线（用于 inferMomentumPhase 领先信号） ═══
+  console.log('\n拉取沪深300历史净值（200日均线）…');
+  let sh300Ma200 = null;
+  try {
+    // 天天基金历史净值接口：沪深300ETF（510300）近250个交易日
+    const maUrl = 'https://api.fund.eastmoney.com/chart/fl?rtype=1&scode=510300&period=1&type=k&count=250&_=' + Date.now();
+    const maBody = await httpGetWithRetry(maUrl, {
+      'Referer': 'https://fund.eastmoney.com/',
+      'User-Agent': 'Mozilla/5.0'
+    }, 15000);
+    const maJson = JSON.parse(maBody);
+    const klines = (maJson.Data && maJson.Data.kline) ? maJson.Data.kline : null;
+    if (klines && klines.length >= 200) {
+      // 取收盘价序列
+      const closes = klines.map(k => parseFloat(k.split(',')[1])).filter(v => !isNaN(v));
+      if (closes.length >= 200) {
+        const ma200 = closes.slice(-200).reduce((s, v) => s + v, 0) / 200;
+        const price = closes[closes.length - 1];
+        const deviation = Math.round((price / ma200 - 1) * 1000) / 10; // 保留1位小数
+        sh300Ma200 = { price, ma200: Math.round(ma200 * 100) / 100, above: price >= ma200, deviation };
+        console.log(`  沪深300ETF: 当前 ${price}, 200日均线 ${sh300Ma200.ma200}, 偏离 ${deviation}%`);
+      }
+    }
+  } catch (e) {
+    console.warn('  沪深300均线拉取失败:', e.message);
+  }
+
   // 写入 curatedResult
   if (Object.keys(indexValuation).length > 0) curatedResult.indexValuation = indexValuation;
   if (bondYield !== null) curatedResult.bondYield = bondYield;
+  if (sh300Ma200 !== null) curatedResult.marketBenchmarks._sh300Ma200 = sh300Ma200;
 
   const curatedPath = path.join(outDir, 'curated-details.json');
   fs.writeFileSync(curatedPath, JSON.stringify(curatedResult, null, 2), 'utf-8');
