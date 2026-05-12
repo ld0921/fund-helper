@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-05-12T02:27:58.724Z",
+  "timestamp": "2026-05-12T02:58:55.916Z",
   "marketBenchmarks": {
     "active": {
       "avgR1": 222.81,
@@ -184,6 +184,12 @@
         18.76,
         8.63
       ]
+    },
+    "_sh300Ma200": {
+      "price": 4960.28,
+      "ma200": 4550.72,
+      "above": true,
+      "deviation": 9
     }
   },
   "funds": {
