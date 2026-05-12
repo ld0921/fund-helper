@@ -1298,10 +1298,33 @@ function recordTakeProfit(code, name){
     localStorage.setItem('_takeProfitLog', JSON.stringify(log));
   } catch(_){}
   showToast(`已记录「${name}」减仓操作，30天内不再重复提示`, 'success');
-  // 刷新面板 + 提示跳转
   renderActionPanel();
+
+  // 计算释放资金的配置建议：找当前组合低配最多的类别
   setTimeout(()=>{
-    if(confirm('减仓后建议重新生成智能方案，配置释放的资金。现在跳转？')) switchTab(0);
+    let suggestion = '';
+    try {
+      const allH = typeof existingHoldings !== 'undefined' ? existingHoldings : [];
+      const totalV = allH.reduce((s,h)=>s+(h.value||0),0);
+      if(totalV > 0 && typeof computeWeights === 'function'){
+        let riskP='balanced', horizon=3;
+        const scheme = loadMyHoldingScheme();
+        if(scheme){ riskP=scheme.risk||riskP; horizon=scheme.horizon||horizon; }
+        const catRanks = typeof analyzeCategoryPerf==='function' ? analyzeCategoryPerf() : [];
+        const phaseResult = typeof inferMomentumPhase==='function' ? inferMomentumPhase(catRanks) : {};
+        const theorW = computeWeights(riskP, horizon, catRanks, phaseResult);
+        const actual = {active:0,index:0,bond:0,money:0,qdii:0};
+        allH.forEach(h=>{ const fd=CURATED_FUNDS.find(f=>f.code===h.code); if(fd&&actual[fd.cat]!==undefined) actual[fd.cat]+=(h.value||0); });
+        const gaps = Object.keys(theorW)
+          .map(cat=>({cat, gap:(theorW[cat]||0)-actual[cat]/totalV*100}))
+          .filter(x=>x.gap>3).sort((a,b)=>b.gap-a.gap);
+        if(gaps.length>0){
+          const catName={active:'主动权益',index:'指数基金',bond:'债券',money:'货币',qdii:'QDII'}[gaps[0].cat]||gaps[0].cat;
+          suggestion = `\n\n📌 配置建议：当前${catName}低配 ${gaps[0].gap.toFixed(0)}%，建议将释放资金优先配置到该类别。`;
+        }
+      }
+    } catch(_){}
+    if(confirm(`减仓后建议重新生成智能方案，配置释放的资金。${suggestion}\n\n现在跳转至智能方案？`)) switchTab(0);
   }, 800);
 }
 
@@ -1388,6 +1411,28 @@ function renderActionPanel(){
       else                  batchHint='建议分 4-6 次小额分批（估值偏高，降低一次性买入风险）。';
     }
     if(batchHint) directionHint += `<div style="margin-top:4px;font-size:12px;color:#595959">📌 <b>建议方式</b>：${batchHint}</div>`;
+
+    // 加仓力度建议：phase + PE 双维度综合判断
+    // 强：低估值+偏多phase → 历史上此类组合加仓胜率最高
+    // 弱：高估值+偏空phase → 加仓风险最大
+    let intensityLabel='', intensityColor='', intensityDesc='';
+    const peScore = avgValPct===null ? 0 : avgValPct<40 ? 2 : avgValPct<60 ? 1 : avgValPct<70 ? 0 : -1;
+    const phaseScore = phaseGood ? 2 : phaseBad ? -2 : 0;
+    const totalScore = peScore + phaseScore;
+    if(totalScore >= 3){
+      intensityLabel='💪 强'; intensityColor='#389e0d';
+      intensityDesc='估值低+动量偏多，历史上此区间加仓胜率最高，可适当加大投入。';
+    } else if(totalScore >= 1){
+      intensityLabel='👍 中'; intensityColor='#1677ff';
+      intensityDesc='市场条件尚可，正常力度加仓即可，无需刻意加大或减少。';
+    } else if(totalScore === 0){
+      intensityLabel='🤏 弱'; intensityColor='#d48806';
+      intensityDesc='市场信号中性，建议小额试探性加仓，保留更多子弹等待更好时机。';
+    } else {
+      intensityLabel='⚠️ 暂缓'; intensityColor='#cf1322';
+      intensityDesc='估值偏高或动量偏空，建议暂缓加仓或仅维持定投，不宜追加大额资金。';
+    }
+    directionHint += `<div style="margin-top:6px;font-size:12px;color:#595959">📌 <b>建议加仓力度</b>：<span style="font-weight:700;color:${intensityColor}">${intensityLabel}</span> — ${intensityDesc}</div>`;
   } catch(_){}
 
   const addHtml = `<div style="padding:10px 12px;background:#fafafa;border-radius:8px;border:1px solid #f0f0f0">
