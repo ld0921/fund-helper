@@ -1303,8 +1303,6 @@ function recordTakeProfit(code, name){
     if(confirm('减仓后建议重新生成智能方案，配置释放的资金。现在跳转至智能方案？')) switchTab(0);
   }, 800);
 }
-  }, 800);
-}
 
 // ═══════════════ 操作建议面板（调仓 + 止盈/减仓 + 加仓时机，统一优先级排序） ═══════════════
 function renderActionPanel(){
