@@ -1425,7 +1425,7 @@ function renderActionPanel(){
     } else if(!isNotRecommended && totalScore >= 1){
       intensityLabel='👍 中'; intensityColor='#1677ff';
       intensityDesc='市场条件尚可，正常力度加仓即可，无需刻意加大或减少。';
-    } else if(totalScore <= -1 || (isNotRecommended && totalScore < 1)){
+    } else if(totalScore <= -1 || (isNotRecommended && totalScore <= 1)){
       intensityLabel='⚠️ 暂缓'; intensityColor='#cf1322';
       intensityDesc='估值偏高或动量偏空，建议暂缓加仓或仅维持定投，不宜追加大额资金。';
     } else {
