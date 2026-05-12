@@ -557,23 +557,20 @@ async function main() {
   console.log('\n拉取沪深300历史净值（200日均线）…');
   let sh300Ma200 = null;
   try {
-    // 天天基金历史净值接口：沪深300ETF（510300）近250个交易日
-    const maUrl = 'https://api.fund.eastmoney.com/chart/fl?rtype=1&scode=510300&period=1&type=k&count=250&_=' + Date.now();
-    const maBody = await httpGetWithRetry(maUrl, {
-      'Referer': 'https://fund.eastmoney.com/',
-      'User-Agent': 'Mozilla/5.0'
-    }, 15000);
+    const maUrl = 'https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=1.000300&fields1=f1,f2,f3,f4,f5,f6&fields2=f51,f52,f53,f54,f55,f56&klt=101&fqt=1&beg=20230101&end=29991231&lmt=300';
+    const maBody = await httpGetWithRetry(maUrl, { 'Referer': 'https://www.eastmoney.com/' }, 15000);
     const maJson = JSON.parse(maBody);
-    const klines = (maJson.Data && maJson.Data.kline) ? maJson.Data.kline : null;
+    const klines = maJson.data && maJson.data.klines;
     if (klines && klines.length >= 200) {
-      // 取收盘价序列
-      const closes = klines.map(k => parseFloat(k.split(',')[1])).filter(v => !isNaN(v));
+      // 格式：日期,开盘,收盘,最高,最低,...  收盘价在 index 2
+      const closes = klines.map(k => parseFloat(k.split(',')[2])).filter(v => !isNaN(v));
       if (closes.length >= 200) {
-        const ma200 = closes.slice(-200).reduce((s, v) => s + v, 0) / 200;
+        const recent = closes.slice(-200);
+        const ma200 = recent.reduce((s, v) => s + v, 0) / 200;
         const price = closes[closes.length - 1];
-        const deviation = Math.round((price / ma200 - 1) * 1000) / 10; // 保留1位小数
+        const deviation = Math.round((price / ma200 - 1) * 1000) / 10;
         sh300Ma200 = { price, ma200: Math.round(ma200 * 100) / 100, above: price >= ma200, deviation };
-        console.log(`  沪深300ETF: 当前 ${price}, 200日均线 ${sh300Ma200.ma200}, 偏离 ${deviation}%`);
+        console.log(`  沪深300: 当前 ${price}, 200日均线 ${sh300Ma200.ma200}, 偏离 ${deviation}%`);
       }
     }
   } catch (e) {
