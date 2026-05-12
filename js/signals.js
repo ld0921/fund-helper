@@ -1299,32 +1299,10 @@ function recordTakeProfit(code, name){
   } catch(_){}
   showToast(`已记录「${name}」减仓操作，30天内不再重复提示`, 'success');
   renderActionPanel();
-
-  // 计算释放资金的配置建议：找当前组合低配最多的类别
   setTimeout(()=>{
-    let suggestion = '';
-    try {
-      const allH = typeof existingHoldings !== 'undefined' ? existingHoldings : [];
-      const totalV = allH.reduce((s,h)=>s+(h.value||0),0);
-      if(totalV > 0 && typeof computeWeights === 'function'){
-        let riskP='balanced', horizon=3;
-        const scheme = loadMyHoldingScheme();
-        if(scheme){ riskP=scheme.risk||riskP; horizon=scheme.horizon||horizon; }
-        const catRanks = typeof analyzeCategoryPerf==='function' ? analyzeCategoryPerf() : [];
-        const phaseResult = typeof inferMomentumPhase==='function' ? inferMomentumPhase(catRanks) : {};
-        const theorW = computeWeights(riskP, horizon, catRanks, phaseResult);
-        const actual = {active:0,index:0,bond:0,money:0,qdii:0};
-        allH.forEach(h=>{ const fd=CURATED_FUNDS.find(f=>f.code===h.code); if(fd&&actual[fd.cat]!==undefined) actual[fd.cat]+=(h.value||0); });
-        const gaps = Object.keys(theorW)
-          .map(cat=>({cat, gap:(theorW[cat]||0)-actual[cat]/totalV*100}))
-          .filter(x=>x.gap>3).sort((a,b)=>b.gap-a.gap);
-        if(gaps.length>0){
-          const catName={active:'主动权益',index:'指数基金',bond:'债券',money:'货币',qdii:'QDII'}[gaps[0].cat]||gaps[0].cat;
-          suggestion = `\n\n📌 配置建议：当前${catName}低配 ${gaps[0].gap.toFixed(0)}%，建议将释放资金优先配置到该类别。`;
-        }
-      }
-    } catch(_){}
-    if(confirm(`减仓后建议重新生成智能方案，配置释放的资金。${suggestion}\n\n现在跳转至智能方案？`)) switchTab(0);
+    if(confirm('减仓后建议重新生成智能方案，配置释放的资金。现在跳转至智能方案？')) switchTab(0);
+  }, 800);
+}
   }, 800);
 }
 
