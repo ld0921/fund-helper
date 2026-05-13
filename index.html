@@ -2495,14 +2495,6 @@ async function autoRefreshOnLoad(){
   updateLastRefreshTime();
   updateNonTradingDayBanner();
 
-  // 从 IndexedDB 加载持仓数据和止盈记录到内存（页面刷新时恢复状态）
-  const data = await FundDB.getAll();
-  if(data.funds?.length) funds = data.funds;
-  if(data.existingHoldings?.length) existingHoldings = data.existingHoldings;
-  if(data.dcaPlans?.length) dcaPlans = data.dcaPlans;
-  if(data._takeProfitLog) _tpLogCache = data._takeProfitLog;
-  renderAll();
-
   const lastRefreshTime = await FundDB.get('lastNavRefreshTime') || 0;
   const now = Date.now();
   const diff = now - lastRefreshTime;
