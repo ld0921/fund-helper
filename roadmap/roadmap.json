@@ -3,9 +3,9 @@
     "project": "fund-helper 算法能力提升工程",
     "goal": "把算法从\"理论正确但未经证实\"升级为\"数据证明有效\"，在个人免费工具领域从 Top 5% 推进到 Top 1%",
     "startDate": "2026-04-17",
-    "lastUpdated": "2026-04-17T22:00:00+08:00",
+    "lastUpdated": "2026-05-13T00:00:00+08:00",
     "currentPhase": "phase-4",
-    "commitHash": "eeff5d5"
+    "commitHash": "221e46c"
   },
   "phases": [
     {
@@ -284,7 +284,16 @@
         {
           "id": "4.3",
           "name": "新因子 A/B 回测机制（加任何新因子前先回测验证）",
-          "status": "pending"
+          "status": "completed",
+          "completedDate": "2026-05-13",
+          "outputs": [
+            { "type": "file", "label": "backtest/runFactorAB.js（三因子 A/B 对比框架）", "path": "backtest/runFactorAB.js" },
+            { "type": "file", "label": "backtest/factor-ab-results.json（最新跑批结果）", "path": "backtest/factor-ab-results.json" },
+            { "type": "result", "label": "ma200：中性（夏普 -0.011），不影响选基，保留" },
+            { "type": "result", "label": "calmar1y：❌ 有害（夏普 -0.079，累计 -4.2pp）；生产有 sigmoid 保护，实际影响更小，保留观察" },
+            { "type": "result", "label": "pe3：回测框架无法区分（PE 调整不进入 composite 路径），逻辑正确保留" },
+            { "type": "note", "label": "用法: node backtest/runFactorAB.js [--factor=ma200|calmar1y|pe3] [--start=YYYY-MM-DD]" }
+          ]
         },
         {
           "id": "4.4",

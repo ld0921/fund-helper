@@ -344,6 +344,16 @@ function computeStatsAtT(navs, t) {
     }
   });
 
+  // 近 1 年最大回撤
+  let peak1y = 0, maxDD1y = 0;
+  navs1y.forEach(p => {
+    if (p.nav > peak1y) peak1y = p.nav;
+    if (peak1y > 0) {
+      const dd = (peak1y - p.nav) / peak1y * 100;
+      if (dd > maxDD1y) maxDD1y = dd;
+    }
+  });
+
   // 全期最大回撤（简化为近 3 年）
   const maxDD = maxDD3y;
 
@@ -361,7 +371,7 @@ function computeStatsAtT(navs, t) {
     if (prev > 0) monthlyReturns.push((cur / prev - 1) * 100);
   }
 
-  return { r1, r3, maxDD, maxDD3y, monthlyReturns };
+  return { r1, r3, maxDD, maxDD3y, maxDD1y, monthlyReturns };
 }
 
 // 构建 MARKET_BENCHMARKS：按类别对 r1/r3/maxDD 做平均，构造 monthlyReturns 序列

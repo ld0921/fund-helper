@@ -1,0 +1,82 @@
+{
+  "generatedAt": "2026-05-13T01:50:26.034Z",
+  "startDate": "2022-05-31",
+  "endDate": "2026-03-31",
+  "results": {
+    "ma200": {
+      "factor": "200日均线 equityMult 修正",
+      "desc": "跌破均线>5% → equityMult×0.95；站上均线>5% → equityMult×1.03",
+      "control": {
+        "sharpe": 0.505,
+        "maxDD": 12.48,
+        "cumReturn": 25.49,
+        "annReturn": 6.24,
+        "months": 45
+      },
+      "treatment": {
+        "sharpe": 0.494,
+        "maxDD": 12.73,
+        "cumReturn": 25.07,
+        "annReturn": 6.15,
+        "months": 45
+      },
+      "diff": {
+        "sharpe": -0.011,
+        "maxDD": 0.25,
+        "cumReturn": -0.42,
+        "annReturn": -0.09
+      },
+      "verdict": "⚠️  中性"
+    },
+    "calmar1y": {
+      "factor": "Calmar 短期 maxDD1y 对齐",
+      "desc": "scoreF calmarShort 用 r1/maxDD1y 替代 r1/maxDD3y",
+      "control": {
+        "sharpe": 0.584,
+        "maxDD": 12.78,
+        "cumReturn": 29.69,
+        "annReturn": 7.18,
+        "months": 45
+      },
+      "treatment": {
+        "sharpe": 0.505,
+        "maxDD": 12.48,
+        "cumReturn": 25.49,
+        "annReturn": 6.24,
+        "months": 45
+      },
+      "diff": {
+        "sharpe": -0.079,
+        "maxDD": -0.3,
+        "cumReturn": -4.2,
+        "annReturn": -0.94
+      },
+      "verdict": "❌ 有害"
+    },
+    "pe3": {
+      "factor": "PE百分位宽基3指数修正",
+      "desc": "去掉399006(创业板)：control=创业板基金受PE调整，treatment=不受PE调整",
+      "control": {
+        "sharpe": 0.505,
+        "maxDD": 12.48,
+        "cumReturn": 25.49,
+        "annReturn": 6.24,
+        "months": 45
+      },
+      "treatment": {
+        "sharpe": 0.505,
+        "maxDD": 12.48,
+        "cumReturn": 25.49,
+        "annReturn": 6.24,
+        "months": 45
+      },
+      "diff": {
+        "sharpe": 0,
+        "maxDD": 0,
+        "cumReturn": 0,
+        "annReturn": 0
+      },
+      "verdict": "⚠️  中性"
+    }
+  }
+}
