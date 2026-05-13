@@ -164,9 +164,15 @@ function redeemHolding(i){
   arrivalDate.setDate(arrivalDate.getDate() + arrivalDays);
   const arrivalDateStr = arrivalDate.toISOString().slice(0,10);
 
-  const holdInfo=getHoldingDaysInfo(h.date, h.code);  const feeNote=holdInfo.fee!=='0%'?`\n⚠️ 当前赎回费率：${holdInfo.fee}（已持有${holdInfo.days}天）${holdInfo.nextTier?'\n💡 '+holdInfo.nextTier:''}`:'';
-  const label = h.shares ? `当前${h.shares.toFixed(4)}份，输入要赎回的份额数` : `当前市值约¥${(h.value||0).toLocaleString()}，输入要赎回的金额`;
-  openModal(`赎回「${h.name}」— ${label}\n\n⏱ 预计${arrivalTime}${feeNote}`, '', function(val){
+  const holdInfo=getHoldingDaysInfo(h.date, h.code);
+  const label = h.shares ? `输入要赎回的份额数` : `输入要赎回的金额（元）`;
+  const subLabel = h.shares ? `当前持有 <b>${h.shares.toFixed(4)}</b> 份` : `当前市值约 <b>¥${(h.value||0).toLocaleString()}</b>`;
+  const feeRow = holdInfo.fee!=='0%'
+    ? `<div style="display:flex;align-items:center;gap:6px;padding:8px 10px;background:rgba(250,173,20,.08);border-radius:6px;border-left:3px solid var(--warning)"><span style="color:var(--warning);font-weight:600">赎回费 ${holdInfo.fee}</span><span style="color:var(--muted)">· 已持有 ${holdInfo.days} 天${holdInfo.nextTier?` · <span style="color:var(--primary)">${holdInfo.nextTier}</span>`:''}</span></div>`
+    : `<div style="color:var(--success);font-size:12px">免赎回费</div>`;
+  const bodyHtml = `${subLabel}<div style="height:10px"></div><div style="display:flex;align-items:center;gap:6px;color:var(--muted)"><span>预计到账</span><b style="color:var(--text)">${arrivalTime}</b></div><div style="height:8px"></div>${feeRow}`;
+  const inp2=document.getElementById('modal-input'); if(inp2) inp2.placeholder=label;
+  openModal(`赎回「${h.name}」`, '', function(val){
     const redeemVal = parseFloat(val);
     if(!redeemVal || redeemVal <= 0){ showToast('请输入有效的赎回数量','error'); return; }
     if(h.shares && h.shares > 0){
@@ -203,7 +209,7 @@ function redeemHolding(i){
     }
     FundDB.set('existingHoldings', existingHoldings); markHoldingsChanged();
     renderExistingHoldings(); renderDcaPlans(); runHealthMonitor(); renderTodayOverview(); runSignalEngine();
-  });
+  }, bodyHtml);
 }
 function removeExistingHolding(i){
   const h=existingHoldings[i];

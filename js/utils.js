@@ -58,9 +58,11 @@ function escHtml(s){
 }
 function stars(n){ return '★'.repeat(n)+'☆'.repeat(5-n); }
 function fmtR(v){ if(v==null) return '--'; const c=v>0?'up':v<0?'down':'neutral'; const arrow=v>0?' ▲':v<0?' ▼':''; return `<span class="${c}">${v>0?'+':''}${v}%${arrow}</span>`; }
-function openModal(title,defaultVal,cb){
+function openModal(title,defaultVal,cb,bodyHtml){
   _modalCb=cb;
   document.getElementById('modal-title').textContent=title;
+  const body=document.getElementById('modal-body');
+  if(bodyHtml){ body.innerHTML=bodyHtml; body.style.display='block'; } else { body.style.display='none'; body.innerHTML=''; }
   const inp=document.getElementById('modal-input');
   inp.value=defaultVal||'';
   const mask=document.getElementById('modal-mask');
@@ -71,7 +73,7 @@ function openModal(title,defaultVal,cb){
 function closeModal(){
   const mask=document.getElementById('modal-mask');
   mask.classList.remove('show');
-  setTimeout(()=>{mask.style.display='none'; document.getElementById('modal-input').value='';},200);
+  setTimeout(()=>{mask.style.display='none'; document.getElementById('modal-input').value=''; const b=document.getElementById('modal-body'); b.style.display='none'; b.innerHTML='';},200);
   _modalCb=null;
 }
 function confirmModal(){
