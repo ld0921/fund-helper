@@ -221,6 +221,7 @@ async function applyCloudData(cloudData, version){
   dcaPlans = data.dcaPlans || [];
   navCache = data.navCache || {};
   window._myHoldingScheme = data.myHoldingScheme || null;
+  if(data._takeProfitLog) _tpLogCache = data._takeProfitLog;
   _cloudVersion = version;
   renderAll();
   showToast('已从云端同步最新数据','success');
