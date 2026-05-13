@@ -991,6 +991,7 @@ function runHealthMonitor(){
     existingHoldings = data.existingHoldings || [];
     dcaPlans = data.dcaPlans || [];
     navCache = data.navCache || {};
+    if(data._takeProfitLog && typeof data._takeProfitLog === 'object' && !Array.isArray(data._takeProfitLog)) _tpLogCache = data._takeProfitLog;
     // 如果有缓存的净值数据，设置 navRefreshed 标志
     if(Object.keys(navCache).length > 0){
       navRefreshed = true;

@@ -62,8 +62,9 @@ const FundDB = (function(){
       const result = {};
       const pending = DATA_KEYS.map(key => new Promise(res => {
         const req = store.get(key);
-        req.onsuccess = () => { result[key] = req.result || (key==='navCache'?{}:[]); res(); };
-        req.onerror = () => { result[key] = key==='navCache'?{}:[]; res(); };
+        const objKeys = ['navCache','_takeProfitLog'];
+        req.onsuccess = () => { result[key] = req.result || (objKeys.includes(key)?{}:[]); res(); };
+        req.onerror = () => { result[key] = objKeys.includes(key)?{}:[]; res(); };
       }));
       Promise.all(pending).then(() => resolve(result));
     }));
