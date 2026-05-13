@@ -1443,7 +1443,8 @@ function renderActionPanel(){
     const reasons=[]; let priority=0;
     if(fd){
       const score=scoreF(fd);
-      const sameCat=CURATED_FUNDS.filter(f=>f.cat===fd.cat&&f.code!==fd.code).map(f=>({f,s:scoreF(f)})).sort((a,b)=>b.s-a.s);
+      const _bondHigh = fd.cat==='bond' && fd.maxDD>=25;
+      const sameCat=CURATED_FUNDS.filter(f=>f.cat===fd.cat&&f.code!==fd.code&&(fd.cat!=='bond'||(f.maxDD>=25)===_bondHigh)).map(f=>({f,s:scoreF(f)})).sort((a,b)=>b.s-a.s);
       const bestAlt=sameCat[0];
       // 赎回费高（持有<30天，费率≥0.75%）时止盈阈值上调5pp，避免短期持有被赎回费吃掉收益
       const redeemFeeHigh = holdDays < 30;
@@ -1525,7 +1526,8 @@ function renderActionPanel(){
     const stats=catStats[fd.cat]; const zScore=stats?(fd.r1-stats.avgR1)/stats.stdR1:0;
     const isProblem=(fd.r1<-10&&fd.r3<-15)||(stats&&zScore<-2.5)||(fd.r1<0&&fd.maxDD>0&&(-fd.r1/fd.maxDD*100)>80)||currentScore<45;
     if(!isProblem) return;
-    const sorted=CURATED_FUNDS.filter(f=>f.cat===fd.cat&&f.code!==fd.code).map(f=>({f,s:_score(f)})).sort((a,b)=>b.s-a.s);
+    const _bondHigh2 = fd.cat==='bond' && fd.maxDD>=25;
+    const sorted=CURATED_FUNDS.filter(f=>f.cat===fd.cat&&f.code!==fd.code&&(fd.cat!=='bond'||(f.maxDD>=25)===_bondHigh2)).map(f=>({f,s:_score(f)})).sort((a,b)=>b.s-a.s);
     const best=sorted[0];
     if(!best) return;
     const holdDays=h.date?Math.floor((Date.now()-new Date(h.date).getTime())/86400000):365;
