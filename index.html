@@ -1536,7 +1536,10 @@ function switchTab(i){
   }
   if(i===3 && existingHoldings.length > 0){
     runHealthMonitor();
-    renderActionPanel();
+    FundDB.get('_takeProfitLog').then(v => {
+      if(v && typeof v === 'object' && !Array.isArray(v)) _tpLogCache = v;
+      renderActionPanel();
+    });
     renderDiagMarket();
   }
 }
