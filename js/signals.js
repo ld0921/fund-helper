@@ -1484,7 +1484,6 @@ function renderActionPanel(){
         reasons.push({main:`年化收益 ${ann.toFixed(0)}%，已显著偏高，建议部分止盈`,amt:loAmt>0?`参考范围 ¥${loAmt.toLocaleString()}–¥${hiAmt.toLocaleString()}`:'',dest:'释放资金重新生成智能方案配置',rebal:''});
         priority=Math.max(priority,2);
       } }
-      if(score<50&&bestAlt&&bestAlt.s>score+15){ reasons.push({main:`评分 ${score} 分，同类「${bestAlt.f.name}」${bestAlt.s} 分，建议换仓`,amt:'',dest:'',rebal:''}); priority=Math.max(priority,2); }
       if(fd.r1<-5&&fd.r3<-10){ reasons.push({main:`近1年 ${fd.r1}%、近3年 ${fd.r3}%，持续下行`,amt:'',dest:'建议减仓止损',rebal:''}); priority=Math.max(priority,3); }
     } else if(pnlPct!==null&&pnlPct<-15){
       reasons.push({main:`亏损 ${Math.abs(pnlPct).toFixed(1)}%，已移出精选库`,amt:'',dest:'建议评估止损',rebal:''}); priority=2;
