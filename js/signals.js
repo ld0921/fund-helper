@@ -1627,7 +1627,8 @@ function renderActionPanel(){
     ${addHtml}
     ${sectionTitle('止盈 / 减仓','📤')}
     ${sellHtml}
-    ${hasRebal?sectionTitle('换仓建议','🔄')+rebalHtml:''}
+    ${sectionTitle('换仓建议','🔄')}
+    ${hasRebal?rebalHtml:`<div style="font-size:13px;color:var(--muted);padding:8px 0">当前持仓无明显换仓信号。</div>`}
   </div>`;
 }
 
