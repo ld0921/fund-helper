@@ -1299,9 +1299,6 @@ function recordTakeProfit(code, name){
   } catch(_){}
   showToast(`已记录「${name}」减仓操作，30天内不再重复提示`, 'success');
   renderActionPanel();
-  setTimeout(()=>{
-    if(confirm('减仓后建议重新生成智能方案，配置释放的资金。现在跳转至智能方案？')) switchTab(0);
-  }, 800);
 }
 
 // ═══════════════ 操作建议面板（调仓 + 止盈/减仓 + 加仓时机，统一优先级排序） ═══════════════
