@@ -1,5 +1,4 @@
 // ═══ 信号引擎与健康监控模块 ═══
-let _tpLogCache = {};
 function runSignalEngine(){
   // 检查净值数据新鲜度：如果缓存数据超过1天，不运行信号引擎（避免使用过期数据）
   const lastRefreshTime = localStorage.getItem('lastNavRefreshTime');
@@ -113,7 +112,8 @@ function runSignalEngine(){
     if(chg >= 3 || (pnlPct !== null && pnlPct > 20 && overheated)){
       const triggerDesc = chg >= 3 ? `今日大涨 ${chg.toFixed(2)}%` : `近1年超涨（+${fd.r1}%，超同类均值${(fd.r1-catBench.avgR1).toFixed(1)}%）`;
       // 检查操作建议面板的止盈冷却期：冷却期内降级提示，不屏蔽
-      const tpDays = _tpLogCache[h.code] ? Math.floor((Date.now()-new Date(_tpLogCache[h.code]).getTime())/86400000) : 99;
+      let tpLog2 = {}; try{ tpLog2=JSON.parse(localStorage.getItem('_takeProfitLog')||'{}'); }catch(_){}
+      const tpDays = tpLog2[h.code] ? Math.floor((Date.now()-new Date(tpLog2[h.code]).getTime())/86400000) : 99;
       const inTpCooldown = tpDays < 30;
       signals.push({type:'success', priority:2, code:h.code, name:h.name,
         title:`🚀 ${h.name} ${triggerDesc}`,
@@ -991,7 +991,6 @@ function runHealthMonitor(){
     existingHoldings = data.existingHoldings || [];
     dcaPlans = data.dcaPlans || [];
     navCache = data.navCache || {};
-    if(data._takeProfitLog && typeof data._takeProfitLog === 'object' && !Array.isArray(data._takeProfitLog)) _tpLogCache = data._takeProfitLog;
     // 如果有缓存的净值数据，设置 navRefreshed 标志
     if(Object.keys(navCache).length > 0){
       navRefreshed = true;
@@ -1293,8 +1292,11 @@ function renderAllocOverview(){
 
 function recordTakeProfit(code, name){
   if(!confirm(`确认已对「${name}」执行了减仓操作？\n\n确认后该基金将进入30天冷却期，不再重复提示止盈信号。`)) return;
-  _tpLogCache[code] = new Date(Date.now()+8*3600000).toISOString().slice(0,10);
-  FundDB.set('_takeProfitLog', _tpLogCache);
+  try {
+    const log = JSON.parse(localStorage.getItem('_takeProfitLog') || '{}');
+    log[code] = new Date(Date.now()+8*3600000).toISOString().slice(0,10);
+    localStorage.setItem('_takeProfitLog', JSON.stringify(log));
+  } catch(_){}
   showToast(`已记录「${name}」减仓操作，30天内不再重复提示`, 'success');
   renderActionPanel();
 }
@@ -1423,7 +1425,8 @@ function renderActionPanel(){
 
   // ── B. 止盈/减仓候选（来自持仓） ──
   // 读取止盈冷却记录（30天内已执行的不再触发）
-  const tpLog = _tpLogCache;
+  let tpLog = {};
+  try { tpLog = JSON.parse(localStorage.getItem('_takeProfitLog') || '{}'); } catch(_){}
   const today8 = new Date(Date.now()+8*3600000).toISOString().slice(0,10);
 
   const sellItems = [];
