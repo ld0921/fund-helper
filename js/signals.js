@@ -598,7 +598,7 @@ function runHealthMonitor(){
       const catRank = catRanksCache.findIndex(c=>c.cat===fd.cat);
       const recAction = latestPlanActions[h.code];
       const recommendedKeep = recAction && ['buy','buy_more','hold'].includes(recAction);
-      if(catRank>=3 && h.value > 5000 && !recommendedKeep){
+      if(catRank>=3 && h.value > 5000 && !recommendedKeep && fd.cat !== 'money'){
         issues.push(`「${fd.label}」类别整体表现在 5 类资产中偏弱（第${catRank+1}位/共5类），你在该类别持仓 ¥${h.value.toLocaleString()}，注意权重配比`);
         if(level==='green') level='yellow';
       }
