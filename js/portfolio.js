@@ -1883,28 +1883,7 @@ function _doGenerate(shouldScroll){
   document.getElementById('portfolio-result').style.display='block';
   if(shouldScroll) setTimeout(()=>document.getElementById('plan-summary').scrollIntoView({behavior:'smooth',block:'start'}),100);
 
-  // 记录推荐历史（用于检测最近推荐的基金）
-  try {
-    const newBuys = finalPicks.filter(f => !f.isExisting);
-    if(newBuys.length > 0){
-      const history = JSON.parse(localStorage.getItem('recommendHistory') || '[]');
-      const now = new Date().toISOString();
-      newBuys.forEach(f => {
-        history.push({
-          date: now,
-          code: f.code,
-          name: f.name,
-          amt: f.amt,
-          pct: f.pct,
-          action: 'buy'
-        });
-      });
-      // 只保留最近30天的记录
-      const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
-      const filtered = history.filter(h => new Date(h.date).getTime() > cutoff);
-      localStorage.setItem('recommendHistory', JSON.stringify(filtered));
-    }
-  } catch(e){ console.warn('记录推荐历史失败:', e); }
+  // 记录推荐历史已移至 saveMyHoldingScheme，只有保存时才记录
 
   // 暴露刚生成的方案数据给"保存为我的方案"按钮使用（闭包外访问入口）
   window._lastGeneratedScheme = {
@@ -2195,6 +2174,17 @@ function saveMyHoldingScheme(){
   try {
     window._myHoldingScheme = scheme;
     FundDB.set(MY_SCHEME_KEY, scheme); // 异步写入 IndexedDB + 云同步
+    // 保存时记录推荐历史（只有保存的方案才纳入温和调整对比）
+    try {
+      const newBuys = (gen.picks||[]).filter(f => !f.isExisting);
+      if(newBuys.length > 0){
+        const history = JSON.parse(localStorage.getItem('recommendHistory') || '[]');
+        const now = new Date().toISOString();
+        newBuys.forEach(f => history.push({date:now, code:f.code, name:f.name, amt:f.amt, pct:f.pct, action:'buy'}));
+        const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+        localStorage.setItem('recommendHistory', JSON.stringify(history.filter(h => new Date(h.date).getTime() > cutoff)));
+      }
+    } catch(_){}
     if(typeof showToast === 'function') showToast(prev ? '方案已替换保存' : '方案已保存', 'success');
     renderMyHoldingScheme();
     // 保存后立即把页面恢复到"初始 + 我的持有方案"状态
