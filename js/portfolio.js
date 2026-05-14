@@ -711,7 +711,7 @@ function computeWeights(riskProfile, horizon, catRanks, macroClock){
   }
 
   // 8. 货币类集中度约束：按风险偏好设置上限
-  const moneyCap = {conservative:50, moderate:35, balanced:20, aggressive:10}[riskProfile] || 50;
+  const moneyCap = {conservative:50, moderate:35, balanced:20, aggressive:5}[riskProfile] || 50;
   if((base.money||0) > moneyCap){
     const excess = base.money - moneyCap;
     base.money = moneyCap;
