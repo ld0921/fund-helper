@@ -1255,7 +1255,8 @@ function _doGenerate(shouldScroll){
     const keptFunds = allHeldFunds; // 不再按评分过滤，已持仓基金都纳入目标
     const keptAmt = keptFunds.reduce((s,h)=>s+h.value,0);
     if(keptAmt > targetAmt){
-      freedFromOverweight += keptAmt - targetAmt;
+      // 权重为0时不预计入可分配资金（减仓是用户操作，不立即发生）
+      if(targetAmt > 0) freedFromOverweight += keptAmt - targetAmt;
       catGap[cat] = 0;
     } else {
       catGap[cat] = targetAmt - keptAmt;
