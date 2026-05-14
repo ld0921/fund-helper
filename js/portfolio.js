@@ -557,7 +557,7 @@ function computeWeights(riskProfile, horizon, catRanks, macroClock){
     conservative: { money:1.6, bond:1.4, index:0.6, active:0.6, qdii:0.4 },
     moderate:     { money:0.9, bond:1.0, index:1.2, active:0.8, qdii:0.9 },
     balanced:     { money:0.5, bond:0.7, index:1.1, active:1.3, qdii:1.1 },
-    aggressive:   { money:0.2, bond:0.3, index:1.0, active:1.5, qdii:1.4 },
+    aggressive:   { money:0, bond:0.3, index:1.0, active:1.5, qdii:1.4 },
   }[riskProfile];
 
   // 2.5 投资期限主动倾斜（叠加在风险偏好之上）
