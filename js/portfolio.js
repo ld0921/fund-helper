@@ -1248,7 +1248,11 @@ function _doGenerate(shouldScroll){
       const currentValue = h.value || 0;
 
       const score = scoreF(fd);
-      const keep = score >= 60; // 评分≥60为达标（60分及格线，与持仓诊断标准统一）
+      // 债券/QDII 用 calcDCAScore 判断达标（与 selectFunds 排序标准一致，避免两模块结论矛盾）
+      const effectiveScore = (fd.cat === 'bond' || fd.cat === 'qdii')
+        ? (calcDCAScore(fd) * 0.5 + score * 0.5)
+        : score;
+      const keep = effectiveScore >= 60;
       if(!holdingsByCat[cat]) holdingsByCat[cat] = [];
       holdingsByCat[cat].push({ code:h.code, name:h.name||fd.name, value:currentValue, score, keep, fundData:fd });
       // 只有评分<60且已确认的持仓才建议替换
