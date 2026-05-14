@@ -55,7 +55,7 @@ function calculateRebalanceCost(currentFund, targetFund, holdingDays, amount){
 }
 
 // ═══════════════ 调仓算法 ═══════════════
-function computeRebalancePlan(targetPicks, newMoney){
+function computeRebalancePlan(targetPicks, newMoney, weights){
   if(!existingHoldings.length) return null;
   const allPicks=Object.values(targetPicks).flat();
   const existTotal=existingHoldings.reduce((s,h)=>s+h.value,0);
@@ -114,7 +114,8 @@ function computeRebalancePlan(targetPicks, newMoney){
     // 已有持仓的处理逻辑
     const held=existingHoldings.find(h=>h.code===pick.code);
     const currentAmt=held?held.value:0;
-    const targetAmt=pick.amt; // 直接使用pick.amt作为目标金额
+    // 若该类别权重为0，强制目标金额为0（如进取型清零货币基金）
+    const targetAmt = (weights && (weights[pick.cat]||0) === 0) ? 0 : pick.amt;
     // diff 始终基于 targetAmt - currentAmt，确保调仓金额与目标仓位一致
     const diff = targetAmt === 0 ? -currentAmt : (targetAmt - currentAmt);
     const tolPct = ['money','bond'].includes(pick.cat) ? 0.10 : pick.cat === 'index' ? 0.15 : 0.20;
@@ -1697,7 +1698,7 @@ function _doGenerate(shouldScroll){
 
   // 11. 调仓建议（先于执行步骤生成，以便步骤引用调仓数据）
   // existingHoldings.value 保持与AI方案生成时一致（第1214行），不再重复同步，避免两处existTotal不一致
-  const rebalPlan = computeRebalancePlan(selectedPicks, totalAmt);
+  const rebalPlan = computeRebalancePlan(selectedPicks, totalAmt, weights);
   // 持久化方案，供持仓诊断模块联动（避免对"建议加仓/持有"的基金发出矛盾黄警）
   try {
     if(rebalPlan && Array.isArray(rebalPlan.actions)){
