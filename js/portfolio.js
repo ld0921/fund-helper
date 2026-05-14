@@ -217,6 +217,12 @@ function computeRebalancePlan(targetPicks, newMoney){
       action='satellite'; actionAmt=0;
       actionDesc='无法获取收益数据，建议人工确认后决定';
       actionColor='act-satellite';
+    } else if(fd && (weights[fd.cat]||0) === 0){
+      // 算法主动将该类别权重清零（如进取型清零货币基金），直接建议全额减仓
+      action='reduce'; actionAmt=h.value;
+      const redeemRate = holdingDays < 7 ? 1.5 : holdingDays < 30 ? 0.75 : holdingDays < 365 ? 0.5 : 0;
+      actionDesc=`不在目标配置中，建议减仓${redeemRate>0?`（赎回费约${redeemRate}%）`:'（已免赎回费）'}`;
+      actionColor='act-reduce';
     } else if(fd && fd.r3 < -20){
       // 近3年持续低迷，无论类别都建议卖出
       action='sell'; actionAmt=h.value;
