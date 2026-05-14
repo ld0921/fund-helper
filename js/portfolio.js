@@ -1269,7 +1269,18 @@ function _doGenerate(shouldScroll){
   const selectedPicks = {};
   catRanks.forEach(cd=>{
     const w = weights[cd.cat]||0;
-    if(w<=0) return;
+    // 权重为0时：已持仓该类别的基金需生成减仓到0的指令，不能直接跳过
+    if(w<=0){
+      const kept = catKept[cd.cat]||[];
+      if(kept.length > 0){
+        selectedPicks[cd.cat] = kept.map(h=>({
+          ...h.fundData, pct:0, amt:0,
+          role:'已持有·清仓', method:'减仓至目标配置',
+          methodClass:'method-hold', isExisting:true, newBuyAmt:0,
+        }));
+      }
+      return;
+    }
     const kept = catKept[cd.cat]||[];
     const gap = catGap[cd.cat]||0;
     // 该类别分配的新资金 = 总新资金 × (缺口占比)，确保不超过新资金总额
