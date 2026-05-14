@@ -1248,12 +1248,11 @@ function _doGenerate(shouldScroll){
       const currentValue = h.value || 0;
 
       const score = scoreF(fd);
-      // 债券/QDII 用 calcDCAScore 单独判断达标（与 selectFunds 排序标准一致）
-      // scoreF 对这两类 R²≈0.002，无预测力；calcDCAScore 才是债券/QDII 的有效评分
       const effectiveScore = (fd.cat === 'bond' || fd.cat === 'qdii')
         ? calcDCAScore(fd)
         : score;
       const keep = effectiveScore >= 60;
+      console.log(`[generatePlan] ${fd.name} cat=${fd.cat} scoreF=${score} calcDCA=${effectiveScore.toFixed(1)} keep=${keep}`);
       if(!holdingsByCat[cat]) holdingsByCat[cat] = [];
       holdingsByCat[cat].push({ code:h.code, name:h.name||fd.name, value:currentValue, score, keep, fundData:fd });
       // 只有评分<60且已确认的持仓才建议替换
@@ -1313,8 +1312,9 @@ function _doGenerate(shouldScroll){
 
     // 缺口优先分配给评分达标的已持仓基金（加仓），按持仓比例分配
     const keepFunds = kept.filter(h => h.keep);
-    let remainingGap = gap; // 分配给已持仓后的剩余缺口
-    const keptAddMap = {}; // code -> 加仓金额
+    let remainingGap = gap;
+    const keptAddMap = {};
+    console.log(`[generatePlan] cat=${cd.cat} gap=${gap} keepFunds=${keepFunds.map(h=>h.code).join(',')||'空'} newMoneyForCat=${newMoneyForCat}`);
     if(gap > 0 && keepFunds.length > 0 && newMoneyForCat > 0){
       const keepTotal = keepFunds.reduce((s,h) => s + h.value, 0) || 1;
       keepFunds.forEach(h => {
