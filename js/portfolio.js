@@ -116,7 +116,6 @@ function computeRebalancePlan(targetPicks, newMoney, weights){
     const currentAmt=held?held.value:0;
     // 若该类别权重为0，强制目标金额为0（如进取型清零货币基金）
     const targetAmt = (weights && (weights[pick.cat]||0) === 0) ? 0 : pick.amt;
-    if(pick.cat==='money') console.log('[DEBUG money]', {code:pick.code, pickAmt:pick.amt, targetAmt, weightsMoney:weights&&weights['money'], weights});
     // diff 始终基于 targetAmt - currentAmt，确保调仓金额与目标仓位一致
     const diff = targetAmt === 0 ? -currentAmt : (targetAmt - currentAmt);
     const tolPct = ['money','bond'].includes(pick.cat) ? 0.10 : pick.cat === 'index' ? 0.15 : 0.20;
@@ -732,7 +731,6 @@ function computeWeights(riskProfile, horizon, catRanks, macroClock){
     base.bond = (base.bond||0) + excess;
   }
 
-  console.log('[DEBUG weights]', riskProfile, 'money:', base.money, 'equity:', (base.active||0)+(base.index||0)+(base.qdii||0), 'base:', JSON.stringify(base));
   return base;
 }
 
