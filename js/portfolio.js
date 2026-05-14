@@ -586,7 +586,7 @@ function computeWeights(riskProfile, horizon, catRanks, macroClock){
   const base = {};
   let tiltSum = 0;
   catRanks.forEach(c => {
-    base[c.cat] = rpWeights[c.cat] * (tiltFactors[c.cat] || 1) * (horizonFactors[c.cat] || 1);
+    base[c.cat] = rpWeights[c.cat] * (tiltFactors[c.cat] ?? 1) * (horizonFactors[c.cat] ?? 1);
     tiltSum += base[c.cat];
   });
   // 归一化
@@ -725,7 +725,7 @@ function computeWeights(riskProfile, horizon, catRanks, macroClock){
   }
 
   // 8. 货币类集中度约束：按风险偏好设置上限
-  const moneyCap = {conservative:50, moderate:35, balanced:20, aggressive:0}[riskProfile] || 50;
+  const moneyCap = ({conservative:50, moderate:35, balanced:20, aggressive:0}[riskProfile] ?? 50);
   if((base.money||0) > moneyCap){
     const excess = base.money - moneyCap;
     base.money = moneyCap;
