@@ -1248,9 +1248,10 @@ function _doGenerate(shouldScroll){
       const currentValue = h.value || 0;
 
       const score = scoreF(fd);
-      // 债券/QDII 用 calcDCAScore 判断达标（与 selectFunds 排序标准一致，避免两模块结论矛盾）
+      // 债券/QDII 用 calcDCAScore 单独判断达标（与 selectFunds 排序标准一致）
+      // scoreF 对这两类 R²≈0.002，无预测力；calcDCAScore 才是债券/QDII 的有效评分
       const effectiveScore = (fd.cat === 'bond' || fd.cat === 'qdii')
-        ? (calcDCAScore(fd) * 0.5 + score * 0.5)
+        ? calcDCAScore(fd)
         : score;
       const keep = effectiveScore >= 60;
       if(!holdingsByCat[cat]) holdingsByCat[cat] = [];
