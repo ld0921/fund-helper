@@ -217,6 +217,12 @@ function computeRebalancePlan(targetPicks, newMoney){
       action='satellite'; actionAmt=0;
       actionDesc='无法获取收益数据，建议人工确认后决定';
       actionColor='act-satellite';
+    } else if(fd && sameCatTargets.length === 0){
+      // 该类别在目标方案中无任何 picks（算法清零），直接建议全额减仓
+      action='reduce'; actionAmt=h.value;
+      const redeemRate = holdingDays < 7 ? 1.5 : holdingDays < 30 ? 0.75 : holdingDays < 365 ? 0.5 : 0;
+      actionDesc=`不在目标配置中，建议减仓${redeemRate>0?`（赎回费约${redeemRate}%）`:'（已免赎回费）'}`;
+      actionColor='act-reduce';
     } else if(fd && (weights[fd.cat]||0) === 0){
       // 算法主动将该类别权重清零（如进取型清零货币基金），直接建议全额减仓
       action='reduce'; actionAmt=h.value;
