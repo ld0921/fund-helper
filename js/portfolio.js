@@ -732,6 +732,7 @@ function computeWeights(riskProfile, horizon, catRanks, macroClock){
     base.bond = (base.bond||0) + excess;
   }
 
+  console.log('[DEBUG weights]', riskProfile, 'money:', base.money, 'equity:', (base.active||0)+(base.index||0)+(base.qdii||0), 'base:', JSON.stringify(base));
   return base;
 }
 
