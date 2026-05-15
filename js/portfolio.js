@@ -1357,6 +1357,11 @@ function _doGenerate(shouldScroll){
         };
         newPicks = selectFunds(cd.cat, poolExcluded, riskP, newPctForCat, portfolioTotal);
         newPicks.forEach(p=>{ p.isExisting = false; });
+        if(cd.cat === 'bond'){
+          console.log(`[generatePlan] bond newPicks:`, newPicks.map(p=>p.code+' '+p.name+' amt:'+p.amt));
+          console.log(`[generatePlan] existingHoldings codes:`, existingHoldings.map(h=>h.code));
+          console.log(`[generatePlan] bond poolExcluded topFunds:`, poolExcluded.topFunds.map(f=>f.code+' '+f.name).slice(0,5));
+        }
       }
     }
 
