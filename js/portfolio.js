@@ -1395,11 +1395,12 @@ function _doGenerate(shouldScroll){
       filledCats.forEach(c => {
         const share = (weights[c.cat]||0) / filledTotal;
         const extra = Math.round(freedPct * share);
-        // 按比例增加已选基金的百分比和金额
         const picks = selectedPicks[c.cat];
-        const catTotalPct = picks.reduce((s,p) => s + p.pct, 0);
+        // 只分配给新买入基金，不增加已持仓基金的 amt（避免错误触发加仓）
+        const newBuyPicks = picks.filter(p => !p.isExisting);
+        const catTotalPct = newBuyPicks.reduce((s,p) => s + p.pct, 0);
         if(catTotalPct > 0){
-          picks.forEach(p => {
+          newBuyPicks.forEach(p => {
             const ratio = p.pct / catTotalPct;
             p.pct += Math.round(extra * ratio);
             p.amt = Math.round(portfolioTotal * p.pct / 100);
