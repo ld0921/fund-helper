@@ -1353,7 +1353,7 @@ function _doGenerate(shouldScroll){
       if(newPctForCat > 0){
         const poolExcluded = {
           ...cd,
-          topFunds: cd.topFunds.filter(f=>!existingHoldings.some(h=>h.code===f.code))
+          topFunds: cd.topFunds.filter(f=>!existingHoldings.some(h=>h.code===f.code) && !keptPicks.some(p=>p.code===f.code))
         };
         newPicks = selectFunds(cd.cat, poolExcluded, riskP, newPctForCat, portfolioTotal);
         newPicks.forEach(p=>{ p.isExisting = false; });
