@@ -1359,7 +1359,8 @@ function _doGenerate(shouldScroll){
         newPicks.forEach(p=>{ p.isExisting = false; });
         if(cd.cat === 'bond'){
           console.log(`[generatePlan] bond newPicks:`, newPicks.map(p=>p.code+' '+p.name+' amt:'+p.amt));
-          console.log(`[generatePlan] existingHoldings codes:`, existingHoldings.map(h=>h.code));
+          console.log(`[generatePlan] existingHoldings codes:`, existingHoldings.map(h=>h.code+' type:'+typeof h.code));
+          console.log(`[generatePlan] bond cd.topFunds codes:`, cd.topFunds.map(f=>f.code+' type:'+typeof f.code).slice(0,8));
           console.log(`[generatePlan] bond poolExcluded topFunds:`, poolExcluded.topFunds.map(f=>f.code+' '+f.name).slice(0,5));
         }
       }
