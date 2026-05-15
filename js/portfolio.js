@@ -1359,8 +1359,7 @@ function _doGenerate(shouldScroll){
         newPicks.forEach(p=>{ p.isExisting = false; });
         if(cd.cat === 'bond'){
           console.log(`[generatePlan] bond newPicks:`, newPicks.map(p=>p.code+' '+p.name+' amt:'+p.amt));
-          console.log(`[generatePlan] existingHoldings codes:`, existingHoldings.map(h=>h.code+' type:'+typeof h.code));
-          console.log(`[generatePlan] bond cd.topFunds codes:`, cd.topFunds.map(f=>f.code+' type:'+typeof f.code).slice(0,8));
+          console.log(`[generatePlan] existingHoldings codes:`, existingHoldings.map(h=>h.code));
           console.log(`[generatePlan] bond poolExcluded topFunds:`, poolExcluded.topFunds.map(f=>f.code+' '+f.name).slice(0,5));
         }
       }
@@ -1458,7 +1457,9 @@ function _doGenerate(shouldScroll){
       totalPct = picks.reduce((s, f) => s + f.pct, 0);
       if(totalPct !== 100){
         const diff = 100 - totalPct;
-        const maxPick = [...picks].sort((a,b) => b.pct - a.pct)[0];
+        const nonExisting = picks.filter(f => !f.isExisting);
+        const pool = nonExisting.length > 0 ? nonExisting : picks;
+        const maxPick = [...pool].sort((a,b) => b.pct - a.pct)[0];
         maxPick.pct += diff;
         maxPick.amt = Math.round(portfolioTotal * maxPick.pct / 100);
       }
@@ -1559,7 +1560,9 @@ function _doGenerate(shouldScroll){
   const finalAmtSum = finalPicks.reduce((s, f) => s + f.amt, 0);
   if(finalAmtSum !== portfolioTotal && finalPicks.length > 0){
     const diff = portfolioTotal - finalAmtSum;
-    const maxPick = [...finalPicks].sort((a,b) => b.amt - a.amt)[0];
+    const nonExistingFinal = finalPicks.filter(f => !f.isExisting);
+    const poolFinal = nonExistingFinal.length > 0 ? nonExistingFinal : finalPicks;
+    const maxPick = [...poolFinal].sort((a,b) => b.amt - a.amt)[0];
     maxPick.amt += diff;
     maxPick.pct = Math.round(maxPick.amt / portfolioTotal * 100);
   }
