@@ -1444,6 +1444,7 @@ function _doGenerate(shouldScroll){
     if(totalPct !== 100 && totalPct > 0){
       const scale = 100 / totalPct;
       picks.forEach(f => {
+        if(f.isExisting) return; // 已持仓基金 amt 固定，不参与缩放，避免错误触发加仓
         f.pct = Math.round(f.pct * scale);
         f.amt = Math.round(portfolioTotal * f.pct / 100);
       });
