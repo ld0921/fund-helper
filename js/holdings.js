@@ -427,6 +427,14 @@ async function updateLastRefreshTime(){
   }
 }
 
+function isRecentTradingNav(dateStr){
+  if(!dateStr) return false;
+  const now = new Date();
+  const navDate = new Date(dateStr + 'T00:00:00+08:00');
+  const diffDays = (now - navDate) / 86400000;
+  return diffDays >= 0 && diffDays <= 4; // 允许最多4天（含节假日）
+}
+
 function isTradingDay(date = new Date()){
   const day = date.getDay();
   return day >= 1 && day <= 5; // 周一到周五
@@ -631,7 +639,7 @@ async function renderExistingHoldings(){
     // 货币基金特殊处理：单位净值固定1.00，今日盈亏接近0
     const fundInfo=CURATED_FUNDS.find(f=>f.code===h.code);
     const isMoneyFund=fundInfo&&(fundInfo.type==='货币型'||fundInfo.cat==='money');
-    if(isMarketOpen() && isTradingDay() && navRefreshed && nav && h.shares && yNav){
+    if(isMarketOpen() && isTradingDay() && navRefreshed && nav && h.shares && yNav && isRecentTradingNav(yNav.date)){
       const currentNav = isMoneyFund ? 1.00 : (parseFloat(nav.gsz) || parseFloat(nav.dwjz) || 0);
       const yesterdayNavVal = isMoneyFund ? 1.00 : yNav.nav;
       todayPnl = h.shares * (currentNav - yesterdayNavVal);
@@ -772,7 +780,7 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
       // 货币基金特殊处理：单位净值固定1.00
       const fundInfo=CURATED_FUNDS.find(f=>f.code===h.code);
       const isMoneyFund=fundInfo&&(fundInfo.type==='货币型'||fundInfo.cat==='money');
-      if(nav && h.shares && yNav){
+      if(nav && h.shares && yNav && isRecentTradingNav(yNav.date)){
         // 优先使用gsz(盘中估算)，其次dwjz(收盘确认)
         const currentNav = isMoneyFund ? 1.00 : (parseFloat(nav.gsz) || parseFloat(nav.dwjz) || 0);
         const yesterdayNavVal = isMoneyFund ? 1.00 : yNav.nav;
@@ -821,7 +829,7 @@ async function renderPortfolioOverview(holdings, totalCost, totalVal, totalPnl, 
     // 货币基金特殊处理：单位净值固定1.00
     const fundInfo=CURATED_FUNDS.find(f=>f.code===h.code);
     const isMoneyFund=fundInfo&&(fundInfo.type==='货币型'||fundInfo.cat==='money');
-    if(isMarketOpen() && isTradingDay() && navRefreshed && nav && h.shares && yNav){
+    if(isMarketOpen() && isTradingDay() && navRefreshed && nav && h.shares && yNav && isRecentTradingNav(yNav.date)){
       const currentNav = isMoneyFund ? 1.00 : (parseFloat(nav.gsz) || parseFloat(nav.dwjz) || 0);
       const yesterdayNavVal = isMoneyFund ? 1.00 : yNav.nav;
       todayPnl = h.shares * (currentNav - yesterdayNavVal);
