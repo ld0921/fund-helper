@@ -1364,6 +1364,8 @@ function renderActionPanel(){
     const actualPct = {};
     Object.keys(actual).forEach(k=>{ actualPct[k]=totalV>0?actual[k]/totalV*100:0; });
 
+    const isNotRecommended = phaseBad || valPricey;
+
     // 找出低配最多的类别（理论权重 - 实际占比，差值最大的）
     const gaps = Object.keys(theorWeights)
       .map(cat=>({ cat, gap: (theorWeights[cat]||0) - (actualPct[cat]||0) }))
@@ -1392,7 +1394,6 @@ function renderActionPanel(){
     const peScore = avgValPct===null ? 0 : avgValPct<40 ? 2 : avgValPct<60 ? 1 : avgValPct<70 ? 0 : -1;
     const phaseScore = phaseGood ? 2 : phaseBad ? -2 : 0;
     const totalScore = peScore + phaseScore;
-    const isNotRecommended = phaseBad || valPricey; // 与顶部"不建议加仓"信号一致
     if(!isNotRecommended && totalScore >= 3){
       intensityLabel='💪 强'; intensityColor='#389e0d';
       intensityDesc='估值低+动量偏多，历史上此区间加仓胜率最高，可适当加大投入。';
