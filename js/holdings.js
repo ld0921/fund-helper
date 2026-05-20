@@ -86,7 +86,9 @@ function addExistingHolding(){
 function confirmHolding(i){
   const h = existingHoldings[i];
   if(!h) return;
-  openModal(`确认「${h.name}」的实际份额\n\n💡 为什么要确认份额？\n基金买入后需T+1或T+2确认，确认后才能计算准确的市值和收益。\n\n📋 在支付宝查看确认份额：\n支付宝 → 财富 → 基金 → 持仓 → 点击该基金 → 查看"持有份额"\n\n请输入确认的份额数：`, '', function(val){
+  const inp0=document.getElementById('modal-input'); if(inp0) inp0.placeholder='输入确认的份额数';
+  const confirmBody=`<div style="display:flex;align-items:center;gap:6px;color:var(--muted)"><span>买入金额</span><b style="color:var(--text)">¥${(h.amount||0).toLocaleString()}</b></div><div style="height:8px"></div><div style="padding:8px 10px;background:rgba(22,119,255,.06);border-radius:6px;border-left:3px solid var(--primary);font-size:12px;color:var(--text-secondary);line-height:1.6">基金买入后需 T+1 或 T+2 确认，确认后才能计算准确的市值和收益。<br>📋 支付宝 → 财富 → 基金 → 持仓 → 点击该基金 → 查看「持有份额」</div>`;
+  openModal(`确认「${h.name}」份额`, '', function(val){
     const shares = parseFloat(val);
     if(!shares || shares <= 0){ showToast('请输入有效份额数（可在支付宝持仓中查看）','error'); return; }
     h.status = 'confirmed';
@@ -113,7 +115,7 @@ function confirmHolding(i){
 
     FundDB.set('existingHoldings', existingHoldings);
     renderExistingHoldings(); runHealthMonitor(); renderTodayOverview();
-  });
+  }, confirmBody);
 }
 function updateDividendShares(i){
   const h = existingHoldings[i];
@@ -676,7 +678,6 @@ async function renderExistingHoldings(){
       <div class="eh-meta">${h.shares?`${h.shares.toFixed(4)}份 · `:''}${h.date||'--'} 买入${(()=>{const hi=getHoldingDaysInfo(h.date,h.code);return h.date?` · 已持有<b>${hi.days}</b>天 · 赎回费<b>${hi.fee}</b>${hi.nextTier?` <span style="color:var(--primary);font-size:10px">💡${hi.nextTier}</span>`:''}`:'';})()}${pnlAmt!=null?` · ${pnlAmt>=0?'盈利':'亏损'} ¥${Math.abs(pnlAmt).toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2})}`:''}${h.totalCashDividend?` · 累计分红 ¥${h.totalCashDividend.toFixed(2)}`:''}</div>
       <div class="eh-actions">
         <button class="fc-btn" onclick="redeemHolding(${i})">💰 赎回</button>
-        ${h.status==='confirmed'&&h.shares?`<button class="fc-btn" onclick="updateDividendShares(${i})">📊 分红</button>`:''}
         <button class="fc-btn fc-danger" onclick="removeExistingHolding(${i})">🗑 删除</button>
       </div>
         </div>
