@@ -835,6 +835,19 @@ function runHealthMonitor(){
 
   let contentHtml = '';
 
+  if (optimizeAlerts.length > 0) {
+    contentHtml += `<details class="diag-section" open>
+      <summary class="diag-header diag-header-alloc">
+        <span class="diag-header-left">💡 组合优化建议</span>
+        <span class="diag-header-right">
+          <span class="diag-badge">${optimizeAlerts.length} 项建议</span>
+          <span class="diag-chevron">▸</span>
+        </span>
+      </summary>
+      <div>${optimizeAlerts.map(a => renderItem(a, false)).join('')}</div>
+    </details>`;
+  }
+
   if(holdingAlerts.length > 0 || holdingOkList.length > 0){
     const holdingHasIssues = holdingAlerts.length > 0;
     contentHtml += `<details class="diag-section" ${holdingHasIssues?'open':''}>
@@ -962,19 +975,6 @@ function runHealthMonitor(){
       action: '🟡 建议换仓'
     });
   });
-
-  if (optimizeAlerts.length > 0) {
-    contentHtml += `<details class="diag-section" open>
-      <summary class="diag-header diag-header-alloc">
-        <span class="diag-header-left">💡 组合优化建议</span>
-        <span class="diag-header-right">
-          <span class="diag-badge">${optimizeAlerts.length} 项建议</span>
-          <span class="diag-chevron">▸</span>
-        </span>
-      </summary>
-      <div>${optimizeAlerts.map(a => renderItem(a, false)).join('')}</div>
-    </details>`;
-  }
 
   // 诊断策略说明
   const strategyHtml = `<details class="diag-section">
