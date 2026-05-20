@@ -877,6 +877,105 @@ function runHealthMonitor(){
 
   }
 
+  // ========== 组合优化建议 ==========
+  const optimizeAlerts = [];
+
+  // 规则1：index基金板块重叠（同sector持有≥2只）
+  const indexHeld = uniqueHeld.filter(h => {
+    const fd = CURATED_FUNDS.find(f => f.code === h.code);
+    return fd && fd.cat === 'index' && fd.sector;
+  });
+  const sectorGroups = {};
+  indexHeld.forEach(h => {
+    const fd = CURATED_FUNDS.find(f => f.code === h.code);
+    const s = fd.sector;
+    if (!sectorGroups[s]) sectorGroups[s] = [];
+    sectorGroups[s].push({h, fd});
+  });
+  Object.entries(sectorGroups).forEach(([sector, items]) => {
+    if (items.length < 2) return;
+    const scored = items.map(({h, fd}) => ({h, fd, score: scoreF(fd)})).sort((a,b) => b.score - a.score);
+    const best = scored[0];
+    const others = scored.slice(1).map(x => `${x.fd.name}（${x.score}分）`).join('、');
+    optimizeAlerts.push({
+      code: '_opt_sector_' + sector,
+      name: `${sector}板块重叠`,
+      level: 'yellow',
+      desc: `持有${items.length}只${sector}板块指数基金（${items.map(x=>x.fd.name).join(' + ')}），追踪标的高度重叠。建议保留评分最高的${best.fd.name}（${best.score}分），考虑赎回${others}，仓位分散至其他板块。`,
+      action: '🟡 建议精简'
+    });
+  });
+
+  // 规则2：绿色基金机会成本（scoreF≥60，且精选库同类有scoreF≥80且高出≥10分）
+  holdings.forEach(h => {
+    const fd = CURATED_FUNDS.find(f => f.code === h.code);
+    if (!fd) return;
+    const currentScore = scoreF(fd);
+    if (currentScore < 60) return; // 低分基金交给规则4
+    const heldCodes = new Set(uniqueHeld.map(x => x.code));
+    const best = CURATED_FUNDS
+      .filter(f => f.cat === fd.cat && f.code !== fd.code && !heldCodes.has(f.code))
+      .map(f => ({f, score: scoreF(f)}))
+      .filter(x => x.score >= 80 && x.score - currentScore >= 10)
+      .sort((a,b) => b.score - a.score)[0];
+    if (!best) return;
+    optimizeAlerts.push({
+      code: '_opt_opp_' + h.code,
+      name: fd.name,
+      level: 'yellow',
+      desc: `当前评分${currentScore}分，精选库同类中${best.f.name}评分${best.score}分（高出${best.score - currentScore}分，最大回撤${best.f.maxDD}% vs 当前${fd.maxDD}%），可考虑换仓以提升组合质量。`,
+      action: '🟡 可考虑换仓'
+    });
+  });
+
+  // 规则3：债券仓位偏高（>35%）
+  const bondPct = ((catConcentration.bond || 0) / (totalPortValue || 1)) * 100;
+  if (bondPct > 35) {
+    const excess = Math.round((bondPct - 35) / 100 * totalPortValue);
+    optimizeAlerts.push({
+      code: '_opt_bond',
+      name: '债券仓位偏高',
+      level: 'yellow',
+      desc: `债券类资产占总仓位${bondPct.toFixed(1)}%，超出均衡配置建议（35%）。超出部分约¥${excess.toLocaleString()}，若收益目标较高，可考虑适当降低债券仓位，换入评分较高的主动权益基金。`,
+      action: '🟡 可适当降低'
+    });
+  }
+
+  // 规则4：低分持仓（scoreF<60）且精选库同类有scoreF≥80
+  holdings.forEach(h => {
+    const fd = CURATED_FUNDS.find(f => f.code === h.code);
+    if (!fd) return;
+    const currentScore = scoreF(fd);
+    if (currentScore >= 60) return; // 绿色基金交给规则2
+    const heldCodes = new Set(uniqueHeld.map(x => x.code));
+    const best = CURATED_FUNDS
+      .filter(f => f.cat === fd.cat && f.code !== fd.code && !heldCodes.has(f.code))
+      .map(f => ({f, score: scoreF(f)}))
+      .filter(x => x.score >= 80)
+      .sort((a,b) => b.score - a.score)[0];
+    if (!best) return;
+    optimizeAlerts.push({
+      code: '_opt_low_' + h.code,
+      name: fd.name,
+      level: 'yellow',
+      desc: `综合评分${currentScore}分（不及格），精选库同类中${best.f.name}评分${best.score}分，建议考虑换仓。`,
+      action: '🟡 建议换仓'
+    });
+  });
+
+  if (optimizeAlerts.length > 0) {
+    contentHtml += `<details class="diag-section" open>
+      <summary class="diag-header diag-header-alloc">
+        <span class="diag-header-left">💡 组合优化建议</span>
+        <span class="diag-header-right">
+          <span class="diag-badge">${optimizeAlerts.length} 项建议</span>
+          <span class="diag-chevron">▸</span>
+        </span>
+      </summary>
+      <div>${optimizeAlerts.map(a => renderItem(a, false)).join('')}</div>
+    </details>`;
+  }
+
   // 诊断策略说明
   const strategyHtml = `<details class="diag-section">
     <summary class="diag-header diag-header-info" style="font-size:11px;padding:10px 16px">

@@ -260,6 +260,35 @@ function inferRiskLevel(maxDD, cat) {
 }
 
 // 根据基金数据自动生成标签
+// 板块识别规则（顺序敏感，先匹配先得）
+const SECTOR_RULES = [
+  [/通信|5G|电信/, '通信'],
+  [/半导体|芯片|集成电路/, '半导体'],
+  [/人工智能|AI产业/, 'AI'],
+  [/科技|信息技术|信息行业/, '科技'],
+  [/互联|中概/, '互联网'],
+  [/纳斯达克|纳指/, '纳斯达克'],
+  [/标普|S&P/, '标普500'],
+  [/沪深300|300ETF/, '沪深300'],
+  [/中证500|500ETF/, '中证500'],
+  [/中证1000|1000ETF/, '中证1000'],
+  [/创业板/, '创业板'],
+  [/科创板|科创50/, '科创板'],
+  [/红利|股息/, '红利'],
+  [/医疗|医药|健康/, '医疗'],
+  [/消费/, '消费'],
+  [/新能源|光伏|储能/, '新能源'],
+  [/军工|国防/, '军工'],
+  [/金融|银行|证券/, '金融'],
+  [/电网|电力|能源/, '电力'],
+  [/传媒|文化/, '传媒'],
+];
+function autoSector(name) {
+  for (const [re, label] of SECTOR_RULES) {
+    if (re.test(name)) return label;
+  }
+  return null;
+}
 function autoTags(f) {
   const tags = [];
   const cat = f.cat || '';
@@ -484,9 +513,13 @@ async function main() {
         if (detail.fundSize > 0) entry.size = Math.round(detail.fundSize * 100) / 100;
         if (detail.fee !== undefined) entry.fee = detail.fee;
 
-        // 自动生成 reason 和 tags
+        // 自动生成 reason、tags 和 sector（index基金板块标识，用于重叠检测）
         entry.tags = autoTags(entry);
         entry.reason = autoReason(entry);
+        if (entry.cat === 'index') {
+          const s = autoSector(entry.name || '');
+          if (s) entry.sector = s;
+        }
 
         curatedResult.funds[code] = entry;
         curatedDone++;
