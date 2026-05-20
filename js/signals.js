@@ -1373,7 +1373,8 @@ function renderActionPanel(){
     if(gaps.length>0){
       const top = gaps[0];
       const catName = {active:'主动权益',index:'指数基金',bond:'债券',money:'货币',qdii:'QDII'}[top.cat]||top.cat;
-      directionHint = `<div style="margin-top:6px;font-size:12px;color:#595959">📌 <b>建议加仓方向</b>：当前${catName}低配（实际 ${actualPct[top.cat].toFixed(0)}% vs 理论 ${theorWeights[top.cat].toFixed(0)}%），优先补充该类别。</div>`;
+      const dirPrefix = isNotRecommended ? '若仍决定加仓，' : '';
+      directionHint = `<div style="margin-top:6px;font-size:12px;color:#595959">📌 <b>建议加仓方向</b>：${dirPrefix}当前${catName}低配（实际 ${actualPct[top.cat].toFixed(0)}% vs 理论 ${theorWeights[top.cat].toFixed(0)}%），优先补充该类别。</div>`;
     }
 
     // 分批建议：基于 PE 百分位（Vanguard 2012 研究：低估值一次性优于分批，高估值分批优于一次性）
