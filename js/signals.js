@@ -1370,14 +1370,14 @@ function renderActionPanel(){
       .filter(x=>x.gap>5) // 低配超过5%才有意义
       .sort((a,b)=>b.gap-a.gap);
 
-    if(gaps.length>0){
+    if(!isNotRecommended && gaps.length>0){
       const top = gaps[0];
       const catName = {active:'主动权益',index:'指数基金',bond:'债券',money:'货币',qdii:'QDII'}[top.cat]||top.cat;
       directionHint = `<div style="margin-top:6px;font-size:12px;color:#595959">📌 <b>建议加仓方向</b>：当前${catName}低配（实际 ${actualPct[top.cat].toFixed(0)}% vs 理论 ${theorWeights[top.cat].toFixed(0)}%），优先补充该类别。</div>`;
     }
 
     // 分批建议：基于 PE 百分位（Vanguard 2012 研究：低估值一次性优于分批，高估值分批优于一次性）
-    if(avgValPct!==null){
+    if(!isNotRecommended && avgValPct!==null){
       if(avgValPct<40)      batchHint='可一次性买入（低估值区间，历史上一次性投入优于分批）。';
       else if(avgValPct<60) batchHint='建议分 2 次买入，间隔 2-3 周（估值中性，分批降低时机风险）。';
       else if(avgValPct<70) batchHint='建议分 3 次买入，间隔 3-4 周（估值偏高，分批摊薄成本）。';
