@@ -83,6 +83,7 @@ async function loadCuratedFunds() {
         vol: 0,
         tags: f.tags || [],
         reason: f.reason || '',
+        sector: f.sector || null,
       });
     });
     CURATED_FUNDS = funds;
