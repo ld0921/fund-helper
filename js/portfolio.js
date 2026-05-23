@@ -773,8 +773,9 @@ function selectFunds(cat, catData, riskProfile, pct, totalAmt){
     return {...f, adjustedScore: score};
   }).sort((a,b) => b.adjustedScore - a.adjustedScore);
 
-  // 相关性去重：同一基金经理最多选1只 + 标签去重（自适应）
+  // 相关性去重：同一基金经理最多选1只 + 标签去重（自适应）+ index基金sector去重
   const usedManagers = new Set();
+  const usedSectors = new Set();
   const deduped = [];
   // 预检标签多样性：如果类别内标签过于同质化，降低标签去重力度
   const uniqueTagSets = new Set(pool.map(f => JSON.stringify((f.tags||[]).sort())));
@@ -784,6 +785,10 @@ function selectFunds(cat, catData, riskProfile, pct, totalAmt){
 
   pool.forEach(f => {
     if(usedManagers.has(f.manager) && deduped.length > 0) return;
+    // index基金：用sector字段去重，同一板块只选一只（评分最高的已排在前面）
+    if(cat === 'index' && f.sector){
+      if(usedSectors.has(f.sector)) return;
+    }
     // 标签重叠检查
     if(!skipTagDedup){
       const fTags = new Set(f.tags||[]);
@@ -795,6 +800,7 @@ function selectFunds(cat, catData, riskProfile, pct, totalAmt){
       if(tooSimilar && deduped.length > 0) return;
     }
     usedManagers.add(f.manager);
+    if(cat === 'index' && f.sector) usedSectors.add(f.sector);
     deduped.push(f);
   });
 
