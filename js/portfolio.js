@@ -578,7 +578,7 @@ function computeWeights(riskProfile, horizon, catRanks, macroClock){
   const horizonFactors =
     horizon <= 1  ? { money:1.5, bond:1.3, index:0.5, active:0.5, qdii:0.4 } :
     horizon <= 2  ? { money:1.2, bond:1.1, index:0.8, active:0.8, qdii:0.7 } :
-    horizon <= 3  ? { money:1.0, bond:1.0, index:1.0, active:1.0, qdii:1.0 } :
+    horizon <= 3  ? { money:1.0, bond:1.0, index:1.0, active:1.0, qdii:0.8 } :
     horizon <= 5  ? { money:0.8, bond:0.9, index:1.1, active:1.2, qdii:1.1 } :
                     { money:0.5, bond:0.8, index:1.2, active:1.4, qdii:1.3 };
 
