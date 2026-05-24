@@ -1348,8 +1348,8 @@ function _doGenerate(shouldScroll){
     }
 
     const isOverweight = keptValueTotal > catTargetAmt && catTargetAmt > 0;
+    console.log(`[keptPicks] cat=${cd.cat} catTargetAmt=${catTargetAmt.toFixed(0)} keptValueTotal=${keptValueTotal.toFixed(0)} isOverweight=${isOverweight} keptScale=${keptScale.toFixed(4)}`);
     const keptPicks = kept.map(h=>{
-      // 超配类别中低分基金目标为0（触发减仓），高分基金按比例缩减
       const baseAmt = (isOverweight && !h.keep) ? 0 : Math.round(h.value * keptScale);
       const targetAmt = baseAmt + (keptAddMap[h.code]||0);
       const diffAmt = targetAmt - h.value;
@@ -1360,6 +1360,7 @@ function _doGenerate(shouldScroll){
       if(diffAmt > tol){ method='加仓至目标配置'; role='已持有·加仓'; }
       else if(diffAmt < -tol){ method='减仓至目标配置'; role='已持有·减配'; }
       else { method = h.keep ? '继续持有' : '继续持有（评分偏低，可关注替换机会）'; role = h.keep ? '已持有·保留' : '已持有·低分'; }
+      console.log(`  [keptPicks] ${h.name} keep=${h.keep} value=${h.value} baseAmt=${baseAmt} targetAmt=${targetAmt} diffAmt=${diffAmt.toFixed(0)} tol=${tol.toFixed(0)} method=${method}`);
       return {
         ...h.fundData,
         pct: Math.round(targetAmt / portfolioTotal * 100),
