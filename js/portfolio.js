@@ -1775,6 +1775,13 @@ function _doGenerate(shouldScroll){
   // 11. 调仓建议（先于执行步骤生成，以便步骤引用调仓数据）
   // existingHoldings.value 保持与AI方案生成时一致（第1214行），不再重复同步，避免两处existTotal不一致
   const rebalPlan = computeRebalancePlan(selectedPicks, totalAmt, weights);
+  // computeRebalancePlan 的资金平衡校验会修改 pick.amt，需在渲染前重新执行集中度上限
+  Object.values(selectedPicks).flat().forEach(f => {
+    if(f.amt > singleFundCapFinal){
+      f.amt = Math.round(singleFundCapFinal);
+      f.pct = Math.round(f.amt / portfolioTotal * 100);
+    }
+  });
   // 持久化方案，供持仓诊断模块联动（避免对"建议加仓/持有"的基金发出矛盾黄警）
   try {
     if(rebalPlan && Array.isArray(rebalPlan.actions)){
