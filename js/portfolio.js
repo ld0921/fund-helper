@@ -2102,7 +2102,7 @@ function renderAllocGroups(selectedPicks, weights){
   groupData.forEach(({g, picks}, gi) => {
     const groupPct = floors[gi];
     const groupAmt = Math.round(picks.reduce((s,f)=>s+f.amt,0));
-    const targetGroupPct = Math.round(g.cats.reduce((s,cat)=>s+(weights[cat]||0),0));
+    const targetGroupPct = Math.round(picks.reduce((s,f)=>s+(f.pct||0),0));
     const targetNote = targetGroupPct !== groupPct
       ? `<span style="font-size:11px;color:var(--muted);margin-left:6px">目标${targetGroupPct}%</span>` : '';
     html+=`<div class="alloc-group">
