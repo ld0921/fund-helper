@@ -1283,30 +1283,29 @@ function _doGenerate(shouldScroll){
 
   // 计算每个类别的缺口：目标金额 - 已有达标基金金额
   const catGap = {};
-  const catKept = {}; // 每个类别保留的已有基金
-  let freedFromOverweight = 0; // 超配类别缩减释放的资金
+  const catKept = {};
+  const catIntraFill = {}; // 低分基金释放后类内补给高分基金的金额
+  let freedFromOverweight = 0;
   catRanks.forEach(cd=>{
     const cat = cd.cat;
     const targetAmt = portfolioTotal * (weights[cat]||0) / 100;
-    // 所有已持仓基金（不管评分高低）都参与调仓计算
     const allHeldFunds = holdingsByCat[cat]||[];
-    const keptFunds = allHeldFunds; // 不再按评分过滤，已持仓基金都纳入目标
-    const keptAmt = keptFunds.reduce((s,h)=>s+h.value,0);
-    if(keptAmt > targetAmt){
-      // 超配时：低分基金（effectiveScore<60）不受保护，其超出部分直接计入可减仓资金
-      const lowScoreFunds = keptFunds.filter(h => !h.keep);
-      const highScoreFunds = keptFunds.filter(h => h.keep);
-      const highScoreAmt = highScoreFunds.reduce((s,h)=>s+h.value,0);
-      if(highScoreAmt <= targetAmt){
-        // 高分基金不超配，低分基金的超出部分可以减仓
-        const lowScoreExcess = keptAmt - targetAmt;
-        if(targetAmt > 0) freedFromOverweight += lowScoreExcess;
-      } else {
-        // 高分基金也超配，按原逻辑处理
-        if(targetAmt > 0) freedFromOverweight += keptAmt - targetAmt;
-      }
+    const highFunds = allHeldFunds.filter(h => h.keep);
+    const lowFunds = allHeldFunds.filter(h => !h.keep);
+    const highAmt = highFunds.reduce((s,h)=>s+h.value,0);
+    const lowAmt = lowFunds.reduce((s,h)=>s+h.value,0);
+    // 低分基金释放的资金：优先在类内补给高分基金至catTargetAmt，剩余进全局池
+    const intraFill = Math.min(lowAmt, Math.max(0, targetAmt - highAmt));
+    const globalRelease = lowAmt - intraFill;
+    catIntraFill[cat] = intraFill;
+    if(highAmt > targetAmt){
+      freedFromOverweight += (highAmt - targetAmt) + globalRelease;
       catGap[cat] = 0;
     } else {
+      freedFromOverweight += globalRelease;
+      catGap[cat] = Math.max(0, targetAmt - highAmt - intraFill);
+    }
+    catKept[cat] = allHeldFunds;
       catGap[cat] = targetAmt - keptAmt;
     }
     catKept[cat] = keptFunds;
@@ -1335,31 +1334,32 @@ function _doGenerate(shouldScroll){
     // 该类别分配的新资金 = 总新资金 × (缺口占比)，确保不超过新资金总额
     const newMoneyForCat = totalGap > 0 ? Math.round(distributableMoney * gap / totalGap) : 0;
 
-    // 已保留基金纳入推荐
-    // 若该类别超配，按目标金额缩减 amt；若不足，优先将缺口分配给评分达标的已持仓基金（加仓）
     const catTargetAmt = portfolioTotal * w / 100;
-    const keptValueTotal = kept.reduce((s,h) => s + h.value, 0);
-    const keptScale = (keptValueTotal > catTargetAmt && catTargetAmt > 0) ? catTargetAmt / keptValueTotal : 1;
+    // keptScale 仅基于高分基金计算，低分基金无条件减仓至0
+    const highKeptValue = kept.filter(h=>h.keep).reduce((s,h)=>s+h.value,0);
+    const keptScale = (highKeptValue > catTargetAmt && catTargetAmt > 0) ? catTargetAmt / highKeptValue : 1;
 
-    // 缺口优先分配给评分达标的已持仓基金（加仓），按持仓比例分配
+    // 高分基金加仓：类内补仓(intraFill) + 全局分配的新资金(newMoneyForCat)
     const keepFunds = kept.filter(h => h.keep);
+    const intraFill = catIntraFill[cd.cat] || 0;
+    const totalAddForCat = newMoneyForCat + intraFill;
     let remainingGap = gap;
     const keptAddMap = {};
-    console.log(`[generatePlan] cat=${cd.cat} gap=${gap} keepFunds=${keepFunds.map(h=>h.code).join(',')||'空'} newMoneyForCat=${newMoneyForCat}`);
-    if(gap > 0 && keepFunds.length > 0 && newMoneyForCat > 0){
+    console.log(`[generatePlan] cat=${cd.cat} gap=${gap} intraFill=${intraFill} keepFunds=${keepFunds.map(h=>h.code).join(',')||'空'} newMoneyForCat=${newMoneyForCat}`);
+    if(totalAddForCat > 0 && keepFunds.length > 0){
       const keepTotal = keepFunds.reduce((s,h) => s + h.value, 0) || 1;
       keepFunds.forEach(h => {
-        const addAmt = Math.round(newMoneyForCat * (h.value / keepTotal));
+        const addAmt = Math.round(totalAddForCat * (h.value / keepTotal));
         keptAddMap[h.code] = addAmt;
         remainingGap -= addAmt;
       });
       remainingGap = Math.max(0, remainingGap);
     }
 
-    const isOverweight = keptValueTotal > catTargetAmt && catTargetAmt > 0;
-    console.log(`[keptPicks] cat=${cd.cat} catTargetAmt=${catTargetAmt.toFixed(0)} keptValueTotal=${keptValueTotal.toFixed(0)} isOverweight=${isOverweight} keptScale=${keptScale.toFixed(4)}`);
+    const isOverweight = highKeptValue > catTargetAmt && catTargetAmt > 0;
+    console.log(`[keptPicks] cat=${cd.cat} catTargetAmt=${catTargetAmt.toFixed(0)} highKeptValue=${highKeptValue.toFixed(0)} isOverweight=${isOverweight} keptScale=${keptScale.toFixed(4)}`);
     const keptPicks = kept.map(h=>{
-      const baseAmt = (isOverweight && !h.keep) ? 0 : Math.round(h.value * keptScale);
+      const baseAmt = !h.keep ? 0 : Math.round(h.value * keptScale);
       const targetAmt = baseAmt + (keptAddMap[h.code]||0);
       const diffAmt = targetAmt - h.value;
       const tolPct = ['money','bond'].includes(h.fundData.cat) ? 0.10 : h.fundData.cat === 'index' ? 0.15 : 0.20;
