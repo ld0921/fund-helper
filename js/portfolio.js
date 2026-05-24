@@ -318,6 +318,38 @@ function computeRebalancePlan(targetPicks, newMoney, weights){
     }
   }
 
+  // 类内均衡：对每个类别内的已持仓基金（非减仓），削峰填谷到 equalShare
+  // 在资金平衡校验之后执行，确保均衡结果不被覆盖，且调仓建议与配置方案一致
+  if(weights){
+    Object.keys(targetPicks).forEach(cat => {
+      const catFunds = (targetPicks[cat]||[]).filter(f => f.isExisting && f.method !== '减仓至目标配置' && f.amt > 0);
+      if(catFunds.length < 2) return;
+      const catTargetAmt = totalPortfolio * (weights[cat] || 0) / 100;
+      const equalShare = catTargetAmt / catFunds.length;
+      let excess = 0;
+      catFunds.forEach(f => {
+        if(f.amt > equalShare){ excess += f.amt - equalShare; f.amt = Math.round(equalShare); }
+      });
+      if(excess > 0){
+        const under = catFunds.filter(f => f.amt < equalShare);
+        const gap = under.reduce((s,f) => s + (equalShare - f.amt), 0) || 1;
+        under.forEach(f => { f.amt += Math.round(excess * (equalShare - f.amt) / gap); });
+      }
+      catFunds.forEach(f => { f.pct = Math.round(f.amt / totalPortfolio * 100); });
+      // 同步更新 actions 里的 targetAmt 和 actionDesc
+      catFunds.forEach(f => {
+        const act = actions.find(a => a.code === f.code);
+        if(!act) return;
+        act.targetAmt = f.amt;
+        const diff = f.amt - act.currentAmt;
+        const tol = Math.max(f.amt * (['money','bond'].includes(cat)?0.10:cat==='index'?0.15:0.20), ['money','bond'].includes(cat)?300:cat==='index'?500:800);
+        if(diff > tol){ act.action='buy_more'; act.actionAmt=diff; act.actionDesc=`加仓 ¥${diff.toLocaleString('zh-CN',{maximumFractionDigits:0})}`; act.actionColor='act-buy_more'; }
+        else if(diff < -tol){ act.action='reduce'; act.actionAmt=Math.abs(diff); act.actionDesc=`减仓 ¥${Math.abs(diff).toLocaleString('zh-CN',{maximumFractionDigits:0})}`; act.actionColor='act-reduce'; }
+        else { act.action='hold'; act.actionAmt=0; act.actionDesc='仓位合适，持有'; act.actionColor='act-hold'; }
+      });
+    });
+  }
+
   // 新建仓基金：targetAmt 始终等于 actionAmt（买多少就是目标仓位）
   buyActions.filter(a=>a.action==='buy').forEach(a=>{
     a.targetAmt = a.actionAmt;
@@ -1775,39 +1807,8 @@ function _doGenerate(shouldScroll){
   renderStyleExposure(styleExposure, finalPicks);
   renderStressTest(stressResults, totalAmt);
 
-  // 类内均衡：削峰填谷到 equalShare，需在 computeRebalancePlan 前后各执行一次
-  // 前：让 computeRebalancePlan 基于均衡后的 amt 计算调仓建议
-  // 后：抵消 computeRebalancePlan 内部资金平衡校验对 amt 的再次修改
-  const applyIntraCatBalance = () => {
-    Object.keys(selectedPicks).forEach(cat => {
-      const keepFunds = selectedPicks[cat].filter(f => f.isExisting && f.method !== '减仓至目标配置' && f.amt > 0);
-      if(keepFunds.length < 2) return;
-      const catTargetAmt = portfolioTotal * (weights[cat] || 0) / 100;
-      const equalShare = catTargetAmt / keepFunds.length;
-      let excess = 0;
-      keepFunds.forEach(f => {
-        if(f.amt > equalShare){ excess += f.amt - equalShare; f.amt = Math.round(equalShare); }
-      });
-      if(excess > 0){
-        const underFunds = keepFunds.filter(f => f.amt < equalShare);
-        const totalGap = underFunds.reduce((s, f) => s + (equalShare - f.amt), 0) || 1;
-        underFunds.forEach(f => { f.amt += Math.round(excess * (equalShare - f.amt) / totalGap); });
-      }
-      keepFunds.forEach(f => { f.pct = Math.round(f.amt / portfolioTotal * 100); });
-    });
-  };
-  applyIntraCatBalance();
-
-  // 11. 调仓建议（先于执行步骤生成，以便步骤引用调仓数据）
+  // 11. 调仓建议（类内均衡在 computeRebalancePlan 内部资金平衡校验之后执行，两者结果天然一致）
   const rebalPlan = computeRebalancePlan(selectedPicks, totalAmt, weights);
-  // computeRebalancePlan 的资金平衡校验会修改 pick.amt，重新执行集中度上限 + 类内均衡
-  Object.values(selectedPicks).flat().forEach(f => {
-    if(f.amt > singleFundCapFinal){
-      f.amt = Math.round(singleFundCapFinal);
-      f.pct = Math.round(f.amt / portfolioTotal * 100);
-    }
-  });
-  applyIntraCatBalance();
 
   // 持久化方案，供持仓诊断模块联动（避免对"建议加仓/持有"的基金发出矛盾黄警）
   try {
