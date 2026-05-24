@@ -1345,13 +1345,17 @@ function _doGenerate(shouldScroll){
     const keptAddMap = {};
     console.log(`[generatePlan] cat=${cd.cat} gap=${gap} intraFill=${intraFill} keepFunds=${keepFunds.map(h=>h.code).join(',')||'空'} newMoneyForCat=${newMoneyForCat}`);
     if(totalAddForCat > 0 && keepFunds.length > 0){
-      // 等权分配：同类高分基金各获等额新资金，避免按持仓比例放大已有不均衡
-      const equalAdd = Math.round(totalAddForCat / keepFunds.length);
+      // 缺口优先分配：按各基金距等权目标的缺口比例分配新资金
+      // 已超过等权份额的基金不再获得新资金，优先补给持仓偏低的高分基金
+      const equalShare = catTargetAmt / keepFunds.length;
+      const gaps = keepFunds.map(h => Math.max(0, equalShare - h.value));
+      const totalGapInner = gaps.reduce((s,v)=>s+v,0);
       const singleFundCap = portfolioTotal * ({ conservative:20, moderate:25, balanced:30, aggressive:35 }[riskP] || 35) / 100;
-      keepFunds.forEach(h => {
+      keepFunds.forEach((h, i) => {
         const baseAmt = Math.round(h.value * keptScale);
-        const proposedTarget = baseAmt + equalAdd;
-        const cappedAdd = proposedTarget > singleFundCap ? Math.max(0, singleFundCap - baseAmt) : equalAdd;
+        const addAmt = totalGapInner > 0 ? Math.round(totalAddForCat * (gaps[i] / totalGapInner)) : Math.round(totalAddForCat / keepFunds.length);
+        const proposedTarget = baseAmt + addAmt;
+        const cappedAdd = proposedTarget > singleFundCap ? Math.max(0, singleFundCap - baseAmt) : addAmt;
         keptAddMap[h.code] = cappedAdd;
         remainingGap -= cappedAdd;
       });
