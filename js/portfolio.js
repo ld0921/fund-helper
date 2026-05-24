@@ -662,11 +662,17 @@ function computeWeights(riskProfile, horizon, catRanks, macroClock){
   if(equityTotal > equityCap){
     const scale = equityCap / equityTotal;
     equityCats.forEach(c => { if(base[c]) base[c] *= scale; });
-    // 释放的权重按风险偏好分配：进取型全部补债券（货币基金不在进取型核心仓位）
     const freed = equityTotal - equityCap;
-    const toBond = riskProfile === 'aggressive' ? 1.0 : riskProfile === 'balanced' ? 0.4 : 0.6;
-    base.bond = (base.bond||0) + freed * toBond;
-    base.money = (base.money||0) + freed * (1 - toBond);
+    if(riskProfile === 'aggressive'){
+      // 进取型：权益压缩后立即归一化，freed 按现有 bond/money 比例自然吸收，不额外补债券
+      const nonEqTotal = Object.keys(base).filter(c=>!equityCats.includes(c)).reduce((s,c)=>s+(base[c]||0),0);
+      const newTotal = equityCap + nonEqTotal;
+      Object.keys(base).forEach(k => base[k] = (base[k]||0) / newTotal * 100);
+    } else {
+      const toBond = riskProfile === 'balanced' ? 0.4 : 0.6;
+      base.bond = (base.bond||0) + freed * toBond;
+      base.money = (base.money||0) + freed * (1 - toBond);
+    }
   }
 
   // 6. 短期额外调整
