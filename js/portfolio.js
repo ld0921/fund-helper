@@ -1788,7 +1788,7 @@ function _doGenerate(shouldScroll){
   // 类内均衡后处理：对每个类别内的 keep=true 基金，削峰填谷到 equalShare
   // 必须在所有归一化和 computeRebalancePlan 之后执行，防止被覆盖
   Object.keys(selectedPicks).forEach(cat => {
-    const keepFunds = selectedPicks[cat].filter(f => f.keep);
+    const keepFunds = selectedPicks[cat].filter(f => f.isExisting && f.method !== '减仓至目标配置' && f.amt > 0);
     if(keepFunds.length < 2) return;
     const catTargetAmt = portfolioTotal * (weights[cat] || 0) / 100;
     const equalShare = catTargetAmt / keepFunds.length;
