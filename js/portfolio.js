@@ -1294,8 +1294,9 @@ function _doGenerate(shouldScroll){
     const lowFunds = allHeldFunds.filter(h => !h.keep);
     const highAmt = highFunds.reduce((s,h)=>s+h.value,0);
     const lowAmt = lowFunds.reduce((s,h)=>s+h.value,0);
-    // 低分基金释放的资金：优先在类内补给高分基金至catTargetAmt，剩余进全局池
-    const intraFill = Math.min(lowAmt, Math.max(0, targetAmt - highAmt));
+    // bond类别：低分基金释放资金全部进全局池（可转债替换可转债无实质改善，应流向权益）
+    // 其他类别：优先在类内补给高分基金至catTargetAmt（同类质量升级），剩余进全局池
+    const intraFill = (cat === 'bond' || cat === 'money') ? 0 : Math.min(lowAmt, Math.max(0, targetAmt - highAmt));
     const globalRelease = lowAmt - intraFill;
     catIntraFill[cat] = intraFill;
     if(highAmt > targetAmt){
@@ -1306,9 +1307,6 @@ function _doGenerate(shouldScroll){
       catGap[cat] = Math.max(0, targetAmt - highAmt - intraFill);
     }
     catKept[cat] = allHeldFunds;
-      catGap[cat] = targetAmt - keptAmt;
-    }
-    catKept[cat] = keptFunds;
   });
   const totalGap = Object.values(catGap).reduce((s,v)=>s+v,0);
   const distributableMoney = totalAmt + freedFromOverweight; // 新增资金 + 超配释放资金
