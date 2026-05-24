@@ -737,6 +737,15 @@ function computeWeights(riskProfile, horizon, catRanks, macroClock){
     base.bond = (base.bond||0) + excess;
   }
 
+  // 9. QDII集中度约束：动量倾斜可能将QDII推至过高，按风险偏好设置上限
+  // 超出部分转移至active（进取型优先补权益）
+  const qdiiCap = ({conservative:10, moderate:15, balanced:20, aggressive:25}[riskProfile] ?? 25);
+  if((base.qdii||0) > qdiiCap){
+    const excess = (base.qdii||0) - qdiiCap;
+    base.qdii = qdiiCap;
+    base.active = (base.active||0) + excess;
+  }
+
   return base;
 }
 
