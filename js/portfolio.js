@@ -1626,12 +1626,14 @@ function _doGenerate(shouldScroll){
       f.pct = Math.round(f.amt / portfolioTotal * 100);
     });
   }
-  // 累积舍入误差校正：分别 Math.round 后总和可能 ≠ 100（渲染时分组求和会露出），
-  // 把差额补到 pct 最大的那只基金上，确保总和恰好 100
+  // 累积舍入误差校正：把差额补到未触及集中度上限的最大基金上
   const finalPctSum = finalPicks.reduce((s, f) => s + f.pct, 0);
   if(finalPctSum !== 100 && finalPicks.length > 0){
     const pctDiff = 100 - finalPctSum;
-    const maxPctPick = [...finalPicks].sort((a,b) => b.pct - a.pct)[0];
+    const capPct = Math.round(singleFundCapFinal / portfolioTotal * 100);
+    const uncapped = finalPicks.filter(f => f.pct < capPct);
+    const pool = uncapped.length > 0 ? uncapped : finalPicks;
+    const maxPctPick = [...pool].sort((a,b) => b.pct - a.pct)[0];
     maxPctPick.pct += pctDiff;
   }
 
