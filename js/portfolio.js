@@ -1606,6 +1606,26 @@ function _doGenerate(shouldScroll){
   }
   // 确保所有基金 pct 与 amt 一致
   finalPicks.forEach(f => { f.pct = Math.round(f.amt / portfolioTotal * 100); });
+
+  // 单只基金集中度上限（最终强制执行，在所有归一化之后）
+  const singleFundCapFinal = portfolioTotal * ({ conservative:20, moderate:25, balanced:30, aggressive:35 }[riskP] || 35) / 100;
+  let capExcess = 0;
+  finalPicks.forEach(f => {
+    if(f.amt > singleFundCapFinal){
+      capExcess += f.amt - singleFundCapFinal;
+      f.amt = Math.round(singleFundCapFinal);
+      f.pct = Math.round(f.amt / portfolioTotal * 100);
+    }
+  });
+  if(capExcess > 0){
+    // 超出部分按现有amt比例分配给未触及上限的基金
+    const eligible = finalPicks.filter(f => f.amt < singleFundCapFinal);
+    const eligibleTotal = eligible.reduce((s,f) => s+f.amt, 0) || 1;
+    eligible.forEach(f => {
+      f.amt += Math.round(capExcess * f.amt / eligibleTotal);
+      f.pct = Math.round(f.amt / portfolioTotal * 100);
+    });
+  }
   // 累积舍入误差校正：分别 Math.round 后总和可能 ≠ 100（渲染时分组求和会露出），
   // 把差额补到 pct 最大的那只基金上，确保总和恰好 100
   const finalPctSum = finalPicks.reduce((s, f) => s + f.pct, 0);
