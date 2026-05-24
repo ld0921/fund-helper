@@ -1621,8 +1621,9 @@ function _doGenerate(shouldScroll){
     }
   });
   if(capExcess > 0){
-    // 超出部分按现有amt比例分配给未触及上限的基金
-    const eligible = finalPicks.filter(f => f.amt < singleFundCapFinal);
+    // 超出部分只分配给新买入基金（isExisting=false），不修改已持仓基金的 amt
+    // 原因：已持仓基金的 amt 由 keptAddMap 决定，随意增加会导致配置方案与调仓建议不一致
+    const eligible = finalPicks.filter(f => !f.isExisting && f.amt < singleFundCapFinal);
     const eligibleTotal = eligible.reduce((s,f) => s+f.amt, 0) || 1;
     eligible.forEach(f => {
       f.amt += Math.round(capExcess * f.amt / eligibleTotal);
