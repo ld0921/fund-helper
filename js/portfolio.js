@@ -1278,13 +1278,13 @@ function _doGenerate(shouldScroll){
     const lowFunds = allHeldFunds.filter(h => !h.keep);
     const highAmt = highFunds.reduce((s,h)=>s+h.value,0);
     const lowAmt = lowFunds.reduce((s,h)=>s+h.value,0);
-    // 低分基金无条件减仓，其持仓价值释放给全局再分配
-    freedFromOverweight += lowAmt;
-    if(highAmt > targetAmt){
-      freedFromOverweight += highAmt - targetAmt;
+    // 低分基金减仓后，其价值优先留在本类别补充高分基金；超出类别目标的部分才释放全局
+    const catAvail = highAmt + lowAmt; // 类别内可用资金（高分持仓 + 低分减仓释放）
+    if(catAvail > targetAmt){
+      freedFromOverweight += catAvail - targetAmt;
       catGap[cat] = 0;
     } else {
-      catGap[cat] = targetAmt - highAmt;
+      catGap[cat] = targetAmt - catAvail;
     }
     catKept[cat] = allHeldFunds;
   });
@@ -1320,13 +1320,19 @@ function _doGenerate(shouldScroll){
 
     // 缺口优先分配给评分达标的已持仓基金（加仓），按持仓比例分配
     const keepFunds = kept.filter(h => h.keep);
+    const lowFunds = kept.filter(h => !h.keep);
+    const lowAmt = lowFunds.reduce((s,h)=>s+h.value,0);
+    // 类内可分配给高分基金的资金 = 全局分配的新资金 + 低分基金减仓释放的类内资金
+    // 但不超过类别目标（超出部分已计入 freedFromOverweight）
+    const intraRelease = Math.min(lowAmt, Math.max(0, catTargetAmt - (kept.filter(h=>h.keep).reduce((s,h)=>s+h.value,0))));
+    const totalAddForCat = newMoneyForCat + intraRelease;
     let remainingGap = gap;
     const keptAddMap = {};
-    console.log(`[generatePlan] cat=${cd.cat} gap=${gap} keepFunds=${keepFunds.map(h=>h.code).join(',')||'空'} newMoneyForCat=${newMoneyForCat}`);
-    if(gap > 0 && keepFunds.length > 0 && newMoneyForCat > 0){
+    console.log(`[generatePlan] cat=${cd.cat} gap=${gap} keepFunds=${keepFunds.map(h=>h.code).join(',')||'空'} newMoneyForCat=${newMoneyForCat} intraRelease=${intraRelease}`);
+    if(totalAddForCat > 0 && keepFunds.length > 0){
       const keepTotal = keepFunds.reduce((s,h) => s + h.value, 0) || 1;
       keepFunds.forEach(h => {
-        const addAmt = Math.round(newMoneyForCat * (h.value / keepTotal));
+        const addAmt = Math.round(totalAddForCat * (h.value / keepTotal));
         keptAddMap[h.code] = addAmt;
         remainingGap -= addAmt;
       });
