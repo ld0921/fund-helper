@@ -1341,8 +1341,11 @@ function _doGenerate(shouldScroll){
       remainingGap = Math.max(0, remainingGap);
     }
 
+    const isOverweight = keptValueTotal > catTargetAmt && catTargetAmt > 0;
     const keptPicks = kept.map(h=>{
-      const targetAmt = Math.round(h.value * keptScale + (keptAddMap[h.code]||0));
+      // 超配类别中低分基金目标为0（触发减仓），高分基金按比例缩减
+      const baseAmt = (isOverweight && !h.keep) ? 0 : Math.round(h.value * keptScale);
+      const targetAmt = baseAmt + (keptAddMap[h.code]||0);
       const diffAmt = targetAmt - h.value;
       const tolPct = ['money','bond'].includes(h.fundData.cat) ? 0.10 : h.fundData.cat === 'index' ? 0.15 : 0.20;
       const tolMin = ['money','bond'].includes(h.fundData.cat) ? 300 : h.fundData.cat === 'index' ? 500 : 800;
