@@ -1775,8 +1775,25 @@ function _doGenerate(shouldScroll){
   renderStyleExposure(styleExposure, finalPicks);
   renderStressTest(stressResults, totalAmt);
 
+  // 类内均衡：对每个类别内的持有基金，削峰填谷到 equalShare（在 computeRebalancePlan 之前执行，确保调仓建议与配置方案一致）
+  Object.keys(selectedPicks).forEach(cat => {
+    const keepFunds = selectedPicks[cat].filter(f => f.isExisting && f.method !== '减仓至目标配置' && f.amt > 0);
+    if(keepFunds.length < 2) return;
+    const catTargetAmt = portfolioTotal * (weights[cat] || 0) / 100;
+    const equalShare = catTargetAmt / keepFunds.length;
+    let excess = 0;
+    keepFunds.forEach(f => {
+      if(f.amt > equalShare){ excess += f.amt - equalShare; f.amt = Math.round(equalShare); }
+    });
+    if(excess > 0){
+      const underFunds = keepFunds.filter(f => f.amt < equalShare);
+      const totalGap = underFunds.reduce((s, f) => s + (equalShare - f.amt), 0) || 1;
+      underFunds.forEach(f => { f.amt += Math.round(excess * (equalShare - f.amt) / totalGap); });
+    }
+    keepFunds.forEach(f => { f.pct = Math.round(f.amt / portfolioTotal * 100); });
+  });
+
   // 11. 调仓建议（先于执行步骤生成，以便步骤引用调仓数据）
-  // existingHoldings.value 保持与AI方案生成时一致（第1214行），不再重复同步，避免两处existTotal不一致
   const rebalPlan = computeRebalancePlan(selectedPicks, totalAmt, weights);
   // computeRebalancePlan 的资金平衡校验会修改 pick.amt，需在渲染前重新执行集中度上限
   Object.values(selectedPicks).flat().forEach(f => {
@@ -1784,31 +1801,6 @@ function _doGenerate(shouldScroll){
       f.amt = Math.round(singleFundCapFinal);
       f.pct = Math.round(f.amt / portfolioTotal * 100);
     }
-  });
-  // 类内均衡后处理：对每个类别内的 keep=true 基金，削峰填谷到 equalShare
-  // 必须在所有归一化和 computeRebalancePlan 之后执行，防止被覆盖
-  Object.keys(selectedPicks).forEach(cat => {
-    const keepFunds = selectedPicks[cat].filter(f => f.isExisting && f.method !== '减仓至目标配置' && f.amt > 0);
-    if(keepFunds.length < 2) return;
-    const catTargetAmt = portfolioTotal * (weights[cat] || 0) / 100;
-    const equalShare = catTargetAmt / keepFunds.length;
-    // 收集超配基金的超出量
-    let excess = 0;
-    keepFunds.forEach(f => {
-      if(f.amt > equalShare){
-        excess += f.amt - equalShare;
-        f.amt = Math.round(equalShare);
-      }
-    });
-    // 将超出量按缺口比例分配给欠配基金
-    if(excess > 0){
-      const underFunds = keepFunds.filter(f => f.amt < equalShare);
-      const totalGap = underFunds.reduce((s, f) => s + (equalShare - f.amt), 0) || 1;
-      underFunds.forEach(f => {
-        f.amt += Math.round(excess * (equalShare - f.amt) / totalGap);
-      });
-    }
-    keepFunds.forEach(f => { f.pct = Math.round(f.amt / portfolioTotal * 100); });
   });
 
   // 持久化方案，供持仓诊断模块联动（避免对"建议加仓/持有"的基金发出矛盾黄警）
