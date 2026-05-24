@@ -1346,10 +1346,15 @@ function _doGenerate(shouldScroll){
     console.log(`[generatePlan] cat=${cd.cat} gap=${gap} intraFill=${intraFill} keepFunds=${keepFunds.map(h=>h.code).join(',')||'空'} newMoneyForCat=${newMoneyForCat}`);
     if(totalAddForCat > 0 && keepFunds.length > 0){
       const keepTotal = keepFunds.reduce((s,h) => s + h.value, 0) || 1;
+      // 单只基金集中度上限：进取型35%，平衡型30%，稳健型25%，保守型20%
+      const singleFundCap = portfolioTotal * ({ conservative:20, moderate:25, balanced:30, aggressive:35 }[riskP] || 35) / 100;
       keepFunds.forEach(h => {
+        const baseAmt = Math.round(h.value * keptScale);
         const addAmt = Math.round(totalAddForCat * (h.value / keepTotal));
-        keptAddMap[h.code] = addAmt;
-        remainingGap -= addAmt;
+        const proposedTarget = baseAmt + addAmt;
+        const cappedAdd = proposedTarget > singleFundCap ? Math.max(0, singleFundCap - baseAmt) : addAmt;
+        keptAddMap[h.code] = cappedAdd;
+        remainingGap -= cappedAdd;
       });
       remainingGap = Math.max(0, remainingGap);
     }
