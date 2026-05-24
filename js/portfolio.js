@@ -1273,20 +1273,28 @@ function _doGenerate(shouldScroll){
   catRanks.forEach(cd=>{
     const cat = cd.cat;
     const targetAmt = portfolioTotal * (weights[cat]||0) / 100;
+    // 所有已持仓基金（不管评分高低）都参与调仓计算
     const allHeldFunds = holdingsByCat[cat]||[];
-    const highFunds = allHeldFunds.filter(h => h.keep);
-    const lowFunds = allHeldFunds.filter(h => !h.keep);
-    const highAmt = highFunds.reduce((s,h)=>s+h.value,0);
-    const lowAmt = lowFunds.reduce((s,h)=>s+h.value,0);
-    // 低分基金减仓后，其价值优先留在本类别补充高分基金；超出类别目标的部分才释放全局
-    const catAvail = highAmt + lowAmt; // 类别内可用资金（高分持仓 + 低分减仓释放）
-    if(catAvail > targetAmt){
-      freedFromOverweight += catAvail - targetAmt;
+    const keptFunds = allHeldFunds; // 不再按评分过滤，已持仓基金都纳入目标
+    const keptAmt = keptFunds.reduce((s,h)=>s+h.value,0);
+    if(keptAmt > targetAmt){
+      // 超配时：低分基金（effectiveScore<60）不受保护，其超出部分直接计入可减仓资金
+      const lowScoreFunds = keptFunds.filter(h => !h.keep);
+      const highScoreFunds = keptFunds.filter(h => h.keep);
+      const highScoreAmt = highScoreFunds.reduce((s,h)=>s+h.value,0);
+      if(highScoreAmt <= targetAmt){
+        // 高分基金不超配，低分基金的超出部分可以减仓
+        const lowScoreExcess = keptAmt - targetAmt;
+        if(targetAmt > 0) freedFromOverweight += lowScoreExcess;
+      } else {
+        // 高分基金也超配，按原逻辑处理
+        if(targetAmt > 0) freedFromOverweight += keptAmt - targetAmt;
+      }
       catGap[cat] = 0;
     } else {
-      catGap[cat] = targetAmt - catAvail;
+      catGap[cat] = targetAmt - keptAmt;
     }
-    catKept[cat] = allHeldFunds;
+    catKept[cat] = keptFunds;
   });
   const totalGap = Object.values(catGap).reduce((s,v)=>s+v,0);
   const distributableMoney = totalAmt + freedFromOverweight; // 新增资金 + 超配释放资金
@@ -1315,33 +1323,28 @@ function _doGenerate(shouldScroll){
     // 已保留基金纳入推荐
     // 若该类别超配，按目标金额缩减 amt；若不足，优先将缺口分配给评分达标的已持仓基金（加仓）
     const catTargetAmt = portfolioTotal * w / 100;
-    const highKeptValue = kept.filter(h=>h.keep).reduce((s,h) => s + h.value, 0);
-    const keptScale = (highKeptValue > catTargetAmt && catTargetAmt > 0) ? catTargetAmt / highKeptValue : 1;
+    const keptValueTotal = kept.reduce((s,h) => s + h.value, 0);
+    const keptScale = (keptValueTotal > catTargetAmt && catTargetAmt > 0) ? catTargetAmt / keptValueTotal : 1;
 
     // 缺口优先分配给评分达标的已持仓基金（加仓），按持仓比例分配
     const keepFunds = kept.filter(h => h.keep);
-    const lowFunds = kept.filter(h => !h.keep);
-    const lowAmt = lowFunds.reduce((s,h)=>s+h.value,0);
-    // 类内可分配给高分基金的资金 = 全局分配的新资金 + 低分基金减仓释放的类内资金
-    // 但不超过类别目标（超出部分已计入 freedFromOverweight）
-    const intraRelease = Math.min(lowAmt, Math.max(0, catTargetAmt - (kept.filter(h=>h.keep).reduce((s,h)=>s+h.value,0))));
-    const totalAddForCat = newMoneyForCat + intraRelease;
     let remainingGap = gap;
     const keptAddMap = {};
-    console.log(`[generatePlan] cat=${cd.cat} gap=${gap} keepFunds=${keepFunds.map(h=>h.code).join(',')||'空'} newMoneyForCat=${newMoneyForCat} intraRelease=${intraRelease}`);
-    if(totalAddForCat > 0 && keepFunds.length > 0){
+    console.log(`[generatePlan] cat=${cd.cat} gap=${gap} keepFunds=${keepFunds.map(h=>h.code).join(',')||'空'} newMoneyForCat=${newMoneyForCat}`);
+    if(gap > 0 && keepFunds.length > 0 && newMoneyForCat > 0){
       const keepTotal = keepFunds.reduce((s,h) => s + h.value, 0) || 1;
       keepFunds.forEach(h => {
-        const addAmt = Math.round(totalAddForCat * (h.value / keepTotal));
+        const addAmt = Math.round(newMoneyForCat * (h.value / keepTotal));
         keptAddMap[h.code] = addAmt;
         remainingGap -= addAmt;
       });
       remainingGap = Math.max(0, remainingGap);
     }
 
+    const isOverweight = keptValueTotal > catTargetAmt && catTargetAmt > 0;
     const keptPicks = kept.map(h=>{
-      // 低分基金无条件减仓至0，高分基金按比例缩减
-      const baseAmt = !h.keep ? 0 : Math.round(h.value * keptScale);
+      // 超配类别中低分基金目标为0（触发减仓），高分基金按比例缩减
+      const baseAmt = (isOverweight && !h.keep) ? 0 : Math.round(h.value * keptScale);
       const targetAmt = baseAmt + (keptAddMap[h.code]||0);
       const diffAmt = targetAmt - h.value;
       const tolPct = ['money','bond'].includes(h.fundData.cat) ? 0.10 : h.fundData.cat === 'index' ? 0.15 : 0.20;
