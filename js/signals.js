@@ -1397,6 +1397,7 @@ function recordTakeProfit(code, name){
     const log = JSON.parse(localStorage.getItem('_takeProfitLog') || '{}');
     log[code] = new Date(Date.now()+8*3600000).toISOString().slice(0,10);
     localStorage.setItem('_takeProfitLog', JSON.stringify(log));
+    FundDB.set('_takeProfitLog', log);
   } catch(_){}
   showToast(`已记录「${name}」减仓操作，30天内不再重复提示`, 'success');
   renderActionPanel();
