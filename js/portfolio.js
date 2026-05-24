@@ -1644,6 +1644,8 @@ function _doGenerate(shouldScroll){
   Object.keys(selectedPicks).forEach(cat => {
     selectedPicks[cat] = finalPicks.filter(f => f.cat === cat);
   });
+  // DEBUG: 输出 finalPicks 供排查
+  console.log('[DEBUG finalPicks]', finalPicks.map(p=>`${p.name} amt=${p.amt} pct=${p.pct} isExisting=${p.isExisting} method=${p.method}`).join('\n'));
 
   // 5. 收益预估（长期均值中枢 + 均值回归 + 统计置信区间）
   // 预期收益 = 类别长期年化均值（r3年化）向长期中枢回归，而非 r1 打折
