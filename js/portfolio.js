@@ -1495,7 +1495,7 @@ function _doGenerate(shouldScroll){
   const allPicks = Object.values(selectedPicks).flat();
 
   // 过滤掉金额过小的基金（< 100元），避免推荐0元或极小金额的基金
-  const filteredPicks = allPicks.filter(f => f.amt >= 100);
+  const filteredPicks = allPicks.filter(f => f.amt >= 100 || (f.isExisting && f.method === '减仓至目标配置'));
   if(filteredPicks.length < allPicks.length){
     // 计算被过滤基金中有多少是新买入的金额
     const removedFunds = allPicks.filter(f => f.amt < 100);
@@ -1519,7 +1519,7 @@ function _doGenerate(shouldScroll){
     }
     // 更新 selectedPicks
     Object.keys(selectedPicks).forEach(cat => {
-      selectedPicks[cat] = selectedPicks[cat].filter(f => f.amt >= 100);
+      selectedPicks[cat] = selectedPicks[cat].filter(f => f.amt >= 100 || (f.isExisting && f.method === '减仓至目标配置'));
     });
 
     // 重新计算百分比并归一化
@@ -2080,7 +2080,7 @@ function renderAllocGroups(selectedPicks, weights){
   let html='';
   // 用 Largest Remainder 归一化三组百分比，保证加总恰好 = 100%
   const groupData = groupDefs.map(g => {
-    const picks = g.cats.flatMap(cat=>selectedPicks[cat]||[]).filter(f=>f.amt > 0);
+    const picks = g.cats.flatMap(cat=>selectedPicks[cat]||[]).filter(f=>f.amt > 0 || (f.isExisting && f.method === '减仓至目标配置'));
     const exactPct = picks.reduce((s,f)=>s+f.pct, 0);
     return { g, picks, exactPct };
   }).filter(d => d.picks.length > 0);
