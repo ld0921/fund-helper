@@ -1775,33 +1775,39 @@ function _doGenerate(shouldScroll){
   renderStyleExposure(styleExposure, finalPicks);
   renderStressTest(stressResults, totalAmt);
 
-  // 类内均衡：对每个类别内的持有基金，削峰填谷到 equalShare（在 computeRebalancePlan 之前执行，确保调仓建议与配置方案一致）
-  Object.keys(selectedPicks).forEach(cat => {
-    const keepFunds = selectedPicks[cat].filter(f => f.isExisting && f.method !== '减仓至目标配置' && f.amt > 0);
-    if(keepFunds.length < 2) return;
-    const catTargetAmt = portfolioTotal * (weights[cat] || 0) / 100;
-    const equalShare = catTargetAmt / keepFunds.length;
-    let excess = 0;
-    keepFunds.forEach(f => {
-      if(f.amt > equalShare){ excess += f.amt - equalShare; f.amt = Math.round(equalShare); }
+  // 类内均衡：削峰填谷到 equalShare，需在 computeRebalancePlan 前后各执行一次
+  // 前：让 computeRebalancePlan 基于均衡后的 amt 计算调仓建议
+  // 后：抵消 computeRebalancePlan 内部资金平衡校验对 amt 的再次修改
+  const applyIntraCatBalance = () => {
+    Object.keys(selectedPicks).forEach(cat => {
+      const keepFunds = selectedPicks[cat].filter(f => f.isExisting && f.method !== '减仓至目标配置' && f.amt > 0);
+      if(keepFunds.length < 2) return;
+      const catTargetAmt = portfolioTotal * (weights[cat] || 0) / 100;
+      const equalShare = catTargetAmt / keepFunds.length;
+      let excess = 0;
+      keepFunds.forEach(f => {
+        if(f.amt > equalShare){ excess += f.amt - equalShare; f.amt = Math.round(equalShare); }
+      });
+      if(excess > 0){
+        const underFunds = keepFunds.filter(f => f.amt < equalShare);
+        const totalGap = underFunds.reduce((s, f) => s + (equalShare - f.amt), 0) || 1;
+        underFunds.forEach(f => { f.amt += Math.round(excess * (equalShare - f.amt) / totalGap); });
+      }
+      keepFunds.forEach(f => { f.pct = Math.round(f.amt / portfolioTotal * 100); });
     });
-    if(excess > 0){
-      const underFunds = keepFunds.filter(f => f.amt < equalShare);
-      const totalGap = underFunds.reduce((s, f) => s + (equalShare - f.amt), 0) || 1;
-      underFunds.forEach(f => { f.amt += Math.round(excess * (equalShare - f.amt) / totalGap); });
-    }
-    keepFunds.forEach(f => { f.pct = Math.round(f.amt / portfolioTotal * 100); });
-  });
+  };
+  applyIntraCatBalance();
 
   // 11. 调仓建议（先于执行步骤生成，以便步骤引用调仓数据）
   const rebalPlan = computeRebalancePlan(selectedPicks, totalAmt, weights);
-  // computeRebalancePlan 的资金平衡校验会修改 pick.amt，需在渲染前重新执行集中度上限
+  // computeRebalancePlan 的资金平衡校验会修改 pick.amt，重新执行集中度上限 + 类内均衡
   Object.values(selectedPicks).flat().forEach(f => {
     if(f.amt > singleFundCapFinal){
       f.amt = Math.round(singleFundCapFinal);
       f.pct = Math.round(f.amt / portfolioTotal * 100);
     }
   });
+  applyIntraCatBalance();
 
   // 持久化方案，供持仓诊断模块联动（避免对"建议加仓/持有"的基金发出矛盾黄警）
   try {
