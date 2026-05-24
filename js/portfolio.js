@@ -1369,7 +1369,7 @@ function _doGenerate(shouldScroll){
         isExisting: true,
         newBuyAmt: keptAddMap[h.code] || 0,
       };
-    }).filter(p => p.amt >= 100);
+    }).filter(p => p.amt >= 100 || (p.isExisting && p.method === '减仓至目标配置'));
 
     // 新买入的基金（从候选池中选，排除已持有的），仅用剩余缺口
     let newPicks = [];
