@@ -1278,8 +1278,18 @@ function _doGenerate(shouldScroll){
     const keptFunds = allHeldFunds; // 不再按评分过滤，已持仓基金都纳入目标
     const keptAmt = keptFunds.reduce((s,h)=>s+h.value,0);
     if(keptAmt > targetAmt){
-      // 权重为0时不预计入可分配资金（减仓是用户操作，不立即发生）
-      if(targetAmt > 0) freedFromOverweight += keptAmt - targetAmt;
+      // 超配时：低分基金（effectiveScore<60）不受保护，其超出部分直接计入可减仓资金
+      const lowScoreFunds = keptFunds.filter(h => !h.keep);
+      const highScoreFunds = keptFunds.filter(h => h.keep);
+      const highScoreAmt = highScoreFunds.reduce((s,h)=>s+h.value,0);
+      if(highScoreAmt <= targetAmt){
+        // 高分基金不超配，低分基金的超出部分可以减仓
+        const lowScoreExcess = keptAmt - targetAmt;
+        if(targetAmt > 0) freedFromOverweight += lowScoreExcess;
+      } else {
+        // 高分基金也超配，按原逻辑处理
+        if(targetAmt > 0) freedFromOverweight += keptAmt - targetAmt;
+      }
       catGap[cat] = 0;
     } else {
       catGap[cat] = targetAmt - keptAmt;
