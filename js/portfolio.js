@@ -2326,7 +2326,7 @@ function renderMyHoldingScheme(){
   const picksWithPct = allPicks.map((p,i) => ({...p, _displayPct: displayPcts[i]}));
 
   const groupRows = groupDefs.map(g => {
-    const picks = g.cats.flatMap(cat => picksWithPct.filter(p=>p.cat===cat)).filter(p=>p.amt>0);
+    const picks = g.cats.flatMap(cat => picksWithPct.filter(p=>p.cat===cat)).filter(p=>p.amt>0 || (p.isExisting && p.method==='减仓至目标配置'));
     if(!picks.length) return '';
     const groupPct = picks.reduce((s,p)=>s+p._displayPct, 0);
     const groupAmt = picks.reduce((s,p)=>s+(p.amt||0), 0);
