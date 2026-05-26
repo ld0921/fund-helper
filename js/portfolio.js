@@ -606,7 +606,9 @@ function computeWeights(riskProfile, horizon, catRanks, macroClock){
   if(macroClock && macroClock.phase !== 'unknown'){
     const eqMult = macroClock.equityMult;
     const bdMult = macroClock.bondMult;
-    ['active','index','qdii'].forEach(c => { if(base[c]) base[c] *= eqMult; });
+    // recovery阶段（A股强势期）QDII不跟随权益放大，避免QDII与active竞争资金
+    const eqCats = macroClock.phase === 'recovery' ? ['active','index'] : ['active','index','qdii'];
+    eqCats.forEach(c => { if(base[c]) base[c] *= eqMult; });
     if(base.bond) base.bond *= bdMult;
     // 滞胀期强制提升货币配置
     if(macroClock.phase === 'stagflation'){
@@ -1310,7 +1312,15 @@ function _doGenerate(shouldScroll){
     catKept[cat] = allHeldFunds;
   });
   const totalGap = Object.values(catGap).reduce((s,v)=>s+v,0);
-  const distributableMoney = totalAmt + freedFromOverweight; // 新增资金 + 超配释放资金
+  let distributableMoney = totalAmt + freedFromOverweight; // 新增资金 + 超配释放资金
+  // 强势期（A股权益强势）：优先填满 active 缺口，剩余再按比例分配
+  const activeFirstMoney = {};
+  if(macroClock && macroClock.phase === 'recovery' && catGap.active > 0){
+    const activeFirst = Math.min(catGap.active, distributableMoney);
+    activeFirstMoney.active = activeFirst;
+    distributableMoney -= activeFirst;
+    catGap.active = 0;
+  }
 
   // 5. 选基（融合已有持仓）
   const selectedPicks = {};
@@ -1331,7 +1341,10 @@ function _doGenerate(shouldScroll){
     const kept = catKept[cd.cat]||[];
     const gap = catGap[cd.cat]||0;
     // 该类别分配的新资金 = 总新资金 × (缺口占比)，确保不超过新资金总额
-    const newMoneyForCat = totalGap > 0 ? Math.round(distributableMoney * gap / totalGap) : 0;
+    // 强势期 active 已优先分配，其余类别从剩余资金中按比例分配
+    const remainingGapTotal = Object.values(catGap).reduce((s,v)=>s+v,0);
+    const newMoneyForCat = (activeFirstMoney[cd.cat] || 0) +
+      (remainingGapTotal > 0 ? Math.round(distributableMoney * gap / remainingGapTotal) : 0);
 
     const catTargetAmt = portfolioTotal * w / 100;
     // keptScale 仅基于高分基金计算，低分基金无条件减仓至0
