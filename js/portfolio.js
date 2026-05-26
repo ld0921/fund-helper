@@ -58,6 +58,9 @@ function calculateRebalanceCost(currentFund, targetFund, holdingDays, amount){
 function computeRebalancePlan(targetPicks, newMoney, weights){
   if(!existingHoldings.length) return null;
   const allPicks=Object.values(targetPicks).flat();
+  // 追踪交银 amt
+  const jy = allPicks.find(p=>p.code==='519770');
+  if(jy) console.log('[TRACE] 交银进入computeRebalancePlan amt='+jy.amt+' isExisting='+jy.isExisting+' newBuyAmt='+jy.newBuyAmt);
   const existTotal=existingHoldings.reduce((s,h)=>s+h.value,0);
   const totalPortfolio=existTotal+newMoney;
   const actions=[];
