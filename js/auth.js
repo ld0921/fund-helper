@@ -221,7 +221,10 @@ async function applyCloudData(cloudData, version){
   dcaPlans = data.dcaPlans || [];
   navCache = data.navCache || {};
   window._myHoldingScheme = data.myHoldingScheme || null;
-  if(data._takeProfitLog) localStorage.setItem('_takeProfitLog', JSON.stringify(data._takeProfitLog));
+  if(data._takeProfitLog && !Array.isArray(data._takeProfitLog)){
+    window._tpLog = data._takeProfitLog;
+    localStorage.setItem('_takeProfitLog', JSON.stringify(data._takeProfitLog));
+  }
   _cloudVersion = version;
   renderAll();
   showToast('已从云端同步最新数据','success');
