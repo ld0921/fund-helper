@@ -1607,7 +1607,13 @@ function _doGenerate(shouldScroll){
           return amtB - amtA;
         })[0];
         if(!maxNewBuy.isExisting){ maxNewBuy.amt += newBuyDiff; }
-        else { maxNewBuy.newBuyAmt += newBuyDiff; maxNewBuy.amt += newBuyDiff; }
+        else {
+          const singleCapHere = portfolioTotal * ({ conservative:20, moderate:25, balanced:30, aggressive:35 }[riskP] || 35) / 100;
+          const allowedAdd = Math.max(0, singleCapHere - (maxNewBuy.amt - (maxNewBuy.newBuyAmt||0)));
+          const actualAdd = Math.min(newBuyDiff, allowedAdd);
+          maxNewBuy.newBuyAmt = (maxNewBuy.newBuyAmt||0) + actualAdd;
+          maxNewBuy.amt += actualAdd;
+        }
         maxNewBuy.pct = Math.round(maxNewBuy.amt / portfolioTotal * 100);
       } else {
         // 资金不足：按比例缩减所有新买入基金，确保没有负数
