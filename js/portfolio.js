@@ -1596,6 +1596,7 @@ function _doGenerate(shouldScroll){
     return s;
   }, 0);
   const newBuyDiff = totalAmt - newBuyTotal;
+  console.log('[TRACE2] totalAmt='+totalAmt+' newBuyTotal='+newBuyTotal+' newBuyDiff='+newBuyDiff);
   if(Math.abs(newBuyDiff) > 1){
     const candidates = finalPicks.filter(f => !f.isExisting || f.newBuyAmt);
     if(candidates.length > 0){
