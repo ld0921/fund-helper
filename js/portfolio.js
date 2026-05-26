@@ -1390,9 +1390,10 @@ function _doGenerate(shouldScroll){
 
     const isOverweight = highKeptValue > catTargetAmt && catTargetAmt > 0;
     console.log(`[keptPicks] cat=${cd.cat} catTargetAmt=${catTargetAmt.toFixed(0)} highKeptValue=${highKeptValue.toFixed(0)} isOverweight=${isOverweight} keptScale=${keptScale.toFixed(4)}`);
+    const keptSingleCap = portfolioTotal * ({ conservative:20, moderate:25, balanced:30, aggressive:35 }[riskP] || 35) / 100;
     const keptPicks = kept.map(h=>{
       const baseAmt = !h.keep ? 0 : Math.round(h.value * keptScale);
-      const targetAmt = baseAmt + (keptAddMap[h.code]||0);
+      const targetAmt = Math.min(baseAmt + (keptAddMap[h.code]||0), keptSingleCap);
       const diffAmt = targetAmt - h.value;
       const tolPct = ['money','bond'].includes(h.fundData.cat) ? 0.10 : h.fundData.cat === 'index' ? 0.15 : 0.20;
       const tolMin = ['money','bond'].includes(h.fundData.cat) ? 300 : h.fundData.cat === 'index' ? 500 : 800;
