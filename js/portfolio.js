@@ -1445,12 +1445,14 @@ function _doGenerate(shouldScroll){
         const existing = merged[p.code];
         if(!p.isExisting){
           // p是新买入，existing是已有持仓
-          const newBuyAmt = p.amt; // 记录新买入金额
-          existing.amt += p.amt;
-          existing.pct += p.pct;
+          const newBuyAmt = p.amt;
+          const mergedAmt = Math.min(existing.amt + p.amt, keptSingleCap);
+          const actualAdd = mergedAmt - existing.amt;
+          existing.amt = mergedAmt;
+          existing.pct = Math.round(mergedAmt / portfolioTotal * 100);
           existing.method = '继续持有+加仓';
           existing.role = '已持有·加仓';
-          existing.newBuyAmt = newBuyAmt; // 保存新买入金额，用于后续校验
+          existing.newBuyAmt = actualAdd;
         }
       }
     });
