@@ -1560,10 +1560,14 @@ function _doGenerate(shouldScroll){
       const newBuyFunds = filteredPicks.filter(f => !f.isExisting || f.newBuyAmt);
       if(newBuyFunds.length > 0){
         const totalPct = newBuyFunds.reduce((s, f) => s + f.pct, 0);
+        const singleCapRedist = portfolioTotal * ({ conservative:20, moderate:25, balanced:30, aggressive:35 }[riskP] || 35) / 100;
         newBuyFunds.forEach(f => {
           const addAmt = Math.round(removedNewBuyAmt * f.pct / totalPct);
-          f.amt += addAmt;
-          if(f.newBuyAmt) f.newBuyAmt += addAmt;
+          const baseAmt = f.isExisting ? (f.amt - (f.newBuyAmt||0)) : 0;
+          const allowed = f.isExisting ? Math.max(0, singleCapRedist - baseAmt - (f.newBuyAmt||0)) : addAmt;
+          const actualAdd = Math.min(addAmt, allowed);
+          f.amt += actualAdd;
+          if(f.newBuyAmt) f.newBuyAmt += actualAdd;
         });
       }
     }
