@@ -1311,6 +1311,13 @@ function _doGenerate(shouldScroll){
     }
     catKept[cat] = allHeldFunds;
   });
+  // satellite基金（不在精选库或无收益数据）的持仓已锁定，从catGap中扣除，避免重复分配
+  actions.filter(a => a.action === 'satellite' && a.cat && a.cat !== 'other').forEach(a => {
+    if(catGap[a.cat] !== undefined){
+      catGap[a.cat] = Math.max(0, catGap[a.cat] - a.currentAmt);
+    }
+  });
+
   const totalGap = Object.values(catGap).reduce((s,v)=>s+v,0);
   let distributableMoney = totalAmt + freedFromOverweight; // 新增资金 + 超配释放资金
   // 强势期（A股权益强势）：优先填满 active 缺口，剩余再按比例分配
