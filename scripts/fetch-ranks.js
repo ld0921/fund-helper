@@ -473,6 +473,14 @@ async function main() {
   const curatedResult = { timestamp: new Date().toISOString(), marketBenchmarks: finalBenchmarks, funds: {} };
   let curatedDone = 0;
 
+  // 读取上次精选库数据，用于本次获取失败时保留旧数据
+  const prevCuratedPath = path.join(__dirname, '..', 'data', 'curated-details.json');
+  let prevFunds = {};
+  try {
+    const prev = JSON.parse(fs.readFileSync(prevCuratedPath, 'utf-8'));
+    prevFunds = prev.funds || {};
+  } catch(_) {}
+
   for (const code of dynamicCodes) {
     try {
       // 已有扫描数据的基金直接复用，只补充 r3（扫描阶段未拉取）
@@ -523,9 +531,18 @@ async function main() {
 
         curatedResult.funds[code] = entry;
         curatedDone++;
+      } else if (prevFunds[code]) {
+        // detail为null（数据缺失）时保留上次数据
+        curatedResult.funds[code] = { ...prevFunds[code], _stale: true };
+        console.warn(`    ${code} detail为null，已保留上次数据`);
       }
     } catch (e) {
       console.warn(`    精选库详情失败 ${code}: ${e.message}`);
+      // 获取失败时保留上次数据，避免基金因临时数据缺失被移出精选库
+      if (prevFunds[code]) {
+        curatedResult.funds[code] = { ...prevFunds[code], _stale: true };
+        console.warn(`    已保留 ${code} 上次数据（标记为stale）`);
+      }
     }
     await sleep(150);
   }
