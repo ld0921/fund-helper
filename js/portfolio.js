@@ -1311,10 +1311,15 @@ function _doGenerate(shouldScroll){
     }
     catKept[cat] = allHeldFunds;
   });
-  // satellite基金（不在精选库或无收益数据）的持仓已锁定，从catGap中扣除，避免重复分配
-  actions.filter(a => a.action === 'satellite' && a.cat && a.cat !== 'other').forEach(a => {
-    if(catGap[a.cat] !== undefined){
-      catGap[a.cat] = Math.max(0, catGap[a.cat] - a.currentAmt);
+  // 不在精选库的持仓（satellite）已锁定，从catGap中扣除，避免重复分配
+  existingHoldings.forEach(h => {
+    const fd = CURATED_FUNDS.find(f => f.code === h.code);
+    if(fd) return; // 在精选库的已计入holdingsByCat，不需要处理
+    // 不在精选库：尝试从h.type推断cat，QDII类型最关键
+    const typeMap = {'QDII':'qdii','债券型':'bond','货币型':'money','指数型':'index','混合型':'active','股票型':'active'};
+    const cat = typeMap[h.type] || null;
+    if(cat && catGap[cat] !== undefined){
+      catGap[cat] = Math.max(0, catGap[cat] - (h.value||0));
     }
   });
 
