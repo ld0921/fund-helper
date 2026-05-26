@@ -1577,6 +1577,8 @@ function _doGenerate(shouldScroll){
   }
 
   const finalPicks = filteredPicks;
+  const jyFinal = finalPicks.find(p=>p.code==='519770');
+  if(jyFinal) console.log('[TRACE3] 进入金额校验前 交银amt='+jyFinal.amt+' newBuyAmt='+jyFinal.newBuyAmt);
   if(!finalPicks.length){
     document.getElementById('plan-summary').innerHTML='<div style="padding:20px;text-align:center;color:var(--muted)">⚠️ 未能生成方案，请检查基金数据是否加载完成后重试。</div>';
     return;
