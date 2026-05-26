@@ -1495,13 +1495,16 @@ function _doGenerate(shouldScroll){
     if(totalPctAfterRecycle !== 100 && allPicksAfterRecycle.length > 0 && totalPctAfterRecycle > 0){
       const scale = 100 / totalPctAfterRecycle;
       allPicksAfterRecycle.forEach(p => {
+        if(p.isExisting) return; // 已持仓基金 amt 固定，不参与缩放
         p.pct = Math.round(p.pct * scale);
         p.amt = Math.round(portfolioTotal * p.pct / 100);
       });
       totalPctAfterRecycle = allPicksAfterRecycle.reduce((s,p) => s + p.pct, 0);
       if(totalPctAfterRecycle !== 100){
         const diff = 100 - totalPctAfterRecycle;
-        const maxPick = [...allPicksAfterRecycle].sort((a,b) => b.pct - a.pct)[0];
+        const nonExistingPicks = allPicksAfterRecycle.filter(p => !p.isExisting);
+        const poolForDiff = nonExistingPicks.length > 0 ? nonExistingPicks : allPicksAfterRecycle;
+        const maxPick = [...poolForDiff].sort((a,b) => b.pct - a.pct)[0];
         maxPick.pct += diff;
         maxPick.amt = Math.round(portfolioTotal * maxPick.pct / 100);
       }
