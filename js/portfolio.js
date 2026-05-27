@@ -1619,17 +1619,20 @@ function _doGenerate(shouldScroll){
   // 最终百分比归一化：确保所有基金百分比总和为100%
   normalizePicksPercentage(finalPicks, portfolioTotal);
 
-  // 金额校验：确保新买入的总金额等于用户输入的新资金（totalAmt）
-  // 包括纯新买入的基金 + 合并后基金的新买入部分（newBuyAmt）
+  // 金额校验：确保新买入的总金额等于可用资金（新增资金 + 清仓/减仓释放资金）
   const newBuyTotal = finalPicks.reduce((s, f) => {
-    if(!f.isExisting){
-      return s + f.amt; // 纯新买入的基金
-    } else if(f.newBuyAmt){
-      return s + f.newBuyAmt; // 合并后基金的新买入部分
-    }
+    if(!f.isExisting) return s + f.amt;
+    else if(f.newBuyAmt) return s + f.newBuyAmt;
     return s;
   }, 0);
-  const newBuyDiff = totalAmt - newBuyTotal;
+  // 可用资金 = 新增资金 + 已持仓中被减仓/清仓释放的金额
+  const freedInPlan = finalPicks.reduce((s, f) => {
+    if(!f.isExisting) return s;
+    const held = existingHoldings.find(h => h.code === f.code);
+    return s + Math.max(0, (held ? held.value : 0) - f.amt);
+  }, 0);
+  const expectedNewBuyTotal = totalAmt + freedInPlan;
+  const newBuyDiff = expectedNewBuyTotal - newBuyTotal;
   console.log('[TRACE2] totalAmt='+totalAmt+' newBuyTotal='+newBuyTotal+' newBuyDiff='+newBuyDiff);
   if(Math.abs(newBuyDiff) > 1){
     const candidates = finalPicks.filter(f => !f.isExisting || f.newBuyAmt);
