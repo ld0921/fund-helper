@@ -1648,12 +1648,22 @@ function _doGenerate(shouldScroll){
   // 最终金额校验：确保所有基金金额总和精确等于 portfolioTotal
   const finalAmtSum = finalPicks.reduce((s, f) => s + f.amt, 0);
   if(finalAmtSum !== portfolioTotal && finalPicks.length > 0){
-    const diff = portfolioTotal - finalAmtSum;
-    const nonExistingFinal = finalPicks.filter(f => !f.isExisting);
-    const poolFinal = nonExistingFinal.length > 0 ? nonExistingFinal : finalPicks;
-    const maxPick = [...poolFinal].sort((a,b) => b.amt - a.amt)[0];
-    maxPick.amt += diff;
-    maxPick.pct = Math.round(maxPick.amt / portfolioTotal * 100);
+    let remaining = portfolioTotal - finalAmtSum;
+    const poolFinal = (finalPicks.filter(f => !f.isExisting).length > 0 ? finalPicks.filter(f => !f.isExisting) : finalPicks)
+      .sort((a,b) => b.amt - a.amt);
+    for(const pick of poolFinal){
+      if(remaining === 0) break;
+      const room = Math.round(singleFundCapFinal) - pick.amt;
+      const add = remaining > 0 ? Math.min(remaining, Math.max(0, room)) : Math.max(remaining, -pick.amt);
+      pick.amt += add;
+      pick.pct = Math.round(pick.amt / portfolioTotal * 100);
+      remaining -= add;
+    }
+    // 若仍有剩余（所有基金都触及上限），分给最大基金
+    if(remaining !== 0){
+      poolFinal[0].amt += remaining;
+      poolFinal[0].pct = Math.round(poolFinal[0].amt / portfolioTotal * 100);
+    }
   }
   // 确保所有基金 pct 与 amt 一致
   finalPicks.forEach(f => { f.pct = Math.round(f.amt / portfolioTotal * 100); });
