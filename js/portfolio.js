@@ -1360,15 +1360,21 @@ function _doGenerate(shouldScroll){
   });
 
   const totalGap = Object.values(catGap).reduce((s,v)=>s+v,0);
-  // Option B：释放资金在recovery phase优先补给active缺口，新增资金按缺口比例分配
-  // 不修改catGap，避免影响后续比例计算；用activeFirstAmt标记已预分配金额
-  let activeFirstAmt = 0;
-  if(macroClock && macroClock.phase === 'recovery' && (catGap.active||0) > 0){
-    activeFirstAmt = Math.min(catGap.active, freedFromOverweight);
+  // Option B：释放资金在recovery phase按 active→index→qdii 顺序填满权益缺口，剩余才给bond
+  // 新增资金按调整后的剩余缺口比例分配
+  const preAllocated = {};
+  let freedRemaining = freedFromOverweight;
+  if(macroClock && macroClock.phase === 'recovery'){
+    for(const cat of ['active','index','qdii']){
+      if(freedRemaining <= 0) break;
+      const gap = catGap[cat] || 0;
+      if(gap > 0){ const give = Math.min(gap, freedRemaining); preAllocated[cat] = give; freedRemaining -= give; }
+    }
   }
-  // 释放资金中未给active的部分 + 新增资金，按缺口比例分配
-  const freedForOthers = freedFromOverweight - activeFirstAmt;
-  let distributableMoney = totalAmt + freedForOthers;
+  // adjustedCatGap：扣除预分配后的剩余缺口，用于新增资金的比例分配
+  const adjustedCatGap = {};
+  Object.keys(catGap).forEach(cat => { adjustedCatGap[cat] = Math.max(0, (catGap[cat]||0) - (preAllocated[cat]||0)); });
+  let distributableMoney = totalAmt + freedRemaining;
 
   // 5. 选基（融合已有持仓）
   const selectedPicks = {};
@@ -1387,11 +1393,9 @@ function _doGenerate(shouldScroll){
       return;
     }
     const kept = catKept[cd.cat]||[];
-    const gap = catGap[cd.cat]||0;
-    // 该类别分配的新资金 = 总新资金 × (缺口占比)，确保不超过新资金总额
-    // 强势期 active 已优先分配，其余类别从剩余资金中按比例分配
-    const remainingGapTotal = Object.values(catGap).reduce((s,v)=>s+v,0);
-    const newMoneyForCat = (cd.cat === 'active' ? activeFirstAmt : 0) +
+    const gap = adjustedCatGap[cd.cat] || 0;
+    const remainingGapTotal = Object.values(adjustedCatGap).reduce((s,v)=>s+v,0);
+    const newMoneyForCat = (preAllocated[cd.cat] || 0) +
       (remainingGapTotal > 0 ? Math.round(distributableMoney * gap / remainingGapTotal) : 0);
 
     const catTargetAmt = portfolioTotal * w / 100;
