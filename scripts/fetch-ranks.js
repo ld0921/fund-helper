@@ -386,9 +386,8 @@ async function main() {
       // 维度3: 近3年收益 Top 15
       [...withDetail].filter(f => f.r3 > 0).sort((a, b) => b.r3 - a.r3).slice(0, 15).forEach(f => selectedCodes.add(f.code));
 
-      // 合并去重，最终每类别最多保留 30 只
-      const maxPerCat = 30;
-      const funds = allParsed.filter(f => selectedCodes.has(f.code)).slice(0, maxPerCat);
+      // 合并去重，保留全部并集结果（三维各Top15，去重后约25-35只）
+      const funds = allParsed.filter(f => selectedCodes.has(f.code));
 
       result.categories[catInfo.ft] = {
         label: catInfo.label,
