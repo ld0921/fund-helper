@@ -1360,17 +1360,15 @@ function _doGenerate(shouldScroll){
   });
 
   const totalGap = Object.values(catGap).reduce((s,v)=>s+v,0);
-  // Option B：新增资金按缺口比例分配；释放资金在recovery phase优先补给active，剩余再按比例分配
-  const activeFirstMoney = {};
-  let freedRemaining = freedFromOverweight;
-  if(macroClock && macroClock.phase === 'recovery' && catGap.active > 0){
-    const activeFirst = Math.min(catGap.active, freedRemaining);
-    activeFirstMoney.active = activeFirst;
-    freedRemaining -= activeFirst;
-    catGap.active = Math.max(0, catGap.active - activeFirst);
+  // Option B：释放资金在recovery phase优先补给active缺口，新增资金按缺口比例分配
+  // 不修改catGap，避免影响后续比例计算；用activeFirstAmt标记已预分配金额
+  let activeFirstAmt = 0;
+  if(macroClock && macroClock.phase === 'recovery' && (catGap.active||0) > 0){
+    activeFirstAmt = Math.min(catGap.active, freedFromOverweight);
   }
-  // 剩余释放资金 + 新增资金，按缺口比例分配给所有类别
-  let distributableMoney = totalAmt + freedRemaining;
+  // 释放资金中未给active的部分 + 新增资金，按缺口比例分配
+  const freedForOthers = freedFromOverweight - activeFirstAmt;
+  let distributableMoney = totalAmt + freedForOthers;
 
   // 5. 选基（融合已有持仓）
   const selectedPicks = {};
@@ -1393,7 +1391,7 @@ function _doGenerate(shouldScroll){
     // 该类别分配的新资金 = 总新资金 × (缺口占比)，确保不超过新资金总额
     // 强势期 active 已优先分配，其余类别从剩余资金中按比例分配
     const remainingGapTotal = Object.values(catGap).reduce((s,v)=>s+v,0);
-    const newMoneyForCat = (activeFirstMoney[cd.cat] || 0) +
+    const newMoneyForCat = (cd.cat === 'active' ? activeFirstAmt : 0) +
       (remainingGapTotal > 0 ? Math.round(distributableMoney * gap / remainingGapTotal) : 0);
 
     const catTargetAmt = portfolioTotal * w / 100;
