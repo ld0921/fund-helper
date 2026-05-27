@@ -1306,6 +1306,20 @@ function _doGenerate(shouldScroll){
     });
   }
 
+  // 已持仓 sector 去重：同一 sector 只保留评分最高的一只，其余降级为 keep=false
+  Object.values(holdingsByCat).forEach(funds => {
+    const sectorBest = {};
+    funds.forEach(h => {
+      const sec = h.fundData && h.fundData.sector;
+      if(!sec || !h.keep) return;
+      if(!sectorBest[sec] || h.score > sectorBest[sec].score) sectorBest[sec] = h;
+    });
+    funds.forEach(h => {
+      const sec = h.fundData && h.fundData.sector;
+      if(sec && h.keep && sectorBest[sec] && sectorBest[sec].code !== h.code) h.keep = false;
+    });
+  });
+
   // 计算每个类别的缺口：目标金额 - 已有达标基金金额
   const catGap = {};
   const catKept = {};
