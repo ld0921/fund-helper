@@ -376,10 +376,12 @@ async function main() {
       // 维度1: 近1年收益 Top 15
       [...withDetail].sort((a, b) => b.r1 - a.r1).slice(0, 15).forEach(f => selectedCodes.add(f.code));
 
-      // 维度2: Calmar Ratio Top 15 (r1/maxDD3y，时间窗口匹配)
-      [...withDetail].filter(f => (f.maxDD3y || f.maxDD) > 0).sort((a, b) => {
-        const calA = a.r1 / (a.maxDD3y || a.maxDD);
-        const calB = b.r1 / (b.maxDD3y || b.maxDD);
+      // 维度2: 长期风险调整收益 Top 15 (r3Ann/maxDD3y，分子分母同窗口，与scoreF calmarLong一致)
+      [...withDetail].filter(f => (f.maxDD3y || f.maxDD) > 0 && f.r3 > -100).sort((a, b) => {
+        const r3AnnA = (Math.pow(1 + a.r3/100, 1/3) - 1) * 100;
+        const r3AnnB = (Math.pow(1 + b.r3/100, 1/3) - 1) * 100;
+        const calA = r3AnnA / (a.maxDD3y || a.maxDD);
+        const calB = r3AnnB / (b.maxDD3y || b.maxDD);
         return calB - calA;
       }).slice(0, 15).forEach(f => selectedCodes.add(f.code));
 
