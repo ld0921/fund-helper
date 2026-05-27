@@ -593,17 +593,6 @@ function runHealthMonitor(){
     }
 
     // 类别行情末位且仓位大（注意：这里是"类别级"表现，不是基金在类别内的排名）
-    // 联动：若智能推荐最新结论为"加仓/持有/新建仓"，说明算法已综合类别强弱后仍建议保留，跳过此黄警避免矛盾
-    if(catRanksCache){
-      const catRank = catRanksCache.findIndex(c=>c.cat===fd.cat);
-      const recAction = latestPlanActions[h.code];
-      const recommendedKeep = recAction && ['buy','buy_more','hold'].includes(recAction);
-      const isBestInCat = holdings.filter(x=>{const xfd=CURATED_FUNDS.find(f=>f.code===x.code); return xfd&&xfd.cat===fd.cat;}).every(x=>x.code===h.code||scoreF(CURATED_FUNDS.find(f=>f.code===x.code))<=scoreF(fd));
-      if(catRank>=3 && h.value > 5000 && !recommendedKeep && fd.cat !== 'money' && !isBestInCat){
-        issues.push(`「${fd.label}」类别整体表现在 5 类资产中偏弱（第${catRank+1}位/共5类），你在该类别持仓 ¥${h.value.toLocaleString()}，注意权重配比`);
-        if(level==='green') level='yellow';
-      }
-    }
 
     // 性价比诊断
     const _useDca = (fd.cat === 'bond' || fd.cat === 'qdii');
