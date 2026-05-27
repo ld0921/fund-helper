@@ -1360,15 +1360,17 @@ function _doGenerate(shouldScroll){
   });
 
   const totalGap = Object.values(catGap).reduce((s,v)=>s+v,0);
-  let distributableMoney = totalAmt + freedFromOverweight; // 新增资金 + 超配释放资金
-  // 强势期（A股权益强势）：优先填满 active 缺口，剩余再按比例分配
+  // Option B：新增资金按缺口比例分配；释放资金在recovery phase优先补给active，剩余再按比例分配
   const activeFirstMoney = {};
+  let freedRemaining = freedFromOverweight;
   if(macroClock && macroClock.phase === 'recovery' && catGap.active > 0){
-    const activeFirst = Math.min(catGap.active, distributableMoney);
+    const activeFirst = Math.min(catGap.active, freedRemaining);
     activeFirstMoney.active = activeFirst;
-    distributableMoney -= activeFirst;
-    catGap.active = 0;
+    freedRemaining -= activeFirst;
+    catGap.active = Math.max(0, catGap.active - activeFirst);
   }
+  // 剩余释放资金 + 新增资金，按缺口比例分配给所有类别
+  let distributableMoney = totalAmt + freedRemaining;
 
   // 5. 选基（融合已有持仓）
   const selectedPicks = {};
