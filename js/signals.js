@@ -1505,7 +1505,7 @@ function renderActionPanel(){
       intensityDesc='市场条件尚可，正常力度加仓即可，无需刻意加大或减少。';
     } else if(totalScore <= -1 || (isNotRecommended && totalScore <= 1)){
       intensityLabel='⚠️ 暂缓'; intensityColor='#cf1322';
-      intensityDesc='估值偏高或动量偏空，建议暂缓加仓或仅维持定投，不宜追加大额资金。';
+      intensityDesc=(valPricey && !phaseBad) ? '估值偏高，动量尚可但性价比不足，建议暂缓加仓或仅维持定投，不宜追加大额资金。' : '动量偏空或估值偏高，建议暂缓加仓或仅维持定投，不宜追加大额资金。';
     } else {
       intensityLabel='🤏 弱'; intensityColor='#d48806';
       intensityDesc='市场信号偏谨慎，建议小额试探性加仓，保留更多子弹等待更好时机。';
