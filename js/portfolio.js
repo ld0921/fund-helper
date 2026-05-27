@@ -1351,6 +1351,7 @@ function _doGenerate(shouldScroll){
   });
 
   const totalGap = Object.values(catGap).reduce((s,v)=>s+v,0);
+  console.log('[TRACE4] catGap='+JSON.stringify(catGap)+' freedFromOverweight='+freedFromOverweight.toFixed(0));
   // Option B：释放资金在recovery phase按 active→index→qdii 顺序填满权益缺口，剩余才给bond
   // 新增资金按调整后的剩余缺口比例分配
   const preAllocated = {};
