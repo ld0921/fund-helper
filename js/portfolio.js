@@ -305,16 +305,7 @@ function computeRebalancePlan(targetPicks, newMoney, weights){
           : `加仓 ¥${a.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
         leftover -= add;
       }
-      // 若所有基金都触及上限仍有剩余，加到最大买入基金（保证资金不丢失）
-      if(leftover > 0){
-        const maxBuy = sorted[0];
-        maxBuy.actionAmt += leftover;
-        maxBuy.targetAmt = maxBuy.currentAmt + maxBuy.actionAmt;
-        syncPick(maxBuy.code, maxBuy.targetAmt);
-        maxBuy.actionDesc = maxBuy.action==='buy'
-          ? `新建仓 ¥${maxBuy.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`
-          : `加仓 ¥${maxBuy.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
-      }
+      // 若所有基金都触及上限仍有剩余，资金无法部署，不强制突破集中度上限
     } else {
       // 资金不足：按比例缩减所有买入操作，同步更新 AI方案 pick.amt/pct
       const scale = totalAvailable / actualBuyTotal;
