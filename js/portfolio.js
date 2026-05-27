@@ -1064,8 +1064,8 @@ async function generateSmartPortfolio(){
 
   btn.innerHTML='<span class="loading-dot"></span> 加载净值数据中…';
 
-  // 如果已有足够净值缓存（>10只），显示策略步骤动画后生成
-  if(Object.keys(navCache).length >= 10){
+  // 如果已有足够净值缓存（>=80%），显示策略步骤动画后生成
+  if(Object.keys(navCache).length >= Math.floor(CURATED_FUNDS.length * 0.8)){
     const bar=document.getElementById('gen-loading-bar');
     const countEl=document.getElementById('gen-loading-count');
     const textEl=document.getElementById('gen-loading-text');
