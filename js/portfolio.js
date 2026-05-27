@@ -1645,6 +1645,12 @@ function _doGenerate(shouldScroll){
   // 金额校验后重新归一化百分比
   normalizePicksPercentage(finalPicks, portfolioTotal);
 
+  // 确保所有基金 pct 与 amt 一致
+  finalPicks.forEach(f => { f.pct = Math.round(f.amt / portfolioTotal * 100); });
+
+  // 单只基金集中度上限（最终强制执行，在所有归一化之后）
+  const singleFundCapFinal = portfolioTotal * ({ conservative:20, moderate:25, balanced:30, aggressive:35 }[riskP] || 35) / 100;
+
   // 最终金额校验：确保所有基金金额总和精确等于 portfolioTotal
   const finalAmtSum = finalPicks.reduce((s, f) => s + f.amt, 0);
   if(finalAmtSum !== portfolioTotal && finalPicks.length > 0){
@@ -1659,17 +1665,11 @@ function _doGenerate(shouldScroll){
       pick.pct = Math.round(pick.amt / portfolioTotal * 100);
       remaining -= add;
     }
-    // 若仍有剩余（所有基金都触及上限），分给最大基金
     if(remaining !== 0){
       poolFinal[0].amt += remaining;
       poolFinal[0].pct = Math.round(poolFinal[0].amt / portfolioTotal * 100);
     }
   }
-  // 确保所有基金 pct 与 amt 一致
-  finalPicks.forEach(f => { f.pct = Math.round(f.amt / portfolioTotal * 100); });
-
-  // 单只基金集中度上限（最终强制执行，在所有归一化之后）
-  const singleFundCapFinal = portfolioTotal * ({ conservative:20, moderate:25, balanced:30, aggressive:35 }[riskP] || 35) / 100;
   let capExcess = 0;
   finalPicks.forEach(f => {
     if(f.amt > singleFundCapFinal){
