@@ -64,7 +64,7 @@ function inferMomentumPhase(catRanks){
   // 降低r1权重，提升短期信号权重，减少6~12个月滞后
   const signal = cat => {
     const r1 = getAvgR1(cat);
-    const r3m = getAvgR3(cat) > -100 ? (Math.pow(1 + getAvgR3(cat)/100, 1/3) - 1) * 100 / 4 * 12 : 0; // r3年化后近似3月值（年化%）
+    const r3m = getAvgR3(cat) > -100 ? (Math.pow(1 + getAvgR3(cat)/100, 1/3) - 1) * 100 / 4 : 0; // r3年化后近似3月值（年化%/4）
     const chg = getAvgChg(cat) * 20; // 今日涨跌放大20倍对齐量纲
     return r3m * 0.65 + r1 * 0.30 + chg * 0.05;
   };
