@@ -288,14 +288,33 @@ function computeRebalancePlan(targetPicks, newMoney, weights){
   if(buyActions.length > 0 && Math.abs(actualBuyTotal - totalAvailable) > 10){
     const diff = totalAvailable - actualBuyTotal;
     if(diff > 0){
-      // 资金有剩余：加到最大买入操作上
-      const maxBuy = [...buyActions].sort((a,b)=>b.actionAmt-a.actionAmt)[0];
-      maxBuy.actionAmt += diff;
-      maxBuy.targetAmt = maxBuy.currentAmt + maxBuy.actionAmt;
-      syncPick(maxBuy.code, maxBuy.targetAmt);
-      maxBuy.actionDesc = maxBuy.action==='buy'
-        ? `新建仓 ¥${maxBuy.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`
-        : `加仓 ¥${maxBuy.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
+      // 资金有剩余：按买入金额比例分配，遵守单只基金集中度上限
+      const riskP2 = (typeof currentRiskProfile !== 'undefined' ? currentRiskProfile : null) || 'aggressive';
+      const singleCap2 = totalPortfolio * ({ conservative:20, moderate:25, balanced:30, aggressive:35 }[riskP2] || 35) / 100;
+      let leftover = diff;
+      const sorted = [...buyActions].sort((a,b)=>b.actionAmt-a.actionAmt);
+      for(const a of sorted){
+        if(leftover <= 0) break;
+        const room = Math.max(0, Math.round(singleCap2) - a.targetAmt);
+        const add = Math.min(leftover, room);
+        a.actionAmt += add;
+        a.targetAmt = a.currentAmt + a.actionAmt;
+        syncPick(a.code, a.targetAmt);
+        a.actionDesc = a.action==='buy'
+          ? `新建仓 ¥${a.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`
+          : `加仓 ¥${a.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
+        leftover -= add;
+      }
+      // 若所有基金都触及上限仍有剩余，加到最大买入基金（保证资金不丢失）
+      if(leftover > 0){
+        const maxBuy = sorted[0];
+        maxBuy.actionAmt += leftover;
+        maxBuy.targetAmt = maxBuy.currentAmt + maxBuy.actionAmt;
+        syncPick(maxBuy.code, maxBuy.targetAmt);
+        maxBuy.actionDesc = maxBuy.action==='buy'
+          ? `新建仓 ¥${maxBuy.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`
+          : `加仓 ¥${maxBuy.actionAmt.toLocaleString('zh-CN',{maximumFractionDigits:0})}`;
+      }
     } else {
       // 资金不足：按比例缩减所有买入操作，同步更新 AI方案 pick.amt/pct
       const scale = totalAvailable / actualBuyTotal;
