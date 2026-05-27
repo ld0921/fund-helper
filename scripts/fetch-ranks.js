@@ -338,8 +338,8 @@ async function main() {
 
   for (const catInfo of CATEGORIES) {
     try {
-      console.log(`  拉取 ${catInfo.label} Top ${catInfo.ft === 'zs' ? 100 : 50}…`);
-      const pn = catInfo.ft === 'zs' ? 100 : (catInfo.ft === 'hh' || catInfo.ft === 'zq' ? 100 : 50);
+      console.log(`  拉取 ${catInfo.label} Top 150…`);
+      const pn = 150;
       const data = await fetchRank(catInfo.ft, pn);
       const allParsed = data.datas.map(item => parseFund(item, catInfo)).filter(Boolean);
 
@@ -373,21 +373,21 @@ async function main() {
       const withDetail = allParsed.filter(f => f.maxDD > 0);
       const selectedCodes = new Set();
 
-      // 维度1: 近1年收益 Top 10
-      [...withDetail].sort((a, b) => b.r1 - a.r1).slice(0, 10).forEach(f => selectedCodes.add(f.code));
+      // 维度1: 近1年收益 Top 15
+      [...withDetail].sort((a, b) => b.r1 - a.r1).slice(0, 15).forEach(f => selectedCodes.add(f.code));
 
-      // 维度2: Calmar Ratio Top 10 (r1/maxDD3y，时间窗口匹配)
+      // 维度2: Calmar Ratio Top 15 (r1/maxDD3y，时间窗口匹配)
       [...withDetail].filter(f => (f.maxDD3y || f.maxDD) > 0).sort((a, b) => {
         const calA = a.r1 / (a.maxDD3y || a.maxDD);
         const calB = b.r1 / (b.maxDD3y || b.maxDD);
         return calB - calA;
-      }).slice(0, 10).forEach(f => selectedCodes.add(f.code));
+      }).slice(0, 15).forEach(f => selectedCodes.add(f.code));
 
-      // 维度3: 近3年收益 Top 10
-      [...withDetail].filter(f => f.r3 > 0).sort((a, b) => b.r3 - a.r3).slice(0, 10).forEach(f => selectedCodes.add(f.code));
+      // 维度3: 近3年收益 Top 15
+      [...withDetail].filter(f => f.r3 > 0).sort((a, b) => b.r3 - a.r3).slice(0, 15).forEach(f => selectedCodes.add(f.code));
 
-      // 合并去重，最终每类别最多保留（指数25只，其他20只）
-      const maxPerCat = catInfo.ft === 'zs' ? 25 : 20;
+      // 合并去重，最终每类别最多保留 30 只
+      const maxPerCat = 30;
       const funds = allParsed.filter(f => selectedCodes.has(f.code)).slice(0, maxPerCat);
 
       result.categories[catInfo.ft] = {

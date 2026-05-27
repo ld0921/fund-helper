@@ -11,11 +11,11 @@ const path = require('path');
 const https = require('https');
 
 const CATEGORIES = [
-  { ft: 'gp',   cat: 'active', label: '股票型',    quota: 100 },
-  { ft: 'hh',   cat: 'active', label: '混合型',    quota: 100 },
-  { ft: 'zs',   cat: 'index',  label: '指数型',    quota: 100 },
-  { ft: 'zq',   cat: 'bond',   label: '债券型',    quota: 100 },
-  { ft: 'qdii', cat: 'qdii',   label: 'QDII',      quota: 100 },
+  { ft: 'gp',   cat: 'active', label: '股票型',    quota: 150 },
+  { ft: 'hh',   cat: 'active', label: '混合型',    quota: 150 },
+  { ft: 'zs',   cat: 'index',  label: '指数型',    quota: 150 },
+  { ft: 'zq',   cat: 'bond',   label: '债券型',    quota: 150 },
+  { ft: 'qdii', cat: 'qdii',   label: 'QDII',      quota: 150 },
 ];
 
 // 固定保留（货币等特殊品种，排名不一定覆盖）
