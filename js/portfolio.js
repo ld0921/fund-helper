@@ -801,6 +801,15 @@ function selectFunds(cat, catData, riskProfile, pct, totalAmt){
       if(z > 1)  score -= Math.min(8, (z - 1) * 4);  // 超涨：最多扣8分
       if(z < -1 && (f.r3||0) > 5) score += Math.min(5, (-z - 1) * 2.5); // 超跌加分：仅限r3>5%（3年真正长期向上），排除长期横盘基金
     }
+    // 行业估值修正：仅对有行业PE映射的指数基金生效，±5分
+    if(f.cat === 'index'){
+      const idxCode = FUND_VALUATION_MAP[f.code];
+      const val = idxCode && INDEX_VALUATION[idxCode];
+      if(val && val.pePct > 0){
+        if(val.pePct > 80) score -= 5;       // 行业高估，降权
+        else if(val.pePct < 25) score += 5;  // 行业低估，升权
+      }
+    }
     return {...f, adjustedScore: score};
   }).sort((a,b) => b.adjustedScore - a.adjustedScore);
 

@@ -561,6 +561,10 @@ async function main() {
     { code: '930997', name: '中证有色金属' },
     { code: '930716', name: '中证5G通信' },
     { code: 'H30533', name: '中证互联网' },
+    { code: '930050', name: '中证半导体' },
+    { code: '399967', name: '中证新能源' },
+    { code: '000991', name: '全指医药' },
+    { code: '000932', name: '中证消费' },
   ];
   console.log('\n开始获取指数估值数据（中证指数官网）…');
   const indexValuation = {};

@@ -100,6 +100,10 @@ async function loadCuratedFunds() {
       { keywords: ['5G通信','5G主题','通信设备','通信ETF','通信主题','通信A','通信指数'], idx: '930716' },
       { keywords: ['互联网','互联网指数','互联网ETF'], idx: 'H30533' },
       { keywords: ['中证红利','红利ETF','红利指数','红利低波'], idx: '000922' },
+      { keywords: ['半导体','芯片','集成电路'], idx: '930050' },
+      { keywords: ['新能源','光伏','储能','新能源ETF'], idx: '399967' },
+      { keywords: ['医药','医疗','健康','全指医药'], idx: '000991' },
+      { keywords: ['消费','中证消费','消费ETF'], idx: '000932' },
     ];
     let autoMapped = 0;
     funds.filter(f => f.cat === 'index').forEach(f => {
