@@ -909,6 +909,41 @@ function runHealthMonitor(){
     });
   });
 
+  // 规则1.5：单只股票级集中度（透视基金底层持仓）
+  // 用户买多只基金时，实际可能通过不同基金间接重仓同一只股票，这是隐性风险
+  // 计算：每只股票占用户总仓位的实际权重 = Σ(基金占总仓位% × 该基金中该股票%)
+  const stockExposure = {}; // { stockCode: { name, totalPct, funds: [{name, fundPct, stockPct}] } }
+  uniqueHeld.forEach(h => {
+    const fd = CURATED_FUNDS.find(f => f.code === h.code);
+    if (!fd || !fd.topStocks || fd.topStocks.length === 0) return;
+    const fundPct = totalPortValue > 0 ? (h.value / totalPortValue * 100) : 0;
+    if (fundPct < 1) return; // 基金占比 <1% 忽略
+    fd.topStocks.forEach(s => {
+      // 实际权重 = 基金占总仓位% × 该股票在基金中的占比% / 100
+      const realPct = fundPct * s.pct / 100;
+      if (!stockExposure[s.code]) {
+        stockExposure[s.code] = { name: s.name, totalPct: 0, funds: [] };
+      }
+      stockExposure[s.code].totalPct += realPct;
+      stockExposure[s.code].funds.push({ name: fd.name, fundPct, stockPct: s.pct });
+    });
+  });
+  // 找出占总仓位 >3% 的股票（5%阈值过严，且只看前十持仓低估了实际占比）
+  const concentrated = Object.entries(stockExposure)
+    .filter(([code, info]) => info.totalPct >= 3 && info.funds.length >= 2) // 至少通过2只基金间接持有
+    .sort((a, b) => b[1].totalPct - a[1].totalPct);
+  concentrated.forEach(([code, info]) => {
+    const fundDetails = info.funds.map(f => `${f.name}（基金占总仓${f.fundPct.toFixed(1)}% × 股票占基金${f.stockPct}%）`).join('；');
+    const level = info.totalPct >= 5 ? 'red' : 'yellow';
+    optimizeAlerts.push({
+      code: '_opt_stock_' + code,
+      name: `${info.name}（${code}）单股集中`,
+      level,
+      desc: `通过 ${info.funds.length} 只基金间接持有该股票，合计占总仓位 ${info.totalPct.toFixed(2)}%${info.totalPct >= 5 ? '（已超过5%单股警戒线）' : '（接近警戒线）'}。该股下跌5%将导致总资产减少 ${(info.totalPct * 0.05).toFixed(2)}%。明细：${fundDetails}。建议降低相关基金的持仓比例。`,
+      action: level === 'red' ? '🔴 单股过度集中' : '🟡 单股集中'
+    });
+  });
+
   // 规则2：绿色基金机会成本（scoreF≥60，且精选库同类有scoreF≥80且高出≥10分）
   holdings.forEach(h => {
     const fd = CURATED_FUNDS.find(f => f.code === h.code);
