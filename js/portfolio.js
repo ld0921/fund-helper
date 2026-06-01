@@ -1,4 +1,105 @@
 // ═══ 智能组合模块 ═══
+
+// ═══════════════ 诊断驱动选基：风格目标 & 持仓穿透 ═══════════════
+// 仅在 hasHoldings=true 时启用，让推荐方案主动解决诊断模块发现的问题
+
+// 目标风格配比表
+// 理论依据：
+//   1) AQR Capital (Asness, 2013) - 单一风格暴露上限60%
+//   2) Vanguard 资产配置白皮书 - 风格均衡建议
+//   3) Morningstar 风格箱 - 风格轮动周期 5-10 年，单风格寒冬可持续 3-5 年
+//   4) A股实证（中信/广发研报）- 中证红利10年年化12% > 沪深300年化8%；红利在熊市跑赢5-8pp
+//   5) 风险预算法（Equal Risk Contribution）- 按年化波动反推风险偏好对应权重
+// 容差 ±10%：实际配置在目标 ±10% 内不触发约束
+function computeStyleTargets(riskProfile){
+  const TARGETS = {
+    conservative: { growth: 20, value: 30, dividend: 35, blend: 15 }, // 红利最高（Fama-French下行风险研究）
+    moderate:     { growth: 35, value: 30, dividend: 20, blend: 15 }, // 风格均衡（Vanguard 推荐）
+    balanced:     { growth: 50, value: 25, dividend: 15, blend: 10 }, // growth 占主但防御≥40%
+    aggressive:   { growth: 60, value: 20, dividend: 10, blend: 10 }, // 单一风格 60% 上限（AQR Asness 2013）
+  };
+  return TARGETS[riskProfile] || TARGETS.moderate;
+}
+
+// 计算当前持仓的权益类风格分布（百分比，权益总额=100）
+// 返回 { growth, value, dividend, blend }，债券/货币不计入
+function calcCurrentStyleExposure(holdings){
+  if(!holdings || holdings.length === 0) return null;
+  const styleValue = { growth:0, value:0, dividend:0, blend:0 };
+  let equityTotal = 0;
+  holdings.forEach(h => {
+    const fd = CURATED_FUNDS.find(f => f.code === h.code);
+    if(!fd) return;
+    if(!['active','index','qdii'].includes(fd.cat)) return; // 仅权益类
+    const v = h.value || 0;
+    if(fd.style && styleValue[fd.style] !== undefined){
+      styleValue[fd.style] += v;
+      equityTotal += v;
+    } else {
+      styleValue.blend += v; // 未识别归入 blend
+      equityTotal += v;
+    }
+  });
+  if(equityTotal === 0) return null;
+  return {
+    growth: styleValue.growth / equityTotal * 100,
+    value: styleValue.value / equityTotal * 100,
+    dividend: styleValue.dividend / equityTotal * 100,
+    blend: styleValue.blend / equityTotal * 100,
+    equityTotal,
+  };
+}
+
+// 计算风格缺口（目标 - 当前），返回需要"补足"的风格列表（按缺口大小降序）
+// 仅返回缺口 > 10pp 的风格（容差）
+function calcStyleGap(currentStyle, riskProfile){
+  if(!currentStyle) return [];
+  const targets = computeStyleTargets(riskProfile);
+  const gaps = [];
+  ['growth','value','dividend','blend'].forEach(s => {
+    const gap = targets[s] - currentStyle[s];
+    if(gap > 10) gaps.push({ style: s, gap, target: targets[s], current: currentStyle[s] });
+  });
+  return gaps.sort((a,b) => b.gap - a.gap);
+}
+
+// 计算超配股票列表（通过基金穿透得到的单股敞口 ≥3% 的股票）
+// 返回 [{code, name, totalPct, funds:[...]}]，按总敞口降序
+function calcStockExposure(holdings, threshold){
+  threshold = threshold || 3;
+  if(!holdings || holdings.length === 0) return [];
+  const totalValue = holdings.reduce((s,h) => s + (h.value||0), 0);
+  if(totalValue === 0) return [];
+  const exposure = {};
+  holdings.forEach(h => {
+    const fd = CURATED_FUNDS.find(f => f.code === h.code);
+    if(!fd || !fd.topStocks) return;
+    const fundPct = (h.value || 0) / totalValue * 100;
+    if(fundPct < 1) return;
+    fd.topStocks.forEach(s => {
+      const realPct = fundPct * s.pct / 100;
+      if(!exposure[s.code]) exposure[s.code] = { name: s.name, totalPct: 0, funds: [] };
+      exposure[s.code].totalPct += realPct;
+      exposure[s.code].funds.push({ fundCode: h.code, fundName: fd.name, stockPct: s.pct });
+    });
+  });
+  return Object.entries(exposure)
+    .filter(([_, info]) => info.totalPct >= threshold)
+    .map(([code, info]) => ({ code, ...info }))
+    .sort((a, b) => b.totalPct - a.totalPct);
+}
+
+// 计算已持仓使用的 sector 集合（用于跨类别 sector 全局去重）
+function calcUsedSectors(holdings){
+  const set = new Set();
+  if(!holdings) return set;
+  holdings.forEach(h => {
+    const fd = CURATED_FUNDS.find(f => f.code === h.code);
+    if(fd && fd.sector) set.add(fd.sector);
+  });
+  return set;
+}
+
 function calculateRebalanceCost(currentFund, targetFund, holdingDays, amount){
   // 赎回费率（基于持有天数）
   let redeemFee = 0;
@@ -766,7 +867,17 @@ function computeWeights(riskProfile, horizon, catRanks, macroClock){
 }
 
 // 在每个类别中选出最优基金（相关性去重 + 核心-卫星架构）
-function selectFunds(cat, catData, riskProfile, pct, totalAmt){
+// constraints (可选)：诊断驱动的约束，仅在 _doGenerate 检测到 hasHoldings=true 时传入
+//   - usedSectorsGlobal: Set<string> — 跨类别已用 sector 集合（含已持仓），避免新基金重复
+//   - styleNeeds: Set<string> — 缺口风格列表（如 ['value','dividend']），优先选这些风格
+//   - styleAvoid: Set<string> — 超配风格列表（如 ['growth']），降权选这些风格
+//   - overweightStocks: Map<stockCode, totalPct> — 已超配 ≥3% 的股票，重仓这些股票的基金降权
+function selectFunds(cat, catData, riskProfile, pct, totalAmt, constraints){
+  constraints = constraints || {};
+  const usedSectorsGlobal = constraints.usedSectorsGlobal || null;
+  const styleNeeds = constraints.styleNeeds || null;
+  const styleAvoid = constraints.styleAvoid || null;
+  const overweightStocks = constraints.overweightStocks || null;
   // 风险等级过滤（带回退机制）
   let pool = catData.topFunds.filter(f=>{
     if(riskProfile==='conservative') return ['R1','R2','R3'].includes(f.risk);
@@ -810,6 +921,21 @@ function selectFunds(cat, catData, riskProfile, pct, totalAmt){
         else if(val.pePct < 25) score += 5;  // 行业低估，升权
       }
     }
+    // 诊断驱动约束（仅 hasHoldings 时生效）
+    // 1. 风格约束：缺口风格 +15 分（强力提升被推荐概率），超配风格 -10 分
+    if(styleNeeds && f.style && styleNeeds.has(f.style)) score += 15;
+    if(styleAvoid && f.style && styleAvoid.has(f.style)) score -= 10;
+    // 2. 单股穿透约束：基金重仓"已超配股票" → 按该股在基金中的权重扣分
+    //    每 1% 的重叠权重 = -0.5 分，最多扣 8 分
+    if(overweightStocks && f.topStocks){
+      let overlapPenalty = 0;
+      f.topStocks.forEach(s => {
+        if(overweightStocks.has(s.code)){
+          overlapPenalty += s.pct * 0.5;
+        }
+      });
+      score -= Math.min(8, overlapPenalty);
+    }
     return {...f, adjustedScore: score};
   }).sort((a,b) => b.adjustedScore - a.adjustedScore);
 
@@ -828,6 +954,8 @@ function selectFunds(cat, catData, riskProfile, pct, totalAmt){
     // sector 去重：所有有 sector 字段的基金都参与（主动基金的 sector 来自重仓股归因，index 基金来自名称或重仓股）
     if(f.sector){
       if(usedSectors.has(f.sector)) return;
+      // 跨类别全局 sector 去重（诊断驱动，避免主动+指数同板块重复推荐）
+      if(usedSectorsGlobal && usedSectorsGlobal.has(f.sector)) return;
     }
     // 标签重叠检查
     if(!skipTagDedup){
@@ -840,7 +968,10 @@ function selectFunds(cat, catData, riskProfile, pct, totalAmt){
       if(tooSimilar && deduped.length > 0) return;
     }
     usedManagers.add(f.manager);
-    if(f.sector) usedSectors.add(f.sector);
+    if(f.sector){
+      usedSectors.add(f.sector);
+      if(usedSectorsGlobal) usedSectorsGlobal.add(f.sector); // 跨类别同步更新
+    }
     deduped.push(f);
   });
 
@@ -1376,6 +1507,58 @@ function _doGenerate(shouldScroll){
   Object.keys(catGap).forEach(cat => { adjustedCatGap[cat] = Math.max(0, (catGap[cat]||0) - (preAllocated[cat]||0)); });
   let distributableMoney = totalAmt + freedRemaining;
 
+  // ═══ 诊断驱动约束（仅 hasHoldings 时启用，避免破坏首次配置的回测验证） ═══
+  let diagnosticConstraints = null;
+  const diagnosticReasons = []; // 用于UI展示
+  if(hasHoldings){
+    // 1. 计算当前持仓的风格分布 + 缺口
+    const currentStyle = calcCurrentStyleExposure(existingHoldings);
+    const styleGap = currentStyle ? calcStyleGap(currentStyle, riskP) : [];
+    const styleNeeds = new Set(styleGap.map(g => g.style)); // 缺口风格 → 加分
+    // 超配风格：当前 > 目标 + 10%（容差）的风格 → 降权
+    const styleAvoid = new Set();
+    if(currentStyle){
+      const targets = computeStyleTargets(riskP);
+      ['growth','value','dividend','blend'].forEach(s => {
+        if(currentStyle[s] - targets[s] > 10) styleAvoid.add(s);
+      });
+    }
+    // 2. 计算单股超配（穿透 ≥3%）
+    const overweightList = calcStockExposure(existingHoldings, 3);
+    const overweightStocks = new Map();
+    overweightList.forEach(item => overweightStocks.set(item.code, item.totalPct));
+    // 3. 已持仓使用的 sector 集合（跨类别去重起点）
+    const usedSectorsGlobal = calcUsedSectors(existingHoldings);
+    // 仅当至少一个约束有内容时启用
+    if(styleNeeds.size > 0 || styleAvoid.size > 0 || overweightStocks.size > 0 || usedSectorsGlobal.size > 0){
+      diagnosticConstraints = { usedSectorsGlobal, styleNeeds, styleAvoid, overweightStocks };
+      // 收集 UI 提示原因
+      if(styleNeeds.size > 0){
+        const styleNames = {growth:'成长',value:'价值',dividend:'红利',blend:'混合'};
+        const gapDesc = styleGap.map(g => `${styleNames[g.style]}（当前${g.current.toFixed(0)}% → 目标${g.target}%）`).join('、');
+        diagnosticReasons.push(`📐 风格缺口：${gapDesc}，本方案优先推荐这些风格的基金`);
+      }
+      if(styleAvoid.size > 0){
+        const styleNames = {growth:'成长',value:'价值',dividend:'红利',blend:'混合'};
+        const avoidDesc = [...styleAvoid].map(s => styleNames[s]).join('、');
+        diagnosticReasons.push(`⚖️ 风格超配：${avoidDesc}风格已超出目标 10%+，本方案降低该风格基金权重`);
+      }
+      if(usedSectorsGlobal.size > 0){
+        diagnosticReasons.push(`🎯 板块去重：已持仓涉及板块 ${[...usedSectorsGlobal].join('、')}，本方案避免推荐相同板块的新基金`);
+      }
+      if(overweightStocks.size > 0){
+        const stockNames = overweightList.slice(0, 3).map(s => `${s.name}(${s.totalPct.toFixed(1)}%)`).join('、');
+        diagnosticReasons.push(`💎 单股超配：穿透敞口≥3%的股票（${stockNames}），本方案降低重仓这些股票的基金权重`);
+      }
+      console.log('[诊断驱动] 启用约束:', {
+        styleNeeds: [...styleNeeds],
+        styleAvoid: [...styleAvoid],
+        overweightStocks: [...overweightStocks.keys()],
+        usedSectorsGlobal: [...usedSectorsGlobal]
+      });
+    }
+  }
+
   // 5. 选基（融合已有持仓）
   const selectedPicks = {};
   catRanks.forEach(cd=>{
@@ -1463,7 +1646,7 @@ function _doGenerate(shouldScroll){
           ...cd,
           topFunds: cd.topFunds.filter(f=>!existingHoldings.some(h=>h.code===f.code) && !keptPicks.some(p=>p.code===f.code))
         };
-        newPicks = selectFunds(cd.cat, poolExcluded, riskP, newPctForCat, portfolioTotal);
+        newPicks = selectFunds(cd.cat, poolExcluded, riskP, newPctForCat, portfolioTotal, diagnosticConstraints);
         newPicks.forEach(p=>{ p.isExisting = false; });
         if(cd.cat === 'bond'){
           console.log(`[generatePlan] bond newPicks:`, newPicks.map(p=>p.code+' '+p.name+' amt:'+p.amt));
@@ -2048,6 +2231,13 @@ function _doGenerate(shouldScroll){
           新资金 ¥${totalAmt.toLocaleString()} 将优先填补配置缺口。
         </div>`
       : '';
+    // 诊断驱动约束卡片（仅 hasHoldings 且有约束时显示）
+    const diagnosticNote = (hasHoldings && diagnosticReasons.length > 0)
+      ? `<div style="margin-top:10px;padding:10px 12px;background:linear-gradient(135deg,rgba(82,196,26,.08),rgba(22,119,255,.06));border-left:3px solid var(--success);border-radius:8px;font-size:12px;color:#262626;line-height:1.7">
+          <div style="font-weight:600;color:var(--success);margin-bottom:6px">🔬 本方案已响应持仓诊断的以下问题（理论依据：AQR/Vanguard/Morningstar 风格分散研究 + A股实证）：</div>
+          ${diagnosticReasons.map(r => `<div style="padding-left:6px">${r}</div>`).join('')}
+        </div>`
+      : '';
     summaryEl.innerHTML=`
       <div style="font-size:14px;font-weight:600;margin-bottom:10px">📋 方案摘要</div>
       <div class="ps-row">
@@ -2059,7 +2249,8 @@ function _doGenerate(shouldScroll){
       <div style="margin-top:10px;font-size:12px;color:var(--muted);line-height:1.6">
         ${finalPicks.map(f=>`${f.isExisting?'<span style="color:var(--primary)">✓</span> ':''}<b>${escHtml(f.name)}</b>(${f.pct}%)`).join(' · ')}
       </div>
-      ${holdingNote}`;
+      ${holdingNote}
+      ${diagnosticNote}`;
   }
 
   // 显示结果
