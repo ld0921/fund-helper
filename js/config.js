@@ -86,6 +86,9 @@ async function loadCuratedFunds() {
         sector: f.sector || null,
         topStocks: f.topStocks || null,
         sectorSource: f.sectorSource || null,
+        style: f.style || null,
+        styleDistribution: f.styleDistribution || null,
+        styleSource: f.styleSource || null,
       });
     });
     CURATED_FUNDS = funds;

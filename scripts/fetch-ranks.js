@@ -362,6 +362,92 @@ function inferFundSector(topStocks) {
   return null;
 }
 
+// 细分行业 → 投资风格映射
+// growth: 成长股（科技/医药生物/新能源/军工 - 高估值高增速）
+// value:  价值股（金融/能源/周期/地产 - 低估值稳定）
+// dividend: 红利股（银行/煤炭/电力/高速 - 高股息防御）
+// blend:  混合（消费/家电 - 既不极端成长也非纯价值）
+const INDUSTRY_STYLE = {
+  // === Growth 成长 ===
+  '通信设备': 'growth', '通信服务': 'growth', '元件': 'growth',
+  '半导体': 'growth', '光学光电子': 'growth', '消费电子': 'growth',
+  '计算机设备': 'growth', '其他电子Ⅱ': 'growth',
+  '软件开发': 'growth', 'IT服务Ⅱ': 'growth', '互联网服务': 'growth',
+  '化学制药': 'growth', '生物制品': 'growth', '医疗器械': 'growth', '医疗服务': 'growth',
+  '电池': 'growth', '光伏设备': 'growth', '风电设备': 'growth',
+  '电网设备': 'growth', '电机Ⅱ': 'growth', '其他电源设备Ⅱ': 'growth',
+  '军工电子Ⅱ': 'growth', '航空装备Ⅱ': 'growth', '航天装备Ⅱ': 'growth',
+  '地面兵装Ⅱ': 'growth', '航海装备Ⅱ': 'growth',
+  '自动化设备': 'growth', '专用设备': 'growth',
+  '汽车零部件': 'growth', // 新能源车产业链偏成长
+  // === Value 价值 ===
+  '股份制银行Ⅱ': 'value', '城商行Ⅱ': 'value', '国有大型银行Ⅱ': 'value',
+  '农商行Ⅱ': 'value', '证券Ⅱ': 'value', '保险Ⅱ': 'value', '多元金融': 'value',
+  '工业金属': 'value', '钢铁': 'value', '小金属': 'value', '贵金属': 'value',
+  '化学原料': 'value', '化学纤维': 'value', '橡胶': 'value', '塑料': 'value',
+  '房地产开发': 'value', '基础建设': 'value', '专业工程': 'value',
+  '装修建材': 'value', '水泥': 'value', '玻璃玻纤': 'value',
+  '物流': 'value', '航运港口': 'value', '铁路公路': 'value',
+  // === Dividend 红利（高股息防御）===
+  '煤炭开采': 'dividend', '石油开采': 'dividend', '油气开采Ⅱ': 'dividend',
+  '电力': 'dividend', '燃气Ⅱ': 'dividend',
+  // === Blend 混合（消费类传统行业，既不极端成长也非纯价值）===
+  '白酒Ⅱ': 'blend', '食品加工': 'blend', '饮料乳品': 'blend',
+  '调味发酵品Ⅱ': 'blend', '休闲食品': 'blend',
+  '中药Ⅱ': 'blend', '医药商业': 'blend',
+  '家居用品': 'blend', '服装家纺': 'blend', '化妆品': 'blend',
+  '白色家电': 'blend', '黑色家电': 'blend', '厨卫电器': 'blend', '小家电': 'blend',
+  '汽车整车': 'blend', '商用车': 'blend', '乘用车': 'blend', '汽车服务': 'blend',
+  '环境治理': 'blend', '通用设备': 'blend',
+};
+
+// 根据重仓股推断基金的投资风格
+// 返回 {style, distribution}：主导风格 + 各风格权重分布
+function inferFundStyle(topStocks) {
+  if (!topStocks || topStocks.length === 0) return null;
+  const map = loadStockIndustryMap();
+  if (Object.keys(map).length === 0) return null;
+
+  const styleWeight = { growth: 0, value: 0, dividend: 0, blend: 0 };
+  let mappedTotal = 0;
+  topStocks.forEach(s => {
+    const entry = map[s.code];
+    if (entry && entry.industry) {
+      const style = INDUSTRY_STYLE[entry.industry];
+      if (style) {
+        styleWeight[style] += s.pct;
+        mappedTotal += s.pct;
+      }
+    }
+  });
+  if (mappedTotal < 10) return null; // 数据质量不足
+
+  // 找主导风格（权重最高 > 40% 才确认）
+  const sorted = Object.entries(styleWeight).sort((a, b) => b[1] - a[1]);
+  const [topStyle, topWeight] = sorted[0];
+  if (topWeight / mappedTotal > 0.40) {
+    return {
+      style: topStyle,
+      distribution: {
+        growth: Math.round(styleWeight.growth / mappedTotal * 100),
+        value: Math.round(styleWeight.value / mappedTotal * 100),
+        dividend: Math.round(styleWeight.dividend / mappedTotal * 100),
+        blend: Math.round(styleWeight.blend / mappedTotal * 100),
+      }
+    };
+  }
+  // 无主导风格 → blend（混合型）
+  return {
+    style: 'blend',
+    distribution: {
+      growth: Math.round(styleWeight.growth / mappedTotal * 100),
+      value: Math.round(styleWeight.value / mappedTotal * 100),
+      dividend: Math.round(styleWeight.dividend / mappedTotal * 100),
+      blend: Math.round(styleWeight.blend / mappedTotal * 100),
+    }
+  };
+}
+
 // 根据maxDD推断风险等级
 function inferRiskLevel(maxDD, cat) {
   if (cat === 'money') return 'R1';
@@ -657,8 +743,43 @@ async function main() {
             } else if (entry.sector) {
               entry.sectorSource = 'name';
             }
+            // 风格归因：基于重仓股行业的 growth/value/dividend/blend 分布
+            const styleResult = inferFundStyle(topStocks);
+            if (styleResult) {
+              entry.style = styleResult.style;
+              entry.styleDistribution = styleResult.distribution;
+            }
           }
           await sleep(200); // 限速保护
+        }
+
+        // 兜底：基金风格归因（QDII / 货币 / 重仓股拉取失败的基金）
+        // 没有 entry.style 才进入兜底，避免覆盖前面基于真实持仓的归因
+        if (!entry.style) {
+          if (entry.cat === 'qdii') {
+            // QDII 多数是海外科技/纳指/标普500/中概 → growth
+            entry.style = /红利|股息|价值/.test(entry.name || '') ? 'dividend' : 'growth';
+          } else if (entry.cat === 'money') {
+            entry.style = 'cash'; // 现金等价，不参与风格分散讨论
+          } else if (entry.cat === 'bond') {
+            entry.style = 'bond'; // 债券，不参与风格分散讨论
+          } else if (entry.cat === 'index') {
+            // 指数基金按名称推断风格
+            const name = entry.name || '';
+            if (/红利|股息|低波|高股息/.test(name)) entry.style = 'dividend';
+            else if (/价值|沪深300价值|基本面|银行|金融|煤炭|地产/.test(name)) entry.style = 'value';
+            else if (/通信|半导体|芯片|科技|人工智能|AI|信息|互联网|新能源|医药|医疗|生物|军工|创业板/.test(name)) entry.style = 'growth';
+            else if (/沪深300|上证50|中证100|大盘/.test(name)) entry.style = 'blend';
+            else entry.style = 'blend';
+          } else if (entry.cat === 'active') {
+            // 主动基金没拉到重仓股 → 按名称粗略推断
+            const name = entry.name || '';
+            if (/红利|股息|价值/.test(name)) entry.style = 'value';
+            else entry.style = 'blend';
+          }
+          if (entry.style) entry.styleSource = 'name'; // 标注来源
+        } else {
+          entry.styleSource = 'topStocks';
         }
 
         curatedResult.funds[code] = entry;

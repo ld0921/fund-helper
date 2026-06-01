@@ -870,6 +870,69 @@ function runHealthMonitor(){
   // ========== 组合优化建议 ==========
   const optimizeAlerts = [];
 
+  // 规则0：风格分散度检测（最宏观的风险维度，最高优先级）
+  // 给每只基金打风格标签（growth/value/dividend/blend），检测权益类持仓的风格分布
+  // 触发：权益持仓中任一风格 > 60%（黄）/ > 70%（红），且其他防御性风格 < 15%
+  const equityHeld = uniqueHeld.filter(h => {
+    const fd = CURATED_FUNDS.find(f => f.code === h.code);
+    return fd && ['active', 'index', 'qdii'].includes(fd.cat);
+  });
+  const equityTotal = equityHeld.reduce((s, h) => s + h.value, 0);
+  if (equityTotal > 0 && equityTotal / totalPortValue >= 0.4) {
+    // 权益占比≥40%才检测，否则风格分散讨论无意义
+    const styleValue = { growth: 0, value: 0, dividend: 0, blend: 0 };
+    const styleFunds = { growth: [], value: [], dividend: [], blend: [] };
+    let unknownValue = 0;
+    equityHeld.forEach(h => {
+      const fd = CURATED_FUNDS.find(f => f.code === h.code);
+      const style = fd && fd.style;
+      if (style && styleValue[style] !== undefined) {
+        styleValue[style] += h.value;
+        styleFunds[style].push(fd.name);
+      } else {
+        unknownValue += h.value;
+      }
+    });
+    const stylePct = {};
+    Object.keys(styleValue).forEach(s => {
+      stylePct[s] = equityTotal > 0 ? (styleValue[s] / equityTotal * 100) : 0;
+    });
+    // 找主导风格
+    const sortedStyle = Object.entries(stylePct).sort((a, b) => b[1] - a[1]);
+    const [topStyle, topPct] = sortedStyle[0];
+    const defensivePct = stylePct.value + stylePct.dividend; // 防御性风格合计
+
+    if (topPct >= 60) {
+      const styleNames = { growth: '成长', value: '价值', dividend: '红利', blend: '混合' };
+      const level = topPct >= 70 ? 'red' : 'yellow';
+      // 推荐补充：精选库里同风格 scoreF 最高的基金
+      const heldCodes = new Set(uniqueHeld.map(x => x.code));
+      const missingStyles = [];
+      if (stylePct.dividend < 5) missingStyles.push('dividend');
+      if (stylePct.value < 10 && topStyle !== 'value') missingStyles.push('value');
+      const recommendations = [];
+      missingStyles.forEach(ms => {
+        const candidates = CURATED_FUNDS
+          .filter(f => f.style === ms && !heldCodes.has(f.code) && (f.cat === 'index' || f.cat === 'active'))
+          .map(f => ({ f, score: scoreF(f) }))
+          .sort((a, b) => b.score - a.score);
+        if (candidates.length > 0) {
+          const top2 = candidates.slice(0, 2);
+          recommendations.push(`${styleNames[ms]}类: ${top2.map(x => `${x.f.name}（${x.score}分）`).join('、')}`);
+        }
+      });
+      const fundList = styleFunds[topStyle].slice(0, 5).join('、') + (styleFunds[topStyle].length > 5 ? ` 等${styleFunds[topStyle].length}只` : '');
+      const distribution = sortedStyle.filter(([_, v]) => v > 1).map(([s, v]) => `${styleNames[s] || s} ${v.toFixed(0)}%`).join(' / ');
+      optimizeAlerts.push({
+        code: '_opt_style_' + topStyle,
+        name: `风格过度集中：${styleNames[topStyle]}风格 ${topPct.toFixed(0)}%`,
+        level,
+        desc: `你的权益持仓中 ${topPct.toFixed(0)}% 集中在「${styleNames[topStyle]}」风格（${fundList}）。当前权益风格分布：${distribution}。防御性风格（价值+红利）仅 ${defensivePct.toFixed(0)}%${defensivePct < 15 ? '（不足15%）' : ''}。当市场风格切换时（如大盘价值/红利起涨而成长股回调），缺乏对冲会放大波动。${recommendations.length > 0 ? '建议补充：' + recommendations.join('；') + '。' : ''}`,
+        action: level === 'red' ? '🔴 风格踩踏风险' : '🟡 风格偏单一'
+      });
+    }
+  }
+
   // 规则1：板块重叠（同sector持有≥2只，覆盖所有类别的基金）
   // sector 来源：index基金=名称匹配，active基金=重仓股归因（前十大持仓中单一行业>30%）
   const sectorHeld = uniqueHeld.filter(h => {
