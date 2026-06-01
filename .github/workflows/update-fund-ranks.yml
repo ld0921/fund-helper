@@ -21,6 +21,22 @@ jobs:
         with:
           node-version: '20'
 
+      - name: 更新股票→行业映射表（如不存在或超过30天）
+        run: |
+          MAP_FILE="data/stock-industry-map.json"
+          NEED_UPDATE=true
+          if [ -f "$MAP_FILE" ]; then
+            # 文件存在且修改时间在30天内则跳过
+            if [ $(find "$MAP_FILE" -mtime -30 | wc -l) -gt 0 ]; then
+              NEED_UPDATE=false
+              echo "股票行业映射表存在且未过期，跳过更新"
+            fi
+          fi
+          if [ "$NEED_UPDATE" = "true" ]; then
+            echo "更新股票→行业映射表..."
+            node scripts/update-industry-map.js
+          fi
+
       - name: 拉取基金排名数据
         run: node scripts/fetch-ranks.js
 
@@ -28,7 +44,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/market-ranks.json data/curated-details.json
+          git add data/market-ranks.json data/curated-details.json data/stock-industry-map.json
           if git diff --staged --quiet; then
             echo "数据无变化，跳过提交"
           else

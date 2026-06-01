@@ -870,13 +870,14 @@ function runHealthMonitor(){
   // ========== 组合优化建议 ==========
   const optimizeAlerts = [];
 
-  // 规则1：index基金板块重叠（同sector持有≥2只）
-  const indexHeld = uniqueHeld.filter(h => {
+  // 规则1：板块重叠（同sector持有≥2只，覆盖所有类别的基金）
+  // sector 来源：index基金=名称匹配，active基金=重仓股归因（前十大持仓中单一行业>30%）
+  const sectorHeld = uniqueHeld.filter(h => {
     const fd = CURATED_FUNDS.find(f => f.code === h.code);
-    return fd && fd.cat === 'index' && fd.sector;
+    return fd && fd.sector;
   });
   const sectorGroups = {};
-  indexHeld.forEach(h => {
+  sectorHeld.forEach(h => {
     const fd = CURATED_FUNDS.find(f => f.code === h.code);
     const s = fd.sector;
     if (!sectorGroups[s]) sectorGroups[s] = [];
@@ -887,12 +888,24 @@ function runHealthMonitor(){
     const scored = items.map(({h, fd}) => ({h, fd, score: scoreF(fd)})).sort((a,b) => b.score - a.score);
     const best = scored[0];
     const others = scored.slice(1).map(x => `${x.fd.name}（${x.score}分）`).join('、');
+    // 计算板块集中度（持仓金额占比）
+    const sectorValue = items.reduce((s, x) => s + x.h.value, 0);
+    const sectorPct = totalPortValue > 0 ? (sectorValue / totalPortValue * 100) : 0;
+    // 判断是否含主动基金（用于差异化文案）
+    const hasActive = items.some(x => x.fd.cat !== 'index');
+    const fundListStr = items.map(x => {
+      const catTag = x.fd.cat !== 'index' ? `（${x.fd.cat==='active'?'主动':x.fd.cat}）` : '';
+      return `${x.fd.name}${catTag}`;
+    }).join(' + ');
+    const overlapNote = hasActive
+      ? `（含主动基金，因重仓股集中在该板块被识别）`
+      : `，追踪标的高度重叠`;
     optimizeAlerts.push({
       code: '_opt_sector_' + sector,
       name: `${sector}板块重叠`,
-      level: 'yellow',
-      desc: `持有${items.length}只${sector}板块指数基金（${items.map(x=>x.fd.name).join(' + ')}），追踪标的高度重叠。建议保留评分最高的${best.fd.name}（${best.score}分），考虑赎回${others}，仓位分散至其他板块。`,
-      action: '🟡 建议精简'
+      level: sectorPct > 40 ? 'red' : 'yellow',
+      desc: `持有${items.length}只${sector}板块基金${overlapNote}：${fundListStr}，合计占总仓位 ${sectorPct.toFixed(1)}%${sectorPct > 40 ? '（已超过40%警戒线）' : ''}。建议保留评分最高的${best.fd.name}（${best.score}分），考虑赎回/减仓${others}，仓位分散至其他板块。`,
+      action: sectorPct > 40 ? '🔴 集中度过高' : '🟡 建议精简'
     });
   });
 

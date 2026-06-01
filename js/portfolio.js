@@ -825,8 +825,8 @@ function selectFunds(cat, catData, riskProfile, pct, totalAmt){
 
   pool.forEach(f => {
     if(usedManagers.has(f.manager) && deduped.length > 0) return;
-    // index基金：用sector字段去重，同一板块只选一只（评分最高的已排在前面）
-    if(cat === 'index' && f.sector){
+    // sector 去重：所有有 sector 字段的基金都参与（主动基金的 sector 来自重仓股归因，index 基金来自名称或重仓股）
+    if(f.sector){
       if(usedSectors.has(f.sector)) return;
     }
     // 标签重叠检查
@@ -840,7 +840,7 @@ function selectFunds(cat, catData, riskProfile, pct, totalAmt){
       if(tooSimilar && deduped.length > 0) return;
     }
     usedManagers.add(f.manager);
-    if(cat === 'index' && f.sector) usedSectors.add(f.sector);
+    if(f.sector) usedSectors.add(f.sector);
     deduped.push(f);
   });
 

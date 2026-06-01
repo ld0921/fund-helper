@@ -248,6 +248,68 @@ async function fetchFundR3(code) {
   }
 }
 
+// 拉取基金前10大重仓股（用于行业归因）
+// 返回 [{code, name, pct}, ...] 或 null（QDII/无数据基金）
+async function fetchTopStocks(code) {
+  try {
+    const body = await httpGetWithRetry(`https://fundf10.eastmoney.com/FundArchivesDatas.aspx?type=jjcc&code=${code}&topline=10&year=&month=`, {
+      'Referer': 'https://fundf10.eastmoney.com/',
+      'User-Agent': 'Mozilla/5.0 (compatible; FundHelper/1.0)'
+    });
+    // 解析每行：序号 + 股票代码(6位) + 股票名 + ... + 占净值比例
+    const re = /<tr><td>\d+<\/td><td><a[^>]*>(\d{6})<\/a><\/td><td[^>]*><a[^>]*>([^<]+)<\/a><\/td>[\s\S]*?<td class='tor'>([\d.]+)%<\/td>/g;
+    const stocks = [];
+    let m;
+    while ((m = re.exec(body)) !== null) {
+      stocks.push({ code: m[1], name: m[2], pct: parseFloat(m[3]) });
+    }
+    return stocks.length > 0 ? stocks : null;
+  } catch (e) {
+    console.warn(`    重仓股获取失败 ${code}: ${e.message}`);
+    return null;
+  }
+}
+
+// 加载股票→行业映射表（来自 update-industry-map.js 的输出）
+let _stockIndustryMap = null;
+function loadStockIndustryMap() {
+  if (_stockIndustryMap !== null) return _stockIndustryMap;
+  try {
+    const p = path.join(__dirname, '..', 'data', 'stock-industry-map.json');
+    const data = JSON.parse(fs.readFileSync(p, 'utf-8'));
+    _stockIndustryMap = data.stocks || {};
+    console.log(`  已加载股票→行业映射: ${Object.keys(_stockIndustryMap).length} 只`);
+  } catch (e) {
+    console.warn('  股票→行业映射表未找到，跳过行业归因（请先运行 update-industry-map.js）');
+    _stockIndustryMap = {};
+  }
+  return _stockIndustryMap;
+}
+
+// 根据重仓股推断基金的实际板块
+// 加权统计前10大持仓的行业分布，权重 > 30% 视为主导行业
+function inferFundSector(topStocks) {
+  if (!topStocks || topStocks.length === 0) return null;
+  const map = loadStockIndustryMap();
+  if (Object.keys(map).length === 0) return null;
+
+  const industryWeight = {};
+  let mappedTotal = 0;
+  topStocks.forEach(s => {
+    const entry = map[s.code];
+    if (entry && entry.industry) {
+      industryWeight[entry.industry] = (industryWeight[entry.industry] || 0) + s.pct;
+      mappedTotal += s.pct;
+    }
+  });
+  if (mappedTotal < 10) return null; // 前十持仓中能识别行业的占比 < 10%，数据质量不足
+
+  const sorted = Object.entries(industryWeight).sort((a, b) => b[1] - a[1]);
+  const [topIndustry, topWeight] = sorted[0];
+  // 主导行业阈值：前十持仓中单一行业 > 30%（绝对占基金净值）
+  return topWeight > 30 ? topIndustry : null;
+}
+
 // 根据maxDD推断风险等级
 function inferRiskLevel(maxDD, cat) {
   if (cat === 'money') return 'R1';
@@ -528,6 +590,23 @@ async function main() {
         if (entry.cat === 'index') {
           const s = autoSector(entry.name || '');
           if (s) entry.sector = s;
+        }
+
+        // 行业归因（基于真实重仓股）：覆盖所有非QDII/非货币基金
+        // 优先级高于 autoSector（基金名称匹配），因为底层持仓数据更准确
+        if (entry.cat !== 'qdii' && entry.cat !== 'money') {
+          const topStocks = await fetchTopStocks(code);
+          if (topStocks && topStocks.length > 0) {
+            entry.topStocks = topStocks;
+            const inferredSector = inferFundSector(topStocks);
+            if (inferredSector) {
+              entry.sector = inferredSector; // 覆盖名称匹配的结果
+              entry.sectorSource = 'topStocks';
+            } else if (entry.sector) {
+              entry.sectorSource = 'name';
+            }
+          }
+          await sleep(200); // 限速保护
         }
 
         curatedResult.funds[code] = entry;
