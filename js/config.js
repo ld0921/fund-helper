@@ -84,6 +84,8 @@ async function loadCuratedFunds() {
         tags: f.tags || [],
         reason: f.reason || '',
         sector: f.sector || null,
+        topStocks: f.topStocks || null,
+        sectorSource: f.sectorSource || null,
       });
     });
     CURATED_FUNDS = funds;
