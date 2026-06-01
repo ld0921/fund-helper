@@ -7,12 +7,29 @@ const path = require('path');
 const https = require('https');
 
 // 固定保留的基金代码（货币/超短债等特殊品种，全市场扫描不覆盖）
-const FIXED_CODES = ['000198','003003','070009'];
+const FIXED_CODES = [
+  // 货币 / 短债 / 主动均衡
+  '000198', '003003', '070009',
+  // 红利/价值类（强制保留以解决精选库风格偏差）
+  // 精选库按"近1年涨幅"入库会天然漏掉红利/价值基金
+  // 这些基金提供成长股之外的防御性配置选择
+  '100032', // 富国中证红利指数增强A - 红利
+  '012643', // 招商中证红利ETF联接A - 红利
+  '007466', // 华泰柏瑞中证红利低波ETF联接A - 红利低波
+  '110020', // 易方达沪深300ETF联接A - 大盘价值代理
+  '110003', // 易方达上证50增强A - 大盘蓝筹
+];
 // 固定基金的预设元数据（扫描不覆盖，需手动指定类别）
+// 含 style 字段时强制写入该风格（绕过基于重仓股的归因，避免红利基金被误归为 blend）
 const FIXED_META = {
   '000198': { name:'天治财富增长', cat:'active', type:'混合型', label:'主动权益' },
   '003003': { name:'华夏现金增利货币A', cat:'money', type:'货币型', label:'货币基金' },
   '070009': { name:'嘉实超短债债券A', cat:'bond', type:'债券型', label:'短债基金' },
+  '100032': { name:'富国中证红利指数增强A', cat:'index', type:'指数型', label:'红利指数', style:'dividend' },
+  '012643': { name:'招商中证红利ETF联接A', cat:'index', type:'指数型', label:'红利指数', style:'dividend' },
+  '007466': { name:'华泰柏瑞中证红利低波ETF联接A', cat:'index', type:'指数型', label:'红利低波', style:'dividend' },
+  '110020': { name:'易方达沪深300ETF联接A', cat:'index', type:'指数型', label:'大盘蓝筹', style:'value' },
+  '110003': { name:'易方达上证50增强A', cat:'index', type:'指数型', label:'大盘蓝筹', style:'value' },
 };
 
 const CATEGORIES = [
@@ -730,6 +747,13 @@ async function main() {
           if (s) entry.sector = s;
         }
 
+        // 固定基金的 style 优先级最高（FIXED_META 中预设），用于强制保留红利/价值类
+        // 避免重仓股归因把红利基金（如 100032 重仓银行/煤炭）误判为 value 而非 dividend
+        if (meta.style) {
+          entry.style = meta.style;
+          entry.styleSource = 'fixed';
+        }
+
         // 行业归因（基于真实重仓股）：覆盖所有非QDII/非货币基金
         // 优先级高于 autoSector（基金名称匹配），因为底层持仓数据更准确
         if (entry.cat !== 'qdii' && entry.cat !== 'money') {
@@ -744,9 +768,12 @@ async function main() {
               entry.sectorSource = 'name';
             }
             // 风格归因：基于重仓股行业的 growth/value/dividend/blend 分布
+            // 注意：FIXED_META.style 优先级最高，不被重仓股归因覆盖
             const styleResult = inferFundStyle(topStocks);
             if (styleResult) {
-              entry.style = styleResult.style;
+              if (entry.styleSource !== 'fixed') {
+                entry.style = styleResult.style;
+              }
               entry.styleDistribution = styleResult.distribution;
             }
           }
