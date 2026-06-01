@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-06-01T06:52:05.683Z",
+  "timestamp": "2026-06-01T08:00:58.260Z",
   "categories": {
     "gp": {
       "label": "股票型",
@@ -2877,7 +2877,7 @@
       "label": "指数型",
       "cat": "index",
       "type": "指数型",
-      "allRecords": 4297,
+      "allRecords": 4303,
       "funds": [
         {
           "code": "008326",
@@ -3725,7 +3725,7 @@
       "label": "债券型",
       "cat": "bond",
       "type": "债券型",
-      "allRecords": 4741,
+      "allRecords": 4737,
       "funds": [
         {
           "code": "001045",
@@ -5357,7 +5357,7 @@
       "label": "QDII",
       "cat": "qdii",
       "type": "QDII",
-      "allRecords": 215,
+      "allRecords": 217,
       "funds": [
         {
           "code": "539002",
@@ -5758,7 +5758,7 @@
           "cat": "qdii",
           "label": "QDII",
           "r1": 101.67,
-          "r3": 161.98,
+          "r3": 160.28,
           "size": 2.26,
           "established": "2019-11-27",
           "maxDD": 51.6,
@@ -6094,7 +6094,7 @@
           "cat": "qdii",
           "label": "QDII",
           "r1": 52.44,
-          "r3": 68.43,
+          "r3": 71.89,
           "size": 31.69,
           "established": "2010-01-21",
           "maxDD": 57.1,
