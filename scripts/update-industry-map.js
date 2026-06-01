@@ -39,7 +39,8 @@ function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 const FS_AH = 'm:0+t:6,m:0+t:80,m:1+t:2,m:1+t:23,m:0+t:81+s:2048';
 
 async function fetchPage(pn, pz = 100) {
-  const url = `https://push2.eastmoney.com/api/qt/clist/get?pn=${pn}&pz=${pz}&po=1&np=1&fltt=2&invt=2&fid=f3&fs=${FS_AH}&fields=f12,f14,f100`;
+  // 使用 push2his 子域名（历史数据），比 push2 主域限流更宽松
+  const url = `https://push2his.eastmoney.com/api/qt/clist/get?pn=${pn}&pz=${pz}&po=1&np=1&fltt=2&invt=2&fid=f3&fs=${FS_AH}&fields=f12,f14,f100`;
   const body = await httpGetRetry(url, {
     'Referer': 'https://quote.eastmoney.com/',
     'User-Agent': 'Mozilla/5.0 (compatible; FundHelper/1.0)'

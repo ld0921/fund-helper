@@ -22,6 +22,7 @@ jobs:
           node-version: '20'
 
       - name: 更新股票→行业映射表（如不存在或超过30天）
+        continue-on-error: true
         run: |
           MAP_FILE="data/stock-industry-map.json"
           NEED_UPDATE=true
@@ -34,7 +35,7 @@ jobs:
           fi
           if [ "$NEED_UPDATE" = "true" ]; then
             echo "更新股票→行业映射表..."
-            node scripts/update-industry-map.js
+            node scripts/update-industry-map.js || echo "⚠️ 映射表更新失败（数据源限流），跳过；主动基金行业归因暂时不可用"
           fi
 
       - name: 拉取基金排名数据

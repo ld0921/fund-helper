@@ -286,28 +286,80 @@ function loadStockIndustryMap() {
   return _stockIndustryMap;
 }
 
+// 细分行业 → 大类板块映射（基于产业链相关性合并）
+// 解决：主动基金持仓天然分散到产业链上下游，细分行业难以单独超过30%阈值
+const INDUSTRY_GROUP = {
+  // 通信链（光模块/光器件/通信设备/光纤/PCB）
+  '通信设备': '通信', '通信服务': '通信', '元件': '通信',
+  // 电子/半导体
+  '半导体': '电子', '光学光电子': '电子', '消费电子': '电子',
+  '计算机设备': '电子', '其他电子Ⅱ': '电子',
+  // 软件互联网
+  '软件开发': '科技', 'IT服务Ⅱ': '科技', '互联网服务': '科技',
+  // 医药健康
+  '化学制药': '医药', '中药Ⅱ': '医药', '生物制品': '医药',
+  '医药商业': '医药', '医疗器械': '医药', '医疗服务': '医药',
+  // 消费
+  '白酒Ⅱ': '消费', '食品加工': '消费', '饮料乳品': '消费',
+  '调味发酵品Ⅱ': '消费', '休闲食品': '消费', '家居用品': '消费',
+  '服装家纺': '消费', '化妆品': '消费', '小家电': '消费',
+  '白色家电': '消费', '黑色家电': '消费', '厨卫电器': '消费',
+  // 新能源
+  '电池': '新能源', '光伏设备': '新能源', '风电设备': '新能源',
+  '电网设备': '新能源', '电机Ⅱ': '新能源', '其他电源设备Ⅱ': '新能源',
+  // 汽车
+  '汽车零部件': '汽车', '汽车整车': '汽车', '商用车': '汽车',
+  '乘用车': '汽车', '汽车服务': '汽车',
+  // 金融
+  '股份制银行Ⅱ': '金融', '城商行Ⅱ': '金融', '国有大型银行Ⅱ': '金融',
+  '农商行Ⅱ': '金融', '证券Ⅱ': '金融', '保险Ⅱ': '金融',
+  '多元金融': '金融',
+  // 周期/资源
+  '煤炭开采': '资源', '石油开采': '资源', '油气开采Ⅱ': '资源',
+  '工业金属': '资源', '小金属': '资源', '贵金属': '资源',
+  '钢铁': '资源', '化学原料': '资源', '化学制品': '资源',
+  '化学纤维': '资源', '橡胶': '资源', '塑料': '资源',
+  // 军工
+  '军工电子Ⅱ': '军工', '航空装备Ⅱ': '军工', '航天装备Ⅱ': '军工',
+  '地面兵装Ⅱ': '军工', '航海装备Ⅱ': '军工',
+  // 房地产建筑
+  '房地产开发': '地产', '基础建设': '地产', '专业工程': '地产',
+  '装修建材': '地产', '水泥': '地产', '玻璃玻纤': '地产',
+  // 公用事业
+  '电力': '公用', '燃气Ⅱ': '公用', '环境治理': '公用',
+};
+
 // 根据重仓股推断基金的实际板块
-// 加权统计前10大持仓的行业分布，权重 > 30% 视为主导行业
+// 优先看大类板块（产业链合并），其次看细分行业，阈值25%
 function inferFundSector(topStocks) {
   if (!topStocks || topStocks.length === 0) return null;
   const map = loadStockIndustryMap();
   if (Object.keys(map).length === 0) return null;
 
-  const industryWeight = {};
+  const groupWeight = {}; // 大类板块权重
+  const industryWeight = {}; // 细分行业权重
   let mappedTotal = 0;
   topStocks.forEach(s => {
     const entry = map[s.code];
     if (entry && entry.industry) {
       industryWeight[entry.industry] = (industryWeight[entry.industry] || 0) + s.pct;
+      const group = INDUSTRY_GROUP[entry.industry] || entry.industry;
+      groupWeight[group] = (groupWeight[group] || 0) + s.pct;
       mappedTotal += s.pct;
     }
   });
-  if (mappedTotal < 10) return null; // 前十持仓中能识别行业的占比 < 10%，数据质量不足
+  if (mappedTotal < 10) return null; // 数据质量不足
 
-  const sorted = Object.entries(industryWeight).sort((a, b) => b[1] - a[1]);
-  const [topIndustry, topWeight] = sorted[0];
-  // 主导行业阈值：前十持仓中单一行业 > 30%（绝对占基金净值）
-  return topWeight > 30 ? topIndustry : null;
+  // 优先看大类板块（>25%即触发），其次看细分行业（>30%）
+  const sortedGroup = Object.entries(groupWeight).sort((a, b) => b[1] - a[1]);
+  if (sortedGroup.length > 0 && sortedGroup[0][1] > 25) {
+    return sortedGroup[0][0];
+  }
+  const sortedIndustry = Object.entries(industryWeight).sort((a, b) => b[1] - a[1]);
+  if (sortedIndustry.length > 0 && sortedIndustry[0][1] > 30) {
+    return sortedIndustry[0][0];
+  }
+  return null;
 }
 
 // 根据maxDD推断风险等级
