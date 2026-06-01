@@ -911,6 +911,7 @@ function runHealthMonitor(){
       if (stylePct.dividend < 5) missingStyles.push('dividend');
       if (stylePct.value < 10 && topStyle !== 'value') missingStyles.push('value');
       const recommendations = [];
+      const missingStyleNames = [];
       missingStyles.forEach(ms => {
         const candidates = CURATED_FUNDS
           .filter(f => f.style === ms && !heldCodes.has(f.code) && (f.cat === 'index' || f.cat === 'active'))
@@ -919,15 +920,28 @@ function runHealthMonitor(){
         if (candidates.length > 0) {
           const top2 = candidates.slice(0, 2);
           recommendations.push(`${styleNames[ms]}类: ${top2.map(x => `${x.f.name}（${x.score}分）`).join('、')}`);
+        } else {
+          missingStyleNames.push(styleNames[ms]);
         }
       });
+      // 当精选库没有对应风格的基金时，给出市场公开标的的兜底建议
+      const marketSuggestions = {
+        dividend: '中证红利ETF联接（005224）、红利低波100ETF联接（007466）、上证红利ETF联接（510881）',
+        value: '沪深300价值ETF联接（007647）、深证基本面60ETF联接（530015）、银行ETF联接（512800）',
+      };
+      const fallbackHint = missingStyleNames.length > 0
+        ? `精选库当前缺乏 A 股${missingStyleNames.join('/')}风格基金（这是精选库按"近1年涨幅"入库的固有偏差），可直接到支付宝/天天基金搜索以下标的：${missingStyleNames.map(n => {
+            const key = n === '红利' ? 'dividend' : 'value';
+            return `${n}类参考 ${marketSuggestions[key]}`;
+          }).join('；')}。`
+        : '';
       const fundList = styleFunds[topStyle].slice(0, 5).join('、') + (styleFunds[topStyle].length > 5 ? ` 等${styleFunds[topStyle].length}只` : '');
       const distribution = sortedStyle.filter(([_, v]) => v > 1).map(([s, v]) => `${styleNames[s] || s} ${v.toFixed(0)}%`).join(' / ');
       optimizeAlerts.push({
         code: '_opt_style_' + topStyle,
         name: `风格过度集中：${styleNames[topStyle]}风格 ${topPct.toFixed(0)}%`,
         level,
-        desc: `你的权益持仓中 ${topPct.toFixed(0)}% 集中在「${styleNames[topStyle]}」风格（${fundList}）。当前权益风格分布：${distribution}。防御性风格（价值+红利）仅 ${defensivePct.toFixed(0)}%${defensivePct < 15 ? '（不足15%）' : ''}。当市场风格切换时（如大盘价值/红利起涨而成长股回调），缺乏对冲会放大波动。${recommendations.length > 0 ? '建议补充：' + recommendations.join('；') + '。' : ''}`,
+        desc: `你的权益持仓中 ${topPct.toFixed(0)}% 集中在「${styleNames[topStyle]}」风格（${fundList}）。当前权益风格分布：${distribution}。防御性风格（价值+红利）仅 ${defensivePct.toFixed(0)}%${defensivePct < 15 ? '（不足15%）' : ''}。当市场风格切换时（如大盘价值/红利起涨而成长股回调），缺乏对冲会放大波动。${recommendations.length > 0 ? '建议补充：' + recommendations.join('；') + '。' : ''}${fallbackHint}`,
         action: level === 'red' ? '🔴 风格踩踏风险' : '🟡 风格偏单一'
       });
     }
