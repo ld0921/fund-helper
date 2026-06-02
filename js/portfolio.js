@@ -1490,8 +1490,10 @@ function _doGenerate(shouldScroll){
       console.log(`[诊断驱动] sector去重: ${h.fundData.name} keep=false（${h._keepReason}）`);
     });
 
-    // 第二步：检查每个权益 cat 是否被全部打掉，如果是则保留评分最高的1只
-    // （仅作"兜底"，不主动救基金；如果该 cat 还有非通信基金被去重，不影响其他 keep=true 的基金）
+    // 第二步：检查每个权益 cat 是否被全部打掉
+    // 设计：不主动救回——让 selectFunds 用 catGap 资金选新的非超配基金
+    // 如果救回，会让用户原本想清掉的基金（如交银优择）继续保留并加仓，违背改造目的
+    // 但需要记录哪些 cat 被全部打掉，下游计算 catIntraFill 时使用
     const catBuckets = {};
     allHeld.forEach(h => {
       const cat = h.fundData && h.fundData.cat;
@@ -1503,11 +1505,7 @@ function _doGenerate(shouldScroll){
       if(['bond','money'].includes(cat)) return;
       const stillKeep = funds.filter(h => h.keep);
       if(stillKeep.length === 0 && funds.length > 0){
-        // 全部被打掉了，救回评分最高的1只（防 cat 完全清空导致资金分配异常）
-        funds.sort((a,b) => b.score - a.score);
-        funds[0].keep = true;
-        funds[0]._keepReason = (funds[0]._keepReason ? funds[0]._keepReason + '；' : '') + 'cat内全部被去重，救回评分最高的1只';
-        console.log(`[诊断驱动] cat保护: ${cat} 类全空，救回 ${funds[0].fundData.name}`);
+        console.log(`[诊断驱动] cat ${cat} 完全清空（${funds.length}只全部被sector去重），catGap 将全额由 selectFunds 选新基金填充`);
       }
     });
 
@@ -1561,7 +1559,14 @@ function _doGenerate(shouldScroll){
     const lowAmt = lowFunds.reduce((s,h)=>s+h.value,0);
     // bond类别：低分基金释放资金全部进全局池（可转债替换可转债无实质改善，应流向权益）
     // 其他类别：优先在类内补给高分基金至catTargetAmt（同类质量升级），剩余进全局池
-    const intraFill = (cat === 'bond' || cat === 'money') ? 0 : Math.min(lowAmt, Math.max(0, targetAmt - highAmt));
+    // 修复：如果 highFunds 为空（cat 完全清空），intraFill = 0，让 catGap 完整保留
+    //      避免 intraFill 占用名义资金但无人接收，导致 catGap 错误归零
+    let intraFill;
+    if(cat === 'bond' || cat === 'money' || highFunds.length === 0){
+      intraFill = 0;
+    } else {
+      intraFill = Math.min(lowAmt, Math.max(0, targetAmt - highAmt));
+    }
     const globalRelease = lowAmt - intraFill;
     catIntraFill[cat] = intraFill;
     if(highAmt > targetAmt){
@@ -1585,27 +1590,41 @@ function _doGenerate(shouldScroll){
     }
   });
 
-  // ═══ 修复3：为缺失风格预留 index 类配额 ═══
-  // 当存在 value/dividend 风格缺口时，强制把 catIntraFill['index'] 转到 catGap['index']
-  // 让 selectFunds 有机会推荐红利/价值类指数基金（中证红利ETF联接/上证50增强等）
-  // 否则 catGap['index']=0 时 selectFunds 不会被调用，固定保留的红利基金永远进不来
+  // ═══ 修复3（强化版）：为缺失风格强制预留 index 类配额 ═══
+  // 当存在 value/dividend 风格缺口时，确保 catGap['index'] 至少 portfolioTotal × 10%
+  // 资金来源：先用 catIntraFill['index']（如有），不足则从 freedFromOverweight 调拨
+  // 目标：让 selectFunds 必然被 index 类调用，给红利/价值固定保留基金机会
   if(hasHoldings){
     const currentStyleForReserve = calcCurrentStyleExposure(existingHoldings);
     const styleGapForReserve = currentStyleForReserve ? calcStyleGap(currentStyleForReserve, riskP) : [];
     const needValueDividend = styleGapForReserve.some(g => g.style === 'value' || g.style === 'dividend');
     console.log('[修复3] styleGap:', styleGapForReserve.map(g=>`${g.style}(缺${g.gap.toFixed(0)}%)`));
-    console.log('[修复3] catIntraFill index:', catIntraFill['index'], 'catGap index:', catGap['index']);
-    if(needValueDividend && (catIntraFill['index'] || 0) > 0){
-      const reserveAmt = catIntraFill['index'];
-      catGap['index'] = (catGap['index'] || 0) + reserveAmt;
-      catIntraFill['index'] = 0;
-      console.log(`[修复3] 风格缺口需要补足，从 index 类 intraFill 转移 ¥${reserveAmt.toFixed(0)} 到 catGap['index']，确保新风格基金有配额`);
+    console.log('[修复3] 调整前 catIntraFill index:', catIntraFill['index'], 'catGap index:', catGap['index'], 'freedFromOverweight:', freedFromOverweight);
+    if(needValueDividend){
+      const minIndexGap = Math.round(portfolioTotal * 0.10); // 至少 10% 用于新风格基金
+      const currentIndexGap = catGap['index'] || 0;
+      if(currentIndexGap < minIndexGap){
+        const needed = minIndexGap - currentIndexGap;
+        // 优先从 catIntraFill['index'] 调
+        const fromIntra = Math.min(catIntraFill['index'] || 0, needed);
+        catIntraFill['index'] = (catIntraFill['index'] || 0) - fromIntra;
+        let stillNeeded = needed - fromIntra;
+        // 不足从 freedFromOverweight 调
+        const fromFreed = Math.min(freedFromOverweight, stillNeeded);
+        freedFromOverweight -= fromFreed;
+        stillNeeded -= fromFreed;
+        catGap['index'] = currentIndexGap + fromIntra + fromFreed;
+        console.log(`[修复3] 强制为 value/dividend 风格预留 catGap['index']: ¥${currentIndexGap} → ¥${catGap['index']}（来源: intraFill ¥${fromIntra} + freedFromOverweight ¥${fromFreed}）`);
+        if(stillNeeded > 0){
+          console.log(`[修复3] 资金不足，缺口仍有 ¥${stillNeeded}`);
+        }
+      }
     }
   }
 
   console.log('[catGap 最终]:', JSON.stringify(catGap));
   console.log('[catIntraFill 最终]:', JSON.stringify(catIntraFill));
-  console.log('[freedFromOverweight]:', freedFromOverweight);
+  console.log('[freedFromOverweight 最终]:', freedFromOverweight);
 
   const totalGap = Object.values(catGap).reduce((s,v)=>s+v,0);
   // Option B：释放资金在recovery phase按 active→index→qdii 顺序填满权益缺口，剩余才给bond
