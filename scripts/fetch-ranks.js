@@ -21,7 +21,6 @@ const FIXED_CODES = [
   // 强制保留以提供防御性低估值配置选择，避免智能推荐全选growth
   '005267', // 嘉实价值精选股票A - 谭丽（深度价值）
   '006567', // 中泰星元灵活配置混合A - 姜诚（深度价值）
-  '005233', // 广发睿毅领先混合A - 林英睿（价值+低波）
   '260112', // 景顺长城能源基建混合A - 鲍无可（价值红利）
   '090011', // 大成核心双动力混合A - 徐彦（价值均衡）
   '006551', // 中庚价值领航混合 - 丘栋荣（价值）
@@ -40,7 +39,6 @@ const FIXED_META = {
   // 价值派主动基金：style 强制写入，不被重仓股归因覆盖
   '005267': { name:'嘉实价值精选股票A', cat:'active', type:'股票型', label:'主动权益', style:'value' },
   '006567': { name:'中泰星元灵活配置混合A', cat:'active', type:'混合型', label:'主动权益', style:'value' },
-  '005233': { name:'广发睿毅领先混合A', cat:'active', type:'混合型', label:'主动权益', style:'value' },
   '260112': { name:'景顺长城能源基建混合A', cat:'active', type:'混合型', label:'主动权益', style:'value' },
   '090011': { name:'大成核心双动力混合A', cat:'active', type:'混合型', label:'主动权益', style:'value' },
   '006551': { name:'中庚价值领航混合', cat:'active', type:'混合型', label:'主动权益', style:'value' },
@@ -502,7 +500,7 @@ function inferRiskLevel(maxDD, cat) {
 // 根据基金数据自动生成标签
 // 板块识别规则（顺序敏感，先匹配先得）
 const SECTOR_RULES = [
-  [/通信|5G|电信/, '通信'],
+  [/通信|5G|电信|TMT/, '通信'],
   [/半导体|芯片|集成电路/, '半导体'],
   [/人工智能|AI产业/, 'AI'],
   [/科技|信息技术|信息行业/, '科技'],
@@ -800,6 +798,10 @@ async function main() {
               }
               entry.styleDistribution = styleResult.distribution;
             }
+          } else {
+            // topStocks 为空（如分散型ETF）：仅用名称兜底
+            const nameSector = inferSectorFromName(entry.name);
+            if (nameSector) { entry.sector = nameSector; entry.sectorSource = 'name'; }
           }
           await sleep(200); // 限速保护
         }
