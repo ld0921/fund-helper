@@ -1437,14 +1437,18 @@ function _doGenerate(shouldScroll){
     });
   }
 
-  // ═══ 已持仓诊断驱动的 keep 判定（修复1+修复2，覆盖原 cat 内 sector 去重）═══
-  // 在 catGap 计算之前完成所有 keep 调整，确保资金分配读到正确的持仓状态
+  // ═══ 已持仓诊断驱动的 keep 判定（修订版）═══
+  // 设计原则：
+  // 1) 同 cat 内必须保留至少1只评分最高的基金，防止类别清空导致资金挤压到其他 cat
+  // 2) sectorBestGlobal 里的"评分最高基金"不被其他约束推翻（避免自我反噬）
+  // 3) 单股超配的检查只放在 selectFunds（不在 keptPicks 里 keep=false）
+  //    因为单股超配的源头基金 keep=false 不能解决超配，反而会清空持仓
+  // 4) 风格超配标记 noBuyMore=true（不加仓），不直接 keep=false（不清仓）
+  const overweightStocksGlobal = new Map(); // 暴露给后续 selectFunds 使用
   if(hasHoldings){
-    // 收集所有持仓（跨 cat 扁平化）
     const allHeld = [];
     Object.values(holdingsByCat).forEach(funds => funds.forEach(h => allHeld.push(h)));
 
-    // 计算诊断约束所需的全局数据
     const currentStyleForKeep = calcCurrentStyleExposure(existingHoldings);
     const styleAvoidSet = new Set();
     if(currentStyleForKeep){
@@ -1453,74 +1457,48 @@ function _doGenerate(shouldScroll){
         if(currentStyleForKeep[s] - targets[s] > 10) styleAvoidSet.add(s);
       });
     }
-    const overweightStocksMap = new Map();
-    calcStockExposure(existingHoldings, 3).forEach(item => overweightStocksMap.set(item.code, item.totalPct));
+    calcStockExposure(existingHoldings, 3).forEach(item => overweightStocksGlobal.set(item.code, item.totalPct));
 
-    // 修复2：跨 cat 全局 sector 去重（替代原同 cat 内去重）
-    // 同一 sector 在所有 cat 中只保留评分最高的1只，其余降级 keep=false
+    // 修复2（修订）：跨 cat 全局 sector 去重，但每个 cat 内保留至少1只评分最高的
     const sectorBestGlobal = {};
     allHeld.forEach(h => {
       const sec = h.fundData && h.fundData.sector;
       if(!sec || !h.keep) return;
       if(!sectorBestGlobal[sec] || h.score > sectorBestGlobal[sec].score) sectorBestGlobal[sec] = h;
     });
+    // 收集每个 cat 内评分最高的基金（用于防类别清空）
+    const catBestScore = {};
+    allHeld.forEach(h => {
+      const cat = h.fundData && h.fundData.cat;
+      if(!cat || !h.keep) return;
+      if(!catBestScore[cat] || h.score > catBestScore[cat].score) catBestScore[cat] = h;
+    });
     allHeld.forEach(h => {
       const sec = h.fundData && h.fundData.sector;
-      if(sec && h.keep && sectorBestGlobal[sec] && sectorBestGlobal[sec].code !== h.code){
-        h.keep = false;
-        h._keepReason = `sector重叠：${sec}板块已保留评分更高的${sectorBestGlobal[sec].fundData.name}（${sectorBestGlobal[sec].score}分）`;
-      }
+      if(!sec || !h.keep) return;
+      if(sectorBestGlobal[sec].code === h.code) return; // 该 sector 评分最高，保留
+      // 保护：如果该基金是其 cat 内评分最高的，也保留（防类别清空）
+      const cat = h.fundData.cat;
+      if(catBestScore[cat] && catBestScore[cat].code === h.code) return;
+      h.keep = false;
+      h._keepReason = `sector重叠：${sec}板块已保留评分更高的${sectorBestGlobal[sec].fundData.name}（${sectorBestGlobal[sec].score}分）`;
     });
 
-    // 修复1a：超配风格的基金 → keep=false（强制减仓/清仓）
-    // 但需保留每种 cat 至少1只，避免某类被全部清空
+    // 修复1a（修订）：超配风格 → 标记 noBuyMore=true（不加仓）而非 keep=false（不清仓）
+    // 让用户保留原持仓但不再增加，避免清仓导致风格暴露归零，也避免破坏浮盈
     if(styleAvoidSet.size > 0){
-      // 按 cat 分组，每个 cat 内若全部基金都被 styleAvoid 命中，保留评分最高的1只
-      const catBuckets = {};
       allHeld.forEach(h => {
-        const cat = h.fundData && h.fundData.cat;
-        if(!cat) return;
-        if(!catBuckets[cat]) catBuckets[cat] = [];
-        catBuckets[cat].push(h);
-      });
-      Object.entries(catBuckets).forEach(([cat, funds]) => {
-        if(['bond','money'].includes(cat)) return; // 非权益类不受风格约束
-        const styleAvoidHits = funds.filter(h => h.fundData.style && styleAvoidSet.has(h.fundData.style) && h.keep);
-        const stylePass = funds.filter(h => h.fundData.style && !styleAvoidSet.has(h.fundData.style) && h.keep);
-        // 如果该 cat 内还有非超配风格的基金可保留，则所有超配风格基金 keep=false
-        // 否则保留评分最高的1只（防止该 cat 完全清空导致后续分配异常）
-        if(stylePass.length > 0){
-          styleAvoidHits.forEach(h => {
-            h.keep = false;
-            h._keepReason = (h._keepReason ? h._keepReason + '；' : '') + `风格超配：${h.fundData.style}风格在权益类已超出目标10%+`;
-          });
-        } else if(styleAvoidHits.length > 1){
-          // 全部都是超配风格，保留评分最高的1只
-          styleAvoidHits.sort((a,b) => b.score - a.score);
-          styleAvoidHits.slice(1).forEach(h => {
-            h.keep = false;
-            h._keepReason = (h._keepReason ? h._keepReason + '；' : '') + `风格超配：${h.fundData.style}风格在权益类已超出目标10%+`;
-          });
+        const style = h.fundData && h.fundData.style;
+        if(!style || !h.keep) return;
+        if(['bond','money'].includes(h.fundData.cat)) return;
+        if(styleAvoidSet.has(style)){
+          h.noBuyMore = true;
+          h._keepReason = (h._keepReason ? h._keepReason + '；' : '') + `风格超配：${style}已超出目标10%+，本方案不加仓`;
         }
       });
     }
-
-    // 修复1b：单股超配 → 重仓超配股票的基金，按重叠权重扣评分
-    // 扣分阈值: 重叠权重 > 15% 时直接 keep=false（严重重叠）
-    //          重叠权重 5-15% 时仅降低 score，不强制减仓（避免误伤优质基金）
-    if(overweightStocksMap.size > 0){
-      allHeld.forEach(h => {
-        if(!h.keep || !h.fundData.topStocks) return;
-        let overlapPct = 0;
-        h.fundData.topStocks.forEach(s => {
-          if(overweightStocksMap.has(s.code)) overlapPct += s.pct;
-        });
-        if(overlapPct > 15){
-          h.keep = false;
-          h._keepReason = (h._keepReason ? h._keepReason + '；' : '') + `单股重叠：前十重仓股中${overlapPct.toFixed(0)}%是已超配股票`;
-        }
-      });
-    }
+    // 注意：修复1b（单股超配 keep=false）已移除
+    // 单股超配的处理只在 selectFunds 的评分阶段（已实现）
   } else {
     // 无持仓时，沿用原有的 cat 内 sector 去重逻辑（保护首次配置场景）
     Object.values(holdingsByCat).forEach(funds => {
@@ -1689,7 +1667,8 @@ function _doGenerate(shouldScroll){
     const keptScale = (highKeptValue > catTargetAmt && catTargetAmt > 0) ? catTargetAmt / highKeptValue : 1;
 
     // 高分基金加仓：类内补仓(intraFill) + 全局分配的新资金(newMoneyForCat)
-    const keepFunds = kept.filter(h => h.keep);
+    // 排除 noBuyMore 标记的基金（风格超配，保留持仓但不加仓）
+    const keepFunds = kept.filter(h => h.keep && !h.noBuyMore);
     const intraFill = catIntraFill[cd.cat] || 0;
     const totalAddForCat = newMoneyForCat + intraFill;
     let remainingGap = gap;
