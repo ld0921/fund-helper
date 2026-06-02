@@ -8,16 +8,23 @@ const https = require('https');
 
 // 固定保留的基金代码（货币/超短债等特殊品种，全市场扫描不覆盖）
 const FIXED_CODES = [
-  // 货币 / 短债 / 主动均衡
+  // 货币 / 短债
   '000198', '003003', '070009',
-  // 红利/价值类（强制保留以解决精选库风格偏差）
-  // 精选库按"近1年涨幅"入库会天然漏掉红利/价值基金
-  // 这些基金提供成长股之外的防御性配置选择
+  // 红利/价值指数（强制保留以解决精选库风格偏差）
   '100032', // 富国中证红利指数增强A - 红利
   '012643', // 招商中证红利ETF联接A - 红利
   '007466', // 华泰柏瑞中证红利低波ETF联接A - 红利低波
   '110020', // 易方达沪深300ETF联接A - 大盘价值代理
   '110003', // 易方达上证50增强A - 大盘蓝筹
+  // 价值派主动基金（公认价值风格基金经理作品）
+  // 精选库按"近1年涨幅"入库天然漏掉价值基金（牛市成长股200%+碾压价值股30-50%）
+  // 强制保留以提供防御性低估值配置选择，避免智能推荐全选growth
+  '005267', // 嘉实价值精选股票A - 谭丽（深度价值）
+  '006567', // 中泰星元灵活配置混合A - 姜诚（深度价值）
+  '005233', // 广发睿毅领先混合A - 林英睿（价值+低波）
+  '260112', // 景顺长城能源基建混合A - 鲍无可（价值红利）
+  '090011', // 大成核心双动力混合A - 徐彦（价值均衡）
+  '006551', // 中庚价值领航混合 - 丘栋荣（价值）
 ];
 // 固定基金的预设元数据（扫描不覆盖，需手动指定类别）
 // 含 style 字段时强制写入该风格（绕过基于重仓股的归因，避免红利基金被误归为 blend）
@@ -30,6 +37,13 @@ const FIXED_META = {
   '007466': { name:'华泰柏瑞中证红利低波ETF联接A', cat:'index', type:'指数型', label:'红利低波', style:'dividend' },
   '110020': { name:'易方达沪深300ETF联接A', cat:'index', type:'指数型', label:'大盘蓝筹', style:'value' },
   '110003': { name:'易方达上证50增强A', cat:'index', type:'指数型', label:'大盘蓝筹', style:'value' },
+  // 价值派主动基金：style 强制写入，不被重仓股归因覆盖
+  '005267': { name:'嘉实价值精选股票A', cat:'active', type:'股票型', label:'主动权益', style:'value' },
+  '006567': { name:'中泰星元灵活配置混合A', cat:'active', type:'混合型', label:'主动权益', style:'value' },
+  '005233': { name:'广发睿毅领先混合A', cat:'active', type:'混合型', label:'主动权益', style:'value' },
+  '260112': { name:'景顺长城能源基建混合A', cat:'active', type:'混合型', label:'主动权益', style:'value' },
+  '090011': { name:'大成核心双动力混合A', cat:'active', type:'混合型', label:'主动权益', style:'value' },
+  '006551': { name:'中庚价值领航混合', cat:'active', type:'混合型', label:'主动权益', style:'value' },
 };
 
 const CATEGORIES = [
@@ -375,6 +389,15 @@ function inferFundSector(topStocks) {
   const sortedIndustry = Object.entries(industryWeight).sort((a, b) => b[1] - a[1]);
   if (sortedIndustry.length > 0 && sortedIndustry[0][1] > 30) {
     return sortedIndustry[0][0];
+  }
+  return null;
+}
+
+// 根据基金名称关键词推断板块（分散型ETF重仓股归因失效时的兜底）
+function inferSectorFromName(name) {
+  if (!name) return null;
+  for (const [re, label] of SECTOR_RULES) {
+    if (re.test(name)) return label;
   }
   return null;
 }
@@ -760,10 +783,11 @@ async function main() {
           const topStocks = await fetchTopStocks(code);
           if (topStocks && topStocks.length > 0) {
             entry.topStocks = topStocks;
-            const inferredSector = inferFundSector(topStocks);
+            const stockSector = inferFundSector(topStocks);
+            const inferredSector = stockSector || inferSectorFromName(entry.name);
             if (inferredSector) {
-              entry.sector = inferredSector; // 覆盖名称匹配的结果
-              entry.sectorSource = 'topStocks';
+              entry.sector = inferredSector;
+              entry.sectorSource = stockSector ? 'topStocks' : 'name';
             } else if (entry.sector) {
               entry.sectorSource = 'name';
             }
