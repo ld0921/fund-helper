@@ -1449,43 +1449,69 @@ function _doGenerate(shouldScroll){
     const allHeld = [];
     Object.values(holdingsByCat).forEach(funds => funds.forEach(h => allHeld.push(h)));
 
+    console.log('═══════ [诊断驱动] 开始 ═══════');
+    console.log('[诊断驱动] 全部持仓快照:');
+    allHeld.forEach(h => {
+      console.log(`  ${h.fundData.name} (${h.code}) cat=${h.fundData.cat} sector=${h.fundData.sector} style=${h.fundData.style} score=${h.score} value=¥${h.value} 初始keep=${h.keep}`);
+    });
+
     const currentStyleForKeep = calcCurrentStyleExposure(existingHoldings);
     const styleAvoidSet = new Set();
     if(currentStyleForKeep){
       const targets = computeStyleTargets(riskP);
+      console.log('[诊断驱动] 当前风格分布:', currentStyleForKeep);
+      console.log('[诊断驱动] 目标风格配比:', targets);
       ['growth','value','dividend','blend'].forEach(s => {
         if(currentStyleForKeep[s] - targets[s] > 10) styleAvoidSet.add(s);
       });
     }
+    console.log('[诊断驱动] styleAvoidSet:', [...styleAvoidSet]);
     calcStockExposure(existingHoldings, 3).forEach(item => overweightStocksGlobal.set(item.code, item.totalPct));
+    console.log('[诊断驱动] 超配股票:', [...overweightStocksGlobal.entries()].map(([c,p])=>`${c}(${p.toFixed(2)}%)`));
 
-    // 修复2（修订）：跨 cat 全局 sector 去重，但每个 cat 内保留至少1只评分最高的
+    // 修复2（修订v2）：跨 cat 全局 sector 去重
+    // 移除"cat 内评分最高保留"的保护（之前太宽松导致交银优择被救回）
+    // 仅在该 cat 完全清空时，才救回评分最高的1只
     const sectorBestGlobal = {};
     allHeld.forEach(h => {
       const sec = h.fundData && h.fundData.sector;
       if(!sec || !h.keep) return;
       if(!sectorBestGlobal[sec] || h.score > sectorBestGlobal[sec].score) sectorBestGlobal[sec] = h;
     });
-    // 收集每个 cat 内评分最高的基金（用于防类别清空）
-    const catBestScore = {};
-    allHeld.forEach(h => {
-      const cat = h.fundData && h.fundData.cat;
-      if(!cat || !h.keep) return;
-      if(!catBestScore[cat] || h.score > catBestScore[cat].score) catBestScore[cat] = h;
-    });
+    console.log('[诊断驱动] sectorBestGlobal:', Object.entries(sectorBestGlobal).map(([s,h])=>`${s}→${h.fundData.name}(${h.score}分)`));
+
+    // 第一步：先做全局 sector 去重
     allHeld.forEach(h => {
       const sec = h.fundData && h.fundData.sector;
       if(!sec || !h.keep) return;
       if(sectorBestGlobal[sec].code === h.code) return; // 该 sector 评分最高，保留
-      // 保护：如果该基金是其 cat 内评分最高的，也保留（防类别清空）
-      const cat = h.fundData.cat;
-      if(catBestScore[cat] && catBestScore[cat].code === h.code) return;
       h.keep = false;
       h._keepReason = `sector重叠：${sec}板块已保留评分更高的${sectorBestGlobal[sec].fundData.name}（${sectorBestGlobal[sec].score}分）`;
+      console.log(`[诊断驱动] sector去重: ${h.fundData.name} keep=false（${h._keepReason}）`);
+    });
+
+    // 第二步：检查每个权益 cat 是否被全部打掉，如果是则保留评分最高的1只
+    // （仅作"兜底"，不主动救基金；如果该 cat 还有非通信基金被去重，不影响其他 keep=true 的基金）
+    const catBuckets = {};
+    allHeld.forEach(h => {
+      const cat = h.fundData && h.fundData.cat;
+      if(!cat) return;
+      if(!catBuckets[cat]) catBuckets[cat] = [];
+      catBuckets[cat].push(h);
+    });
+    Object.entries(catBuckets).forEach(([cat, funds]) => {
+      if(['bond','money'].includes(cat)) return;
+      const stillKeep = funds.filter(h => h.keep);
+      if(stillKeep.length === 0 && funds.length > 0){
+        // 全部被打掉了，救回评分最高的1只（防 cat 完全清空导致资金分配异常）
+        funds.sort((a,b) => b.score - a.score);
+        funds[0].keep = true;
+        funds[0]._keepReason = (funds[0]._keepReason ? funds[0]._keepReason + '；' : '') + 'cat内全部被去重，救回评分最高的1只';
+        console.log(`[诊断驱动] cat保护: ${cat} 类全空，救回 ${funds[0].fundData.name}`);
+      }
     });
 
     // 修复1a（修订）：超配风格 → 标记 noBuyMore=true（不加仓）而非 keep=false（不清仓）
-    // 让用户保留原持仓但不再增加，避免清仓导致风格暴露归零，也避免破坏浮盈
     if(styleAvoidSet.size > 0){
       allHeld.forEach(h => {
         const style = h.fundData && h.fundData.style;
@@ -1494,11 +1520,16 @@ function _doGenerate(shouldScroll){
         if(styleAvoidSet.has(style)){
           h.noBuyMore = true;
           h._keepReason = (h._keepReason ? h._keepReason + '；' : '') + `风格超配：${style}已超出目标10%+，本方案不加仓`;
+          console.log(`[诊断驱动] noBuyMore: ${h.fundData.name}（${h._keepReason}）`);
         }
       });
     }
-    // 注意：修复1b（单股超配 keep=false）已移除
-    // 单股超配的处理只在 selectFunds 的评分阶段（已实现）
+
+    console.log('[诊断驱动] 最终持仓状态:');
+    allHeld.forEach(h => {
+      console.log(`  ${h.fundData.name} keep=${h.keep} noBuyMore=${h.noBuyMore||false} reason=${h._keepReason||'-'}`);
+    });
+    console.log('═══════ [诊断驱动] 结束 ═══════');
   } else {
     // 无持仓时，沿用原有的 cat 内 sector 去重逻辑（保护首次配置场景）
     Object.values(holdingsByCat).forEach(funds => {
@@ -1562,6 +1593,8 @@ function _doGenerate(shouldScroll){
     const currentStyleForReserve = calcCurrentStyleExposure(existingHoldings);
     const styleGapForReserve = currentStyleForReserve ? calcStyleGap(currentStyleForReserve, riskP) : [];
     const needValueDividend = styleGapForReserve.some(g => g.style === 'value' || g.style === 'dividend');
+    console.log('[修复3] styleGap:', styleGapForReserve.map(g=>`${g.style}(缺${g.gap.toFixed(0)}%)`));
+    console.log('[修复3] catIntraFill index:', catIntraFill['index'], 'catGap index:', catGap['index']);
     if(needValueDividend && (catIntraFill['index'] || 0) > 0){
       const reserveAmt = catIntraFill['index'];
       catGap['index'] = (catGap['index'] || 0) + reserveAmt;
@@ -1569,6 +1602,10 @@ function _doGenerate(shouldScroll){
       console.log(`[修复3] 风格缺口需要补足，从 index 类 intraFill 转移 ¥${reserveAmt.toFixed(0)} 到 catGap['index']，确保新风格基金有配额`);
     }
   }
+
+  console.log('[catGap 最终]:', JSON.stringify(catGap));
+  console.log('[catIntraFill 最终]:', JSON.stringify(catIntraFill));
+  console.log('[freedFromOverweight]:', freedFromOverweight);
 
   const totalGap = Object.values(catGap).reduce((s,v)=>s+v,0);
   // Option B：释放资金在recovery phase按 active→index→qdii 顺序填满权益缺口，剩余才给bond
@@ -1727,7 +1764,14 @@ function _doGenerate(shouldScroll){
           ...cd,
           topFunds: cd.topFunds.filter(f=>!existingHoldings.some(h=>h.code===f.code) && !keptPicks.some(p=>p.code===f.code))
         };
+        console.log(`[selectFunds调用] cat=${cd.cat} pct=${newPctForCat}% poolSize=${poolExcluded.topFunds.length}`);
+        if(diagnosticConstraints){
+          console.log(`  约束: styleNeeds=[${[...(diagnosticConstraints.styleNeeds||[])]}] styleAvoid=[${[...(diagnosticConstraints.styleAvoid||[])]}] usedSectors=[${[...(diagnosticConstraints.usedSectorsGlobal||[])]}] overweightStocks=${diagnosticConstraints.overweightStocks?.size||0}只`);
+        }
+        // 打印候选池前5个的关键字段
+        console.log(`  poolExcluded top5:`, poolExcluded.topFunds.slice(0,5).map(f=>`${f.name}(style=${f.style},sector=${f.sector||'无'},composite=${(f.composite||0).toFixed(1)})`));
         newPicks = selectFunds(cd.cat, poolExcluded, riskP, newPctForCat, portfolioTotal, diagnosticConstraints);
+        console.log(`  selectFunds 返回:`, newPicks.map(p=>`${p.name}(style=${p.style},sector=${p.sector||'无'},amt=¥${p.amt})`));
         newPicks.forEach(p=>{ p.isExisting = false; });
         if(cd.cat === 'bond'){
           console.log(`[generatePlan] bond newPicks:`, newPicks.map(p=>p.code+' '+p.name+' amt:'+p.amt));
