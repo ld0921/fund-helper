@@ -1729,7 +1729,7 @@ function _doGenerate(shouldScroll){
     const totalAddForCat = newMoneyForCat + intraFill;
     let remainingGap = gap;
     const keptAddMap = {};
-    console.log(`[generatePlan] cat=${cd.cat} gap=${gap} intraFill=${intraFill} keepFunds=${keepFunds.map(h=>h.code).join(',')||'空'} newMoneyForCat=${newMoneyForCat}`);
+    console.log(`[generatePlan] cat=${cd.cat} gap=${gap} intraFill=${intraFill} keepFunds=${keepFunds.map(h=>h.code).join(',')||'空'} newMoneyForCat=${newMoneyForCat} totalAddForCat=${totalAddForCat}`);
     if(totalAddForCat > 0 && keepFunds.length > 0){
       // 缺口优先分配：按各基金距等权目标的缺口比例分配新资金
       // 已超过等权份额的基金不再获得新资金，优先补给持仓偏低的高分基金
@@ -1746,6 +1746,14 @@ function _doGenerate(shouldScroll){
         remainingGap -= cappedAdd;
       });
       remainingGap = Math.max(0, remainingGap);
+    } else if(totalAddForCat > 0 && keepFunds.length === 0){
+      // 关键修复：cat 完全清空（无 keep=true 基金接收资金）
+      // newMoneyForCat 包含 preAllocated 部分（recovery phase 的预分配）
+      // 但 remainingGap 默认初始化为 adjustedCatGap（已扣除 preAllocated）
+      // 导致 preAllocated 资金被"丢失"，selectFunds 不会被调用
+      // 修复：把 totalAddForCat 全部交给 selectFunds 选新基金
+      remainingGap = totalAddForCat;
+      console.log(`[修复] cat=${cd.cat} keepFunds空，把 totalAddForCat ¥${totalAddForCat} 全部交给 selectFunds`);
     }
 
     const isOverweight = highKeptValue > catTargetAmt && catTargetAmt > 0;
