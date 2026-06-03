@@ -890,17 +890,30 @@ function selectFunds(cat, catData, riskProfile, pct, totalAmt, constraints){
   }
   if(!pool.length) return [];
 
-  // index 类同质竞争过滤：当 pool 中有跑赢均值的基金时，过滤掉 r1 AND r3 同时低于均值60%的弱者
-  // 理论依据：Sharpe 1992 风格分析，同风格指数应横向比较；双维度保护避免误伤红利/价值类（其整组均低于均值，前提条件不成立）
+  // index 类同主题弱者过滤：仅在同 sector 或同风格类别内进行横向比较
+  // 红利/价值风格指数（style=dividend/value）不参与过滤，避免误伤战略配置品种
+  // 理论依据：Sharpe 1992 风格分析，同风格基金才应横向比较
   if(cat === 'index'){
-    const bench = _catBench['index'];
-    if(bench && bench.avgR1 > 0){
-      const threshold = bench.avgR1 * 0.6;
-      const hasWinner = pool.some(f => (f.r1||0) >= bench.avgR1);
-      if(hasWinner){
-        const filtered = pool.filter(f => !((f.r1||0) < threshold && (f.r3||0) < threshold));
-        if(filtered.length > 0) pool = filtered;
-      }
+    const toRemove = new Set();
+    // 1. 有 sector 的：在同 sector 内比
+    const sectorGroups = {};
+    pool.forEach(f => { if(f.sector){ (sectorGroups[f.sector] = sectorGroups[f.sector]||[]).push(f); } });
+    Object.values(sectorGroups).forEach(group => {
+      if(group.length < 2) return;
+      const avgR1 = group.reduce((s,f) => s+(f.r1||0), 0) / group.length;
+      const avgR3 = group.reduce((s,f) => s+(f.r3||0), 0) / group.length;
+      group.forEach(f => { if((f.r1||0) < avgR1 && (f.r3||0) < avgR3) toRemove.add(f.code); });
+    });
+    // 2. 无 sector 且非红利/价值风格：在同组内互相比较
+    const noSectorGrowth = pool.filter(f => !f.sector && f.style !== 'dividend' && f.style !== 'value');
+    if(noSectorGrowth.length >= 2){
+      const avgR1 = noSectorGrowth.reduce((s,f) => s+(f.r1||0), 0) / noSectorGrowth.length;
+      const avgR3 = noSectorGrowth.reduce((s,f) => s+(f.r3||0), 0) / noSectorGrowth.length;
+      noSectorGrowth.forEach(f => { if((f.r1||0) < avgR1 && (f.r3||0) < avgR3) toRemove.add(f.code); });
+    }
+    if(toRemove.size > 0 && toRemove.size < pool.length){
+      pool = pool.filter(f => !toRemove.has(f.code));
+      console.log('[index过滤] 同组弱者过滤:', [...toRemove]);
     }
   }
 
