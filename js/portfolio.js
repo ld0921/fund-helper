@@ -979,6 +979,19 @@ function selectFunds(cat, catData, riskProfile, pct, totalAmt, constraints){
   const pickCount = pct >= 25 && deduped.length >= 3 ? 3 : pct >= 15 && deduped.length >= 2 ? 2 : 1;
   let picks = deduped.slice(0, pickCount);
 
+  // B方案硬约束：当 active 类有 styleNeeds 且 picks 全是 avoid 风格时，
+  // 强制把 deduped 中最高分的 needs 风格基金换掉末位（最多换1只，避免全换）
+  if(cat === 'active' && styleNeeds && styleNeeds.size > 0 && picks.length > 0){
+    const hasNeedInPicks = picks.some(f => f.style && styleNeeds.has(f.style));
+    if(!hasNeedInPicks){
+      const needCandidate = deduped.find(f => f.style && styleNeeds.has(f.style) && !picks.includes(f));
+      if(needCandidate){
+        picks = [...picks.slice(0, picks.length - 1), needCandidate];
+        console.log(`[B方案] active styleNeeds=${[...styleNeeds]} 无缺口风格，强制换入 ${needCandidate.name}(style=${needCandidate.style})`);
+      }
+    }
+  }
+
   // 暂停申购检查：若基金暂停，替换为同类别替代基金
   picks = picks.map(f => {
     const availableCode = checkFundAvailability(f.code);
