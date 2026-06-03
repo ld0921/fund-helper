@@ -890,6 +890,20 @@ function selectFunds(cat, catData, riskProfile, pct, totalAmt, constraints){
   }
   if(!pool.length) return [];
 
+  // index 类同质竞争过滤：当 pool 中有跑赢均值的基金时，过滤掉 r1 AND r3 同时低于均值60%的弱者
+  // 理论依据：Sharpe 1992 风格分析，同风格指数应横向比较；双维度保护避免误伤红利/价值类（其整组均低于均值，前提条件不成立）
+  if(cat === 'index'){
+    const bench = _catBench['index'];
+    if(bench && bench.avgR1 > 0){
+      const threshold = bench.avgR1 * 0.6;
+      const hasWinner = pool.some(f => (f.r1||0) >= bench.avgR1);
+      if(hasWinner){
+        const filtered = pool.filter(f => !((f.r1||0) < threshold && (f.r3||0) < threshold));
+        if(filtered.length > 0) pool = filtered;
+      }
+    }
+  }
+
   // 风险偏好感知排名：不同偏好对同一基金的评价侧重不同
   // 保守型：重稳定性和低回撤（高maxDD扣分）
   // 进取型：重收益动量，但不奖励高回撤（V2 回测证实旧版 maxDD>25 奖励让进取档回撤翻倍到 9.9%）
