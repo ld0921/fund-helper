@@ -906,6 +906,7 @@ function selectFunds(cat, catData, riskProfile, pct, totalAmt, constraints){
     });
     // 2. 无 sector 且非红利/价值风格：在同组内互相比较
     const noSectorGrowth = pool.filter(f => !f.sector && f.style !== 'dividend' && f.style !== 'value');
+    console.log('[index过滤] noSectorGrowth组:', noSectorGrowth.map(f=>f.name.slice(0,8)+'r1='+f.r1+'/r3='+f.r3));
     if(noSectorGrowth.length >= 2){
       const avgR1 = noSectorGrowth.reduce((s,f) => s+(f.r1||0), 0) / noSectorGrowth.length;
       const avgR3 = noSectorGrowth.reduce((s,f) => s+(f.r3||0), 0) / noSectorGrowth.length;
