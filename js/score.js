@@ -54,8 +54,42 @@ function getValuationLabel(fundCode){
   const color = adj > 0 ? '#52c41a' : adj < 0 ? '#ff4d4f' : '#8c8c8c';
   return `<span style="font-size:10px;padding:1px 5px;border-radius:3px;background:${color}15;color:${color};border:1px solid ${color}40" title="PE百分位${v.pePct}%，数据更新于${v.updated}">估值${level}</span>`;
 }
+// 信用增强债专属评分（bondType=credit，替代 scoreF 的通用 Calmar 逻辑）
+// 理论依据：信用债收益由利率+信用利差驱动，非经理选股能力，scoreF R²≈0.002
+// 真正的能力信号是：超额收益IR（同利率环境下跑赢同类）+ 回撤控制（不踩雷）
+function scoreCreditBond(f) {
+  const bench = _catBench['bond'];
+  if (!bench || bench.count < 5) return scoreF(f); // 无基准数据时回退
+  const r1 = +f.r1 || 0, r3 = +f.r3 || 0;
+  const dd1y = Math.max(0.1, +(f.maxDD1y) || +(f.maxDD) || 5);
+  const sz = +f.size || 0;
+  const fee = f.fee !== undefined ? +f.fee : 0.4;
+
+  // 1. IR超额能力（35%）：(r1 - 同类均值) / stdR1，区间[-2,+2]→[0,35]
+  const ir = (r1 - bench.avgR1) / Math.max(bench.stdR1, 1);
+  const irScore = Math.round(Math.max(0, Math.min(35, 17.5 + ir * 8.75)));
+
+  // 2. 回撤控制（30%）：maxDD1y 越低越好，按 IR 连续缩放避免奖励"低风险低收益"
+  //    IR≥1.5 → 满权重（真能力）；IR=0 → 50%；IR≤-1 → 20%
+  const ddRaw = Math.round(Math.max(0, Math.min(30, 30 * Math.max(0, 15 - dd1y) / 12)));
+  const irWeight = Math.max(0.2, Math.min(1.0, 0.5 + ir * 0.33));
+  const ddScore = Math.round(ddRaw * irWeight);
+
+  // 3. 长期稳定（25%）：超额r3（r3 - 同类均值），区间[-20,+20]→[0,25]
+  const excessR3 = r3 - (bench.avgR3 || 30);
+  const r3Score = Math.round(Math.max(0, Math.min(25, 12.5 + excessR3 * 0.5)));
+
+  // 4. 规模+费率（10%）：规模≥50亿9分，费率≤0.1%加1分
+  const szScore = sz >= 200 ? 7 : sz >= 50 ? 7 : sz >= 20 ? 6 : sz >= 5 ? 4 : 2;
+  const feeBonus = fee <= 0.1 ? 3 : fee <= 0.2 ? 1 : 0;
+  const sfScore = Math.min(10, szScore + feeBonus);
+
+  return Math.max(0, Math.min(100, irScore + ddScore + r3Score + sfScore));
+}
 function scoreF(f){
-  const bondType = f.bondType || (f.cat === 'bond' ? (+(f.maxDD)||0) > 20 ? 'cb' : (+(f.maxDD)||0) > 5 ? 'credit' : 'pure' : null);
+  const bondType = f.bondType || (f.cat === 'bond' ? (/可转债/.test(f.name||'') ? 'cb' : (+(f.maxDD)||0) > 5 ? 'credit' : 'pure') : null);
+  // credit 债券使用专属评分（IR+回撤控制，替代无预测力的 Calmar）
+  if (bondType === 'credit') return scoreCreditBond(f);
   const r1=+f.r1||0, r3=+f.r3||0, dd=+(f.dd||f.maxDD)||0, sz=+f.size||0, mg=+(f.mgr||f.mgrYears)||0;
   const dd3y=+(f.maxDD3y)||dd; // 近3年回撤，无则回退全期
   const dd1y=+(f.maxDD1y)||dd3y; // 近1年回撤，无则回退近3年（旧数据兼容）
