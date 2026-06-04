@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-06-04T06:59:43.401Z",
+  "timestamp": "2026-06-04T07:09:23.467Z",
   "categories": {
     "gp": {
       "label": "股票型",
@@ -1267,7 +1267,7 @@
       "label": "混合型",
       "cat": "active",
       "type": "混合型",
-      "allRecords": 8362,
+      "allRecords": 8366,
       "funds": [
         {
           "code": "001480",
@@ -2757,7 +2757,7 @@
       "label": "指数型",
       "cat": "index",
       "type": "指数型",
-      "allRecords": 4311,
+      "allRecords": 4315,
       "funds": [
         {
           "code": "008326",
@@ -3620,7 +3620,7 @@
       "label": "债券型",
       "cat": "bond",
       "type": "债券型",
-      "allRecords": 4741,
+      "allRecords": 4746,
       "funds": [
         {
           "code": "001045",
