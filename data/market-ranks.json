@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-06-04T07:09:23.467Z",
+  "timestamp": "2026-06-04T07:21:41.951Z",
   "categories": {
     "gp": {
       "label": "股票型",
@@ -1267,7 +1267,7 @@
       "label": "混合型",
       "cat": "active",
       "type": "混合型",
-      "allRecords": 8366,
+      "allRecords": 8362,
       "funds": [
         {
           "code": "001480",
