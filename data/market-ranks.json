@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-06-04T07:21:41.951Z",
+  "timestamp": "2026-06-04T07:33:45.721Z",
   "categories": {
     "gp": {
       "label": "股票型",
@@ -2757,7 +2757,7 @@
       "label": "指数型",
       "cat": "index",
       "type": "指数型",
-      "allRecords": 4315,
+      "allRecords": 4311,
       "funds": [
         {
           "code": "008326",
