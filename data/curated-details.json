@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-06-04T07:38:21.460Z",
+  "timestamp": "2026-06-04T07:47:18.339Z",
   "marketBenchmarks": {
     "active": {
       "avgR1": 214.94,
@@ -144,7 +144,7 @@
       "stdR1": 44.02,
       "avgDD": 46.25,
       "avgDD1y": 12.77,
-      "avgR3": 83.04,
+      "avgR3": 83.09,
       "count": 50,
       "monthlyReturns": [
         0.3,
@@ -212,6 +212,88 @@
       "qdiiType": "us_tech",
       "style": "growth",
       "styleSource": "name"
+    },
+    "110003": {
+      "name": "易方达上证50增强A",
+      "type": "指数型",
+      "cat": "index",
+      "label": "大盘蓝筹",
+      "risk": "",
+      "r1": 25.91,
+      "r3": 31.9,
+      "maxDD": 81.7,
+      "maxDD3y": 17.9,
+      "maxDD1y": 12.3,
+      "manager": "张胜记",
+      "mgrYears": 16.2,
+      "stars": 4,
+      "size": 130.32,
+      "fee": 0.15,
+      "tags": [
+        "指数",
+        "均衡"
+      ],
+      "reason": "近1年收益 +25.91%，近3年 +31.9%，基金经理张胜记任职 16.2 年，历史最大回撤 81.7%。由全市场扫描自动入选。",
+      "style": "value",
+      "styleSource": "topStocks",
+      "topStocks": [
+        {
+          "code": "601857",
+          "name": "中国石油",
+          "pct": 9.88
+        },
+        {
+          "code": "603259",
+          "name": "药明康德",
+          "pct": 9.61
+        },
+        {
+          "code": "002463",
+          "name": "沪电股份",
+          "pct": 8.86
+        },
+        {
+          "code": "601899",
+          "name": "紫金矿业",
+          "pct": 7.81
+        },
+        {
+          "code": "600519",
+          "name": "贵州茅台",
+          "pct": 7.55
+        },
+        {
+          "code": "600030",
+          "name": "中信证券",
+          "pct": 6.23
+        },
+        {
+          "code": "601318",
+          "name": "中国平安",
+          "pct": 6.06
+        },
+        {
+          "code": "601211",
+          "name": "国泰海通",
+          "pct": 5.38
+        },
+        {
+          "code": "688008",
+          "name": "澜起科技",
+          "pct": 4.74
+        },
+        {
+          "code": "600276",
+          "name": "恒瑞医药",
+          "pct": 3.33
+        }
+      ],
+      "styleDistribution": {
+        "growth": 50,
+        "value": 36,
+        "dividend": 0,
+        "blend": 14
+      }
     },
     "110020": {
       "name": "易方达沪深300ETF联接A",
@@ -751,8 +833,68 @@
         "均衡"
       ],
       "reason": "近1年收益 +133.3%，近3年 +161.14%，基金经理王赟杰任职 5.9 年，历史最大回撤 62.8%。由全市场扫描自动入选。",
-      "style": "blend",
-      "styleSource": "name"
+      "topStocks": [
+        {
+          "code": "002475",
+          "name": "立讯精密",
+          "pct": 6.72
+        },
+        {
+          "code": "688256",
+          "name": "寒武纪",
+          "pct": 5.58
+        },
+        {
+          "code": "601138",
+          "name": "工业富联",
+          "pct": 5.47
+        },
+        {
+          "code": "688041",
+          "name": "海光信息",
+          "pct": 5.23
+        },
+        {
+          "code": "002371",
+          "name": "北方华创",
+          "pct": 5.17
+        },
+        {
+          "code": "688981",
+          "name": "中芯国际",
+          "pct": 5.03
+        },
+        {
+          "code": "603986",
+          "name": "兆易创新",
+          "pct": 4.26
+        },
+        {
+          "code": "300476",
+          "name": "胜宏科技",
+          "pct": 4.09
+        },
+        {
+          "code": "688008",
+          "name": "澜起科技",
+          "pct": 3.84
+        },
+        {
+          "code": "688012",
+          "name": "中微公司",
+          "pct": 3.58
+        }
+      ],
+      "sector": "电子",
+      "sectorSource": "topStocks",
+      "style": "growth",
+      "styleDistribution": {
+        "growth": 100,
+        "value": 0,
+        "dividend": 0,
+        "blend": 0
+      },
+      "styleSource": "topStocks"
     },
     "164701": {
       "name": "汇添富黄金及贵金属(QDII-LOF-FOF)A",
@@ -2573,185 +2715,6 @@
       ],
       "sectorSource": "name"
     },
-    "005224": {
-      "name": "华夏中证红利ETF联接A",
-      "type": "指数型",
-      "cat": "index",
-      "label": "红利指数",
-      "risk": "",
-      "r1": 9.33,
-      "r3": -6.62,
-      "maxDD": 36.9,
-      "maxDD3y": 31.4,
-      "maxDD1y": 12.6,
-      "manager": "霍华明",
-      "mgrYears": 9.1,
-      "stars": 5,
-      "size": 6.17,
-      "fee": 0,
-      "tags": [
-        "高股息",
-        "红利",
-        "防御"
-      ],
-      "reason": "近1年收益 +9.33%，近3年 -6.62%，基金经理霍华明任职 9.1 年，历史最大回撤 36.9%。由全市场扫描自动入选。",
-      "sector": "红利",
-      "style": "dividend",
-      "styleSource": "topStocks",
-      "topStocks": [
-        {
-          "code": "601668",
-          "name": "中国建筑",
-          "pct": 0.3
-        },
-        {
-          "code": "601390",
-          "name": "中国中铁",
-          "pct": 0.26
-        },
-        {
-          "code": "601669",
-          "name": "中国电建",
-          "pct": 0.23
-        },
-        {
-          "code": "601186",
-          "name": "中国铁建",
-          "pct": 0.2
-        },
-        {
-          "code": "601800",
-          "name": "中国交建",
-          "pct": 0.17
-        },
-        {
-          "code": "601868",
-          "name": "中国能建",
-          "pct": 0.15
-        },
-        {
-          "code": "601117",
-          "name": "中国化学",
-          "pct": 0.15
-        },
-        {
-          "code": "601618",
-          "name": "中国中冶",
-          "pct": 0.12
-        },
-        {
-          "code": "603979",
-          "name": "金诚信",
-          "pct": 0.09
-        },
-        {
-          "code": "600039",
-          "name": "四川路桥",
-          "pct": 0.09
-        },
-        {
-          "code": "601390",
-          "name": "中国中铁",
-          "pct": 0.27
-        },
-        {
-          "code": "601668",
-          "name": "中国建筑",
-          "pct": 0.26
-        },
-        {
-          "code": "601669",
-          "name": "中国电建",
-          "pct": 0.24
-        },
-        {
-          "code": "601186",
-          "name": "中国铁建",
-          "pct": 0.19
-        },
-        {
-          "code": "601800",
-          "name": "中国交建",
-          "pct": 0.16
-        },
-        {
-          "code": "601117",
-          "name": "中国化学",
-          "pct": 0.15
-        },
-        {
-          "code": "601868",
-          "name": "中国能建",
-          "pct": 0.14
-        },
-        {
-          "code": "601618",
-          "name": "中国中冶",
-          "pct": 0.11
-        },
-        {
-          "code": "600039",
-          "name": "四川路桥",
-          "pct": 0.1
-        },
-        {
-          "code": "603979",
-          "name": "金诚信",
-          "pct": 0.09
-        },
-        {
-          "code": "601390",
-          "name": "中国中铁",
-          "pct": 0.3
-        },
-        {
-          "code": "601668",
-          "name": "中国建筑",
-          "pct": 0.26
-        },
-        {
-          "code": "601669",
-          "name": "中国电建",
-          "pct": 0.2
-        },
-        {
-          "code": "601186",
-          "name": "中国铁建",
-          "pct": 0.18
-        },
-        {
-          "code": "601800",
-          "name": "中国交建",
-          "pct": 0.14
-        },
-        {
-          "code": "601868",
-          "name": "中国能建",
-          "pct": 0.13
-        },
-        {
-          "code": "601117",
-          "name": "中国化学",
-          "pct": 0.11
-        },
-        {
-          "code": "601618",
-          "name": "中国中冶",
-          "pct": 0.11
-        },
-        {
-          "code": "603979",
-          "name": "金诚信",
-          "pct": 0.09
-        },
-        {
-          "code": "600170",
-          "name": "上海建工",
-          "pct": 0.07
-        }
-      ],
-      "sectorSource": "name"
-    },
     "015311": {
       "name": "富国中证红利指数A",
       "type": "指数型",
@@ -2779,31 +2742,38 @@
       "styleSource": "topStocks",
       "sectorSource": "name"
     },
-    "007647": {
-      "name": "华夏沪深300价值ETF联接A",
+    "009051": {
+      "name": "易方达沪深300红利低波ETF联接A",
       "type": "指数型",
       "cat": "index",
-      "label": "价值指数",
+      "label": "红利低波",
       "risk": "",
-      "r1": 2.99,
-      "r3": 9.15,
-      "maxDD": 6,
-      "maxDD3y": 3.9,
-      "maxDD1y": 0.7,
-      "manager": "江正清",
-      "mgrYears": 0.6,
-      "stars": 3,
-      "size": 0.39,
-      "fee": 0,
+      "r1": 9.09,
+      "r3": 24.02,
+      "maxDD": 21.9,
+      "maxDD3y": 14.5,
+      "maxDD1y": 7.2,
+      "manager": "林伟斌",
+      "mgrYears": 12.1,
+      "stars": 5,
+      "size": 35.36,
+      "fee": 0.06,
       "tags": [
         "沪深300",
         "宽基",
         "蓝筹"
       ],
-      "reason": "近1年收益 +2.99%，近3年 +9.15%，基金经理江正清任职 0.6 年，历史最大回撤 6%。由全市场扫描自动入选。",
+      "reason": "近1年收益 +9.09%，近3年 +24.02%，基金经理林伟斌任职 12.1 年，历史最大回撤 21.9%。由全市场扫描自动入选。",
       "sector": "沪深300",
-      "style": "value",
+      "style": "dividend",
       "styleSource": "topStocks",
+      "topStocks": [
+        {
+          "code": "600782",
+          "name": "新钢股份",
+          "pct": 0
+        }
+      ],
       "sectorSource": "name"
     },
     "005267": {
@@ -3031,124 +3001,6 @@
         "dividend": 0,
         "blend": 17
       }
-    },
-    "001643": {
-      "name": "汇丰晋信智造先锋股票A",
-      "type": "股票型",
-      "cat": "active",
-      "label": "主动权益",
-      "risk": "",
-      "r1": 23.67,
-      "r3": -16.75,
-      "maxDD": 67.5,
-      "maxDD3y": 49.9,
-      "maxDD1y": 24.8,
-      "manager": "陆彬",
-      "mgrYears": 7.1,
-      "stars": 4,
-      "size": 7.74,
-      "fee": 0.15,
-      "tags": [
-        "主动权益",
-        "均衡"
-      ],
-      "reason": "近1年收益 +23.67%，近3年 -16.75%，基金经理陆彬任职 7.1 年，历史最大回撤 67.5%。由全市场扫描自动入选。",
-      "style": "value",
-      "styleSource": "topStocks",
-      "topStocks": [
-        {
-          "code": "600438",
-          "name": "通威股份",
-          "pct": 9.85
-        },
-        {
-          "code": "601012",
-          "name": "隆基绿能",
-          "pct": 9.72
-        },
-        {
-          "code": "002459",
-          "name": "晶澳科技",
-          "pct": 9.25
-        },
-        {
-          "code": "688599",
-          "name": "天合光能",
-          "pct": 9.22
-        },
-        {
-          "code": "601865",
-          "name": "福莱特",
-          "pct": 9.08
-        },
-        {
-          "code": "600732",
-          "name": "爱旭股份",
-          "pct": 7.28
-        },
-        {
-          "code": "688223",
-          "name": "晶科能源",
-          "pct": 6.74
-        },
-        {
-          "code": "601615",
-          "name": "明阳智能",
-          "pct": 6.29
-        },
-        {
-          "code": "688303",
-          "name": "大全能源",
-          "pct": 6.16
-        },
-        {
-          "code": "688798",
-          "name": "艾为电子",
-          "pct": 5.93
-        }
-      ],
-      "sector": "新能源",
-      "sectorSource": "topStocks",
-      "styleDistribution": {
-        "growth": 100,
-        "value": 0,
-        "dividend": 0,
-        "blend": 0
-      }
-    },
-    "009051": {
-      "name": "易方达沪深300红利低波ETF联接A",
-      "type": "指数型",
-      "cat": "index",
-      "label": "红利低波",
-      "risk": "",
-      "r1": 9.09,
-      "r3": 24.02,
-      "maxDD": 21.9,
-      "maxDD3y": 14.5,
-      "maxDD1y": 7.2,
-      "manager": "林伟斌",
-      "mgrYears": 12.1,
-      "stars": 5,
-      "size": 35.36,
-      "fee": 0.06,
-      "tags": [
-        "沪深300",
-        "宽基",
-        "蓝筹"
-      ],
-      "reason": "近1年收益 +9.09%，近3年 +24.02%，基金经理林伟斌任职 12.1 年，历史最大回撤 21.9%。由全市场扫描自动入选。",
-      "sector": "沪深300",
-      "style": "dividend",
-      "styleSource": "topStocks",
-      "topStocks": [
-        {
-          "code": "600782",
-          "name": "新钢股份",
-          "pct": 0
-        }
-      ],
-      "sectorSource": "name"
     },
     "006502": {
       "name": "财通集成电路产业股票A",
@@ -7550,9 +7402,67 @@
         "稳健"
       ],
       "reason": "近1年收益 +46.72%，近3年 +43.45%，基金经理吴敌任职 6.1 年，历史最大回撤 38.9%。由全市场扫描自动入选。",
-      "bondType": "cb",
+      "topStocks": [
+        {
+          "code": "300308",
+          "name": "中际旭创",
+          "pct": 4.72
+        },
+        {
+          "code": "300502",
+          "name": "新易盛",
+          "pct": 4.14
+        },
+        {
+          "code": "688521",
+          "name": "芯原股份",
+          "pct": 1.41
+        },
+        {
+          "code": "002379",
+          "name": "宏桥控股",
+          "pct": 1.01
+        },
+        {
+          "code": "002532",
+          "name": "天山铝业",
+          "pct": 0.95
+        },
+        {
+          "code": "000338",
+          "name": "潍柴动力",
+          "pct": 0.91
+        },
+        {
+          "code": "600487",
+          "name": "亨通光电",
+          "pct": 0.84
+        },
+        {
+          "code": "600282",
+          "name": "南钢股份",
+          "pct": 0.74
+        },
+        {
+          "code": "002222",
+          "name": "福晶科技",
+          "pct": 0.73
+        },
+        {
+          "code": "000807",
+          "name": "云铝股份",
+          "pct": 0.5
+        }
+      ],
       "style": "growth",
-      "styleSource": "name"
+      "styleDistribution": {
+        "growth": 96,
+        "value": 4,
+        "dividend": 0,
+        "blend": 0
+      },
+      "bondType": "cb",
+      "styleSource": "topStocks"
     },
     "005246": {
       "name": "国泰可转债债券A",
@@ -8768,32 +8678,6 @@
       "style": "growth",
       "styleSource": "name"
     },
-    "008253": {
-      "name": "华宝致远混合(QDII)A",
-      "type": "QDII",
-      "cat": "qdii",
-      "label": "QDII",
-      "risk": "R5",
-      "r1": 114.06,
-      "r3": 177.63,
-      "maxDD": 51.6,
-      "maxDD3y": 28.2,
-      "maxDD1y": 15.7,
-      "manager": "周晶",
-      "mgrYears": 13,
-      "stars": 4,
-      "size": 2.26,
-      "fee": 0.15,
-      "tags": [
-        "海外",
-        "QDII",
-        "全球配置"
-      ],
-      "reason": "近1年收益 +114.06%，近3年 +177.63%，基金经理周晶任职 13 年，历史最大回撤 51.6%。由全市场扫描自动入选。",
-      "qdiiType": "global",
-      "style": "growth",
-      "styleSource": "name"
-    },
     "005534": {
       "name": "华夏新时代混合人民币(QDII)",
       "type": "QDII",
@@ -8816,6 +8700,32 @@
         "全球配置"
       ],
       "reason": "近1年收益 +113.44%，近3年 +110.02%，基金经理常亚桥任职 8 年，历史最大回撤 61.7%。由全市场扫描自动入选。",
+      "qdiiType": "global",
+      "style": "growth",
+      "styleSource": "name"
+    },
+    "008253": {
+      "name": "华宝致远混合(QDII)A",
+      "type": "QDII",
+      "cat": "qdii",
+      "label": "QDII",
+      "risk": "R5",
+      "r1": 114.06,
+      "r3": 177.63,
+      "maxDD": 51.6,
+      "maxDD3y": 28.2,
+      "maxDD1y": 15.7,
+      "manager": "周晶",
+      "mgrYears": 13,
+      "stars": 4,
+      "size": 2.26,
+      "fee": 0.15,
+      "tags": [
+        "海外",
+        "QDII",
+        "全球配置"
+      ],
+      "reason": "近1年收益 +114.06%，近3年 +177.63%，基金经理周晶任职 13 年，历史最大回撤 51.6%。由全市场扫描自动入选。",
       "qdiiType": "global",
       "style": "growth",
       "styleSource": "name"
