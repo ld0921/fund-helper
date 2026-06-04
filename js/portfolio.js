@@ -918,6 +918,14 @@ function selectFunds(cat, catData, riskProfile, pct, totalAmt, constraints){
     }
   }
 
+  // 星级软过滤：当 pool 中有 stars≥4 的基金时，过滤掉 stars≤3 的低评级基金
+  // 理论依据：晨星/天天基金星级综合反映风险调整收益，同类有高星基金时无需选低星
+  const hasHighStar = pool.some(f => (f.stars||0) >= 4);
+  if(hasHighStar){
+    const filtered = pool.filter(f => (f.stars||0) >= 4);
+    if(filtered.length > 0) pool = filtered;
+  }
+
   // 风险偏好感知排名：不同偏好对同一基金的评价侧重不同
   // 保守型：重稳定性和低回撤（高maxDD扣分）
   // 进取型：重收益动量，但不奖励高回撤（V2 回测证实旧版 maxDD>25 奖励让进取档回撤翻倍到 9.9%）
