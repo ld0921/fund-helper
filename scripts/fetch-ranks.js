@@ -84,8 +84,9 @@ async function httpGetWithRetry(url, headers, timeout, retries) {
 }
 
 // ═══ 排名数据 ═══
-function fetchRank(ft, pn) {
-  const url = `https://fund.eastmoney.com/data/rankhandler.aspx?op=ph&dt=kf&ft=${ft}&rs=&gs=0&sc=1nzf&st=desc&pi=1&pn=${pn}&dx=1`;
+function fetchRank(ft, pn, sc) {
+  sc = sc || '1nzf';
+  const url = `https://fund.eastmoney.com/data/rankhandler.aspx?op=ph&dt=kf&ft=${ft}&rs=&gs=0&sc=${sc}&st=desc&pi=1&pn=${pn}&dx=1`;
   return httpGetWithRetry(url, {
     'Referer': 'https://fund.eastmoney.com/data/fundranking.html',
     'User-Agent': 'Mozilla/5.0 (compatible; FundHelper/1.0)'
@@ -629,23 +630,44 @@ async function main() {
       // 合并去重，保留全部并集结果（三维各Top15，去重后约25-35只）
       const funds = allParsed.filter(f => selectedCodes.has(f.code));
 
-      // 防御轨：额外补充红利/价值风格基金（成长轨按动量入库天然漏掉这类）
-      // 入库条件：名称含红利/价值/低波关键词 + maxDD≤30% + r3>0 + 规模>10亿
+      // 防御轨：按近3年收益排序单独扫描一批，过滤出红利/价值风格基金补入候选池
+      // 解决成长轨（r1 Top150）完全漏掉防御类基金的结构性偏差
       if (catInfo.cat === 'index' || catInfo.cat === 'active') {
-        const defensiveKeywords = /红利|股息|低波动|高股息|价值|蓝筹|央企|国企|银行|沪深300价值|基本面/;
-        const defensive = withDetail.filter(f =>
-          defensiveKeywords.test(f.name || '') &&
-          (f.maxDD || 0) <= 30 &&
-          (f.r3 || 0) > 0 &&
-          (f.size || 0) > 10 &&
-          !selectedCodes.has(f.code)
-        );
-        // 按 r3（长期收益）排序，取 Top8
-        defensive.sort((a, b) => (b.r3 || 0) - (a.r3 || 0)).slice(0, 8).forEach(f => {
-          selectedCodes.add(f.code);
-          funds.push(f);
-        });
-        if (defensive.length > 0) console.log(`    + 防御轨补充(${catInfo.label}): ${Math.min(8, defensive.length)} 只红利/价值基金`);
+        try {
+          const defensiveKeywords = /红利|股息|低波动|高股息|价值|蓝筹|央企|国企|银行|沪深300价值|基本面/;
+          const r3Data = await fetchRank(catInfo.ft, 150, '3nzf'); // 按近3年排序
+          const r3Parsed = r3Data.datas.map(item => parseFund(item, catInfo)).filter(Boolean);
+          // 过滤出防御类基金（名称匹配 + maxDD≤30% + 规模>10亿，无需额外拉详情）
+          const defensiveCandidates = r3Parsed.filter(f =>
+            defensiveKeywords.test(f.name || '') &&
+            !selectedCodes.has(f.code)
+          );
+          // 补充详情（只拉防御类候选，控制API调用量）
+          for (const f of defensiveCandidates.slice(0, 20)) {
+            const detail = await fetchFundDetail(f.code);
+            if (detail) {
+              if (detail.maxDD > 0) f.maxDD = detail.maxDD;
+              if (detail.maxDD3y > 0) f.maxDD3y = detail.maxDD3y;
+              if (detail.maxDD1y > 0) f.maxDD1y = detail.maxDD1y;
+              if (detail.manager) f.manager = detail.manager;
+              if (detail.mgrYears > 0) f.mgrYears = detail.mgrYears;
+              if (detail.star >= 1) f.stars = detail.star;
+              if (detail.fundSize > 0) f.size = Math.round(detail.fundSize * 100) / 100;
+              if (detail.fee !== undefined) f.fee = detail.fee;
+              if (detail.monthlyReturns) f.monthlyReturns = detail.monthlyReturns;
+            }
+            await sleep(150);
+          }
+          // 入库条件：maxDD≤30% + r3>0 + 规模>10亿，按 r3 取 Top8
+          const defensiveOk = defensiveCandidates
+            .filter(f => (f.maxDD||0) > 0 && (f.maxDD||0) <= 30 && (f.r3||0) > 0 && (f.size||0) > 10)
+            .sort((a, b) => (b.r3||0) - (a.r3||0))
+            .slice(0, 8);
+          defensiveOk.forEach(f => { selectedCodes.add(f.code); funds.push(f); });
+          if (defensiveOk.length > 0) console.log(`    + 防御轨(${catInfo.label}): 补入 ${defensiveOk.length} 只 → ${defensiveOk.map(f=>f.name.slice(0,8)).join(' ')}`);
+        } catch(e) {
+          console.warn(`    防御轨扫描失败(${catInfo.label}): ${e.message}`);
+        }
       }
 
       result.categories[catInfo.ft] = {
