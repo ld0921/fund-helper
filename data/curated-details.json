@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-06-04T07:47:18.339Z",
+  "timestamp": "2026-06-04T08:50:24.839Z",
   "marketBenchmarks": {
     "active": {
       "avgR1": 214.94,
@@ -144,7 +144,7 @@
       "stdR1": 44.02,
       "avgDD": 46.25,
       "avgDD1y": 12.77,
-      "avgR3": 83.09,
+      "avgR3": 83.04,
       "count": 50,
       "monthlyReturns": [
         0.3,
@@ -8678,32 +8678,6 @@
       "style": "growth",
       "styleSource": "name"
     },
-    "005534": {
-      "name": "华夏新时代混合人民币(QDII)",
-      "type": "QDII",
-      "cat": "qdii",
-      "label": "QDII",
-      "risk": "R5",
-      "r1": 113.44,
-      "r3": 110.02,
-      "maxDD": 61.7,
-      "maxDD3y": 26.2,
-      "maxDD1y": 19.1,
-      "manager": "常亚桥",
-      "mgrYears": 8,
-      "stars": 5,
-      "size": 1.87,
-      "fee": 0.15,
-      "tags": [
-        "海外",
-        "QDII",
-        "全球配置"
-      ],
-      "reason": "近1年收益 +113.44%，近3年 +110.02%，基金经理常亚桥任职 8 年，历史最大回撤 61.7%。由全市场扫描自动入选。",
-      "qdiiType": "global",
-      "style": "growth",
-      "styleSource": "name"
-    },
     "008253": {
       "name": "华宝致远混合(QDII)A",
       "type": "QDII",
@@ -8726,6 +8700,32 @@
         "全球配置"
       ],
       "reason": "近1年收益 +114.06%，近3年 +177.63%，基金经理周晶任职 13 年，历史最大回撤 51.6%。由全市场扫描自动入选。",
+      "qdiiType": "global",
+      "style": "growth",
+      "styleSource": "name"
+    },
+    "005534": {
+      "name": "华夏新时代混合人民币(QDII)",
+      "type": "QDII",
+      "cat": "qdii",
+      "label": "QDII",
+      "risk": "R5",
+      "r1": 113.44,
+      "r3": 110.02,
+      "maxDD": 61.7,
+      "maxDD3y": 26.2,
+      "maxDD1y": 19.1,
+      "manager": "常亚桥",
+      "mgrYears": 8,
+      "stars": 5,
+      "size": 1.87,
+      "fee": 0.15,
+      "tags": [
+        "海外",
+        "QDII",
+        "全球配置"
+      ],
+      "reason": "近1年收益 +113.44%，近3年 +110.02%，基金经理常亚桥任职 8 年，历史最大回撤 61.7%。由全市场扫描自动入选。",
       "qdiiType": "global",
       "style": "growth",
       "styleSource": "name"
