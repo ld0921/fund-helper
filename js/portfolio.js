@@ -1035,15 +1035,17 @@ function selectFunds(cat, catData, riskProfile, pct, totalAmt, constraints){
   const pickCount = pct >= 25 && deduped.length >= 3 ? 3 : pct >= 15 && deduped.length >= 2 ? 2 : 1;
   let picks = deduped.slice(0, pickCount);
 
-  // B方案硬约束：当 active 类有 styleNeeds 且 picks 全是 avoid 风格时，
-  // 强制把 deduped 中最高分的 needs 风格基金换掉末位（最多换1只，避免全换）
+  // B方案硬约束：active 类有 styleNeeds 缺口时，强制换入最高分的缺口风格基金（最多换1只）
   if(cat === 'active' && styleNeeds && styleNeeds.size > 0 && picks.length > 0){
-    const hasNeedInPicks = picks.some(f => f.style && styleNeeds.has(f.style));
-    if(!hasNeedInPicks){
-      const needCandidate = deduped.find(f => f.style && styleNeeds.has(f.style) && !picks.includes(f));
+    const pickedCodes = new Set(picks.map(f => f.code));
+    const stylesInPicks = new Set(picks.map(f => f.style).filter(Boolean));
+    const missingStyles = [...styleNeeds].filter(s => !stylesInPicks.has(s));
+    if(missingStyles.length > 0){
+      // 取 deduped 中评分最高的缺口风格基金（deduped 已按 adjustedScore 降序排列）
+      const needCandidate = deduped.find(f => f.style && missingStyles.includes(f.style) && !pickedCodes.has(f.code));
       if(needCandidate){
         picks = [...picks.slice(0, picks.length - 1), needCandidate];
-        console.log(`[B方案] active styleNeeds=${[...styleNeeds]} 无缺口风格，强制换入 ${needCandidate.name}(style=${needCandidate.style})`);
+        console.log(`[B方案] active styleNeeds=${[...styleNeeds]} 缺口风格=${missingStyles}，强制换入 ${needCandidate.name}(style=${needCandidate.style})`);
       }
     }
   }

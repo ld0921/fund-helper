@@ -907,9 +907,11 @@ function runHealthMonitor(){
       const level = topPct >= 70 ? 'red' : 'yellow';
       // 推荐补充：精选库里同风格 scoreF 最高的基金
       const heldCodes = new Set(uniqueHeld.map(x => x.code));
-      const missingStyles = [];
-      if (stylePct.dividend < 5) missingStyles.push('dividend');
-      if (stylePct.value < 10 && topStyle !== 'value') missingStyles.push('value');
+      // 用推荐层相同的 calcStyleGap 逻辑（gap > 10pp）而非硬编码阈值
+      let riskPForStyle = 'balanced';
+      try { const sc = loadMyHoldingScheme(); if(sc && sc.risk) riskPForStyle = sc.risk; } catch(_){}
+      const styleGapForDiag = typeof calcStyleGap === 'function' ? calcStyleGap(stylePct, riskPForStyle) : [];
+      const missingStyles = styleGapForDiag.map(g => g.style).filter(s => s !== topStyle && s !== 'blend');
       const recommendations = [];
       const missingStyleNames = [];
       missingStyles.forEach(ms => {
