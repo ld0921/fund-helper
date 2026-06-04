@@ -916,6 +916,20 @@ function selectFunds(cat, catData, riskProfile, pct, totalAmt, constraints){
       pool = pool.filter(f => !toRemove.has(f.code));
       console.log('[index过滤] 同组弱者过滤:', [...toRemove]);
     }
+    // 3. 绝对质量门槛兜底：仅对有sector的行业主题指数，r1跑输同类均值20%以上直接过滤（避免单sector基金绕过同组比较）
+    // 宽基指数（无sector）豁免此规则，因其配置价值在于均衡而非动量
+    const bench = _catBench['index'];
+    if(bench && bench.avgR1 > 0){
+      const absoluteWeak = pool.filter(f => {
+        if(!f.sector) return false; // 宽基豁免
+        if(f.style === 'dividend' || f.style === 'value') return false; // 红利/价值豁免
+        return (f.r1||0) < bench.avgR1 * 0.8; // 跑输20%以上
+      });
+      if(absoluteWeak.length > 0 && absoluteWeak.length < pool.length){
+        pool = pool.filter(f => !absoluteWeak.some(w => w.code === f.code));
+        console.log('[index过滤] 绝对质量门槛过滤(仅行业指数):', absoluteWeak.map(f=>f.code+'(r1='+f.r1+'<'+bench.avgR1*0.8+')'));
+      }
+    }
   }
 
   // 星级软过滤：当 pool 中有 stars≥4 的基金时，过滤掉 stars≤3 的低评级基金
