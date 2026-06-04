@@ -922,13 +922,19 @@ function selectFunds(cat, catData, riskProfile, pct, totalAmt, constraints){
     if(bench && bench.avgR1 > 0){
       const absoluteWeak = pool.filter(f => {
         if(!f.sector) return false; // 宽基豁免
-        if(f.style === 'dividend' || f.style === 'value') return false; // 红利/价值豁免
+        if((f.style === 'dividend' || f.style === 'value') && (f.maxDD||0) <= 50) return false; // 红利/价值且回撤可控，豁免
         return (f.r1||0) < bench.avgR1 * 0.8; // 跑输20%以上
       });
       if(absoluteWeak.length > 0 && absoluteWeak.length < pool.length){
         pool = pool.filter(f => !absoluteWeak.some(w => w.code === f.code));
         console.log('[index过滤] 绝对质量门槛过滤(仅行业指数):', absoluteWeak.map(f=>f.code+'(r1='+f.r1+'<'+bench.avgR1*0.8+')'));
       }
+    }
+    // 4. 红利/价值指数回撤门槛：maxDD>50%的伪价值基金单独过滤
+    const badDefensive = pool.filter(f => (f.style==='dividend' || f.style==='value') && (f.maxDD||0) > 50);
+    if(badDefensive.length > 0 && badDefensive.length < pool.length){
+      pool = pool.filter(f => !badDefensive.some(b => b.code === f.code));
+      console.log('[index过滤] 红利/价值高回撤过滤:', badDefensive.map(f=>f.code+'(maxDD='+f.maxDD+'%)'));
     }
   }
 
