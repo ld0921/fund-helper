@@ -89,6 +89,10 @@ async function loadCuratedFunds() {
         style: f.style || null,
         styleDistribution: f.styleDistribution || null,
         styleSource: f.styleSource || null,
+        bondType: f.bondType || null,
+        qdiiType: f.qdiiType || null,
+        maxDD1y: f.maxDD1y || 0,
+        monthlyReturns: f.monthlyReturns || null,
       });
     });
     CURATED_FUNDS = funds;
