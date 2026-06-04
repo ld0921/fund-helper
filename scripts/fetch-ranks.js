@@ -10,20 +10,21 @@ const https = require('https');
 const FIXED_CODES = [
   // 货币 / 短债
   '000198', '003003', '070009',
-  // 红利/价值指数（强制保留以解决精选库风格偏差）
-  '100032', // 富国中证红利指数增强A - 红利
-  '012643', // 招商中证红利ETF联接A - 红利
-  '007466', // 华泰柏瑞中证红利低波ETF联接A - 红利低波
-  '110020', // 易方达沪深300ETF联接A - 大盘价值代理
-  '110003', // 易方达上证50增强A - 大盘蓝筹
-  // 价值派主动基金（公认价值风格基金经理作品）
-  // 精选库按"近1年涨幅"入库天然漏掉价值基金（牛市成长股200%+碾压价值股30-50%）
-  // 强制保留以提供防御性低估值配置选择，避免智能推荐全选growth
-  '005267', // 嘉实价值精选股票A - 谭丽（深度价值）
-  '006567', // 中泰星元灵活配置混合A - 姜诚（深度价值）
-  '260112', // 景顺长城能源基建混合A - 鲍无可（价值红利）
-  '090011', // 大成核心双动力混合A - 徐彦（价值均衡）
-  '006551', // 中庚价值领航混合 - 丘栋荣（价值）
+  // 红利指数（maxDD≤20%，真防御）
+  '012643', // 招商中证红利ETF联接A - 红利，maxDD13.9%
+  '007466', // 华泰柏瑞中证红利低波ETF联接A - 红利低波，maxDD15.9%
+  '005224', // 华夏中证红利ETF联接A - 红利，主流标的
+  '015311', // 富国中证红利指数A（新版，低费率）- 红利
+  // 价值/宽基指数（代理大盘价值）
+  '110020', // 易方达沪深300ETF联接A - 大盘蓝筹
+  '007647', // 华夏沪深300价值ETF联接A - 明确价值风格
+  // 价值派主动基金（公认价值风格基金经理，r3>0 + maxDD≤35%）
+  '005267', // 嘉实价值精选股票A - 谭丽（深度价值），maxDD31.5%
+  '006567', // 中泰星元灵活配置混合A - 姜诚（深度价值），maxDD17.2%
+  '006551', // 中庚价值领航混合 - 丘栋荣（价值），maxDD32.8%
+  '260112', // 景顺长城能源基建混合A - 鲍无可（价值红利），maxDD45.6%
+  '001643', // 汇丰晋信智造先锋股票A - 陆彬（价值成长）
+  '009051', // 易方达沪深300红利低波ETF联接A - 红利低波宽基
 ];
 // 固定基金的预设元数据（扫描不覆盖，需手动指定类别）
 // 含 style 字段时强制写入该风格（绕过基于重仓股的归因，避免红利基金被误归为 blend）
@@ -31,17 +32,18 @@ const FIXED_META = {
   '000198': { name:'天治财富增长', cat:'active', type:'混合型', label:'主动权益' },
   '003003': { name:'华夏现金增利货币A', cat:'money', type:'货币型', label:'货币基金' },
   '070009': { name:'嘉实超短债债券A', cat:'bond', type:'债券型', label:'短债基金' },
-  '100032': { name:'富国中证红利指数增强A', cat:'index', type:'指数型', label:'红利指数', style:'dividend' },
   '012643': { name:'招商中证红利ETF联接A', cat:'index', type:'指数型', label:'红利指数', style:'dividend' },
   '007466': { name:'华泰柏瑞中证红利低波ETF联接A', cat:'index', type:'指数型', label:'红利低波', style:'dividend' },
+  '005224': { name:'华夏中证红利ETF联接A', cat:'index', type:'指数型', label:'红利指数', style:'dividend' },
+  '015311': { name:'富国中证红利指数A', cat:'index', type:'指数型', label:'红利指数', style:'dividend' },
   '110020': { name:'易方达沪深300ETF联接A', cat:'index', type:'指数型', label:'大盘蓝筹', style:'value' },
-  '110003': { name:'易方达上证50增强A', cat:'index', type:'指数型', label:'大盘蓝筹', style:'value' },
-  // 价值派主动基金：style 强制写入，不被重仓股归因覆盖
+  '007647': { name:'华夏沪深300价值ETF联接A', cat:'index', type:'指数型', label:'价值指数', style:'value' },
+  '009051': { name:'易方达沪深300红利低波ETF联接A', cat:'index', type:'指数型', label:'红利低波', style:'dividend' },
   '005267': { name:'嘉实价值精选股票A', cat:'active', type:'股票型', label:'主动权益', style:'value' },
   '006567': { name:'中泰星元灵活配置混合A', cat:'active', type:'混合型', label:'主动权益', style:'value' },
-  '260112': { name:'景顺长城能源基建混合A', cat:'active', type:'混合型', label:'主动权益', style:'value' },
-  '090011': { name:'大成核心双动力混合A', cat:'active', type:'混合型', label:'主动权益', style:'value' },
   '006551': { name:'中庚价值领航混合', cat:'active', type:'混合型', label:'主动权益', style:'value' },
+  '260112': { name:'景顺长城能源基建混合A', cat:'active', type:'混合型', label:'主动权益', style:'value' },
+  '001643': { name:'汇丰晋信智造先锋股票A', cat:'active', type:'股票型', label:'主动权益', style:'value' },
 };
 
 const CATEGORIES = [
@@ -629,46 +631,6 @@ async function main() {
 
       // 合并去重，保留全部并集结果（三维各Top15，去重后约25-35只）
       const funds = allParsed.filter(f => selectedCodes.has(f.code));
-
-      // 防御轨：按近3年收益排序单独扫描一批，过滤出红利/价值风格基金补入候选池
-      // 解决成长轨（r1 Top150）完全漏掉防御类基金的结构性偏差
-      if (catInfo.cat === 'index' || catInfo.cat === 'active') {
-        try {
-          const defensiveKeywords = /红利|股息|低波动|高股息|价值|蓝筹|央企|国企|银行|沪深300价值|基本面/;
-          const r3Data = await fetchRank(catInfo.ft, 150, '3nzf'); // 按近3年排序
-          const r3Parsed = r3Data.datas.map(item => parseFund(item, catInfo)).filter(Boolean);
-          // 过滤出防御类基金（名称匹配 + maxDD≤30% + 规模>10亿，无需额外拉详情）
-          const defensiveCandidates = r3Parsed.filter(f =>
-            defensiveKeywords.test(f.name || '') &&
-            !selectedCodes.has(f.code)
-          );
-          // 补充详情（只拉防御类候选，控制API调用量）
-          for (const f of defensiveCandidates.slice(0, 20)) {
-            const detail = await fetchFundDetail(f.code);
-            if (detail) {
-              if (detail.maxDD > 0) f.maxDD = detail.maxDD;
-              if (detail.maxDD3y > 0) f.maxDD3y = detail.maxDD3y;
-              if (detail.maxDD1y > 0) f.maxDD1y = detail.maxDD1y;
-              if (detail.manager) f.manager = detail.manager;
-              if (detail.mgrYears > 0) f.mgrYears = detail.mgrYears;
-              if (detail.star >= 1) f.stars = detail.star;
-              if (detail.fundSize > 0) f.size = Math.round(detail.fundSize * 100) / 100;
-              if (detail.fee !== undefined) f.fee = detail.fee;
-              if (detail.monthlyReturns) f.monthlyReturns = detail.monthlyReturns;
-            }
-            await sleep(150);
-          }
-          // 入库条件：maxDD≤30% + r3>0 + 规模>10亿，按 r3 取 Top8
-          const defensiveOk = defensiveCandidates
-            .filter(f => (f.maxDD||0) > 0 && (f.maxDD||0) <= 30 && (f.r3||0) > 0 && (f.size||0) > 10)
-            .sort((a, b) => (b.r3||0) - (a.r3||0))
-            .slice(0, 8);
-          defensiveOk.forEach(f => { selectedCodes.add(f.code); funds.push(f); });
-          if (defensiveOk.length > 0) console.log(`    + 防御轨(${catInfo.label}): 补入 ${defensiveOk.length} 只 → ${defensiveOk.map(f=>f.name.slice(0,8)).join(' ')}`);
-        } catch(e) {
-          console.warn(`    防御轨扫描失败(${catInfo.label}): ${e.message}`);
-        }
-      }
 
       result.categories[catInfo.ft] = {
         label: catInfo.label,
