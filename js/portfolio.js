@@ -956,8 +956,9 @@ function selectFunds(cat, catData, riskProfile, pct, totalAmt, constraints){
     aggressive:   f => f.composite + (f.r1||0) * 0.15,  // r1 系数 0.15（在 0.1 和原 0.2 之间折中）
   };
   const adjustFn = riskAdjust[riskProfile] || riskAdjust.moderate;
-  // 债券/QDII用calcDCAScore替代composite排序（回测证实scoreF对这两类R²≈0.002，无预测力）
-  const useDcaScore = (cat === 'bond' || cat === 'qdii');
+  // bond 类：scoreF 内部已路由到 scoreCreditBond（credit）或原逻辑（cb/pure），直接用 scoreF
+  // qdii 类：calcDCAScore×0.5 + composite×0.5（scoreF 对 QDII R²≈0.002 仍无预测力）
+  const useDcaScore = (cat === 'qdii');
   // 债券按子类型过滤：选基时只在同一 bondType 内比较，避免可转债和纯债互相排挤
   if(cat === 'bond' && pool.length > 1){
     const bondTypeCounts = {};
@@ -988,7 +989,7 @@ function selectFunds(cat, catData, riskProfile, pct, totalAmt, constraints){
     // QDII类型多样性：奖励与现有持仓 qdiiType 不同的候选（避免同类叠加）
     if(f.cat === 'qdii' && f.qdiiType && constraints && constraints.heldQdiiTypes){
       if(!constraints.heldQdiiTypes.has(f.qdiiType)) score += 8;
-      else score -= 5;
+      else score -= 15; // 已持有同类型，强力降权（-15 覆盖 composite 分差，避免 us_tech 重复）
     }
     // 诊断驱动约束（仅 hasHoldings 时生效）
     // 1. 风格约束：缺口风格 +15 分（强力提升被推荐概率），超配风格 -10 分
@@ -1750,6 +1751,7 @@ function _doGenerate(shouldScroll){
     // 3. 已持仓使用的 sector 集合（跨类别去重起点）
     const usedSectorsGlobal = calcUsedSectors(existingHoldings);
     // 仅当至少一个约束有内容时启用
+    // heldQdiiTypes：已持仓的 QDII 类型，新建仓时避免同类叠加
     const heldQdiiTypes = new Set(
       (existingHoldings||[])
         .map(h => { const fd = CURATED_FUNDS.find(f=>f.code===h.code); return fd && fd.qdiiType; })
