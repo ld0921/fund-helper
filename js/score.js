@@ -55,6 +55,7 @@ function getValuationLabel(fundCode){
   return `<span style="font-size:10px;padding:1px 5px;border-radius:3px;background:${color}15;color:${color};border:1px solid ${color}40" title="PE百分位${v.pePct}%，数据更新于${v.updated}">估值${level}</span>`;
 }
 function scoreF(f){
+  const bondType = f.bondType || (f.cat === 'bond' ? (+(f.maxDD)||0) > 20 ? 'cb' : (+(f.maxDD)||0) > 5 ? 'credit' : 'pure' : null);
   const r1=+f.r1||0, r3=+f.r3||0, dd=+(f.dd||f.maxDD)||0, sz=+f.size||0, mg=+(f.mgr||f.mgrYears)||0;
   const dd3y=+(f.maxDD3y)||dd; // 近3年回撤，无则回退全期
   const dd1y=+(f.maxDD1y)||dd3y; // 近1年回撤，无则回退近3年（旧数据兼容）
@@ -131,6 +132,10 @@ function scoreF(f){
     sizeScore = sz >= 1000 ? 10 : sz >= 500 ? 10 : sz >= 50 ? 9 : sz >= 10 ? 7 : sz >= 2 ? 4 : 2;
   } else if(f.cat === 'bond'){
     sizeScore = sz >= 500 ? 10 : sz >= 100 ? 9 : sz >= 20 ? 7 : sz >= 5 ? 5 : 2; // 债券基金规模越大流动性越好
+    // 债券子类型差异化规模评分
+    if(bondType === 'cb') sizeScore = sz >= 50 ? 9 : sz >= 10 ? 7 : sz >= 2 ? 4 : 2; // 可转债：和主动基金类似
+    else if(bondType === 'credit') sizeScore = sz >= 100 ? 10 : sz >= 20 ? 8 : sz >= 5 ? 5 : 2; // 信用增强债：越大流动性越好
+    // pure（纯债）：保持现有逻辑不变
   } else {
     sizeScore = sz >= 1000 ? 4 : sz >= 500 ? 7 : sz >= 50 ? 10 : sz >= 10 ? 7 : sz >= 2 ? 4 : 2;
   }

@@ -629,6 +629,25 @@ async function main() {
       // 合并去重，保留全部并集结果（三维各Top15，去重后约25-35只）
       const funds = allParsed.filter(f => selectedCodes.has(f.code));
 
+      // 防御轨：额外补充红利/价值风格基金（成长轨按动量入库天然漏掉这类）
+      // 入库条件：名称含红利/价值/低波关键词 + maxDD≤30% + r3>0 + 规模>10亿
+      if (catInfo.cat === 'index' || catInfo.cat === 'active') {
+        const defensiveKeywords = /红利|股息|低波动|高股息|价值|蓝筹|央企|国企|银行|沪深300价值|基本面/;
+        const defensive = withDetail.filter(f =>
+          defensiveKeywords.test(f.name || '') &&
+          (f.maxDD || 0) <= 30 &&
+          (f.r3 || 0) > 0 &&
+          (f.size || 0) > 10 &&
+          !selectedCodes.has(f.code)
+        );
+        // 按 r3（长期收益）排序，取 Top8
+        defensive.sort((a, b) => (b.r3 || 0) - (a.r3 || 0)).slice(0, 8).forEach(f => {
+          selectedCodes.add(f.code);
+          funds.push(f);
+        });
+        if (defensive.length > 0) console.log(`    + 防御轨补充(${catInfo.label}): ${Math.min(8, defensive.length)} 只红利/价值基金`);
+      }
+
       result.categories[catInfo.ft] = {
         label: catInfo.label,
         cat: catInfo.cat,
@@ -807,6 +826,21 @@ async function main() {
         }
 
         // 兜底：基金风格归因（QDII / 货币 / 重仓股拉取失败的基金）
+        // 债券/QDII子类型标注（必须在 style 兜底之前，style 兜底依赖 bondType）
+        if (entry.cat === 'bond') {
+          const dd = entry.maxDD || 0;
+          // 可转债：名字含"可转债"为准，回撤>30%但非可转债的仍归credit
+          entry.bondType = /可转债/.test(entry.name||'') ? 'cb' : dd > 5 ? 'credit' : 'pure';
+        }
+        if (entry.cat === 'qdii') {
+          const name = entry.name || '';
+          if (/纳斯达克|纳指|美国成长|标普|S&P|科技互联网|全球科技|移动互联|全球移动|科技先锋|蓝筹精选/.test(name)) entry.qdiiType = 'us_tech';
+          else if (/黄金|商品|贵金属|抗通胀|资源/.test(name)) entry.qdiiType = 'gold_comm';
+          else if (/亚太|亚洲|新兴市场/.test(name)) entry.qdiiType = 'asia_em';
+          else if (/港股|香港|中概|大中华|中国/.test(name)) entry.qdiiType = 'hk_china';
+          else entry.qdiiType = 'global';
+        }
+
         // 没有 entry.style 才进入兜底，避免覆盖前面基于真实持仓的归因
         if (!entry.style) {
           if (entry.cat === 'qdii') {
@@ -815,19 +849,20 @@ async function main() {
           } else if (entry.cat === 'money') {
             entry.style = 'cash'; // 现金等价，不参与风格分散讨论
           } else if (entry.cat === 'bond') {
-            entry.style = 'bond'; // 债券，不参与风格分散讨论
+            entry.style = entry.bondType === 'cb' ? 'growth' : 'bond'; // 可转债驱动因素是权益，归为growth
           } else if (entry.cat === 'index') {
             // 指数基金按名称推断风格
             const name = entry.name || '';
-            if (/红利|股息|低波|高股息/.test(name)) entry.style = 'dividend';
-            else if (/价值|沪深300价值|基本面|银行|金融|煤炭|地产/.test(name)) entry.style = 'value';
+            if (/红利|股息|低波动|高股息|分红|价值回报|红息/.test(name)) entry.style = 'dividend';
+            else if (/价值|沪深300价值|基本面|银行ETF|金融|煤炭|地产|上证50|央企|国企|蓝筹|红利价值/.test(name)) entry.style = 'value';
             else if (/通信|半导体|芯片|科技|人工智能|AI|信息|互联网|新能源|医药|医疗|生物|军工|创业板/.test(name)) entry.style = 'growth';
-            else if (/沪深300|上证50|中证100|大盘/.test(name)) entry.style = 'blend';
+            else if (/沪深300|中证100|大盘/.test(name)) entry.style = 'blend';
             else entry.style = 'blend';
           } else if (entry.cat === 'active') {
             // 主动基金没拉到重仓股 → 按名称粗略推断
             const name = entry.name || '';
-            if (/红利|股息|价值/.test(name)) entry.style = 'value';
+            if (/红利|股息|高股息/.test(name)) entry.style = 'dividend';
+            else if (/价值|蓝筹|央企|国企|低估|深度价值/.test(name)) entry.style = 'value';
             else entry.style = 'blend';
           }
           if (entry.style) entry.styleSource = 'name'; // 标注来源
