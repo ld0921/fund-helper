@@ -894,6 +894,17 @@ function selectFunds(cat, catData, riskProfile, pct, totalAmt, constraints){
   // 红利/价值风格指数（style=dividend/value）不参与过滤，避免误伤战略配置品种
   // 理论依据：Sharpe 1992 风格分析，同风格基金才应横向比较
   if(cat === 'index'){
+    // 规模硬过滤：当 pool 内存在 size≥5亿 的候选时，剔除 size<2亿 的迷你基金
+    // 理由：迷你指数基金跟踪误差大、流动性差、清盘风险高，有更大替代品时不应入选
+    const hasLarger = pool.some(f => (f.size||0) >= 5);
+    if(hasLarger){
+      const filtered = pool.filter(f => (f.size||0) >= 2);
+      if(filtered.length > 0){
+        const removed = pool.filter(f => (f.size||0) < 2).map(f => f.code+'('+f.name.slice(0,8)+',size='+f.size+'亿)');
+        if(removed.length > 0) console.log('[index过滤] 规模硬过滤(size<2亿):', removed);
+        pool = filtered;
+      }
+    }
     const toRemove = new Set();
     // 1. 有 sector 的：在同 sector 内比
     const sectorGroups = {};
