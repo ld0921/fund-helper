@@ -264,8 +264,12 @@ function _doGenerateDca(){
       // 中放宽阈值找非超配 sector 的候选——必须从 catData 取以保留 composite 字段
       const remainAfterSector = topFunds.filter(f => !f.sector || !usedSectorsGlobal.has(f.sector));
       if(remainAfterSector.length === 0){
+        // active 类排除 r1>100% 的超涨基金（定投核心是摊低成本，超涨基金不适合）
+        // 其他类别（index/bond/qdii）放宽——红利指数本就低 r1，不影响
+        const isOverheated = (f) => cat === 'active' && (f.r1||0) > 100;
         const supplementary = excluded
           .filter(f => !f.sector || !usedSectorsGlobal.has(f.sector))
+          .filter(f => !isOverheated(f))
           .filter(f => calcDCAScore(f) > 40) // 放宽到 40 才能在 active 类找到（嘉实/中泰等都是59，但同类还有更低的）
           .sort((a,b) => calcDCAScore(b) - calcDCAScore(a))
           .slice(0, 5)
