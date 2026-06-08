@@ -242,7 +242,7 @@ function _doGenerateDca(){
       });
       // 若阈值过滤后整个类别为空（如可转债等高波动品种、或市场整体高位）：
       // 按定投评分排序取 Top3 兜底，并标记 _dcaFallback 让 UI 显示警告
-      let topFunds = qualified.length > 0
+      const topFunds = qualified.length > 0
         ? qualified
         : [...excluded]
             .sort((a, b) => calcDCAScore(b) - calcDCAScore(a))
@@ -252,33 +252,7 @@ function _doGenerateDca(){
       const catPct = Math.round(gap / totalBudget * 100);
       if(catPct < 1 || filteredCatData.topFunds.length === 0) return;
 
-      const usedSectorsGlobal = new Set(allPicks.map(p => p.sector).filter(Boolean));
-      // 把已有持仓的 sector 也加入，避免定投继续加仓已超配板块
-      (typeof existingHoldings !== 'undefined' ? existingHoldings : []).forEach(h => {
-        if(h.status && h.status !== 'confirmed') return;
-        const fd = CURATED_FUNDS.find(f => f.code === h.code);
-        if(fd && fd.sector) usedSectorsGlobal.add(fd.sector);
-      });
-      // 兜底：若该类候选池在 sector 排除后全部为空（如 active 类精选库 41/53 都是通信，
-      // 持仓占用通信 sector 后 topFunds 全被过滤），从 catData.topFunds（同 cat 全部基金）
-      // 中放宽阈值找非超配 sector 的候选——必须从 catData 取以保留 composite 字段
-      const remainAfterSector = topFunds.filter(f => !f.sector || !usedSectorsGlobal.has(f.sector));
-      if(remainAfterSector.length === 0){
-        // active 类排除 r1>100% 的超涨基金（定投核心是摊低成本，超涨基金不适合）
-        // 其他类别（index/bond/qdii）放宽——红利指数本就低 r1，不影响
-        const isOverheated = (f) => cat === 'active' && (f.r1||0) > 100;
-        const supplementary = excluded
-          .filter(f => !f.sector || !usedSectorsGlobal.has(f.sector))
-          .filter(f => !isOverheated(f))
-          .filter(f => calcDCAScore(f) > 40) // 放宽到 40 才能在 active 类找到（嘉实/中泰等都是59，但同类还有更低的）
-          .sort((a,b) => calcDCAScore(b) - calcDCAScore(a))
-          .slice(0, 5)
-          .map(f => ({...f, _dcaFallback: true}));
-        if(supplementary.length > 0){
-          filteredCatData.topFunds = supplementary;
-        }
-      }
-      const fundPicks = selectFunds(cat, filteredCatData, risk, catPct, totalBudget, { usedSectorsGlobal });
+      const fundPicks = selectFunds(cat, filteredCatData, risk, catPct, totalBudget);
 
       fundPicks.forEach(fp => {
         allPicks.push({
