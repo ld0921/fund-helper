@@ -260,18 +260,14 @@ function _doGenerateDca(){
         if(fd && fd.sector) usedSectorsGlobal.add(fd.sector);
       });
       // 兜底：若该类候选池在 sector 排除后全部为空（如 active 类精选库 41/53 都是通信，
-      // 持仓占用通信 sector 后 topFunds 全被过滤），从全 CURATED_FUNDS 中补充非超配 sector
-      // 的同类基金，避免该类别被完全跳过
+      // 持仓占用通信 sector 后 topFunds 全被过滤），从 catData.topFunds（同 cat 全部基金）
+      // 中放宽阈值找非超配 sector 的候选——必须从 catData 取以保留 composite 字段
       const remainAfterSector = topFunds.filter(f => !f.sector || !usedSectorsGlobal.has(f.sector));
       if(remainAfterSector.length === 0){
-        const supplementary = CURATED_FUNDS
-          .filter(f => f.cat === cat)
+        const supplementary = excluded
           .filter(f => !f.sector || !usedSectorsGlobal.has(f.sector))
-          .filter(f => !allPicks.some(p => p.code === f.code))
-          .filter(f => !/定期开放|定开/.test(f.name||''))
-          .filter(f => calcDCAScore(f) > 50)
-          .map(f => ({...f, dcaScore: calcDCAScore(f)}))
-          .sort((a,b) => b.dcaScore - a.dcaScore)
+          .filter(f => calcDCAScore(f) > 40) // 放宽到 40 才能在 active 类找到（嘉实/中泰等都是59，但同类还有更低的）
+          .sort((a,b) => calcDCAScore(b) - calcDCAScore(a))
           .slice(0, 5)
           .map(f => ({...f, _dcaFallback: true}));
         if(supplementary.length > 0){
