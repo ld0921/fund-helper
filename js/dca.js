@@ -242,7 +242,7 @@ function _doGenerateDca(){
       });
       // 若阈值过滤后整个类别为空（如可转债等高波动品种、或市场整体高位）：
       // 按定投评分排序取 Top3 兜底，并标记 _dcaFallback 让 UI 显示警告
-      const topFunds = qualified.length > 0
+      let topFunds = qualified.length > 0
         ? qualified
         : [...excluded]
             .sort((a, b) => calcDCAScore(b) - calcDCAScore(a))
@@ -259,6 +259,25 @@ function _doGenerateDca(){
         const fd = CURATED_FUNDS.find(f => f.code === h.code);
         if(fd && fd.sector) usedSectorsGlobal.add(fd.sector);
       });
+      // 兜底：若该类候选池在 sector 排除后全部为空（如 active 类精选库 41/53 都是通信，
+      // 持仓占用通信 sector 后 topFunds 全被过滤），从全 CURATED_FUNDS 中补充非超配 sector
+      // 的同类基金，避免该类别被完全跳过
+      const remainAfterSector = topFunds.filter(f => !f.sector || !usedSectorsGlobal.has(f.sector));
+      if(remainAfterSector.length === 0){
+        const supplementary = CURATED_FUNDS
+          .filter(f => f.cat === cat)
+          .filter(f => !f.sector || !usedSectorsGlobal.has(f.sector))
+          .filter(f => !allPicks.some(p => p.code === f.code))
+          .filter(f => !/定期开放|定开/.test(f.name||''))
+          .filter(f => calcDCAScore(f) > 50)
+          .map(f => ({...f, dcaScore: calcDCAScore(f)}))
+          .sort((a,b) => b.dcaScore - a.dcaScore)
+          .slice(0, 5)
+          .map(f => ({...f, _dcaFallback: true}));
+        if(supplementary.length > 0){
+          filteredCatData.topFunds = supplementary;
+        }
+      }
       const fundPicks = selectFunds(cat, filteredCatData, risk, catPct, totalBudget, { usedSectorsGlobal });
 
       fundPicks.forEach(fp => {
