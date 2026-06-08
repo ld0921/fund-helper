@@ -252,7 +252,8 @@ function _doGenerateDca(){
       const catPct = Math.round(gap / totalBudget * 100);
       if(catPct < 1 || filteredCatData.topFunds.length === 0) return;
 
-      const fundPicks = selectFunds(cat, filteredCatData, risk, catPct, totalBudget);
+      const usedSectorsGlobal = new Set(allPicks.map(p => p.sector).filter(Boolean));
+      const fundPicks = selectFunds(cat, filteredCatData, risk, catPct, totalBudget, { usedSectorsGlobal });
 
       fundPicks.forEach(fp => {
         allPicks.push({
