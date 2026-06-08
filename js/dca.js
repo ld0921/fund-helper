@@ -253,6 +253,12 @@ function _doGenerateDca(){
       if(catPct < 1 || filteredCatData.topFunds.length === 0) return;
 
       const usedSectorsGlobal = new Set(allPicks.map(p => p.sector).filter(Boolean));
+      // 把已有持仓的 sector 也加入，避免定投继续加仓已超配板块
+      (typeof existingHoldings !== 'undefined' ? existingHoldings : []).forEach(h => {
+        if(h.status && h.status !== 'confirmed') return;
+        const fd = CURATED_FUNDS.find(f => f.code === h.code);
+        if(fd && fd.sector) usedSectorsGlobal.add(fd.sector);
+      });
       const fundPicks = selectFunds(cat, filteredCatData, risk, catPct, totalBudget, { usedSectorsGlobal });
 
       fundPicks.forEach(fp => {
