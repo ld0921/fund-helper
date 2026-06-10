@@ -878,6 +878,24 @@ function selectFunds(cat, catData, riskProfile, pct, totalAmt, constraints){
   const styleNeeds = constraints.styleNeeds || null;
   const styleAvoid = constraints.styleAvoid || null;
   const overweightStocks = constraints.overweightStocks || null;
+
+  // pipeline 快照（附加到全局 _selectFundsDebug 供 UI 读取）
+  if(!window._selectFundsDebug) window._selectFundsDebug = {};
+  const dbg = { cat, pct,
+    constraints: {
+      styleNeeds: styleNeeds ? [...styleNeeds] : [],
+      styleAvoid: styleAvoid ? [...styleAvoid] : [],
+      usedSectors: usedSectorsGlobal ? [...usedSectorsGlobal] : [],
+      overweightStocks: overweightStocks ? [...overweightStocks.entries()].map(([c,p])=>({code:c,pct:+p.toFixed(2)})) : [],
+    },
+    steps: []
+  };
+  window._selectFundsDebug[cat] = dbg;
+  const snap = (label, arr, note) => dbg.steps.push({
+    label, note: note||'',
+    funds: arr.map(f=>({ code:f.code, name:f.name, score: f.adjustedScore!=null?+f.adjustedScore.toFixed(1):(f.composite||0), style:f.style||'', sector:f.sector||'', r1:f.r1, r3:f.r3, reason:f._dbgReason||'' }))
+  });
+
   // 风险等级过滤（带回退机制）
   let pool = catData.topFunds.filter(f=>{
     if(riskProfile==='conservative') return ['R1','R2','R3'].includes(f.risk);
@@ -889,6 +907,7 @@ function selectFunds(cat, catData, riskProfile, pct, totalAmt, constraints){
     pool = catData.topFunds.filter(f=>['R1','R2','R3','R4'].includes(f.risk));
   }
   if(!pool.length) return [];
+  snap('①候选池（风险过滤后）', pool);
 
   // index 类同主题弱者过滤：仅在同 sector 或同风格类别内进行横向比较
   // 红利/价值风格指数（style=dividend/value）不参与过滤，避免误伤战略配置品种
@@ -956,6 +975,7 @@ function selectFunds(cat, catData, riskProfile, pct, totalAmt, constraints){
     const filtered = pool.filter(f => (f.stars||0) >= 4);
     if(filtered.length > 0) pool = filtered;
   }
+  snap('②硬过滤后（规模/同组弱者/星级）', pool, cat==='index'?'index 含规模硬过滤+同组弱者过滤':'含星级软过滤');
 
   // 风险偏好感知排名：不同偏好对同一基金的评价侧重不同
   // 保守型：重稳定性和低回撤（高maxDD扣分）
@@ -981,31 +1001,33 @@ function selectFunds(cat, catData, riskProfile, pct, totalAmt, constraints){
   // 动量反转修正：超涨基金（>同类均值+1σ）降权，超跌基金（<均值-1σ）升权
   // 基于A股均值回归特性，避免追高买入近期涨幅过大的基金
   pool = pool.map(f => {
-    let score = useDcaScore ? (calcDCAScore(f) * 0.5 + adjustFn(f) * 0.5) : adjustFn(f);
+    const baseScore = useDcaScore ? (calcDCAScore(f) * 0.5 + adjustFn(f) * 0.5) : adjustFn(f);
+    let score = baseScore;
+    const adj = []; // 修正项明细
     const bench = _catBench[f.cat];
     if(bench && bench.stdR1 > 0){
       const z = ((f.r1||0) - bench.avgR1) / bench.stdR1;
-      if(z > 1)  score -= Math.min(8, (z - 1) * 4);  // 超涨：最多扣8分
-      if(z < -1 && (f.r3||0) > 5) score += Math.min(5, (-z - 1) * 2.5); // 超跌加分：仅限r3>5%（3年真正长期向上），排除长期横盘基金
+      if(z > 1){ const d = Math.min(8, (z - 1) * 4); score -= d; adj.push(`超涨-${d.toFixed(1)}`); }  // 超涨：最多扣8分
+      if(z < -1 && (f.r3||0) > 5){ const d = Math.min(5, (-z - 1) * 2.5); score += d; adj.push(`超跌+${d.toFixed(1)}`); } // 超跌加分：仅限r3>5%（3年真正长期向上），排除长期横盘基金
     }
     // 行业估值修正：仅对有行业PE映射的指数基金生效，±5分
     if(f.cat === 'index'){
       const idxCode = FUND_VALUATION_MAP[f.code];
       const val = idxCode && INDEX_VALUATION[idxCode];
       if(val && val.pePct > 0){
-        if(val.pePct > 80) score -= 5;       // 行业高估，降权
-        else if(val.pePct < 25) score += 5;  // 行业低估，升权
+        if(val.pePct > 80){ score -= 5; adj.push('估值高-5'); }       // 行业高估，降权
+        else if(val.pePct < 25){ score += 5; adj.push('估值低+5'); }  // 行业低估，升权
       }
     }
     // QDII类型多样性：奖励与现有持仓 qdiiType 不同的候选（避免同类叠加）
     if(f.cat === 'qdii' && f.qdiiType && constraints && constraints.heldQdiiTypes){
-      if(!constraints.heldQdiiTypes.has(f.qdiiType)) score += 8;
-      else score -= 15; // 已持有同类型，强力降权（-15 覆盖 composite 分差，避免 us_tech 重复）
+      if(!constraints.heldQdiiTypes.has(f.qdiiType)){ score += 8; adj.push('QDII异类+8'); }
+      else { score -= 15; adj.push('QDII同类-15'); } // 已持有同类型，强力降权（-15 覆盖 composite 分差，避免 us_tech 重复）
     }
     // 诊断驱动约束（仅 hasHoldings 时生效）
     // 1. 风格约束：缺口风格 +15 分（强力提升被推荐概率），超配风格 -10 分
-    if(styleNeeds && f.style && styleNeeds.has(f.style)) score += 15;
-    if(styleAvoid && f.style && styleAvoid.has(f.style)) score -= 10;
+    if(styleNeeds && f.style && styleNeeds.has(f.style)){ score += 15; adj.push('补缺口风格+15'); }
+    if(styleAvoid && f.style && styleAvoid.has(f.style)){ score -= 10; adj.push('超配风格-10'); }
     // 2. 单股穿透约束：基金重仓"已超配股票" → 按该股在基金中的权重扣分
     //    每 1% 的重叠权重 = -0.5 分，最多扣 8 分
     if(overweightStocks && f.topStocks){
@@ -1015,10 +1037,12 @@ function selectFunds(cat, catData, riskProfile, pct, totalAmt, constraints){
           overlapPenalty += s.pct * 0.5;
         }
       });
-      score -= Math.min(8, overlapPenalty);
+      const d = Math.min(8, overlapPenalty);
+      if(d > 0){ score -= d; adj.push(`超配股穿透-${d.toFixed(1)}`); }
     }
-    return {...f, adjustedScore: score};
+    return {...f, adjustedScore: score, _dbgReason: `基础${baseScore.toFixed(1)}${adj.length?' | '+adj.join(' '):''}` };
   }).sort((a,b) => b.adjustedScore - a.adjustedScore);
+  snap('③评分排序（含诊断修正）', pool, '基础分=风险偏好感知composite，后接各项修正');
 
   // 相关性去重：同一基金经理最多选1只 + 标签去重（自适应）+ index基金sector去重
   const usedManagers = new Set();
@@ -1030,13 +1054,14 @@ function selectFunds(cat, catData, riskProfile, pct, totalAmt, constraints){
   // 标签组合 <= 2种时视为同质化（如 active 只有"主动权益均衡"和"科技成长行业"）
   const skipTagDedup = tagDiversity <= 2;
 
+  const excludedByDedup = []; // 被去重规则排除的基金及原因
   pool.forEach(f => {
-    if(usedManagers.has(f.manager) && deduped.length > 0) return;
+    if(usedManagers.has(f.manager) && deduped.length > 0){ excludedByDedup.push({code:f.code,name:f.name,score:+f.adjustedScore.toFixed(1),style:f.style||'',sector:f.sector||'',reason:`同经理(${f.manager})已选`}); return; }
     // sector 去重：所有有 sector 字段的基金都参与（主动基金的 sector 来自重仓股归因，index 基金来自名称或重仓股）
     if(f.sector){
-      if(usedSectors.has(f.sector)) return;
+      if(usedSectors.has(f.sector)){ excludedByDedup.push({code:f.code,name:f.name,score:+f.adjustedScore.toFixed(1),style:f.style||'',sector:f.sector,reason:`sector(${f.sector})本类已用`}); return; }
       // 跨类别全局 sector 去重（诊断驱动，避免主动+指数同板块重复推荐）
-      if(usedSectorsGlobal && usedSectorsGlobal.has(f.sector)) return;
+      if(usedSectorsGlobal && usedSectorsGlobal.has(f.sector)){ excludedByDedup.push({code:f.code,name:f.name,score:+f.adjustedScore.toFixed(1),style:f.style||'',sector:f.sector,reason:`sector(${f.sector})跨类已用`}); return; }
     }
     // 标签重叠检查
     if(!skipTagDedup){
@@ -1046,7 +1071,7 @@ function selectFunds(cat, catData, riskProfile, pct, totalAmt, constraints){
         const overlap = (sel.tags||[]).filter(t => fTags.has(t)).length;
         if(fTags.size > 0 && overlap / fTags.size > 0.5) tooSimilar = true;
       });
-      if(tooSimilar && deduped.length > 0) return;
+      if(tooSimilar && deduped.length > 0){ excludedByDedup.push({code:f.code,name:f.name,score:+f.adjustedScore.toFixed(1),style:f.style||'',sector:f.sector||'',reason:'标签重叠>50%'}); return; }
     }
     usedManagers.add(f.manager);
     if(f.sector){
@@ -1055,6 +1080,8 @@ function selectFunds(cat, catData, riskProfile, pct, totalAmt, constraints){
     }
     deduped.push(f);
   });
+  snap('④去重后（经理/板块/标签）', deduped);
+  dbg.excluded = excludedByDedup;
 
   // 选几只：≥25%选3只，≥15%选2只，其他1只（V2 3.3-test2 更分散化）
   const pickCount = pct >= 25 && deduped.length >= 3 ? 3 : pct >= 15 && deduped.length >= 2 ? 2 : 1;
@@ -1112,7 +1139,7 @@ function selectFunds(cat, catData, riskProfile, pct, totalAmt, constraints){
     perPick = [pct];
   }
 
-  return picks.map((f,i)=>({
+  const result = picks.map((f,i)=>({
     ...f,
     pct: perPick[i],
     amt: Math.round(totalAmt * perPick[i] / 100),
@@ -1120,6 +1147,8 @@ function selectFunds(cat, catData, riskProfile, pct, totalAmt, constraints){
     method: f.cat==='money'?'立即买入': f.cat==='bond'?'立即买入': f.cat==='qdii'?'分批买入':i===0?'分批买入':'一次性买入',
     methodClass: f.cat==='money'||f.cat==='bond'?'method-now': i===0?'method-dca':'method-hold',
   }));
+  dbg.result = result.map(f=>({ code:f.code, name:f.name, score:f.adjustedScore!=null?+f.adjustedScore.toFixed(1):0, style:f.style||'', sector:f.sector||'', role:f.role, pct:f.pct, amt:f.amt }));
+  return result;
 }
 
 // 基于调仓建议生成分步执行步骤（确保与调仓完全一致）
@@ -1490,6 +1519,10 @@ function _doGenerate(shouldScroll){
   const horizon   = parseInt(document.getElementById('sp-horizon').value);
   const monthly   = 0; // 智能方案为一次性配置，定投在独立Tab
 
+  // 重置选基过程快照（每次生成方案前清空，避免残留上次结果）
+  window._selectFundsDebug = {};
+  window._pipelineDebug = { riskProfile: riskP, horizon, hasHoldings: false, weights: null, diagnostic: null };
+
   // 1. 行情分析
   const catRanks = analyzeCategoryPerf();
 
@@ -1502,11 +1535,14 @@ function _doGenerate(shouldScroll){
 
   // 4. 计算权重（叠加动量约束）
   const weights = computeWeights(riskP, horizon, catRanks, macroClock);
+  window._pipelineDebug.weights = {...weights};
+  window._pipelineDebug.macroClock = macroClock ? {phase: macroClock.phase, equityMult: macroClock.equityMult, bondMult: macroClock.bondMult} : null;
 
   // 4.5 融合已有持仓分析
   const existTotal = existingHoldings.reduce((s,h)=>s+h.value,0);
   const portfolioTotal = existTotal + totalAmt; // 总资产 = 已有 + 新资金
   const hasHoldings = existTotal > 0;
+  window._pipelineDebug.hasHoldings = hasHoldings;
 
   // 分析已有持仓：按类别分组 + 质量评估（修复问题4：使用最新净值计算市值）
   const holdingsByCat = {}; // { cat: [{code,name,value,score,keep,fundData}] }
@@ -1770,6 +1806,12 @@ function _doGenerate(shouldScroll){
     );
     if(styleNeeds.size > 0 || styleAvoid.size > 0 || overweightStocks.size > 0 || usedSectorsGlobal.size > 0){
       diagnosticConstraints = { usedSectorsGlobal, styleNeeds, styleAvoid, overweightStocks, heldQdiiTypes };
+      window._pipelineDebug.diagnostic = {
+        styleNeeds: [...styleNeeds],
+        styleAvoid: [...styleAvoid],
+        usedSectors: [...usedSectorsGlobal],
+        overweightStocks: [...overweightStocks.entries()].map(([c,p])=>({code:c,pct:+p.toFixed(2)})),
+      };
       // 收集 UI 提示原因
       if(styleNeeds.size > 0){
         const styleNames = {growth:'成长',value:'价值',dividend:'红利',blend:'混合'};
@@ -2538,6 +2580,7 @@ function _doGenerate(shouldScroll){
   // 渲染"我的持有方案"折叠块（如果已有保存，显示当前状态；过期则提示）
   if(typeof renderMyHoldingScheme === 'function') renderMyHoldingScheme();
 
+  renderPipelineDebug();
   return true;
 }
 
@@ -2954,4 +2997,94 @@ function renderMyHoldingScheme(){
     ${groupRows}`;
 }
 
+// ═══ 选基过程可视化 ═══
+function renderPipelineDebug(){
+  const el = document.getElementById('pipeline-debug-content');
+  if(!el) return;
+  const pd = window._pipelineDebug || {};
+  const sfd = window._selectFundsDebug || {};
+  const catNames = {active:'主动权益', index:'指数', bond:'债券', money:'货币', qdii:'QDII'};
+  const riskNames = {conservative:'保守型', moderate:'稳健型', balanced:'平衡型', aggressive:'进取型'};
+
+  // 1. 权重分配摘要
+  const weightsHtml = pd.weights ? Object.entries(pd.weights).map(([cat,w])=>
+    `<span style="display:inline-block;margin:2px 6px 2px 0;padding:2px 8px;background:#e6f7ff;border-radius:10px;font-size:12px">${catNames[cat]||cat} <b>${w}%</b></span>`
+  ).join('') : '—';
+
+  const macroHtml = pd.macroClock
+    ? `市场阶段 <b>${pd.macroClock.phase}</b>，权益乘数 ${pd.macroClock.equityMult}，债券乘数 ${pd.macroClock.bondMult}`
+    : '无持仓/未启用';
+
+  // 2. 诊断约束摘要
+  let diagHtml = '<span style="color:var(--muted);font-size:12px">无持仓，诊断约束未启用</span>';
+  if(pd.diagnostic){
+    const d = pd.diagnostic;
+    const styleNames = {growth:'成长',value:'价值',dividend:'红利',blend:'混合'};
+    const parts = [];
+    if(d.styleNeeds.length) parts.push(`补缺口风格：<b>${d.styleNeeds.map(s=>styleNames[s]||s).join('、')}</b>`);
+    if(d.styleAvoid.length) parts.push(`降权超配风格：<b>${d.styleAvoid.map(s=>styleNames[s]||s).join('、')}</b>`);
+    if(d.usedSectors.length) parts.push(`已锁定板块（跨类去重）：${d.usedSectors.join('、')}`);
+    if(d.overweightStocks.length) parts.push(`超配股穿透（≥3%）：${d.overweightStocks.map(s=>`${s.code}(${s.pct}%)`).join('、')}`);
+    diagHtml = parts.length ? parts.map(p=>`<div style="font-size:12px;line-height:1.9">• ${p}</div>`).join('') : '<span style="color:var(--muted);font-size:12px">持仓已诊断，无需调整</span>';
+  }
+
+  // 3. 各类别选基过程
+  const catOrder = ['active','index','bond','money','qdii'];
+  const catSections = catOrder.filter(cat => sfd[cat]).map(cat => {
+    const d = sfd[cat];
+    const stepHtml = d.steps.map(s => {
+      const rows = s.funds.map(f =>
+        `<tr>
+          <td style="padding:3px 8px 3px 0;white-space:nowrap">${escHtml(f.name)}</td>
+          <td style="padding:3px 8px;text-align:right;font-weight:600;color:${f.score>=70?'#52c41a':f.score>=55?'#1677ff':'#faad14'}">${f.score}</td>
+          <td style="padding:3px 8px;color:var(--muted);font-size:11px">${f.style||'—'}</td>
+          <td style="padding:3px 8px;color:var(--muted);font-size:11px">${f.sector||'—'}</td>
+          <td style="padding:3px 0;font-size:11px;color:#595959">${escHtml(f.reason||'')}</td>
+        </tr>`
+      ).join('');
+      return `<div style="margin-bottom:10px">
+        <div style="font-size:12px;font-weight:600;color:#333;margin-bottom:4px">${s.label} <span style="font-weight:400;color:var(--muted)">${s.note?'— '+s.note:''}</span> <span style="color:var(--primary)">${s.funds.length}只</span></div>
+        <table style="width:100%;border-collapse:collapse;font-size:12px"><thead>
+          <tr style="color:var(--muted);font-size:11px">
+            <th style="text-align:left;padding:2px 8px 4px 0;font-weight:400">基金</th>
+            <th style="text-align:right;padding:2px 8px;font-weight:400">得分</th>
+            <th style="text-align:left;padding:2px 8px;font-weight:400">风格</th>
+            <th style="text-align:left;padding:2px 8px;font-weight:400">板块</th>
+            <th style="text-align:left;padding:2px 0;font-weight:400">修正项</th>
+          </tr></thead><tbody>${rows}</tbody></table>
+      </div>`;
+    }).join('');
+
+    const excludedHtml = (d.excluded||[]).length ? `<div style="margin-top:8px">
+      <div style="font-size:12px;font-weight:600;color:#faad14;margin-bottom:4px">去重排除 ${d.excluded.length} 只</div>
+      ${d.excluded.map(f=>`<div style="font-size:11px;color:var(--muted);line-height:1.8">• ${escHtml(f.name)} <span style="color:#ff4d4f">(${escHtml(f.reason)})</span></div>`).join('')}
+    </div>` : '';
+
+    const finalHtml = (d.result||[]).length ? `<div style="margin-top:8px;padding:8px 10px;background:#f6ffed;border-radius:6px;border-left:3px solid #52c41a">
+      <div style="font-size:12px;font-weight:600;color:#237804;margin-bottom:4px">最终入选 ${d.result.length} 只</div>
+      ${d.result.map(f=>`<div style="font-size:12px;line-height:1.9"><b>${escHtml(f.name)}</b> 得分 ${f.score} · ${f.role} · ${f.pct}% (¥${f.amt.toLocaleString()})</div>`).join('')}
+    </div>` : '';
+
+    return `<details style="margin-bottom:10px;border:1px solid var(--border);border-radius:8px;overflow:hidden">
+      <summary style="padding:10px 14px;cursor:pointer;background:#fafafa;font-size:13px;font-weight:600;list-style:none;display:flex;align-items:center;gap:8px">
+        <span>${catNames[cat]||cat}</span>
+        <span style="font-weight:400;color:var(--muted);font-size:12px">配置 ${d.pct}%</span>
+        <span style="margin-left:auto;font-size:12px;color:var(--primary)">${(d.result||[]).map(f=>f.name).join(' / ')}</span>
+      </summary>
+      <div style="padding:12px 14px">${stepHtml}${excludedHtml}${finalHtml}</div>
+    </details>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div style="margin-bottom:12px;padding:10px 12px;background:#f8f9fc;border-radius:8px">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:4px">权重分配（${riskNames[pd.riskProfile]||pd.riskProfile} · ${pd.horizon}年期）</div>
+      <div>${weightsHtml}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px">${macroHtml}</div>
+    </div>
+    ${pd.hasHoldings ? `<div style="margin-bottom:12px;padding:10px 12px;background:#fffbe6;border-radius:8px;border-left:3px solid #faad14">
+      <div style="font-size:12px;font-weight:600;color:#7c5800;margin-bottom:6px">诊断驱动约束</div>
+      ${diagHtml}
+    </div>` : ''}
+    <div>${catSections}</div>`;
+}
 
