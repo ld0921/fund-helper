@@ -38,14 +38,34 @@ jobs:
             node scripts/update-industry-map.js || echo "⚠️ 映射表更新失败（数据源限流），跳过；主动基金行业归因暂时不可用"
           fi
 
+      - name: 更新概念板块→股票映射（如不存在或超过30天）
+        continue-on-error: true
+        run: |
+          MAP_FILE="data/stock-concept-map.json"
+          NEED_UPDATE=true
+          if [ -f "$MAP_FILE" ]; then
+            if [ $(find "$MAP_FILE" -mtime -30 | wc -l) -gt 0 ]; then
+              NEED_UPDATE=false
+              echo "概念映射表存在且未过期，跳过"
+            fi
+          fi
+          if [ "$NEED_UPDATE" = "true" ]; then
+            echo "更新概念板块映射..."
+            node scripts/fetch-concepts.js || echo "⚠️ 概念映射更新失败，跳过"
+          fi
+
       - name: 拉取基金排名数据
         run: node scripts/fetch-ranks.js
+
+      - name: 重推基金板块/概念标签
+        continue-on-error: true
+        run: node scripts/reinfer-sectors.js
 
       - name: 提交更新
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/market-ranks.json data/curated-details.json data/stock-industry-map.json
+          git add data/market-ranks.json data/curated-details.json data/stock-industry-map.json data/stock-concept-map.json
           if git diff --staged --quiet; then
             echo "数据无变化，跳过提交"
           else

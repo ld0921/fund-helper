@@ -80,6 +80,14 @@ function main() {
     }
   });
 
+  // ── 概念归因 ─────────────────────────────────────────────────────────────
+  // 注：当前数据不适用于概念归因（详见下方说明），仅做清理防止脏数据残留
+  // - ETF联接基金：topStocks 反映 feeder 的现金持仓（~1%NAV），pct≈0.01%
+  // - LOF指数基金：直接持股，pct真实，但碰巧重仓CPO股≠CPO主题基金
+  // - 主动基金：AI行情下普遍重仓CPO股，归因噪声极大
+  // 启用条件：获取ETF本体（非联接A）的成分股权重后再重新评估
+  Object.values(curated.funds).forEach(f => { delete f.concepts; });
+
   fs.writeFileSync(curatedPath, JSON.stringify(curated, null, 2), 'utf-8');
   console.log(`\n完成: 更新 ${updated} 只，未变 ${unchanged} 只，跳过 ${skipped} 只（无topStocks）`);
 }
