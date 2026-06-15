@@ -54,6 +54,42 @@ jobs:
             node scripts/fetch-concepts.js || echo "⚠️ 概念映射更新失败，跳过"
           fi
 
+      - name: 更新联接基金→ETF本体映射（如不存在或超过30天）
+        continue-on-error: true
+        run: |
+          MAP_FILE="data/feeder-etf-map.json"
+          NEED_UPDATE=true
+          if [ -f "$MAP_FILE" ]; then
+            if [ $(find "$MAP_FILE" -mtime -30 | wc -l) -gt 0 ]; then
+              NEED_UPDATE=false
+              echo "ETF映射表存在且未过期，跳过"
+            fi
+          fi
+          if [ "$NEED_UPDATE" = "true" ]; then
+            echo "更新联接基金→ETF映射..."
+            node scripts/fetch-etf-map.js || echo "⚠️ ETF映射更新失败，跳过"
+          fi
+
+      - name: 更新ETF本体持仓数据（如不存在或超过30天）
+        continue-on-error: true
+        run: |
+          MAP_FILE="data/etf-holdings.json"
+          NEED_UPDATE=true
+          if [ -f "$MAP_FILE" ]; then
+            if [ $(find "$MAP_FILE" -mtime -30 | wc -l) -gt 0 ]; then
+              NEED_UPDATE=false
+              echo "ETF持仓数据存在且未过期，跳过"
+            fi
+          fi
+          if [ "$NEED_UPDATE" = "true" ]; then
+            if [ -f "data/feeder-etf-map.json" ]; then
+              echo "更新ETF本体持仓..."
+              node scripts/fetch-etf-holdings.js || echo "⚠️ ETF持仓更新失败，跳过"
+            else
+              echo "feeder-etf-map.json 不存在，跳过"
+            fi
+          fi
+
       - name: 拉取基金排名数据
         run: node scripts/fetch-ranks.js
 
@@ -65,7 +101,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/market-ranks.json data/curated-details.json data/stock-industry-map.json data/stock-concept-map.json
+          git add data/market-ranks.json data/curated-details.json data/stock-industry-map.json data/stock-concept-map.json data/feeder-etf-map.json data/etf-holdings.json
           if git diff --staged --quiet; then
             echo "数据无变化，跳过提交"
           else

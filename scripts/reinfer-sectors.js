@@ -56,12 +56,34 @@ function inferFundSector(topStocks, stockMap) {
   return null;
 }
 
+function inferConcepts(topStocks, conceptMap) {
+  if (!topStocks || topStocks.length === 0) return [];
+  const weight = {};
+  let total = 0;
+  topStocks.forEach(s => {
+    const concepts = conceptMap[s.code];
+    if (!concepts) return;
+    concepts.forEach(c => { weight[c] = (weight[c] || 0) + s.pct; });
+    total += s.pct;
+  });
+  if (total < 10) return [];
+  return Object.entries(weight)
+    .filter(([, w]) => w >= 40)
+    .sort((a, b) => b[1] - a[1])
+    .map(([c]) => c);
+}
+
 function main() {
   const curatedPath = path.join(__dirname, '..', 'data', 'curated-details.json');
   const mapPath = path.join(__dirname, '..', 'data', 'stock-industry-map.json');
 
   const curated = JSON.parse(fs.readFileSync(curatedPath, 'utf-8'));
   const stockMap = JSON.parse(fs.readFileSync(mapPath, 'utf-8')).stocks;
+
+  let feederEtfMap = {}, etfHoldings = {}, conceptMap = {};
+  try { feederEtfMap = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'feeder-etf-map.json'), 'utf-8')); } catch (e) {}
+  try { etfHoldings = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'etf-holdings.json'), 'utf-8')).stocks || {}; } catch (e) {}
+  try { conceptMap = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'stock-concept-map.json'), 'utf-8')).stocks || {}; } catch (e) {}
 
   let updated = 0, unchanged = 0, skipped = 0;
   Object.values(curated.funds).forEach(f => {
@@ -80,16 +102,28 @@ function main() {
     }
   });
 
-  // ── 概念归因 ─────────────────────────────────────────────────────────────
-  // 注：当前数据不适用于概念归因（详见下方说明），仅做清理防止脏数据残留
-  // - ETF联接基金：topStocks 反映 feeder 的现金持仓（~1%NAV），pct≈0.01%
-  // - LOF指数基金：直接持股，pct真实，但碰巧重仓CPO股≠CPO主题基金
-  // - 主动基金：AI行情下普遍重仓CPO股，归因噪声极大
-  // 启用条件：获取ETF本体（非联接A）的成分股权重后再重新评估
-  Object.values(curated.funds).forEach(f => { delete f.concepts; });
+  // ── 概念归因（仅指数基金，用ETF本体真实持仓，阈值40%防误标）──────────────
+  let conceptUpdated = 0;
+  Object.entries(curated.funds).forEach(([code, f]) => {
+    if (f.cat !== 'index') { delete f.concepts; return; }
+
+    let stocks = f.topStocks;
+    const etfCode = feederEtfMap[code];
+    if (f.name && f.name.includes('联接')) {
+      if (etfCode && etfHoldings[etfCode]) {
+        stocks = etfHoldings[etfCode]; // 用ETF本体真实持仓替换feeder虚假持仓
+      } else {
+        delete f.concepts; return; // 无映射，跳过
+      }
+    }
+
+    const concepts = inferConcepts(stocks, conceptMap);
+    if (concepts.length > 0) { f.concepts = concepts; conceptUpdated++; }
+    else delete f.concepts;
+  });
 
   fs.writeFileSync(curatedPath, JSON.stringify(curated, null, 2), 'utf-8');
-  console.log(`\n完成: 更新 ${updated} 只，未变 ${unchanged} 只，跳过 ${skipped} 只（无topStocks）`);
+  console.log(`\n完成: sector更新 ${updated} 只，未变 ${unchanged} 只，跳过 ${skipped} 只；概念标签 ${conceptUpdated} 只`);
 }
 
 main();

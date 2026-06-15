@@ -6434,7 +6434,10 @@
       ],
       "sectorSource": "name",
       "style": "growth",
-      "styleSource": "name"
+      "styleSource": "name",
+      "concepts": [
+        "CPO"
+      ]
     },
     "008086": {
       "name": "华夏中证5G通信主题ETF联接A",
@@ -6512,7 +6515,10 @@
       ],
       "sectorSource": "name",
       "style": "growth",
-      "styleSource": "name"
+      "styleSource": "name",
+      "concepts": [
+        "CPO"
+      ]
     },
     "008889": {
       "name": "银华中证5G通信主题ETF联接A",
@@ -6856,7 +6862,10 @@
       ],
       "sectorSource": "name",
       "style": "growth",
-      "styleSource": "name"
+      "styleSource": "name",
+      "concepts": [
+        "CPO"
+      ]
     },
     "006909": {
       "name": "华夏战略新兴成指ETF联接A",
