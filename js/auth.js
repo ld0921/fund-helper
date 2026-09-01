@@ -2,10 +2,39 @@
 const _supabaseUrl = 'https://ajkjvknycovlltlawqac.supabase.co';
 const _supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqa2p2a255Y292bGx0bGF3cWFjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyOTY0NDYsImV4cCI6MjA4OTg3MjQ0Nn0.aU6EI3uy3-ghsZVDnbRQcnlsK3eN409hK4ykdXJax6s';
 const _supa = window.supabase ? window.supabase.createClient(_supabaseUrl, _supabaseKey) : null;
+let _supabaseAvailable = false;
+let _supabaseHealthCheck = null; // Promise that resolves when health check completes
 let _currentUser = null;
 let _cloudVersion = 0;
 let _authMode = 'login';
 let _syncTimer = null;
+
+// 静默检测 Supabase 可用性（用真实网络请求，不依赖缓存）
+if(_supa){
+  _supabaseHealthCheck = (async function(){
+    try {
+      // 用 health endpoint 做真实网络检测（3秒超时）
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
+      const resp = await fetch(`${_supabaseUrl}/auth/v1/health`, {
+        signal: controller.signal,
+        headers: { 'apikey': _supabaseKey }
+      });
+      clearTimeout(timeoutId);
+      if(resp.ok) {
+        _supabaseAvailable = true;
+        console.log('[Auth] Supabase available');
+      } else {
+        throw new Error(`HTTP ${resp.status}`);
+      }
+    } catch(e) {
+      console.log('[Auth] Supabase unavailable, entering offline mode:', e.message || e.name);
+      _supabaseAvailable = false;
+    }
+  })();
+} else {
+  _supabaseHealthCheck = Promise.resolve();
+}
 
 function showAuthModal(){
   _authMode='login';
@@ -45,6 +74,7 @@ function _showAuthError(msg){
 }
 
 async function submitAuth(){
+  if(!_supabaseAvailable){ _showAuthError('云端服务不可用，请使用离线模式'); return; }
   if(!_supa){ _showAuthError('云端服务未加载，请刷新页面'); return; }
   const email=document.getElementById('auth-email').value.trim();
   const password=document.getElementById('auth-password').value;

@@ -1254,7 +1254,9 @@ function runHealthMonitor(){
   // （避免 session 异步恢复前 _currentUser 还是 null 导致误弹备份提醒）
 
   // 4.5 Supabase 登录状态恢复
-  if(_supa){
+  // 云端不可用时静默跳过整个登录流程（不弹登录框），其余初始化照常进行
+  await _supabaseHealthCheck;
+  if(_supa && _supabaseAvailable){
     let _sessionResolved = false;
 
     // 监听登录状态变化（优先处理，避免 getSession 误判）
