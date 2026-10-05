@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-10-01T08:55:50.391Z",
+  "timestamp": "2026-10-05T09:03:47.821Z",
   "categories": {
     "gp": {
       "label": "股票型",
@@ -581,7 +581,7 @@
           "maxDD3y": 42.8,
           "maxDD1y": 42.8,
           "manager": "容志能",
-          "mgrYears": 3.5,
+          "mgrYears": 3.6,
           "stars": 4,
           "fee": 0.15,
           "monthlyReturns": [
@@ -1485,7 +1485,7 @@
           "maxDD3y": 30.1,
           "maxDD1y": 16.3,
           "manager": "杨宗昌",
-          "mgrYears": 7.4,
+          "mgrYears": 7.5,
           "stars": 5,
           "fee": 0.15,
           "monthlyReturns": [
@@ -2325,7 +2325,7 @@
           "maxDD3y": 34.5,
           "maxDD1y": 34.5,
           "manager": "贾雅楠",
-          "mgrYears": 1.9,
+          "mgrYears": 2,
           "stars": 5,
           "fee": 0.15,
           "monthlyReturns": [
@@ -2661,7 +2661,7 @@
           "maxDD3y": 29.3,
           "maxDD1y": 29.3,
           "manager": "高扬",
-          "mgrYears": 5.1,
+          "mgrYears": 5.2,
           "stars": 4,
           "fee": 0.08,
           "monthlyReturns": [
@@ -2893,7 +2893,7 @@
           "maxDD3y": 40.6,
           "maxDD1y": 40.6,
           "manager": "姚楠燕",
-          "mgrYears": 6.5,
+          "mgrYears": 6.6,
           "stars": 4,
           "fee": 0.1,
           "monthlyReturns": [
@@ -3229,7 +3229,7 @@
           "maxDD3y": 12.4,
           "maxDD1y": 10.7,
           "manager": "张羽翔",
-          "mgrYears": 11,
+          "mgrYears": 11.1,
           "stars": 4,
           "fee": 0.12,
           "monthlyReturns": [
@@ -3725,7 +3725,7 @@
       "label": "债券型",
       "cat": "bond",
       "type": "债券型",
-      "allRecords": 4980,
+      "allRecords": 4982,
       "funds": [
         {
           "code": "005273",
@@ -4357,7 +4357,7 @@
           "maxDD3y": 10.8,
           "maxDD1y": 7.8,
           "manager": "徐栋",
-          "mgrYears": 11.2,
+          "mgrYears": 11.3,
           "stars": 5,
           "fee": 0.08,
           "monthlyReturns": [
@@ -5373,7 +5373,7 @@
           "maxDD3y": 36.9,
           "maxDD1y": 36.9,
           "manager": "刘平",
-          "mgrYears": 10.8,
+          "mgrYears": 10.9,
           "stars": 3,
           "fee": 0.15,
           "monthlyReturns": [
@@ -6157,7 +6157,7 @@
           "maxDD3y": 36.9,
           "maxDD1y": 36.9,
           "manager": "常亚桥",
-          "mgrYears": 8.3,
+          "mgrYears": 8.4,
           "stars": 5,
           "fee": 0.15,
           "monthlyReturns": [
